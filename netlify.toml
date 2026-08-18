@@ -9,7 +9,16 @@
   command = ""
 
 [build.processing]
-  skip_processing = true
+  # Must stay false: skipping post-processing also disables Netlify's form
+  # detection, and forms.html is the only thing registering our two forms.
+  skip_processing = false
+
+[build.processing.html]
+  # Must stay false. Netlify's "pretty URLs" 301s /Home.dc.html to /home.dc —
+  # it strips .html and lowercases the path. href() in fc-data.js emits the
+  # `City.dc.html?...` form, so leaving this on redirects every internal link
+  # in the site to a lowercased, extension-stripped URL.
+  pretty_urls = false
 
 [[headers]]
   for = "/*"
