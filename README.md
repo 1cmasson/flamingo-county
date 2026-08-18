@@ -113,3 +113,34 @@ Two things bit us on the way in, worth knowing before the next pull:
 
 Pushes to `main` auto-deploy to Netlify. Publish directory is the repo root, no
 build command.
+
+## Custom domain (flamingocounty.com)
+
+The domain is already added to the Netlify site (apex + `www` alias). What's left is
+the DNS change at GoDaddy — the domain still points at GoDaddy's parking IPs and uses
+their nameservers (`ns07/ns08.domaincontrol.com`).
+
+In **GoDaddy → My Products → flamingocounty.com → DNS → Manage Zones**:
+
+| Action | Type | Name | Value | TTL |
+| --- | --- | --- | --- | --- |
+| **Edit** the existing `@` record | `A` | `@` | `75.2.60.5` | 600 |
+| **Add** (or edit if `www` exists) | `CNAME` | `www` | `flamingo-county.netlify.app` | 600 |
+
+Delete any other `A` or `CNAME` record on `@` or `www` first — GoDaddy's parking
+records will otherwise win. Leave `MX` and `TXT` records alone.
+
+`75.2.60.5` is Netlify's apex load balancer (`apex-loadbalancer.netlify.com`). GoDaddy
+can't do ALIAS/ANAME at the apex, which is why this is an `A` record rather than a
+CNAME to the `.netlify.app` name.
+
+Once it propagates (usually minutes, up to an hour), Netlify provisions the Let's
+Encrypt certificate automatically. If it hasn't after DNS resolves, nudge it in
+**Site configuration → Domain management → HTTPS → Verify DNS configuration**.
+
+Check propagation with:
+
+```sh
+dig +short flamingocounty.com A        # want 75.2.60.5
+dig +short www.flamingocounty.com      # want flamingo-county.netlify.app
+```
