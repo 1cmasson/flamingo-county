@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Archivo:wght@400;600;800&family=Archivo+Black&display=swap" rel="stylesheet" />
+<link rel="icon" href="uploads/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="16x16" href="uploads/flamingo-city-favicon-16.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="uploads/flamingo-city-favicon-32.png" />
+<link rel="icon" type="image/png" sizes="48x48" href="uploads/flamingo-city-favicon-48.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="uploads/flamingo-city-favicon-512.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="uploads/flamingo-city-favicon-180.png" />
+<meta name="theme-color" content="#0C0F14" />
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#FF2E88;-webkit-text-size-adjust:100%}
+@media (max-width:900px){[data-stack]{grid-template-columns:1fr !important}}
+@media (max-width:620px){[data-hide-xs]{display:none !important}}
+a{color:#0C0F14;text-decoration:none}
+a:hover{color:#FFF6E5}
+input,button,select,textarea{font-family:inherit}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes riseIn{from{opacity:0;transform:translateY(34px)}to{opacity:1;transform:none}}
+@keyframes clipIn{from{opacity:0;clip-path:inset(0 0 90% 0);transform:translateY(24px)}to{opacity:1;clip-path:inset(0 0 0 0);transform:none}}
+@keyframes tiltIn{from{opacity:0;transform:translateY(44px) rotate(-5deg)}to{opacity:1;transform:rotate(-1.6deg)}}
+@keyframes barGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes walkDown{from{top:0}to{top:calc(100% - 88px)}}
+@media (max-width:1150px){[data-rail]{display:none !important}[data-storygrid]{grid-template-columns:minmax(0,1fr) !important}}
+[data-navdesk]{display:flex}
+[data-navburger]{display:none}
+[data-navpanel]{display:none}
+@media (max-width:1020px){[data-navdesk]{display:none !important}[data-navburger]{display:flex !important}[data-navpanel]{display:flex !important}}
+@media (max-width:720px){[data-caltitles]{display:none !important}[data-caldots]{display:flex !important}}
+</style>
+<script src="./image-slot.js"></script>
+<script src="./fc-data.js"></script>
+<script src="./no-touch-hover.js"></script>
+</helmet>
+<div style="min-height:100vh;font-family:Archivo, Helvetica, sans-serif;color:#0C0F14;padding-bottom:0">
+  <div aria-hidden="true" style="position:fixed;inset:0;z-index:-1;background-color:#FF2E88;background-image:radial-gradient(#0C0F14 1.7px, transparent 1.8px), linear-gradient(172deg, #FF2E88 0%, #FF4A97 34%, #FF74AD 58%, #FFB35C 82%, #FFD400 100%);background-size:15px 15px, 100% 100%;pointer-events:none"></div>
+
+  <dc-import name="Nav" active="story" style="position:sticky;top:0;z-index:60" hint-size="100%,150px"></dc-import>
+
+  <div style="position:relative">
+    <div style="position:fixed;left:0;right:0;bottom:0;height:10px;background:#0C0F14;z-index:70">
+      <div style="height:100%;background:#FFD400;transform-origin:0 50%;animation:barGrow 1s linear both;animation-timeline:scroll(root block)"></div>
+    </div>
+
+    <div style="max-width:1180px;margin:0 auto;padding:clamp(14px,3.5vw,22px) clamp(12px,3.5vw,22px) 0">
+      <a href="{{ storiesHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;font-family:'Luckiest Guy', cursive;font-size:15px;padding:9px 14px 7px;border:4px solid #0C0F14;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);box-shadow:4px 4px 0 #0C0F14">{{ t.allStories }}</a>
+    </div>
+
+    <div style="max-width:1180px;margin:0 auto;padding:clamp(14px,3vw,20px) clamp(12px,3.5vw,22px) 80px;display:flex;flex-direction:column;gap:0">
+
+      <div style="background:#0C0F14;border:4px solid #0C0F14;box-shadow:9px 9px 0 #FFF6E5;padding:clamp(18px,4vw,40px) clamp(18px,4vw,44px) clamp(22px,4vw,40px)">
+        <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center">
+          <div style="background:linear-gradient(160deg,#FF63AC 0%,#FF2E88 52%,#DE1468 100%);color:#FFF6E5;font-family:'Luckiest Guy', cursive;font-size:15px;padding:7px 11px 4px">{{ sd.cityName }}</div>
+          <div style="color:#FFD400;font-weight:800;font-size:11px;letter-spacing:2px">{{ sd.kicker }}</div>
+        </div>
+        <h1 style="margin:16px 0 0;font-family:'Luckiest Guy', cursive;font-size:clamp(38px,10vw,88px);line-height:0.87;color:#FFF6E5;text-wrap:balance">{{ sd.title }}</h1>
+        <p style="margin:18px 0 0;max-width:54ch;color:#16E0F2;font-weight:600;font-size:clamp(16px,4vw,21px);line-height:1.5;text-wrap:pretty">{{ sd.dek }}</p>
+        <div style="margin-top:22px;padding-top:16px;border-top:3px dotted #43494f;display:flex;gap:14px;flex-wrap:wrap;align-items:center;color:#FFF6E5;font-weight:800;font-size:12px;letter-spacing:1.4px">
+          <div>{{ sd.byline }}</div>
+          <div style="color:#FFD400">{{ sd.readTime }}</div>
+          <div data-hide-xs style="margin-left:auto;font-weight:600;letter-spacing:0.4px;color:#8b939c">{{ t.scrollNote }}</div>
+        </div>
+      </div>
+
+      <div style="position:relative;border:4px solid #0C0F14;border-top:0;box-shadow:9px 9px 0 #0C0F14;height:clamp(240px,52vw,520px);overflow:hidden">
+        <div style="position:absolute;inset:0;animation:clipIn 1s ease-out both;animation-timeline:view();animation-range:entry 0% cover 26%">
+          <image-slot id="{{ sd.coverSlot }}" shape="rect" placeholder="{{ sd.coverHint }}"></image-slot>
+        </div>
+      </div>
+      <div style="background:#0C0F14;color:#FFF6E5;font-family:ui-monospace, SFMono-Regular, Menlo, monospace;font-size:12px;letter-spacing:0.6px;padding:9px 14px;border:4px solid #0C0F14;border-top:0;box-shadow:9px 9px 0 #0C0F14">{{ sd.coverCap }}</div>
+
+      <div data-storygrid style="display:grid;grid-template-columns:74px minmax(0,1fr);gap:0;margin-top:clamp(20px,4vw,34px)">
+        <div data-rail style="position:relative">
+          <div style="position:sticky;top:150px;height:calc(100vh - 260px)">
+            <div style="position:absolute;left:26px;top:0;bottom:0;width:0;border-left:4px dotted #0C0F14"></div>
+            <img src="{{ sd.mascot }}" alt="" style="position:absolute;left:-6px;width:88px;height:auto;animation:walkDown 1s linear both;animation-timeline:scroll(root block);filter:drop-shadow(3px 3px 0 rgba(12,15,20,0.35))" />
+          </div>
+        </div>
+
+        <div style="background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;box-shadow:10px 10px 0 #0C0F14;padding:clamp(20px,4vw,46px) clamp(18px,4vw,40px) clamp(26px,5vw,52px);display:flex;flex-direction:column;gap:clamp(20px,3.4vw,30px)">
+          <sc-for list="{{ sd.blocks }}" as="b" hint-placeholder-count="6">
+            <div style="display:contents">
+              <sc-if value="{{ b.isDrop }}">
+                <div style="max-width:66ch;margin:0 auto;width:100%;font-size:clamp(17px,4.2vw,20px);line-height:1.65;font-weight:600;text-wrap:pretty">
+                  <span style="float:left;font-family:'Luckiest Guy', cursive;font-size:clamp(58px,13vw,86px);line-height:0.74;padding:8px 12px 0 0;color:#FF2E88">{{ b.cap }}</span>{{ b.text }}
+                </div>
+              </sc-if>
+              <sc-if value="{{ b.isPara }}">
+                <p style="max-width:66ch;margin:0 auto;width:100%;font-size:clamp(16px,4vw,19px);line-height:1.7;font-weight:600;text-wrap:pretty;animation:riseIn 0.7s ease-out both;animation-timeline:view();animation-range:entry 0% entry 70%">{{ b.text }}</p>
+              </sc-if>
+              <sc-if value="{{ b.isQuote }}">
+                <div style="align-self:center;width:100%;max-width:min(100%,600px);background:#FFD400;border:4px solid #0C0F14;box-shadow:8px 8px 0 #0C0F14;padding:clamp(18px,3.5vw,28px);animation:tiltIn 0.8s ease-out both;animation-timeline:view();animation-range:entry 0% cover 22%">
+                  <div style="font-family:'Luckiest Guy', cursive;font-size:clamp(22px,5.5vw,34px);line-height:1.08;text-wrap:balance">“{{ b.text }}”</div>
+                  <div style="margin-top:12px;font-weight:800;font-size:12px;letter-spacing:1.6px;color:#B0135E">{{ b.by }}</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ b.isImg }}">
+                <div style="width:100%;display:flex;flex-direction:column;gap:0;animation:riseIn 0.8s ease-out both;animation-timeline:view();animation-range:entry 0% cover 20%">
+                  <div style="position:relative;width:100%;aspect-ratio:{{ b.ar }};border:4px solid #0C0F14;box-shadow:8px 8px 0 #16E0F2;overflow:hidden">
+                    <div style="position:absolute;inset:0;animation:clipIn 1.1s ease-out both;animation-timeline:view();animation-range:entry 4% cover 34%">
+                      <image-slot id="{{ b.slot }}" shape="rect" placeholder="{{ b.hint }}"></image-slot>
+                    </div>
+                  </div>
+                  <div style="font-family:ui-monospace, SFMono-Regular, Menlo, monospace;font-size:12px;line-height:1.5;padding:10px 2px 0;letter-spacing:0.4px">{{ b.cap2 }}</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ b.isPair }}">
+                <div data-stack style="width:100%;display:grid;grid-template-columns:1fr 1fr;gap:clamp(12px,2.4vw,18px);animation:riseIn 0.8s ease-out both;animation-timeline:view();animation-range:entry 0% cover 20%">
+                  <div style="display:flex;flex-direction:column">
+                    <div style="position:relative;aspect-ratio:4 / 5;border:4px solid #0C0F14;box-shadow:6px 6px 0 #FF2E88;overflow:hidden">
+                      <div style="position:absolute;inset:0;animation:clipIn 1s ease-out both;animation-timeline:view();animation-range:entry 4% cover 32%">
+                        <image-slot id="{{ b.a.slot }}" shape="rect" placeholder="{{ b.a.hint }}"></image-slot>
+                      </div>
+                    </div>
+                    <div style="font-family:ui-monospace, SFMono-Regular, Menlo, monospace;font-size:11.5px;line-height:1.5;padding:9px 2px 0">{{ b.a.cap }}</div>
+                  </div>
+                  <div style="display:flex;flex-direction:column">
+                    <div style="position:relative;aspect-ratio:4 / 5;border:4px solid #0C0F14;box-shadow:6px 6px 0 #16E0F2;overflow:hidden;margin-top:clamp(0px,3vw,34px)">
+                      <div style="position:absolute;inset:0;animation:clipIn 1.2s ease-out both;animation-timeline:view();animation-range:entry 6% cover 38%">
+                        <image-slot id="{{ b.b.slot }}" shape="rect" placeholder="{{ b.b.hint }}"></image-slot>
+                      </div>
+                    </div>
+                    <div style="font-family:ui-monospace, SFMono-Regular, Menlo, monospace;font-size:11.5px;line-height:1.5;padding:9px 2px 0">{{ b.b.cap }}</div>
+                  </div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ b.isNote }}">
+                <div style="max-width:66ch;margin:0 auto;width:100%;background:linear-gradient(160deg,#7CF0FA 0%,#16E0F2 52%,#04AEBE 100%);border:4px solid #0C0F14;padding:16px 18px;animation:riseIn 0.7s ease-out both;animation-timeline:view();animation-range:entry 0% entry 80%">
+                  <div style="font-weight:800;font-size:11px;letter-spacing:2px">{{ b.title }}</div>
+                  <p style="margin:8px 0 0;font-size:15px;font-weight:600;line-height:1.55;text-wrap:pretty">{{ b.text }}</p>
+                </div>
+              </sc-if>
+              <sc-if value="{{ b.isBeat }}">
+                <div style="display:flex;align-items:center;gap:14px;max-width:66ch;margin:0 auto;width:100%">
+                  <div style="flex:1;height:4px;background:#0C0F14"></div>
+                  <div style="font-family:'Luckiest Guy', cursive;font-size:20px;color:#FF2E88;letter-spacing:4px">● ● ●</div>
+                  <div style="flex:1;height:4px;background:#0C0F14"></div>
+                </div>
+              </sc-if>
+            </div>
+          </sc-for>
+
+          <div style="max-width:66ch;margin:0 auto;width:100%;background:#0C0F14;padding:clamp(18px,3.5vw,26px);display:flex;flex-direction:column;gap:12px">
+            <div style="font-family:'Luckiest Guy', cursive;font-size:clamp(22px,5vw,30px);color:#FFD400;line-height:1.02">{{ t.goSee }}</div>
+            <p style="margin:0;color:#FFF6E5;font-weight:600;font-size:15px;line-height:1.55">{{ sd.outro }}</p>
+            <a href="{{ sd.bizHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;align-self:flex-start;font-family:'Luckiest Guy', cursive;font-size:17px;padding:13px 18px 10px;border:4px solid #FFF6E5;background:linear-gradient(160deg,#FF63AC 0%,#FF2E88 52%,#DE1468 100%);color:#FFF6E5">{{ sd.bizCta }}</a>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top:clamp(24px,4vw,40px);display:flex;align-items:center;gap:12px">
+        <div style="background:#0C0F14;color:#FFD400;font-family:'Luckiest Guy', cursive;font-size:22px;padding:8px 14px 5px">{{ t.readAnother }}</div>
+        <div style="flex:1;height:5px;background:#0C0F14"></div>
+      </div>
+      <div style="margin-top:16px;display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,270px),1fr));gap:clamp(14px,2.5vw,20px)">
+        <sc-for list="{{ sd.more }}" as="s" hint-placeholder-count="2">
+          <a href="{{ s.href }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;box-shadow:7px 7px 0 #0C0F14;padding:18px;display:flex;flex-direction:column;gap:8px" style-hover="transform:translate(-2px,-2px);box-shadow:11px 11px 0 #0C0F14">
+            <div style="font-weight:800;font-size:10px;letter-spacing:1.8px;color:#B0135E">{{ s.kicker }}</div>
+            <div style="font-family:'Luckiest Guy', cursive;font-size:22px;line-height:1.02;text-wrap:balance">{{ s.title }}</div>
+            <p style="margin:0;font-size:14px;font-weight:600;line-height:1.5">{{ s.dek }}</p>
+            <div style="margin-top:8px;font-family:'Luckiest Guy', cursive;font-size:15px">{{ t.read }}</div>
+          </a>
+        </sc-for>
+      </div>
+    </div>
+  </div>
+
+  <dc-import name="Footer" hint-size="100%,300px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  state = {  vw: typeof window !== 'undefined' ? window.innerWidth : 1280 };
+  constructor(p) { super(p); this.adopt(); }
+  adopt() { if (this._ok) return true; const B = window.FCBase; if (!B) return false; Object.assign(this, B); this._ok = true; return true; }
+  componentDidMount() {
+    if (!this.adopt()) { window.addEventListener('fc-base', () => { this.adopt(); this.mount(); this.forceUpdate(); }, { once: true }); return; }
+    this.mount();
+  }
+  componentWillUnmount() { if (this._ok) this.unmount(); }
+  renderVals() {
+    if (!this.adopt()) return {};
+    const id = this.qp('s') || this.STORIES[0].id;
+    const sCur = this.tx(this.STORIES.find(x => x.id === id) || this.STORIES[0]);
+    const sBiz = this.biz(sCur.biz), sCity = this.city(sBiz.city);
+    return {
+      t: this.tAll(),
+      sd: {
+        title: sCur.title, kicker: sCur.kicker, dek: sCur.dek, byline: sCur.byline, readTime: sCur.readTime,
+        cityName: sCity.name, mascot: sCity.solo || sCity.cast[sCity.lead || 0].src,
+        coverSlot: 'story-cover-' + sCur.id, coverHint: sCur.coverHint, coverCap: sCur.coverCap,
+        blocks: this.storyBlocks(sCur.id, sCur.blocks),
+        outro: sCur.outro, bizCta: sCur.bizCta, bizName: sBiz.name,
+        bizHref: this.href('Business', { city: sBiz.city, biz: sBiz.id }),
+        more: this.STORIES.filter(x => x.id !== sCur.id).map(x => this.storyCard(x))
+      },
+      storiesHref: this.href('Stories', {})
+    };
+  }
+}
+</script>
+</body>
+</html>

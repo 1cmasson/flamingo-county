@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Archivo:wght@400;600;800&family=Archivo+Black&display=swap" rel="stylesheet" />
+<link rel="icon" href="uploads/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="16x16" href="uploads/flamingo-city-favicon-16.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="uploads/flamingo-city-favicon-32.png" />
+<link rel="icon" type="image/png" sizes="48x48" href="uploads/flamingo-city-favicon-48.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="uploads/flamingo-city-favicon-512.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="uploads/flamingo-city-favicon-180.png" />
+<meta name="theme-color" content="#0C0F14" />
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#FF2E88;-webkit-text-size-adjust:100%}
+@media (max-width:900px){[data-stack]{grid-template-columns:1fr !important}}
+@media (max-width:620px){[data-hide-xs]{display:none !important}}
+a{color:#0C0F14;text-decoration:none}
+a:hover{color:#FFF6E5}
+input,button,select,textarea{font-family:inherit}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes riseIn{from{opacity:0;transform:translateY(34px)}to{opacity:1;transform:none}}
+@keyframes clipIn{from{opacity:0;clip-path:inset(0 0 90% 0);transform:translateY(24px)}to{opacity:1;clip-path:inset(0 0 0 0);transform:none}}
+@keyframes tiltIn{from{opacity:0;transform:translateY(44px) rotate(-5deg)}to{opacity:1;transform:rotate(-1.6deg)}}
+@keyframes barGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes walkDown{from{top:0}to{top:calc(100% - 88px)}}
+@media (max-width:1150px){[data-rail]{display:none !important}[data-storygrid]{grid-template-columns:minmax(0,1fr) !important}}
+[data-navdesk]{display:flex}
+[data-navburger]{display:none}
+[data-navpanel]{display:none}
+@media (max-width:1020px){[data-navdesk]{display:none !important}[data-navburger]{display:flex !important}[data-navpanel]{display:flex !important}}
+@media (max-width:720px){[data-caltitles]{display:none !important}[data-caldots]{display:flex !important}}
+</style>
+<script src="./image-slot.js"></script>
+<script src="./fc-data.js"></script>
+<script src="./no-touch-hover.js"></script>
+</helmet>
+<div style="min-height:100vh;font-family:Archivo, Helvetica, sans-serif;color:#0C0F14;padding-bottom:0">
+  <div aria-hidden="true" style="position:fixed;inset:0;z-index:-1;background-color:#FF2E88;background-image:radial-gradient(#0C0F14 1.7px, transparent 1.8px), linear-gradient(172deg, #FF2E88 0%, #FF4A97 34%, #FF74AD 58%, #FFB35C 82%, #FFD400 100%);background-size:15px 15px, 100% 100%;pointer-events:none"></div>
+
+  <dc-import name="Nav" active="city" city="{{ cityKeyProp }}" style="position:sticky;top:0;z-index:60" hint-size="100%,150px"></dc-import>
+
+  <div style="max-width:1280px;margin:0 auto;padding:clamp(16px,4vw,26px) clamp(12px,3.5vw,22px) 70px;display:flex;flex-direction:column;gap:clamp(18px,3vw,24px)">
+    <div data-stack style="background:{{ cityHeroBg }};border:4px solid #0C0F14;box-shadow:9px 9px 0 #0C0F14;padding:clamp(16px,3.5vw,26px);display:grid;grid-template-columns:1fr 0.9fr;gap:20px;align-items:center">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div style="display:inline-flex;align-self:flex-start;background:#0C0F14;color:#16E0F2;font-weight:800;font-size:11px;letter-spacing:2px;padding:6px 10px">{{ t.cityPage }}</div>
+        <h1 style="margin:0;font-family:'Luckiest Guy', cursive;font-size:clamp(36px,9vw,62px);line-height:0.9">{{ cityName }}</h1>
+        <div style="font-family:'Luckiest Guy', cursive;font-size:clamp(18px,4.6vw,22px);color:#FFF6E5;-webkit-text-stroke:1px #0C0F14">{{ citySub }}</div>
+        <p style="margin:0;max-width:52ch;font-weight:600;font-size:16px;line-height:1.5;text-wrap:pretty">{{ cityBlurb }}</p>
+        <div style="display:flex;gap:10px;flex-wrap:wrap">
+          <a href="{{ listingHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;font-family:'Luckiest Guy', cursive;font-size:17px;padding:13px 18px 10px;border:4px solid #0C0F14;color:#0C0F14;background:{{ cityBtn }};box-shadow:4px 4px 0 #0C0F14"><span>{{ t.browse }}&#160;{{ cityCount }}&#160;{{ t.listingsWord }}</span></a>
+          <a href="{{ joinHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;font-family:'Luckiest Guy', cursive;font-size:17px;padding:13px 18px 10px;border:4px solid #0C0F14;color:#0C0F14;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);box-shadow:4px 4px 0 #0C0F14">{{ t.navListBiz }}</a>
+        </div>
+      </div>
+      <div style="background:{{ castFrameBg }};border:4px solid #0C0F14;height:{{ castFrameH }};aspect-ratio:{{ castFrameAR }};display:flex;align-items:flex-end;justify-content:center;overflow:hidden">
+        <sc-for list="{{ cityCast }}" as="m" hint-placeholder-count="2">
+          <img src="{{ m.src }}" alt="{{ m.name }}" style="position:relative;z-index:{{ m.z }};align-self:{{ m.as }};height:{{ m.h }};width:{{ m.w }};max-height:{{ m.mh }};object-fit:{{ m.of }};object-position:bottom;transform:{{ m.flip }};margin:{{ m.mx }}" />
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:12px">
+      <div style="background:#0C0F14;color:#FFD400;font-family:'Luckiest Guy', cursive;font-size:24px;padding:8px 14px 5px">{{ t.topOfCity }}</div>
+      <div style="flex:1;height:5px;background:#0C0F14"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,265px),1fr));gap:clamp(14px,2.5vw,20px)">
+      <sc-for list="{{ cityPicks }}" as="b" hint-placeholder-count="3">
+        <a href="{{ b.href }}" style="text-decoration:none;color:inherit;cursor:pointer;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;box-shadow:7px 7px 0 #0C0F14;display:flex;flex-direction:column;min-width:0;overflow:hidden" style-hover="transform:translate(-2px,-2px);box-shadow:11px 11px 0 #0C0F14">
+          <div style="position:relative;height:150px;border-bottom:4px solid #0C0F14">
+            <image-slot id="{{ b.citySlot }}" shape="rect" placeholder="{{ b.slotHint }}"></image-slot>
+          </div>
+          <div style="padding:14px 15px 16px;display:flex;flex-direction:column;gap:6px">
+            <div style="font-family:'Luckiest Guy', cursive;font-size:20px;line-height:1.03">{{ b.name }}</div>
+            <div style="font-weight:800;font-size:11px;letter-spacing:1.5px;color:#B0135E">{{ b.catLabel }}</div>
+            <p style="margin:0;font-size:14px;font-weight:600;line-height:1.45">{{ b.tag }}</p>
+          </div>
+        </a>
+      </sc-for>
+    </div>
+  </div>
+
+  <dc-import name="Footer" hint-size="100%,300px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;price&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:20,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:5,&quot;max&quot;:99,&quot;unit&quot;:&quot;$/mo&quot;,&quot;section&quot;:&quot;Membership&quot;},&quot;showSpotlight&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Listing page&quot;},&quot;showRatings&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Listing page&quot;},&quot;memberBadges&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Listing page&quot;}}">
+class Component extends DCLogic {
+  state = {  vw: typeof window !== 'undefined' ? window.innerWidth : 1280 };
+  constructor(p) { super(p); this.adopt(); }
+  adopt() { if (this._ok) return true; const B = window.FCBase; if (!B) return false; Object.assign(this, B); this._ok = true; return true; }
+  componentDidMount() {
+    if (!this.adopt()) { window.addEventListener('fc-base', () => { this.adopt(); this.mount(); this.forceUpdate(); }, { once: true }); return; }
+    this.mount();
+  }
+  componentWillUnmount() { if (this._ok) this.unmount(); }
+  renderVals() {
+    if (!this.adopt()) return {};
+    const key = this.qp('city') || 'hialeah';
+    const cc = this.city(key), T = s => this.T(s);
+    const cityPhoto = this.pickPhoto(cc.photoBase);
+    const rgba = (hex, a) => {
+      const n = parseInt(hex.slice(1), 16);
+      return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')';
+    };
+    const cityList = this.BIZ.filter(b => b.city === key);
+    return {
+      t: this.tAll(), price: this.props.price ?? 20, cityKeyProp: key,
+      cityName: cc.name, citySub: cc.sub, cityBlurb: cc.blurb, cityAccent: cc.accent, castBg: cc.castBg,
+      cityHeroBg: cityPhoto
+        ? 'linear-gradient(' + rgba(cc.accent, 0.86) + ', ' + rgba(cc.accent, 0.86) + '), url("' + cityPhoto + '") ' + (cc.photoPos || 'center') + '/cover no-repeat'
+        : cc.accent,
+      castFrameBg: cityPhoto
+        ? 'linear-gradient(rgba(22,224,242,0.18), rgba(22,224,242,0.18)), url("' + cityPhoto + '") ' + (cc.photoPos || 'center') + '/cover no-repeat'
+        : cc.castBg,
+      castFrameH: cc.cast[0].group ? 'auto' : '340px', castFrameAR: cc.cast[0].group ? '4 / 3' : 'auto',
+      cityCast: this.sized(cc.cast, 320, '-14px'),
+      cityBtn: cc.accent === '#FFD400' ? 'linear-gradient(160deg,#FF63AC 0%,#FF2E88 52%,#DE1468 100%)' : '#FFD400',
+      cityCount: cityList.length,
+      cityPicks: cityList.slice(0, 3).map(x => this.card(x)),
+      listingHref: this.href('Home', { city: key }), joinHref: this.href('ListYourSpot', {})
+    };
+  }
+}
+</script>
+</body>
+</html>

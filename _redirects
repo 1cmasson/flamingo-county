@@ -1,0 +1,30 @@
+# Flamingo County — Netlify redirect rules
+#
+# All of these are 200 rewrites: the browser URL stays as typed, Netlify serves
+# the .dc.html document behind it. Two things make this work, and both come from
+# the dc-runtime in support.js — do not "tidy" them away:
+#
+#   1. NO TRAILING SLASH. <dc-import name="Nav"> fetches "./Nav.dc.html" against
+#      the document base URI (COMPONENT_DIR = "."). At /events that resolves to
+#      /Nav.dc.html (correct). At /events/ it would resolve to
+#      /events/Nav.dc.html — a 404, and the nav renders as an empty placeholder
+#      with no error anywhere except the console.
+#
+#   2. Query strings pass through untouched. A 200 rewrite does not change the
+#      browser URL, so FCBase.qp() still reads ?city= / ?biz= / ?s= / ?e= / ?lang=
+#      from location.search exactly as before.
+#
+# Internal links still emit the .dc.html form (see href() in fc-data.js), so both
+# URL shapes work. Switching href() over to these paths is a follow-up, not a
+# prerequisite — see the README.
+
+/                    /Home.dc.html          200
+/city                /City.dc.html          200
+/business            /Business.dc.html      200
+/events              /Events.dc.html        200
+/event               /Event.dc.html         200
+/my-week             /MyWeek.dc.html        200
+/stories             /Stories.dc.html       200
+/story               /Story.dc.html         200
+/list-your-spot      /ListYourSpot.dc.html  200
+/about               /About.dc.html         200

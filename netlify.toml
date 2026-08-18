@@ -1,0 +1,46 @@
+# Flamingo County — static site, no build step.
+#
+# The pages are Claude Design `.dc.html` documents. support.js (the dc-runtime)
+# compiles them in the browser, so there is nothing to compile at deploy time —
+# Netlify just serves the files as they are.
+
+[build]
+  publish = "."
+  command = ""
+
+[build.processing]
+  skip_processing = true
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# Fingerprinted-enough image assets: safe to cache hard.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+[[headers]]
+  for = "/mascots/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+[[headers]]
+  for = "/uploads/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000"
+
+# The pages and the runtime change together — revalidate every time.
+[[headers]]
+  for = "/*.dc.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/*.js"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"

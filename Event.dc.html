@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Archivo:wght@400;600;800&family=Archivo+Black&display=swap" rel="stylesheet" />
+<link rel="icon" href="uploads/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="16x16" href="uploads/flamingo-city-favicon-16.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="uploads/flamingo-city-favicon-32.png" />
+<link rel="icon" type="image/png" sizes="48x48" href="uploads/flamingo-city-favicon-48.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="uploads/flamingo-city-favicon-512.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="uploads/flamingo-city-favicon-180.png" />
+<meta name="theme-color" content="#0C0F14" />
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#FF2E88;-webkit-text-size-adjust:100%}
+@media (max-width:900px){[data-stack]{grid-template-columns:1fr !important}}
+@media (max-width:620px){[data-hide-xs]{display:none !important}}
+a{color:#0C0F14;text-decoration:none}
+a:hover{color:#FFF6E5}
+input,button,select,textarea{font-family:inherit}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes riseIn{from{opacity:0;transform:translateY(34px)}to{opacity:1;transform:none}}
+@keyframes clipIn{from{opacity:0;clip-path:inset(0 0 90% 0);transform:translateY(24px)}to{opacity:1;clip-path:inset(0 0 0 0);transform:none}}
+@keyframes tiltIn{from{opacity:0;transform:translateY(44px) rotate(-5deg)}to{opacity:1;transform:rotate(-1.6deg)}}
+@keyframes barGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes walkDown{from{top:0}to{top:calc(100% - 88px)}}
+@media (max-width:1150px){[data-rail]{display:none !important}[data-storygrid]{grid-template-columns:minmax(0,1fr) !important}}
+[data-navdesk]{display:flex}
+[data-navburger]{display:none}
+[data-navpanel]{display:none}
+@media (max-width:1020px){[data-navdesk]{display:none !important}[data-navburger]{display:flex !important}[data-navpanel]{display:flex !important}}
+@media (max-width:720px){[data-caltitles]{display:none !important}[data-caldots]{display:flex !important}}
+</style>
+<script src="./image-slot.js"></script>
+<script src="./fc-data.js"></script>
+<script src="./no-touch-hover.js"></script>
+</helmet>
+<div style="min-height:100vh;font-family:Archivo, Helvetica, sans-serif;color:#0C0F14;padding-bottom:0">
+  <div aria-hidden="true" style="position:fixed;inset:0;z-index:-1;background-color:#FF2E88;background-image:radial-gradient(#0C0F14 1.7px, transparent 1.8px), linear-gradient(172deg, #FF2E88 0%, #FF4A97 34%, #FF74AD 58%, #FFB35C 82%, #FFD400 100%);background-size:15px 15px, 100% 100%;pointer-events:none"></div>
+
+  <dc-import name="Nav" active="event" style="position:sticky;top:0;z-index:60" hint-size="100%,150px"></dc-import>
+
+  <div style="max-width:1180px;margin:0 auto;padding:clamp(14px,3.5vw,22px) clamp(12px,3.5vw,22px) 70px;display:flex;flex-direction:column;gap:clamp(16px,3vw,22px)">
+    <a href="{{ backHref }}" style="text-decoration:none;color:#0C0F14;align-self:flex-start;display:inline-flex;align-items:center;font-family:'Luckiest Guy', cursive;font-size:15px;padding:9px 14px 7px;border:4px solid #0C0F14;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);box-shadow:4px 4px 0 #0C0F14">{{ back }}</a>
+
+    <div style="background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;box-shadow:9px 9px 0 #0C0F14">
+      <div style="position:relative;height:clamp(190px,40vw,320px);border-bottom:4px solid #0C0F14;overflow:hidden">
+        <image-slot id="{{ e.slot }}" shape="rect" placeholder="{{ e.hint }}"></image-slot>
+        <div style="position:absolute;left:16px;top:16px;display:flex;flex-direction:column;align-items:flex-start;gap:7px;pointer-events:none">
+          <div style="background:#0C0F14;color:#16E0F2;font-weight:800;font-size:11px;letter-spacing:1.6px;padding:6px 9px">{{ e.cityName }}</div>
+          <div style="background:{{ e.bg }};color:{{ e.ink }};border:3px solid #0C0F14;font-weight:800;font-size:11px;letter-spacing:1.5px;padding:6px 9px">{{ e.kindLabel }}</div>
+          <sc-if value="{{ e.hasFree }}"><div style="background:#FFD400;border:3px solid #0C0F14;font-weight:800;font-size:11px;letter-spacing:1.5px;padding:6px 9px">{{ e.free }}</div></sc-if>
+        </div>
+        <div style="position:absolute;right:16px;top:16px;background:#FFD400;border:4px solid #0C0F14;padding:9px 14px 6px;text-align:center;transform:rotate(3deg);pointer-events:none">
+          <div style="font-weight:800;font-size:11px;letter-spacing:2px">{{ e.wd }}</div>
+          <div style="font-family:'Luckiest Guy', cursive;font-size:34px;line-height:1">{{ e.day }}</div>
+          <div style="font-weight:800;font-size:10px;letter-spacing:2px">{{ e.mon }}</div>
+        </div>
+        <img src="{{ e.mascot }}" alt="" style="position:absolute;right:12px;bottom:-14px;height:170px;width:auto;pointer-events:none;filter:drop-shadow(3px 3px 0 rgba(12,15,20,0.35))" />
+      </div>
+      <div style="padding:clamp(18px,3.5vw,26px) clamp(16px,3.5vw,26px) 24px;display:flex;flex-direction:column;gap:13px">
+        <h1 style="margin:0;font-family:'Luckiest Guy', cursive;font-size:clamp(28px,6.5vw,50px);line-height:0.94;max-width:26ch;text-wrap:balance">{{ e.title }}</h1>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <div style="background:#0C0F14;color:#FFF6E5;font-weight:800;font-size:12px;letter-spacing:1.4px;padding:7px 10px">{{ e.time }}</div>
+          <div style="font-weight:800;font-size:13px;letter-spacing:1px">{{ e.venue }} · {{ e.hood }}</div>
+        </div>
+        <p style="margin:0;font-size:clamp(15px,3.8vw,18px);font-weight:600;line-height:1.5;max-width:66ch;text-wrap:pretty">{{ e.note }}</p>
+        <div style="display:flex;flex-wrap:wrap;gap:9px;align-items:center;padding-top:13px;border-top:3px dotted #0C0F14">
+          <button onClick="{{ e.toggleGoing }}" style="cursor:pointer;font-weight:800;font-size:12px;letter-spacing:1.3px;min-height:46px;padding:10px 14px;border:3px solid #0C0F14;background:{{ e.goBg }};color:{{ e.goInk }}" style-hover="transform:translateY(-2px)">{{ e.goLabel }}</button>
+          <button onClick="{{ e.toggleSave }}" style="cursor:pointer;font-weight:800;font-size:12px;letter-spacing:1.3px;min-height:46px;padding:10px 14px;border:3px solid #0C0F14;background:{{ e.saveBg }};color:#0C0F14" style-hover="transform:translateY(-2px)">{{ e.saveLabel }}</button>
+          <a href="{{ e.ics }}" download="{{ e.icsFile }}" style="display:inline-flex;align-items:center;font-weight:800;font-size:12px;letter-spacing:1.3px;min-height:46px;padding:10px 14px;border:3px solid #0C0F14;background:linear-gradient(160deg,#7CF0FA 0%,#16E0F2 52%,#04AEBE 100%);color:#0C0F14" style-hover="transform:translateY(-2px);color:#0C0F14">{{ addCal }}</a>
+        </div>
+      </div>
+    </div>
+
+    <div data-stack style="display:grid;grid-template-columns:1.5fr 0.9fr;gap:clamp(16px,3vw,22px);align-items:start">
+      <div style="display:flex;flex-direction:column;gap:clamp(16px,3vw,22px)">
+        <sc-if value="{{ sameDay }}">
+          <div style="background:#0C0F14;border:4px solid #0C0F14;box-shadow:8px 8px 0 #FFF6E5;padding:clamp(16px,3vw,22px);display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+              <div style="font-family:'Luckiest Guy', cursive;font-size:clamp(20px,4.6vw,26px);color:#FFD400;line-height:1">{{ sameDayH }}</div>
+              <div style="font-weight:800;font-size:11px;letter-spacing:1.8px;color:#16E0F2">{{ e.wd }} {{ e.day }} {{ e.mon }}</div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:12px">
+              <sc-for list="{{ others }}" as="o" hint-placeholder-count="2">
+                <a href="{{ o.href }}" style="text-decoration:none;color:#0C0F14;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;box-shadow:5px 5px 0 #16E0F2;padding:12px 13px 14px;display:flex;flex-direction:column;gap:7px" style-hover="transform:translate(-2px,-2px);box-shadow:8px 8px 0 #16E0F2">
+                  <div style="display:flex;align-items:center;gap:7px">
+                    <div style="background:{{ o.bg }};color:{{ o.ink }};border:2px solid #0C0F14;font-weight:800;font-size:9.5px;letter-spacing:1.3px;padding:4px 7px">{{ o.kindLabel }}</div>
+                    <div style="font-weight:800;font-size:11px;letter-spacing:1.2px">{{ o.time }}</div>
+                  </div>
+                  <div style="font-family:'Luckiest Guy', cursive;font-size:18px;line-height:1.06;overflow-wrap:anywhere">{{ o.title }}</div>
+                  <div style="font-weight:800;font-size:10px;letter-spacing:1.2px;color:#B0135E;overflow-wrap:anywhere">{{ o.venue }} · {{ o.cityName }}</div>
+                </a>
+              </sc-for>
+            </div>
+          </div>
+        </sc-if>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:18px">
+        <div style="background:#0C0F14;border:4px solid #0C0F14;box-shadow:8px 8px 0 #FFF6E5;padding:20px;color:#FFF6E5">
+          <div style="font-family:'Luckiest Guy', cursive;font-size:22px;color:#FFD400;margin-bottom:12px">{{ whereH }}</div>
+          <div style="display:flex;flex-direction:column;gap:9px;font-weight:600;font-size:14px">
+            <div>{{ e.venue }}</div>
+            <div>{{ e.hood }} · {{ e.cityName }}</div>
+            <div style="color:#16E0F2;font-weight:800">{{ e.wd }} {{ e.day }} {{ e.mon }} · {{ e.time }}</div>
+          </div>
+          <sc-if value="{{ e.hasBiz }}">
+            <a href="{{ e.bizHref }}" style="text-decoration:none;margin-top:16px;display:flex;align-items:center;justify-content:center;font-family:'Luckiest Guy', cursive;font-size:17px;padding:13px 14px 10px;border:4px solid #FFF6E5;background:linear-gradient(160deg,#FF63AC 0%,#FF2E88 52%,#DE1468 100%);color:#FFF6E5" style-hover="color:#FFF6E5;transform:translate(-1px,-1px)">{{ seeListing }}</a>
+          </sc-if>
+        </div>
+
+        <div style="background:#FFD400;border:4px solid #0C0F14;box-shadow:8px 8px 0 #0C0F14;padding:18px">
+          <div style="font-family:'Luckiest Guy', cursive;font-size:20px;line-height:1.05">{{ crewH }}</div>
+          <p style="margin:8px 0 0;font-size:14px;font-weight:600;line-height:1.45">{{ crewP }}</p>
+          <div style="margin-top:12px;background:{{ e.castBg }};border:3px solid #0C0F14;height:130px;display:flex;align-items:flex-end;justify-content:center;overflow:hidden">
+            <img src="{{ e.mascot }}" alt="" style="height:170px;width:auto;object-position:bottom" />
+          </div>
+        </div>
+
+        <a href="{{ joinHref }}" style="text-decoration:none;color:#0C0F14;background:linear-gradient(160deg,#7CF0FA 0%,#16E0F2 52%,#04AEBE 100%);border:4px solid #0C0F14;box-shadow:8px 8px 0 #0C0F14;padding:18px;display:flex;flex-direction:column;gap:9px" style-hover="background:#FFD400">
+          <div style="font-family:'Luckiest Guy', cursive;font-size:20px;line-height:1.05">{{ postH }}</div>
+          <div style="font-size:14px;font-weight:600;line-height:1.45">{{ postP }}</div>
+          <div style="margin-top:4px;font-family:'Luckiest Guy', cursive;font-size:16px;background:#0C0F14;color:#FFD400;padding:10px 14px 7px;align-self:flex-start">{{ postBtn }}</div>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <dc-import name="Footer" hint-size="100%,300px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  state = {  vw: typeof window !== 'undefined' ? window.innerWidth : 1280 };
+  constructor(p) { super(p); this.adopt(); }
+  adopt() { if (this._ok) return true; const B = window.FCBase; if (!B) return false; Object.assign(this, B); this._ok = true; return true; }
+  componentDidMount() {
+    if (!this.adopt()) { window.addEventListener('fc-base', () => { this.adopt(); this.mount(); this.forceUpdate(); }, { once: true }); return; }
+    this.mount();
+  }
+  componentWillUnmount() { if (this._ok) this.unmount(); }
+  L(en, es) { return this.lang() === 'es' ? es : en; }
+  renderVals() {
+    if (!this.adopt()) return {};
+    const id = this.qp('e') || this.EVENTS[0].id;
+    const raw = this.EVENTS.find(x => x.id === id) || this.EVENTS[0];
+    const e = this.evCard(raw);
+    const others = this.EVENTS.filter(x => x.d === raw.d && x.id !== raw.id).map(x => this.evCard(x));
+    return {
+      e: e, others: others, sameDay: others.length > 0,
+      sameDayH: this.L('ALSO THAT DAY', 'ESE MISMO DÍA'),
+      back: this.L('← ALL EVENTS', '← TODOS LOS EVENTOS'),
+      backHref: this.href('Events', {}),
+      addCal: this.T('+ CALENDAR'),
+      whereH: this.L('WHEN & WHERE', 'CUÁNDO Y DÓNDE'),
+      seeListing: this.L('SEE THE LISTING →', 'VER LA FICHA →'),
+      crewH: this.L('GOING WITH THE CREW?', '¿VAS CON LA PANDILLA?'),
+      crewP: this.L('Save it to My Week and the mascot keeps count. Members get their events in the Friday email.', 'Guárdalo en Mi Semana y la mascota lleva la cuenta. Los socios salen en el correo del viernes.'),
+      postH: this.L('GOT SOMETHING HAPPENING?', '¿TIENES ALGO EN CANDELA?'),
+      postP: this.L('Members post events free — bands, tournaments, openings, watch parties.', 'Los socios publican gratis — bandas, torneos, aperturas, parties.'),
+      postBtn: this.T('POST AN EVENT'),
+      joinHref: this.href('ListYourSpot', {})
+    };
+  }
+}
+</script>
+</body>
+</html>

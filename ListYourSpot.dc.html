@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Archivo:wght@400;600;800&family=Archivo+Black&display=swap" rel="stylesheet" />
+<link rel="icon" href="uploads/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="16x16" href="uploads/flamingo-city-favicon-16.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="uploads/flamingo-city-favicon-32.png" />
+<link rel="icon" type="image/png" sizes="48x48" href="uploads/flamingo-city-favicon-48.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="uploads/flamingo-city-favicon-512.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="uploads/flamingo-city-favicon-180.png" />
+<meta name="theme-color" content="#0C0F14" />
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#FF2E88;-webkit-text-size-adjust:100%}
+@media (max-width:900px){[data-stack]{grid-template-columns:1fr !important}}
+@media (max-width:620px){[data-hide-xs]{display:none !important}}
+a{color:#0C0F14;text-decoration:none}
+a:hover{color:#FFF6E5}
+input,button,select,textarea{font-family:inherit}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes riseIn{from{opacity:0;transform:translateY(34px)}to{opacity:1;transform:none}}
+@keyframes clipIn{from{opacity:0;clip-path:inset(0 0 90% 0);transform:translateY(24px)}to{opacity:1;clip-path:inset(0 0 0 0);transform:none}}
+@keyframes tiltIn{from{opacity:0;transform:translateY(44px) rotate(-5deg)}to{opacity:1;transform:rotate(-1.6deg)}}
+@keyframes barGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes walkDown{from{top:0}to{top:calc(100% - 88px)}}
+@media (max-width:1150px){[data-rail]{display:none !important}[data-storygrid]{grid-template-columns:minmax(0,1fr) !important}}
+[data-navdesk]{display:flex}
+[data-navburger]{display:none}
+[data-navpanel]{display:none}
+@media (max-width:1020px){[data-navdesk]{display:none !important}[data-navburger]{display:flex !important}[data-navpanel]{display:flex !important}}
+@media (max-width:720px){[data-caltitles]{display:none !important}[data-caldots]{display:flex !important}}
+</style>
+<script src="./image-slot.js"></script>
+<script src="./fc-data.js"></script>
+<script src="./no-touch-hover.js"></script>
+</helmet>
+<div style="min-height:100vh;font-family:Archivo, Helvetica, sans-serif;color:#0C0F14;padding-bottom:0">
+  <div aria-hidden="true" style="position:fixed;inset:0;z-index:-1;background-color:#FF2E88;background-image:radial-gradient(#0C0F14 1.7px, transparent 1.8px), linear-gradient(172deg, #FF2E88 0%, #FF4A97 34%, #FF74AD 58%, #FFB35C 82%, #FFD400 100%);background-size:15px 15px, 100% 100%;pointer-events:none"></div>
+
+  <dc-import name="Nav" active="join" style="position:sticky;top:0;z-index:60" hint-size="100%,150px"></dc-import>
+
+  <div style="max-width:1080px;margin:0 auto;padding:clamp(16px,4vw,26px) clamp(12px,3.5vw,22px) 70px;display:flex;flex-direction:column;gap:clamp(18px,3vw,24px)">
+    <div data-stack style="background:linear-gradient(160deg,#7CF0FA 0%,#16E0F2 52%,#04AEBE 100%);border:4px solid #0C0F14;box-shadow:9px 9px 0 #0C0F14;padding:clamp(16px,3.5vw,26px);display:grid;grid-template-columns:1.1fr 0.9fr;gap:18px;align-items:center">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="align-self:flex-start;background:#0C0F14;color:#FFD400;font-weight:800;font-size:11px;line-height:1.5;letter-spacing:1.6px;padding:6px 10px">{{ t.membership }}</div>
+        <h1 style="margin:0;font-family:'Luckiest Guy', cursive;font-size:clamp(30px,7.5vw,54px);line-height:0.92">{{ t.joinH1 }}</h1>
+        <p style="margin:0;font-weight:600;font-size:16px;line-height:1.5;max-width:52ch;text-wrap:pretty">{{ t.joinP }}</p>
+      </div>
+      <div style="background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;box-shadow:6px 6px 0 #FF2E88;padding:22px;text-align:center">
+        <div style="font-weight:800;font-size:12px;letter-spacing:2px">{{ t.memberListing }}</div>
+        <div style="font-family:'Luckiest Guy', cursive;font-size:clamp(52px,13vw,76px);line-height:0.9;margin:6px 0">${{ price }}</div>
+        <div style="font-weight:800;font-size:13px;letter-spacing:1.5px">{{ t.perMonthNoContract }}</div>
+        <div style="margin-top:14px;background:#FFD400;border:3px solid #0C0F14;font-weight:800;font-size:13px;padding:9px">{{ t.first30 }}</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,205px),1fr));gap:clamp(12px,2vw,16px)">
+      <sc-for list="{{ perks }}" as="p" hint-placeholder-count="4">
+        <div style="background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;box-shadow:6px 6px 0 #0C0F14;padding:18px">
+          <div style="width:46px;height:46px;margin-bottom:12px;border:3px solid #0C0F14;background:#0C0F14;display:flex;align-items:center;justify-content:center">
+            <img src="{{ p.icon }}" alt="" style="width:24px;height:24px;display:block" />
+          </div>
+          <div style="font-family:'Luckiest Guy', cursive;font-size:19px;line-height:1.05">{{ p.t }}</div>
+          <p style="margin:8px 0 0;font-size:14px;font-weight:600;line-height:1.45">{{ p.d }}</p>
+        </div>
+      </sc-for>
+    </div>
+
+    <div data-stack style="background:#0C0F14;border:4px solid #0C0F14;box-shadow:9px 9px 0 #FFD400;padding:clamp(16px,3.5vw,24px);display:grid;grid-template-columns:1fr 0.85fr;gap:clamp(14px,3vw,22px);align-items:center;position:relative">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="align-self:flex-start;background:#16E0F2;color:#0C0F14;font-weight:800;font-size:11px;letter-spacing:2px;padding:6px 10px">{{ t.betaKicker }}</div>
+        <div style="font-family:'Luckiest Guy', cursive;font-size:clamp(24px,5.6vw,34px);line-height:1;color:#FFD400;text-wrap:balance">{{ t.betaH }}</div>
+      </div>
+      <p style="margin:0;padding-right:clamp(84px,13vw,132px);color:#FFF6E5;font-weight:600;font-size:15px;line-height:1.5;text-wrap:pretty">{{ t.betaP }}</p>
+      <img src="assets/robot-receptionist-bust-mirrored.png" alt="AI receptionist waving" style="position:absolute;right:clamp(8px,2vw,16px);bottom:0;width:clamp(84px,13vw,132px);height:auto;display:block;pointer-events:none" />
+    </div>
+
+    <div data-stack style="display:grid;grid-template-columns:1fr;gap:clamp(16px,3vw,22px);align-items:start">
+      <div style="background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;box-shadow:8px 8px 0 #0C0F14;padding:clamp(16px,3.5vw,24px)">
+        <div style="display:inline-block;background:#0C0F14;color:#FFD400;font-family:'Luckiest Guy', cursive;font-size:22px;padding:7px 12px 4px;margin-bottom:16px">{{ t.claim }}</div>
+        <sc-if value="{{ sent }}">
+          <div style="background:#FFD400;border:4px solid #0C0F14;box-shadow:6px 6px 0 #0C0F14;padding:clamp(18px,3.5vw,26px);display:flex;flex-direction:column;gap:10px">
+            <div style="font-family:'Luckiest Guy', cursive;font-size:clamp(22px,5vw,30px);line-height:1.05">{{ t.sentH }}</div>
+            <p style="margin:0;font-size:15px;font-weight:600;line-height:1.5;max-width:56ch">{{ t.sentP }}</p>
+          </div>
+        </sc-if>
+        <sc-if value="{{ notSent }}" hint-placeholder-val="{{ true }}">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,200px),1fr));gap:14px">
+          <label style="display:flex;flex-direction:column;gap:6px;font-weight:800;font-size:11px;letter-spacing:1.4px">{{ t.fBiz }}
+            <input name="business" placeholder="El Gallo Cantina" style="font-size:15px;font-weight:600;padding:12px;border:3px solid #0C0F14;background:#fff;outline:none" />
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px;font-weight:800;font-size:11px;letter-spacing:1.4px">{{ t.fOwner }}
+            <input name="owner" placeholder="{{ t.phName }}" style="font-size:15px;font-weight:600;padding:12px;border:3px solid #0C0F14;background:#fff;outline:none" />
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px;font-weight:800;font-size:11px;letter-spacing:1.4px">{{ t.fCity }}
+            <select name="city" style="font-size:15px;font-weight:600;padding:12px;border:3px solid #0C0F14;background:#fff;outline:none">
+              <option>Hialeah</option>
+              <option>Miami Lakes</option>
+              <option>{{ t.optHavana }}</option>
+            </select>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px;font-weight:800;font-size:11px;letter-spacing:1.4px">{{ t.fCat }}
+            <select name="category" style="font-size:15px;font-weight:600;padding:12px;border:3px solid #0C0F14;background:#fff;outline:none">
+              <option>{{ t.catFood }}</option>
+              <option>{{ t.catNight }}</option>
+              <option>{{ t.catContract }}</option>
+              <option>{{ t.catClean }}</option>
+              <option>{{ t.catHalls }}</option>
+            </select>
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px;font-weight:800;font-size:11px;letter-spacing:1.4px;grid-column:1 / -1">{{ t.fPhone }}
+            <input name="phone" placeholder="(305) 000-0000" style="font-size:15px;font-weight:600;padding:12px;border:3px solid #0C0F14;background:#fff;outline:none" />
+          </label>
+          <label style="display:flex;flex-direction:column;gap:6px;font-weight:800;font-size:11px;letter-spacing:1.4px;grid-column:1 / -1">{{ t.fStory }}
+            <textarea name="story" rows="4" placeholder="{{ t.phStory }}" style="font-size:15px;font-weight:600;padding:12px;border:3px solid #0C0F14;background:#fff;outline:none;resize:vertical"></textarea>
+          </label>
+        </div>
+        <button onClick="{{ submitListing }}" style="cursor:pointer;margin-top:18px;font-family:'Luckiest Guy', cursive;font-size:20px;padding:15px 22px 12px;border:4px solid #0C0F14;background:linear-gradient(160deg,#FF63AC 0%,#FF2E88 52%,#DE1468 100%);color:#FFF6E5;box-shadow:5px 5px 0 #0C0F14">{{ t.startFree }}</button>
+        <sc-if value="{{ formError }}">
+          <div style="margin-top:12px;background:#0C0F14;color:#FFD400;font-weight:800;font-size:12px;letter-spacing:1.2px;padding:10px 12px">{{ t.formErr }}</div>
+        </sc-if>
+        <div style="margin-top:10px;font-weight:600;font-size:12px">{{ t.thenP1 }} ${{ price }}{{ t.thenP2 }}</div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+
+  <dc-import name="Footer" hint-size="100%,300px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;price&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:20,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:5,&quot;max&quot;:99,&quot;unit&quot;:&quot;$/mo&quot;,&quot;section&quot;:&quot;Membership&quot;}}">
+class Component extends DCLogic {
+  state = {  vw: typeof window !== 'undefined' ? window.innerWidth : 1280 };
+  constructor(p) { super(p); this.adopt(); }
+  adopt() { if (this._ok) return true; const B = window.FCBase; if (!B) return false; Object.assign(this, B); this._ok = true; return true; }
+  componentDidMount() {
+    if (!this.adopt()) { window.addEventListener('fc-base', () => { this.adopt(); this.mount(); this.forceUpdate(); }, { once: true }); return; }
+    this.mount();
+  }
+  componentWillUnmount() { if (this._ok) this.unmount(); }
+  renderVals() {
+    if (!this.adopt()) return {};
+    const g = n => { const el = document.querySelector('[name="' + n + '"]'); return el ? String(el.value || '').trim() : ''; };
+    const t = this.tAll();
+    const es = this.lang() === 'es';
+    t.sentH = es ? '¡RECIBIDO! TE ESCRIBIMOS.' : 'GOT IT — WE\u2019LL BE IN TOUCH.';
+    t.sentP = es
+      ? 'Te llamamos o te escribimos en un par de días para hacerte las fotos y la entrevista. Los primeros treinta días van por la casa.'
+      : 'We\u2019ll call or write within a couple of days to set up the photos and the interview. The first thirty days are on us.';
+    t.formErr = es ? 'FALTA EL NOMBRE DEL NEGOCIO O EL TELÉFONO' : 'BUSINESS NAME AND PHONE ARE REQUIRED';
+    return {
+      t: t, price: this.props.price ?? 20,
+      sent: !!this.state.sent, notSent: !this.state.sent, formError: !!this.state.formError,
+      submitListing: () => {
+        const data = { business: g('business'), owner: g('owner'), city: g('city'),
+          category: g('category'), phone: g('phone'), story: g('story'), lang: this.lang() };
+        if (!data.business || !data.phone) { this.setState({ formError: true }); return; }
+        this.setState({ sent: true, formError: false });
+        this.netlifySubmit('list-your-spot', data);
+      },
+      perks: this.tx([
+        { t: 'Listed in your own city', d: 'One listing on your city page, plus the main directory everyone lands on.' },
+        { t: 'NFC card + a landing page', d: 'We print your tap-to-open card and build the landing page it opens — menu, hours, directions, all of it.' },
+        { t: 'QR codes, hosted by us', d: 'Menu, promo or contact QR codes we host for you. Change where they point anytime, the sticker stays the same.' },
+        { t: 'A real story page', d: 'We interview you and write it. Menu, services, hours, gallery included.' },
+        { t: 'Spotlight rotation', d: 'Restaurants, bars and clubs rotate through the Friday spotlight with your own promo.' },
+        { t: 'Your city mascot', d: 'The flamingo, the cow or the rooster on your card. Locals know what it means.' }
+      ]).map((p, i) => ({ ...p, ...this.perkIcon(i) })),
+      joinCast: ['hialeah', 'lakes', 'havana'].map(k => { const c = this.city(k), m = c.cast[c.lead || 0]; return { src: c.solo || m.src, bg: c.castBg, name: c.soloName || m.name, city: c.name }; })
+    };
+  }
+}
+</script>
+</body>
+</html>

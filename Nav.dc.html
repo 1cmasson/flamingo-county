@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Archivo:wght@400;600;800&family=Archivo+Black&display=swap" rel="stylesheet" />
+<link rel="icon" href="uploads/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="16x16" href="uploads/flamingo-city-favicon-16.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="uploads/flamingo-city-favicon-32.png" />
+<link rel="icon" type="image/png" sizes="48x48" href="uploads/flamingo-city-favicon-48.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="uploads/flamingo-city-favicon-512.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="uploads/flamingo-city-favicon-180.png" />
+<meta name="theme-color" content="#0C0F14" />
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#FF2E88;-webkit-text-size-adjust:100%}
+@media (max-width:900px){[data-stack]{grid-template-columns:1fr !important}}
+@media (max-width:620px){[data-hide-xs]{display:none !important}}
+a{color:#0C0F14;text-decoration:none}
+a:hover{color:#FFF6E5}
+input,button,select,textarea{font-family:inherit}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes riseIn{from{opacity:0;transform:translateY(34px)}to{opacity:1;transform:none}}
+@keyframes clipIn{from{opacity:0;clip-path:inset(0 0 90% 0);transform:translateY(24px)}to{opacity:1;clip-path:inset(0 0 0 0);transform:none}}
+@keyframes tiltIn{from{opacity:0;transform:translateY(44px) rotate(-5deg)}to{opacity:1;transform:rotate(-1.6deg)}}
+@keyframes barGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes walkDown{from{top:0}to{top:calc(100% - 88px)}}
+@media (max-width:1150px){[data-rail]{display:none !important}[data-storygrid]{grid-template-columns:minmax(0,1fr) !important}}
+[data-navdesk]{display:flex}
+[data-navburger]{display:none}
+[data-navpanel]{display:none}
+@media (max-width:1020px){[data-navdesk]{display:none !important}[data-navburger]{display:flex !important}[data-navpanel]{display:flex !important}}
+@media (max-width:720px){[data-caltitles]{display:none !important}[data-caldots]{display:flex !important}}
+</style>
+<script src="./image-slot.js"></script>
+<script src="./fc-data.js"></script>
+<script src="./no-touch-hover.js"></script>
+</helmet>
+  <div style="position:sticky;top:0;z-index:60;background:#0C0F14;border-bottom:5px solid #16E0F2">
+    <div style="position:relative;max-width:1280px;margin:0 auto;padding:10px clamp(12px,3vw,22px);display:flex;align-items:center;gap:clamp(10px,2vw,18px);flex-wrap:nowrap">
+      <a href="{{ homeHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;display:flex;align-items:center;gap:10px;flex:0 0 auto">
+        <img src="uploads/flamingo-city-mark-76.png" alt="Flamingo County" style="width:clamp(40px,9vw,50px);height:clamp(40px,9vw,50px);display:block;flex:0 0 auto" />
+        <div style="line-height:1">
+          <div style="font-family:'Luckiest Guy', cursive;font-size:clamp(18px,4.6vw,24px);color:#FFF6E5;letter-spacing:0.5px;white-space:nowrap">FLAMINGO COUNTY</div>
+          <div style="font-family:Archivo, sans-serif;font-weight:800;font-size:10px;letter-spacing:2.4px;color:#16E0F2">FLAMINGOCOUNTY.COM · 305</div>
+        </div>
+      </a>
+      <div data-navdesk="1" style="align-items:center;gap:8px;margin-left:auto;flex-wrap:nowrap">
+        <div style="position:relative;flex:0 0 auto;z-index:90">
+          <button onClick="{{ toggleList }}" style="cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:9px;font-family:'Luckiest Guy', cursive;font-size:15px;padding:9px 14px 7px;border:3px solid #0C0F14;border-radius:3px;background:{{ listBtnBg }};color:#0C0F14;box-shadow:3px 3px 0 {{ listBtnSh }}" style-hover="background:#FFD400;transform:translate(-1px,-1px);box-shadow:5px 5px 0 #FF2E88">
+            <span>{{ t.navListings }}</span>
+            <span style="display:block;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:7px solid #0C0F14;transition:transform 240ms cubic-bezier(.2,.8,.25,1);transform:{{ caretTf }}"></span>
+          </button>
+          <div onClick="{{ closeList }}" style="position:absolute;top:calc(100% + 10px);left:0;min-width:230px;z-index:90;background:#0C0F14;border:3px solid #16E0F2;box-shadow:6px 6px 0 rgba(0,0,0,0.45);padding:10px;display:flex;flex-direction:column;gap:7px;transform-origin:top left;transition:transform 240ms cubic-bezier(.2,.85,.25,1),opacity 180ms ease,visibility 0s linear {{ listVisDelay }};transform:{{ listTf }};opacity:{{ listOp }};visibility:{{ listVis }};pointer-events:{{ listPe }}">
+            <sc-for list="{{ cityTabs }}" as="t" hint-placeholder-count="4">
+              <a href="{{ t.href }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;cursor:pointer;text-align:left;font-family:'Luckiest Guy', cursive;font-size:15px;padding:10px 13px 8px;border:3px solid #0C0F14;border-radius:3px;background:{{ t.bg }};color:{{ t.fg }};box-shadow:3px 3px 0 {{ t.sh }}" style-hover="background:#FFD400;transform:translate(-1px,-1px);box-shadow:5px 5px 0 #FF2E88">{{ t.label }}</a>
+            </sc-for>
+          </div>
+        </div>
+        <div style="width:3px;height:30px;background:#16E0F2;margin:0 6px;flex:0 0 auto"></div>
+        <div onMouseEnter="{{ langHoverOn }}" onMouseLeave="{{ langHoverOff }}" style="position:relative;flex:0 0 auto;display:flex">
+        <div style="position:absolute;top:calc(100% + 13px);left:50%;transform:translateX(-50%) {{ tipTf }};transform-origin:50% 0;opacity:{{ tipOp }};visibility:{{ tipVis }};transition:opacity 160ms ease,transform 220ms cubic-bezier(.2,1.5,.3,1);pointer-events:none;z-index:120">
+          <div style="position:relative;background:#FF2E88;border:3px solid #0C0F14;border-radius:4px;box-shadow:5px 5px 0 #0C0F14;padding:9px 13px 7px">
+            <div style="position:absolute;inset:0;background-image:radial-gradient(#FFF6E5 1.1px, transparent 1.2px);background-size:7px 7px;opacity:0.35"></div>
+            <div style="position:absolute;top:-12px;left:50%;margin-left:-9px;width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:12px solid #0C0F14"></div>
+            <div style="position:absolute;top:-7px;left:50%;margin-left:-6px;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:8px solid #FF2E88"></div>
+            <div style="position:relative;font-family:'Luckiest Guy', cursive;font-size:14px;letter-spacing:0.5px;white-space:nowrap;color:#FFF6E5">{{ tipText }}</div>
+          </div>
+        </div>
+        <button onClick="{{ toggleLang }}" style="cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:8px;font-family:'Luckiest Guy', cursive;font-size:15px;padding:8px 12px 6px;border:3px solid #0C0F14;border-radius:3px;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);color:#0C0F14;box-shadow:3px 3px 0 #FF2E88" style-hover="background:#FFD400;transform:translate(-1px,-1px);box-shadow:5px 5px 0 #FF2E88">
+          <sc-if value="{{ toEN }}" hint-placeholder-val="{{ true }}">
+            <span style="position:relative;display:block;width:26px;height:18px;border:2px solid #0C0F14;background:repeating-linear-gradient(#B22234 0 2.6px,#FFF6E5 2.6px 5.2px)">
+              <span style="position:absolute;top:0;left:0;width:11px;height:9px;background:#2A3D8F"></span>
+            </span>
+          </sc-if>
+          <sc-if value="{{ toES }}" hint-placeholder-val="{{ true }}">
+            <span style="position:relative;display:block;width:26px;height:18px;border:2px solid #0C0F14;background:linear-gradient(#C60B1E 0 25%,#FFC400 25% 75%,#C60B1E 75%)">
+              <span style="position:absolute;top:50%;left:7px;transform:translate(-50%,-50%);width:5px;height:7px;border:1.5px solid #C60B1E;border-radius:1px 1px 3px 3px;background:#FFC400"></span>
+            </span>
+          </sc-if>
+          <span>{{ langLabel }}</span>
+        </button>
+        </div>
+        <div onMouseEnter="{{ evHoverOn }}" onMouseLeave="{{ evHoverOff }}" style="position:relative;flex:0 0 auto;display:flex">
+          <div style="position:absolute;top:calc(100% + 13px);left:50%;transform:translateX(-50%) {{ evTipTf }};transform-origin:50% 0;opacity:{{ evTipOp }};visibility:{{ evTipVis }};transition:opacity 160ms ease,transform 220ms cubic-bezier(.2,1.5,.3,1);pointer-events:none;z-index:120">
+            <div style="position:relative;background:#FF2E88;border:3px solid #0C0F14;border-radius:4px;box-shadow:5px 5px 0 #0C0F14;padding:9px 13px 7px">
+              <div style="position:absolute;inset:0;background-image:radial-gradient(#FFF6E5 1.1px, transparent 1.2px);background-size:7px 7px;opacity:0.35"></div>
+              <div style="position:absolute;top:-12px;left:50%;margin-left:-9px;width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:12px solid #0C0F14"></div>
+              <div style="position:absolute;top:-7px;left:50%;margin-left:-6px;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:8px solid #FF2E88"></div>
+              <div style="position:relative;font-family:'Luckiest Guy', cursive;font-size:14px;letter-spacing:0.5px;white-space:nowrap;color:#FFF6E5">{{ evTip }}</div>
+            </div>
+          </div>
+          <a href="{{ evHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;white-space:nowrap;font-family:'Luckiest Guy', cursive;font-size:15px;padding:9px 16px 7px;border:3px solid #0C0F14;border-radius:3px;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);color:#0C0F14;box-shadow:3px 3px 0 {{ evSh }}" style-hover="background:#FFD400;transform:translate(-1px,-1px);box-shadow:5px 5px 0 #FF2E88">{{ te.nav }}</a>
+        </div>
+        <sc-if value="{{ hasSaved }}">
+          <a href="{{ myWeekHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:8px;font-family:'Luckiest Guy', cursive;font-size:14px;padding:9px 12px 7px;border:3px solid #0C0F14;border-radius:3px;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);color:#0C0F14;box-shadow:3px 3px 0 {{ myWeekSh }};flex:0 0 auto" style-hover="background:#FFD400;transform:translate(-1px,-1px);box-shadow:5px 5px 0 #FF2E88">
+            <span>{{ te.myWeek }}</span>
+            <span style="display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 5px;background:#0C0F14;color:#FFF6E5;font-size:13px;line-height:1">{{ savedCount }}</span>
+          </a>
+        </sc-if>
+        <div onMouseEnter="{{ storiesHoverOn }}" onMouseLeave="{{ storiesHoverOff }}" style="position:relative;flex:0 0 auto;display:flex">
+          <div style="position:absolute;top:calc(100% + 13px);left:50%;transform:translateX(-50%) {{ storiesTipTf }};transform-origin:50% 0;opacity:{{ storiesTipOp }};visibility:{{ storiesTipVis }};transition:opacity 160ms ease,transform 220ms cubic-bezier(.2,1.5,.3,1);pointer-events:none;z-index:120">
+            <div style="position:relative;background:#FF2E88;border:3px solid #0C0F14;border-radius:4px;box-shadow:5px 5px 0 #0C0F14;padding:9px 13px 7px">
+              <div style="position:absolute;inset:0;background-image:radial-gradient(#FFF6E5 1.1px, transparent 1.2px);background-size:7px 7px;opacity:0.35"></div>
+              <div style="position:absolute;top:-12px;left:50%;margin-left:-9px;width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:12px solid #0C0F14"></div>
+              <div style="position:absolute;top:-7px;left:50%;margin-left:-6px;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:8px solid #FF2E88"></div>
+              <div style="position:relative;font-family:'Luckiest Guy', cursive;font-size:14px;letter-spacing:0.5px;white-space:nowrap;color:#FFF6E5">{{ storiesTipText }}</div>
+            </div>
+          </div>
+          <a href="{{ storiesHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;white-space:nowrap;font-family:'Luckiest Guy', cursive;font-size:15px;padding:9px 16px 7px;border:3px solid #0C0F14;border-radius:3px;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);color:#0C0F14;box-shadow:3px 3px 0 {{ storiesSh }}" style-hover="background:#FFD400;transform:translate(-1px,-1px);box-shadow:5px 5px 0 #FF2E88">{{ t.navStories }}</a>
+        </div>
+        <a href="{{ aboutHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;font-family:'Luckiest Guy', cursive;font-size:15px;padding:9px 16px 7px;border:3px solid #0C0F14;border-radius:3px;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);color:#0C0F14;box-shadow:3px 3px 0 {{ aboutSh }}" style-hover="background:#FFD400;transform:translate(-1px,-1px);box-shadow:5px 5px 0 #FF2E88">{{ navT.about }}</a>
+        <div onMouseEnter="{{ joinHoverOn }}" onMouseLeave="{{ joinHoverOff }}" style="position:relative;flex:0 0 auto;display:flex">
+          <div style="position:absolute;top:calc(100% + 13px);right:0;transform:{{ joinTipTf }};transform-origin:85% 0;opacity:{{ joinTipOp }};visibility:{{ joinTipVis }};transition:opacity 160ms ease,transform 220ms cubic-bezier(.2,1.5,.3,1);pointer-events:none;z-index:120">
+            <div style="position:relative;background:#FF2E88;border:3px solid #0C0F14;border-radius:4px;box-shadow:5px 5px 0 #0C0F14;padding:9px 13px 7px">
+              <div style="position:absolute;inset:0;background-image:radial-gradient(#FFF6E5 1.1px, transparent 1.2px);background-size:7px 7px;opacity:0.35"></div>
+              <div style="position:absolute;top:-12px;right:26px;width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:12px solid #0C0F14"></div>
+              <div style="position:absolute;top:-7px;right:29px;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:8px solid #FF2E88"></div>
+              <div style="position:relative;font-family:'Luckiest Guy', cursive;font-size:14px;letter-spacing:0.5px;white-space:nowrap;color:#FFF6E5">{{ joinTipText }}</div>
+            </div>
+          </div>
+          <a href="{{ joinHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;white-space:nowrap;font-family:'Luckiest Guy', cursive;font-size:15px;padding:9px 16px 7px;border:3px solid #0C0F14;border-radius:3px;background:#16E0F2;color:#0C0F14;box-shadow:3px 3px 0 #FFF6E5" style-hover="background:#FF2E88;color:#FFF6E5;transform:translate(-1px,-1px);box-shadow:5px 5px 0 #FFF6E5">{{ t.navList }}</a>
+        </div>
+      </div>
+
+      <div data-navburger="1" style="margin-left:auto;align-items:center;gap:8px;flex:0 0 auto">
+        <button onClick="{{ toggleLang }}" style="cursor:pointer;display:flex;align-items:center;gap:7px;font-family:'Luckiest Guy', cursive;font-size:15px;padding:10px 11px 7px;border:3px solid #0C0F14;border-radius:3px;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);color:#0C0F14;box-shadow:3px 3px 0 #FF2E88">
+          <sc-if value="{{ toEN }}" hint-placeholder-val="{{ true }}">
+            <span style="position:relative;display:block;width:24px;height:16px;border:2px solid #0C0F14;background:repeating-linear-gradient(#B22234 0 2.3px,#FFF6E5 2.3px 4.6px)">
+              <span style="position:absolute;top:0;left:0;width:10px;height:8px;background:#2A3D8F"></span>
+            </span>
+          </sc-if>
+          <sc-if value="{{ toES }}" hint-placeholder-val="{{ true }}">
+            <span style="position:relative;display:block;width:24px;height:16px;border:2px solid #0C0F14;background:linear-gradient(#C60B1E 0 25%,#FFC400 25% 75%,#C60B1E 75%)">
+              <span style="position:absolute;top:50%;left:6.5px;transform:translate(-50%,-50%);width:4.5px;height:6px;border:1.5px solid #C60B1E;border-radius:1px 1px 3px 3px;background:#FFC400"></span>
+            </span>
+          </sc-if>
+          <span>{{ langLabel }}</span>
+        </button>
+        <button onClick="{{ toggleMenu }}" aria-label="Menu" style="cursor:pointer;width:48px;height:44px;display:flex;align-items:center;justify-content:center;padding:0 11px;border:3px solid #0C0F14;border-radius:3px;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);box-shadow:3px 3px 0 #FF2E88">
+          <div style="width:100%;display:flex;flex-direction:column;gap:5px;transition:transform 320ms cubic-bezier(.2,.8,.25,1);transform:{{ burgerTf }}">
+            <div style="height:4px;background:#0C0F14;transition:transform 320ms cubic-bezier(.2,.8,.25,1);transform:{{ barATf }}"></div>
+            <div style="height:4px;background:#0C0F14;transition:opacity 320ms ease,transform 320ms cubic-bezier(.2,.8,.25,1);opacity:{{ barBOp }};transform:{{ barBTf }}"></div>
+            <div style="height:4px;background:#0C0F14;transition:transform 320ms cubic-bezier(.2,.8,.25,1);transform:{{ barCTf }}"></div>
+          </div>
+        </button>
+      </div>
+
+      <div data-navpanel="1" onClick="{{ closeMenu }}" style="position:absolute;left:0;right:0;top:100%;background:#0C0F14;border-top:5px solid #16E0F2;padding:14px clamp(12px,3vw,22px) 18px;flex-direction:column;gap:14px;z-index:70;transform-origin:top center;transition:transform 320ms cubic-bezier(.2,.8,.25,1),opacity 320ms ease,visibility 0s linear {{ menuVisDelay }};transform:{{ menuTf }};opacity:{{ menuOp }};visibility:{{ menuVis }};pointer-events:{{ menuPe }}">
+          <div style="font-family:Archivo, sans-serif;font-weight:800;font-size:10px;letter-spacing:2.4px;color:#16E0F2">CITIES</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+            <sc-for list="{{ cityTabs }}" as="t" hint-placeholder-count="4">
+              <a href="{{ t.href }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;font-family:'Luckiest Guy', cursive;font-size:15px;min-height:46px;padding:9px 12px 7px;border:3px solid #0C0F14;border-radius:3px;background:{{ t.bg }};color:{{ t.fg }};box-shadow:3px 3px 0 {{ t.sh }}">{{ t.label }}</a>
+            </sc-for>
+          </div>
+          <div style="height:3px;background:#16E0F2"></div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <a href="{{ evHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;font-family:'Luckiest Guy', cursive;font-size:17px;min-height:48px;padding:12px 16px 9px;border:3px solid #0C0F14;border-radius:3px;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);color:#0C0F14;box-shadow:4px 4px 0 {{ evSh }}">{{ te.nav }}</a>
+            <sc-if value="{{ hasSaved }}">
+              <a href="{{ myWeekHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;font-family:'Luckiest Guy', cursive;font-size:17px;min-height:48px;padding:12px 16px 9px;border:3px solid #0C0F14;border-radius:3px;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);color:#0C0F14;box-shadow:4px 4px 0 {{ myWeekSh }}">
+                <span>{{ te.myWeek }}</span>
+                <span style="display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 6px;background:#0C0F14;color:#FFF6E5;font-size:14px;line-height:1">{{ savedCount }}</span>
+              </a>
+            </sc-if>
+            <a href="{{ storiesHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;font-family:'Luckiest Guy', cursive;font-size:17px;min-height:48px;padding:12px 16px 9px;border:3px solid #0C0F14;border-radius:3px;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);color:#0C0F14;box-shadow:4px 4px 0 {{ storiesSh }}">{{ t.navStories }}</a>
+            <a href="{{ aboutHref }}" style="text-decoration:none;color:#FFF6E5;display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:'Luckiest Guy', cursive;font-size:17px;min-height:48px;padding:12px 16px 9px;border:3px solid #0C0F14;border-radius:3px;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);color:#0C0F14;box-shadow:4px 4px 0 {{ aboutSh }}">{{ navT.about }}</a>
+            <a href="{{ joinHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;font-family:'Luckiest Guy', cursive;font-size:17px;min-height:48px;padding:12px 16px 9px;border:3px solid #0C0F14;border-radius:3px;background:#16E0F2;color:#0C0F14;box-shadow:4px 4px 0 #FFF6E5">{{ t.navList }}</a>
+          </div>
+      </div>
+    </div>
+    <div style="background:#FFD400;border-top:3px solid #0C0F14;overflow:hidden;white-space:nowrap">
+      <div style="display:inline-block;animation:tick 34s linear infinite;font-weight:800;font-size:13px;letter-spacing:1.4px;padding:6px 0">
+        <span>{{ ticker }}</span>
+      </div>
+    </div>
+  </div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1280,&quot;height&quot;:200},&quot;active&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;default&quot;:&quot;home&quot;,&quot;options&quot;:[&quot;home&quot;,&quot;city&quot;,&quot;biz&quot;,&quot;events&quot;,&quot;event&quot;,&quot;myweek&quot;,&quot;stories&quot;,&quot;story&quot;,&quot;join&quot;],&quot;tsType&quot;:&quot;string&quot;},&quot;city&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { menuOpen: false, listOpen: false, vw: typeof window !== 'undefined' ? window.innerWidth : 1280 };
+  constructor(p) { super(p); this.adopt(); }
+  adopt() { if (this._ok) return true; const B = window.FCBase; if (!B) return false; Object.assign(this, B); this._ok = true; return true; }
+  componentDidMount() {
+    if (!this.adopt()) { window.addEventListener('fc-base', () => { this.adopt(); this.mount(); this.forceUpdate(); }, { once: true }); return; }
+    this.mount();
+  }
+  componentWillUnmount() { if (this._ok) this.unmount(); }
+  hov(k) { if (window.matchMedia && !matchMedia('(hover:hover) and (pointer:fine)').matches) return; this.setState({ [k]: true }); }
+  renderVals() {
+    if (!this.adopt()) return {};
+    const st = this.state, active = this.props.active || 'home', cityKey = this.props.city || '';
+    const T = s => this.T(s);
+    const tabs = [{ key: 'all', label: T('ALL LISTINGS'), href: this.href('Home', {}) }].concat(
+      ['hialeah', 'lakes', 'havana'].map(k => ({ key: k, label: this.city(k).name, href: this.href('City', { city: k }) })));
+    const sc = this.savedCount();
+    return {
+      ...this.navVals(active),
+      t: { navListings: T('LISTINGS'), navStories: T('STORIES'), navList: T('LIST YOUR SPOT') },
+      te: { nav: T('EVENTS'), myWeek: T('MY WEEK') },
+      ticker: this.ticker(),
+      savedCount: sc, hasSaved: sc > 0,
+      cityTabs: tabs.map(t => {
+        const on = t.key === cityKey || (t.key === 'all' && active === 'home');
+        return {
+          label: t.label, href: t.href,
+          bg: on ? '#FFD400' : 'linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%)',
+          sh: on ? '#16E0F2' : '#FF2E88',
+          fg: '#0C0F14'
+        };
+      }),
+      langLabel: this.lang() === 'es' ? 'EN' : 'ES',
+      toEN: this.lang() === 'es', toES: this.lang() !== 'es',
+      toggleLang: () => this.setLang(this.lang() === 'es' ? 'en' : 'es'),
+      tipText: this.lang() === 'es' ? 'READ IT IN ENGLISH!' : '¡LÉELO EN ESPAÑOL!',
+      tipOp: st.langHover ? '1' : '0', tipVis: st.langHover ? 'visible' : 'hidden',
+      tipTf: st.langHover ? 'translateY(0) scale(1) rotate(-1.5deg)' : 'translateY(-6px) scale(0.82) rotate(-1.5deg)',
+      langHoverOn: () => this.hov('langHover'), langHoverOff: () => this.setState({ langHover: false }),
+      evTip: T('FREE THINGS TO DO THIS WEEKEND'),
+      evTipOp: st.evHover ? '1' : '0', evTipVis: st.evHover ? 'visible' : 'hidden',
+      evTipTf: st.evHover ? 'translateY(0) scale(1) rotate(-1.4deg)' : 'translateY(-6px) scale(0.82) rotate(-1.4deg)',
+      evHoverOn: () => this.hov('evHover'), evHoverOff: () => this.setState({ evHover: false }),
+      storiesTipText: T('THE LONG READS — NEW ONE EVERY OTHER FRIDAY'),
+      storiesTipOp: st.storiesHover ? '1' : '0', storiesTipVis: st.storiesHover ? 'visible' : 'hidden',
+      storiesTipTf: st.storiesHover ? 'translateY(0) scale(1) rotate(1.4deg)' : 'translateY(-6px) scale(0.82) rotate(1.4deg)',
+      storiesHoverOn: () => this.hov('storiesHover'), storiesHoverOff: () => this.setState({ storiesHover: false }),
+      joinTipText: T('GET YOUR SHOP ON THE MAP — FREE'),
+      joinTipOp: st.joinHover ? '1' : '0', joinTipVis: st.joinHover ? 'visible' : 'hidden',
+      joinTipTf: st.joinHover ? 'translateY(0) scale(1) rotate(-1.6deg)' : 'translateY(-6px) scale(0.82) rotate(-1.6deg)',
+      joinHoverOn: () => this.hov('joinHover'), joinHoverOff: () => this.setState({ joinHover: false }),
+      toggleList: () => this.setState(s => ({ listOpen: !s.listOpen })),
+      closeList: () => this.setState({ listOpen: false }),
+      listBtnBg: st.listOpen ? '#FFD400' : 'linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%)',
+      listBtnSh: st.listOpen ? '#16E0F2' : '#FF2E88',
+      evSh: (active === 'events' || active === 'event') ? '#16E0F2' : '#FF2E88',
+      storiesSh: (active === 'stories' || active === 'story') ? '#16E0F2' : '#FF2E88',
+      myWeekSh: active === 'myweek' ? '#16E0F2' : '#FF2E88',
+      aboutSh: active === 'about' ? '#16E0F2' : '#FF2E88',
+      caretTf: st.listOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+      listTf: st.listOpen ? 'translateY(0) scale(1)' : 'translateY(-8px) scale(0.96)',
+      listOp: st.listOpen ? '1' : '0', listVis: st.listOpen ? 'visible' : 'hidden',
+      listPe: st.listOpen ? 'auto' : 'none', listVisDelay: st.listOpen ? '0s' : '240ms',
+      toggleMenu: () => this.setState(s => ({ menuOpen: !s.menuOpen, listOpen: false })),
+      closeMenu: () => this.setState({ menuOpen: false }),
+      burgerTf: st.menuOpen ? 'rotate(-90deg)' : 'rotate(0deg)',
+      barATf: st.menuOpen ? 'translateY(9px) rotate(45deg)' : 'none',
+      barBTf: st.menuOpen ? 'scaleX(0.2)' : 'none', barBOp: st.menuOpen ? '0' : '1',
+      barCTf: st.menuOpen ? 'translateY(-9px) rotate(-45deg)' : 'none',
+      menuTf: st.menuOpen ? 'scaleY(1)' : 'scaleY(0)', menuOp: st.menuOpen ? '1' : '0',
+      menuVis: st.menuOpen ? 'visible' : 'hidden', menuPe: st.menuOpen ? 'auto' : 'none',
+      menuVisDelay: st.menuOpen ? '0s' : '320ms'
+    };
+  }
+}
+</script>
+</body>
+</html>

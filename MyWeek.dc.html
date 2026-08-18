@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Archivo:wght@400;600;800&family=Archivo+Black&display=swap" rel="stylesheet" />
+<link rel="icon" href="uploads/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="16x16" href="uploads/flamingo-city-favicon-16.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="uploads/flamingo-city-favicon-32.png" />
+<link rel="icon" type="image/png" sizes="48x48" href="uploads/flamingo-city-favicon-48.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="uploads/flamingo-city-favicon-512.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="uploads/flamingo-city-favicon-180.png" />
+<meta name="theme-color" content="#0C0F14" />
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#FF2E88;-webkit-text-size-adjust:100%}
+@media (max-width:900px){[data-stack]{grid-template-columns:1fr !important}}
+@media (max-width:620px){[data-hide-xs]{display:none !important}}
+a{color:#0C0F14;text-decoration:none}
+a:hover{color:#FFF6E5}
+input,button,select,textarea{font-family:inherit}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes riseIn{from{opacity:0;transform:translateY(34px)}to{opacity:1;transform:none}}
+@keyframes clipIn{from{opacity:0;clip-path:inset(0 0 90% 0);transform:translateY(24px)}to{opacity:1;clip-path:inset(0 0 0 0);transform:none}}
+@keyframes tiltIn{from{opacity:0;transform:translateY(44px) rotate(-5deg)}to{opacity:1;transform:rotate(-1.6deg)}}
+@keyframes barGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes walkDown{from{top:0}to{top:calc(100% - 88px)}}
+@media (max-width:1150px){[data-rail]{display:none !important}[data-storygrid]{grid-template-columns:minmax(0,1fr) !important}}
+[data-navdesk]{display:flex}
+[data-navburger]{display:none}
+[data-navpanel]{display:none}
+@media (max-width:1020px){[data-navdesk]{display:none !important}[data-navburger]{display:flex !important}[data-navpanel]{display:flex !important}}
+@media (max-width:720px){[data-caltitles]{display:none !important}[data-caldots]{display:flex !important}}
+</style>
+<script src="./image-slot.js"></script>
+<script src="./fc-data.js"></script>
+<script src="./no-touch-hover.js"></script>
+</helmet>
+<div style="min-height:100vh;font-family:Archivo, Helvetica, sans-serif;color:#0C0F14;padding-bottom:0">
+  <div aria-hidden="true" style="position:fixed;inset:0;z-index:-1;background-color:#FF2E88;background-image:radial-gradient(#0C0F14 1.7px, transparent 1.8px), linear-gradient(172deg, #FF2E88 0%, #FF4A97 34%, #FF74AD 58%, #FFB35C 82%, #FFD400 100%);background-size:15px 15px, 100% 100%;pointer-events:none"></div>
+
+  <dc-import name="Nav" active="myweek" style="position:sticky;top:0;z-index:60" hint-size="100%,150px"></dc-import>
+
+  <div style="max-width:1180px;margin:0 auto;padding:clamp(16px,4vw,26px) clamp(12px,3.5vw,22px) 70px;display:flex;flex-direction:column;gap:clamp(16px,3vw,22px)">
+    <div data-stack style="background:#0C0F14;border:4px solid #0C0F14;box-shadow:9px 9px 0 #FFF6E5;padding:clamp(16px,3.5vw,26px);display:grid;grid-template-columns:1.2fr 0.8fr;gap:clamp(16px,3vw,22px);align-items:end">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="align-self:flex-start;background:#FFD400;color:#0C0F14;font-weight:800;font-size:11px;letter-spacing:2px;padding:6px 10px">{{ kicker }}</div>
+        <h1 style="margin:0;font-family:'Luckiest Guy', cursive;font-size:clamp(32px,7vw,54px);line-height:0.92;color:#FFF6E5">{{ h1 }}</h1>
+        <p style="margin:0;max-width:52ch;font-weight:600;font-size:15px;line-height:1.5;color:#FFF6E5;text-wrap:pretty">{{ p }}</p>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div style="background:#FFD400;border:4px solid #0C0F14;padding:12px 14px;display:flex;flex-direction:column;gap:2px">
+          <div style="font-family:'Luckiest Guy', cursive;font-size:30px;line-height:1">{{ count }}</div>
+          <div style="font-weight:800;font-size:10px;letter-spacing:1.6px">{{ savedWord }}</div>
+        </div>
+        <div style="background:linear-gradient(160deg,#7CF0FA 0%,#16E0F2 52%,#04AEBE 100%);border:4px solid #0C0F14;padding:12px 14px;display:flex;flex-direction:column;gap:2px">
+          <div style="font-family:'Luckiest Guy', cursive;font-size:30px;line-height:1">{{ goingCount }}</div>
+          <div style="font-weight:800;font-size:10px;letter-spacing:1.6px">{{ goingWord }}</div>
+        </div>
+      </div>
+    </div>
+
+    <sc-if value="{{ isEmpty }}">
+      <div style="background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;box-shadow:8px 8px 0 #0C0F14;padding:clamp(22px,5vw,36px);display:flex;flex-direction:column;gap:14px;align-items:flex-start">
+        <div style="font-family:'Luckiest Guy', cursive;font-size:clamp(22px,5vw,30px);line-height:1.05;text-wrap:balance">{{ emptyH }}</div>
+        <p style="margin:0;font-size:15px;font-weight:600;line-height:1.5;max-width:56ch;text-wrap:pretty">{{ emptyP }}</p>
+        <a href="{{ evHref }}" style="text-decoration:none;color:#0C0F14;display:inline-flex;align-items:center;font-family:'Luckiest Guy', cursive;font-size:18px;padding:13px 18px 10px;border:4px solid #0C0F14;background:#FFD400;box-shadow:5px 5px 0 #0C0F14" style-hover="transform:translate(-2px,-2px);box-shadow:8px 8px 0 #0C0F14">{{ emptyBtn }}</a>
+      </div>
+    </sc-if>
+
+    <sc-for list="{{ days }}" as="dy" hint-placeholder-count="0">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="display:flex;align-items:baseline;gap:9px;flex:0 0 auto;color:#FFF6E5">
+            <div style="font-family:'Luckiest Guy', cursive;font-size:clamp(28px,5vw,34px);line-height:0.9;text-shadow:3px 3px 0 #0C0F14">{{ dy.big }}</div>
+            <div style="font-weight:800;font-size:12px;letter-spacing:2px;text-shadow:2px 2px 0 #0C0F14">{{ dy.wd }} · {{ dy.mon }}</div>
+          </div>
+          <div style="flex:1 1 auto;height:0;border-top:4px dashed #FFF6E5;filter:drop-shadow(3px 3px 0 #0C0F14)"></div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));gap:clamp(14px,2.2vw,18px)">
+          <sc-for list="{{ dy.items }}" as="e" hint-placeholder-count="0">
+            <div style="display:grid;grid-template-columns:94px minmax(0,1fr);background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;box-shadow:7px 7px 0 #0C0F14">
+              <div style="background:{{ e.bg }};color:{{ e.ink }};border-right:4px dashed #0C0F14;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 6px">
+                <div style="font-weight:800;font-size:11px;letter-spacing:2px">{{ e.wd }}</div>
+                <div style="font-family:'Luckiest Guy', cursive;font-size:38px;line-height:1">{{ e.day }}</div>
+                <div style="font-weight:800;font-size:10px;letter-spacing:2px">{{ e.mon }}</div>
+                <div style="margin-top:9px;padding-top:8px;border-top:2px solid currentColor;font-weight:800;font-size:10px;letter-spacing:1px;text-align:center;line-height:1.25">{{ e.time }}</div>
+              </div>
+              <div style="padding:13px 15px 14px;display:flex;flex-direction:column;gap:8px;min-width:0">
+                <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+                  <div style="background:{{ e.bg }};color:{{ e.ink }};border:2px solid #0C0F14;font-weight:800;font-size:10px;letter-spacing:1.3px;padding:4px 7px">{{ e.kindLabel }}</div>
+                  <sc-if value="{{ e.hasFree }}"><div style="background:#0C0F14;color:#FFD400;font-weight:800;font-size:10px;letter-spacing:1.3px;padding:4px 7px">{{ e.free }}</div></sc-if>
+                </div>
+                <a href="{{ e.href }}" style="text-decoration:none;color:#0C0F14;font-family:'Luckiest Guy', cursive;font-size:20px;line-height:1.05;overflow-wrap:anywhere" style-hover="color:#B0135E">{{ e.title }}</a>
+                <div style="font-weight:800;font-size:11px;letter-spacing:1.2px;color:#B0135E;overflow-wrap:anywhere">{{ e.venue }} · {{ e.hood }} · {{ e.cityName }}</div>
+                <div style="margin-top:auto;padding-top:10px;display:flex;flex-wrap:wrap;gap:7px;align-items:center;border-top:3px dotted #0C0F14">
+                  <button onClick="{{ e.toggleGoing }}" style="cursor:pointer;font-weight:800;font-size:11px;letter-spacing:1.2px;min-height:44px;padding:8px 10px;border:3px solid #0C0F14;background:{{ e.goBg }};color:{{ e.goInk }}" style-hover="transform:translateY(-2px)">{{ e.goLabel }}</button>
+                  <button onClick="{{ e.toggleSave }}" style="cursor:pointer;font-weight:800;font-size:11px;letter-spacing:1.2px;min-height:44px;padding:8px 10px;border:3px solid #0C0F14;background:{{ e.saveBg }};color:#0C0F14" style-hover="transform:translateY(-2px)">{{ e.saveLabel }}</button>
+                  <a href="{{ e.ics }}" download="{{ e.icsFile }}" style="margin-left:auto;display:inline-flex;align-items:center;font-weight:800;font-size:11px;letter-spacing:1.2px;min-height:44px;padding:8px 10px;border:3px solid #0C0F14;background:linear-gradient(160deg,#7CF0FA 0%,#16E0F2 52%,#04AEBE 100%);color:#0C0F14" style-hover="transform:translateY(-2px);color:#0C0F14">{{ addCal }}</a>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <dc-import name="Footer" hint-size="100%,300px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{}">
+class Component extends DCLogic {
+  state = {  vw: typeof window !== 'undefined' ? window.innerWidth : 1280 };
+  constructor(p) { super(p); this.adopt(); }
+  adopt() { if (this._ok) return true; const B = window.FCBase; if (!B) return false; Object.assign(this, B); this._ok = true; return true; }
+  componentDidMount() {
+    if (!this.adopt()) { window.addEventListener('fc-base', () => { this.adopt(); this.mount(); this.forceUpdate(); }, { once: true }); return; }
+    this.mount();
+  }
+  componentWillUnmount() { if (this._ok) this.unmount(); }
+  L(en, es) { return this.lang() === 'es' ? es : en; }
+  renderVals() {
+    if (!this.adopt()) return {};
+    const L = this.lang() === 'es' ? 'es' : 'en';
+    const saved = this.saved(), going = this.going();
+    const mine = this.EVENTS.filter(e => saved[e.id]);
+    const dayKeys = [];
+    mine.forEach(e => { if (dayKeys.indexOf(e.d) < 0) dayKeys.push(e.d); });
+    dayKeys.sort();
+    return {
+      kicker: this.L('YOUR SAVED WEEK', 'TU SEMANA GUARDADA'),
+      h1: this.T('MY WEEK'),
+      p: this.L('Everything you saved from the events board, in date order. Saved on this device — a member account keeps it everywhere.', 'Todo lo que guardaste de la pizarra de eventos, en orden de fecha. Guardado en este dispositivo — una cuenta de socio lo guarda en todos.'),
+      count: mine.length, savedWord: this.T('SAVED'),
+      goingCount: mine.filter(e => going[e.id]).length, goingWord: this.T('GOING'),
+      isEmpty: mine.length === 0,
+      emptyH: this.L('NOTHING SAVED YET.', 'TODAVÍA NO HAY NADA GUARDADO.'),
+      emptyP: this.L('Hit + MY WEEK on any event and it lands here with the date, the venue and a calendar file.', 'Dale a + MI SEMANA en cualquier evento y aparece aquí con la fecha, el lugar y el archivo de calendario.'),
+      emptyBtn: this.L('BROWSE THE EVENTS →', 'VER LOS EVENTOS →'),
+      evHref: this.href('Events', {}), addCal: this.T('+ CALENDAR'),
+      days: dayKeys.map(d => {
+        const dt = this.evDate(d);
+        return { big: String(dt.getDate()), wd: this.WD[L][dt.getDay()], mon: this.MO[L][dt.getMonth()],
+          items: mine.filter(e => e.d === d).map(e => this.evCard(e)) };
+      })
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Archivo:wght@400;600;800&family=Archivo+Black&display=swap" rel="stylesheet" />
+<link rel="icon" href="uploads/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="16x16" href="uploads/flamingo-city-favicon-16.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="uploads/flamingo-city-favicon-32.png" />
+<link rel="icon" type="image/png" sizes="48x48" href="uploads/flamingo-city-favicon-48.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="uploads/flamingo-city-favicon-512.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="uploads/flamingo-city-favicon-180.png" />
+<meta name="theme-color" content="#0C0F14" />
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#FF2E88;-webkit-text-size-adjust:100%}
+@media (max-width:900px){[data-stack]{grid-template-columns:1fr !important}}
+@media (max-width:620px){[data-hide-xs]{display:none !important}}
+a{color:#0C0F14;text-decoration:none}
+a:hover{color:#FFF6E5}
+input,button,select,textarea{font-family:inherit}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes riseIn{from{opacity:0;transform:translateY(34px)}to{opacity:1;transform:none}}
+@keyframes clipIn{from{opacity:0;clip-path:inset(0 0 90% 0);transform:translateY(24px)}to{opacity:1;clip-path:inset(0 0 0 0);transform:none}}
+@keyframes tiltIn{from{opacity:0;transform:translateY(44px) rotate(-5deg)}to{opacity:1;transform:rotate(-1.6deg)}}
+@keyframes barGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes walkDown{from{top:0}to{top:calc(100% - 88px)}}
+@media (max-width:1150px){[data-rail]{display:none !important}[data-storygrid]{grid-template-columns:minmax(0,1fr) !important}}
+[data-navdesk]{display:flex}
+[data-navburger]{display:none}
+[data-navpanel]{display:none}
+@media (max-width:1020px){[data-navdesk]{display:none !important}[data-navburger]{display:flex !important}[data-navpanel]{display:flex !important}}
+@media (max-width:720px){[data-caltitles]{display:none !important}[data-caldots]{display:flex !important}}
+</style>
+<script src="./image-slot.js"></script>
+<script src="./fc-data.js"></script>
+<script src="./no-touch-hover.js"></script>
+</helmet>
+<div style="min-height:100vh;font-family:Archivo, Helvetica, sans-serif;color:#0C0F14;padding-bottom:0">
+  <div aria-hidden="true" style="position:fixed;inset:0;z-index:-1;background-color:#FF2E88;background-image:radial-gradient(#0C0F14 1.7px, transparent 1.8px), linear-gradient(172deg, #FF2E88 0%, #FF4A97 34%, #FF74AD 58%, #FFB35C 82%, #FFD400 100%);background-size:15px 15px, 100% 100%;pointer-events:none"></div>
+
+  <dc-import name="Nav" active="home" city="{{ cityKey }}" style="position:sticky;top:0;z-index:60" hint-size="100%,150px"></dc-import>
+
+  <div style="max-width:1280px;margin:0 auto;padding:clamp(16px,4vw,26px) clamp(12px,3.5vw,22px) 0;display:flex;flex-direction:column;gap:clamp(18px,3vw,26px)">
+    <sc-if value="{{ showSpot }}" hint-placeholder-val="{{ true }}">
+    <div style="background:#0C0F14;border:4px solid #0C0F14;box-shadow:9px 9px 0 #FFF6E5;padding:22px">
+      <sc-if value="{{ notEvents }}" hint-placeholder-val="{{ true }}">
+      <div data-stack style="background:{{ heroBg }};border:4px solid #0C0F14;box-shadow:5px 5px 0 #16E0F2;padding:clamp(16px,3vw,22px);margin-bottom:20px;display:grid;grid-template-columns:1.15fr 0.85fr;gap:clamp(16px,2.5vw,20px);align-items:end">
+        <div style="display:flex;flex-direction:column;gap:13px">
+          <div style="align-self:flex-start;background:#0C0F14;color:#FFD400;font-weight:800;font-size:11px;line-height:1.5;letter-spacing:1.6px;padding:6px 10px">{{ t.heroKicker }}</div>
+          <h1 style="margin:0;font-family:'Luckiest Guy', cursive;font-size:clamp(28px,6.4vw,48px);line-height:0.94;letter-spacing:0.5px;text-wrap:balance">{{ t.heroH1a }}<br />{{ t.heroH1b }}</h1>
+          <p style="margin:0;max-width:52ch;font-size:15px;line-height:1.45;font-weight:600;text-wrap:pretty">{{ t.heroP }}</p>
+        </div>
+        <div style="background:{{ heroFrameBg }};border:4px solid #0C0F14;box-shadow:5px 5px 0 #0C0F14;display:flex;justify-content:center;gap:0;align-items:flex-start;height:{{ heroFrameH }};aspect-ratio:{{ heroFrameAR }};width:100%;overflow:hidden">
+          <sc-for list="{{ heroCast }}" as="m" hint-placeholder-count="3">
+            <img src="{{ m.src }}" alt="{{ m.name }}" style="position:relative;z-index:{{ m.z }};align-self:{{ m.av }};height:{{ m.h }};width:{{ m.w }};max-height:{{ m.mh }};object-fit:{{ m.of }};object-position:bottom;transform:{{ m.flip }};margin-top:{{ m.mt }};margin-bottom:{{ m.mb }};margin-left:{{ m.ml }};filter:drop-shadow(3px 3px 0 rgba(12,15,20,0.35))" />
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px">
+        <div style="background:#FFD400;border:3px solid #FFF6E5;padding:7px 14px 5px;font-family:'Luckiest Guy', cursive;font-size:22px;transform:rotate(-2deg)">{{ t.spotlight }}</div>
+        <div style="color:#16E0F2;font-weight:800;font-size:12px;letter-spacing:2px">{{ t.spotSub }}</div>
+        <div data-hide-xs style="margin-left:auto;color:#FFF6E5;font-weight:600;font-size:12px">{{ spotNote }}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:{{ spotCols }};gap:18px;align-items:stretch;padding:4px">
+        <sc-for list="{{ spots }}" as="s" hint-placeholder-count="3">
+          <div style="background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #FFF6E5;box-shadow:0 0 0 4px #0C0F14;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:{{ s.rows }};min-width:0;overflow:hidden">
+            <div style="position:relative;min-width:0;overflow:hidden;border-bottom:4px solid #0C0F14">
+              <image-slot id="{{ s.photoSlot }}" shape="rect" placeholder="{{ s.photoHint }}"></image-slot>
+              <div style="position:absolute;top:10px;left:10px;right:10px;display:flex;flex-wrap:wrap;gap:7px;align-items:flex-start;justify-content:flex-start;pointer-events:none">
+                <div style="background:linear-gradient(160deg,#FF63AC 0%,#FF2E88 52%,#DE1468 100%);color:#FFF6E5;border:3px solid #0C0F14;font-family:'Luckiest Guy', cursive;font-size:13px;padding:5px 9px 3px;white-space:nowrap">{{ s.cityName }}</div>
+                <div style="background:#FFD400;border:3px solid #0C0F14;font-weight:800;font-size:10px;letter-spacing:1.4px;padding:6px 8px;white-space:nowrap;flex:0 0 auto">{{ t.thisWeek }}</div>
+              </div>
+            </div>
+            <div style="padding:15px 16px 18px;display:flex;flex-direction:column;gap:9px;min-width:0">
+              <div style="font-family:'Luckiest Guy', cursive;font-size:clamp(20px,2.1vw,24px);line-height:1.02;min-height:50px;overflow-wrap:anywhere">{{ s.biz }}</div>
+              <div style="font-weight:800;font-size:12px;letter-spacing:1.6px;color:#B0135E;min-height:16px;overflow-wrap:anywhere">{{ s.kind }}</div>
+              <div style="background:#FFD400;border:3px solid #0C0F14;padding:9px 11px;font-weight:800;font-size:clamp(14px,1.4vw,15px);line-height:1.25;min-height:62px;display:flex;align-items:center;overflow-wrap:anywhere">{{ s.deal }}</div>
+              <p style="margin:0;font-size:14px;line-height:1.5;font-weight:600;text-wrap:pretty;min-height:63px;overflow-wrap:anywhere">{{ s.blurb }}</p>
+              <a href="{{ s.href }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;margin-top:auto;font-family:'Luckiest Guy', cursive;font-size:16px;padding:11px 14px 9px;border:4px solid #0C0F14;background:linear-gradient(160deg,#7CF0FA 0%,#16E0F2 52%,#04AEBE 100%);color:#0C0F14;box-shadow:4px 4px 0 #0C0F14" style-hover="background:linear-gradient(160deg,#FF63AC 0%,#FF2E88 52%,#DE1468 100%);color:#FFF6E5">{{ t.seeSpot }}</a>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+  <sc-if value="{{ showNl }}" hint-placeholder-val="{{ true }}">
+  <div data-stack style="background:linear-gradient(160deg,#7CF0FA 0%,#16E0F2 52%,#04AEBE 100%);border:4px solid #0C0F14;box-shadow:9px 9px 0 #0C0F14;padding:clamp(16px,3.5vw,24px);display:grid;grid-template-columns:1fr 0.9fr;gap:clamp(16px,3vw,22px);align-items:center">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="align-self:flex-start;background:#0C0F14;color:#FFD400;font-weight:800;font-size:11px;letter-spacing:2px;padding:6px 10px">{{ t.nlKicker }}</div>
+        <div style="font-family:'Luckiest Guy', cursive;font-size:clamp(24px,6vw,34px);line-height:1;text-wrap:balance">{{ t.nlH }}</div>
+        <p style="margin:0;font-weight:600;font-size:15px;line-height:1.5;max-width:56ch;text-wrap:pretty">{{ t.nlP }}</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <sc-if value="{{ subbed }}">
+          <div style="background:#FFD400;border:4px solid #0C0F14;box-shadow:5px 5px 0 #0C0F14;padding:16px;font-family:'Luckiest Guy', cursive;font-size:clamp(18px,4.5vw,22px);line-height:1.12">{{ t.nlThanks }}</div>
+        </sc-if>
+        <sc-if value="{{ notSubbed }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <input value="{{ email }}" onChange="{{ onEmail }}" placeholder="{{ t.nlPh }}" style="flex:0 1 auto;width:50%;min-width:0;font-size:15px;font-weight:600;padding:13px 14px;border:4px solid #0C0F14;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);color:#0C0F14;outline:none" />
+            <button onClick="{{ subscribe }}" style="cursor:pointer;font-family:'Luckiest Guy', cursive;font-size:17px;padding:13px 18px 10px;border:4px solid #0C0F14;background:#FF2E88;color:#FFF6E5;box-shadow:4px 4px 0 #0C0F14" style-hover="transform:translate(-1px,-1px);box-shadow:6px 6px 0 #0C0F14">{{ t.nlBtn }}</button>
+          </div>
+          <div style="font-weight:800;font-size:11px;letter-spacing:1.4px">{{ t.nlFine }}</div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+  </div>
+
+  <div style="max-width:1280px;margin:0 auto;padding:clamp(16px,4vw,26px) clamp(12px,3.5vw,22px) 70px;display:flex;flex-direction:column;gap:clamp(18px,3vw,26px)">
+
+    <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;box-shadow:6px 6px 0 #0C0F14;padding:12px 14px">
+      <div style="font-family:'Luckiest Guy', cursive;font-size:16px;margin-right:6px">{{ t.filter }}</div>
+      <sc-for list="{{ catChips }}" as="c" hint-placeholder-count="6">
+        <a href="{{ c.href }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;font-weight:800;font-size:13px;letter-spacing:0.6px;padding:9px 13px;border:3px solid #0C0F14;border-radius:999px;background:{{ c.bg }};color:{{ c.fg }}" style-hover="transform:translateY(-2px)">{{ c.label }}</a>
+      </sc-for>
+      <div style="width:100%;display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding-top:10px;margin-top:2px;border-top:3px dotted #0C0F14">
+        <input value="{{ q }}" onChange="{{ onQ }}" onKeyDown="{{ onQKey }}" placeholder="{{ t.searchPh }}" style="flex:1 1 240px;min-width:0;font-size:14px;font-weight:600;padding:10px 12px;border:3px solid #0C0F14;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);color:#0C0F14;outline:none" />
+        <button onClick="{{ doSearch }}" style="cursor:pointer;font-family:'Luckiest Guy', cursive;font-size:14px;padding:10px 14px 8px;border:3px solid #0C0F14;background:linear-gradient(160deg,#7CF0FA 0%,#16E0F2 52%,#04AEBE 100%);color:#0C0F14;box-shadow:3px 3px 0 #0C0F14" style-hover="transform:translate(-1px,-1px);box-shadow:5px 5px 0 #0C0F14">{{ searchBtn }}</button>
+        <a href="{{ resetHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;font-family:'Luckiest Guy', cursive;font-size:14px;padding:10px 14px 8px;border:3px solid #0C0F14;background:linear-gradient(160deg,#FF63AC 0%,#FF2E88 52%,#DE1468 100%);color:#FFF6E5;box-shadow:3px 3px 0 #0C0F14" style-hover="transform:translate(-1px,-1px);box-shadow:5px 5px 0 #0C0F14">{{ t.reset }}</a>
+        <div style="margin-left:auto;font-weight:800;font-size:13px;letter-spacing:1px">{{ countLabel }}</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,265px),1fr));gap:clamp(14px,2.5vw,20px)">
+      <sc-for list="{{ list }}" as="b" hint-placeholder-count="6">
+        <a href="{{ b.href }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;box-shadow:7px 7px 0 #0C0F14;display:flex;flex-direction:column" style-hover="transform:translate(-2px,-2px);box-shadow:11px 11px 0 #0C0F14">
+          <div style="position:relative;height:168px;border-bottom:4px solid #0C0F14;overflow:hidden">
+            <image-slot id="{{ b.slot }}" shape="rect" placeholder="{{ b.slotHint }}"></image-slot>
+            <div style="position:absolute;top:9px;left:9px;display:flex;gap:6px;pointer-events:none">
+              <div style="background:#0C0F14;color:#16E0F2;font-weight:800;font-size:10px;letter-spacing:1.4px;padding:5px 8px">{{ b.cityName }}</div>
+              <sc-if value="{{ b.showMember }}"><div style="background:#FFD400;color:#0C0F14;font-weight:800;font-size:10px;letter-spacing:1.4px;padding:5px 8px;border:2px solid #0C0F14">{{ t.member }}</div></sc-if>
+            </div>
+            <img src="{{ b.mascot }}" alt="" style="position:absolute;right:8px;top:54px;height:170px;width:auto;pointer-events:none;filter:drop-shadow(3px 3px 0 rgba(12,15,20,0.35))" />
+          </div>
+          <div style="padding:15px 15px 17px;display:flex;flex-direction:column;gap:7px;flex:1">
+            <div style="font-family:'Luckiest Guy', cursive;font-size:21px;line-height:1.03">{{ b.name }}</div>
+            <div style="font-weight:800;font-size:11px;letter-spacing:1.5px;color:#B0135E">{{ b.catLabel }} · {{ b.hood }}</div>
+            <p style="margin:0;font-size:14px;line-height:1.45;font-weight:600;text-wrap:pretty">{{ b.tag }}</p>
+            <div style="margin-top:auto;padding-top:10px;display:flex;align-items:center;gap:9px;border-top:3px dotted #0C0F14">
+              <sc-if value="{{ b.showRating }}"><div style="background:#0C0F14;color:#FFD400;font-weight:800;font-size:12px;padding:5px 8px">★ {{ b.rating }}</div></sc-if>
+              <div style="font-weight:800;font-size:12px">{{ b.price }}</div>
+              <div style="margin-left:auto;font-family:'Luckiest Guy', cursive;font-size:14px">{{ t.details }}</div>
+            </div>
+          </div>
+        </a>
+      </sc-for>
+    </div>
+
+    <sc-if value="{{ empty }}">
+      <div style="background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;box-shadow:7px 7px 0 #0C0F14;padding:30px;text-align:center;font-family:'Luckiest Guy', cursive;font-size:24px">{{ t.emptyMsg }}</div>
+    </sc-if>
+
+    <div data-stack style="background:#0C0F14;border:4px solid #0C0F14;box-shadow:9px 9px 0 #FFF6E5;padding:clamp(16px,3.5vw,24px);display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:'Luckiest Guy', cursive;font-size:clamp(24px,6vw,34px);color:#FFD400;line-height:1">{{ t.ownSpot }}</div>
+        <p style="margin:0;color:#FFF6E5;font-weight:600;font-size:15px;max-width:60ch;line-height:1.5">{{ t.joinBandP1 }} ${{ price }} {{ t.joinBandP2 }}</p>
+      </div>
+      <a href="{{ joinHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;justify-self:start;font-family:'Luckiest Guy', cursive;font-size:clamp(17px,4.5vw,20px);padding:15px 22px 12px;border:4px solid #0C0F14;background:linear-gradient(160deg,#FF63AC 0%,#FF2E88 52%,#DE1468 100%);color:#FFF6E5;box-shadow:5px 5px 0 #FFD400"><span>{{ t.joinFor }}&#160;${{ price }}{{ t.perMo }}</span></a>
+    </div>
+  </div>
+
+  <dc-import name="Footer" hint-size="100%,300px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;price&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:20,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:5,&quot;max&quot;:99,&quot;unit&quot;:&quot;$/mo&quot;,&quot;section&quot;:&quot;Membership&quot;},&quot;showSpotlight&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Listing page&quot;},&quot;showRatings&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Listing page&quot;},&quot;memberBadges&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Listing page&quot;}}">
+class Component extends DCLogic {
+  state = { q: null, vw: typeof window !== 'undefined' ? window.innerWidth : 1280 };
+  constructor(p) { super(p); this.adopt(); }
+  adopt() { if (this._ok) return true; const B = window.FCBase; if (!B) return false; Object.assign(this, B); this._ok = true; return true; }
+  componentDidMount() {
+    if (!this.adopt()) { window.addEventListener('fc-base', () => { this.adopt(); this.mount(); this.forceUpdate(); }, { once: true }); return; }
+    this.mount();
+  }
+  componentWillUnmount() { if (this._ok) this.unmount(); }
+  renderVals() {
+    if (!this.adopt()) return {};
+    const st = this.state, price = this.props.price ?? 20;
+    const cityKey = this.qp('city') || 'all', cat = this.qp('cat') || 'all', urlQ = this.qp('q') || '';
+    const typed = st.q === null || st.q === undefined ? urlQ : st.q;
+    const t = this.tAll(), T = s => this.T(s);
+    const cityKeys = ['hialeah', 'lakes', 'havana'];
+    const q = urlQ.trim().toLowerCase();
+    const goSearch = () => location.assign(this.href('Home', { city: cityKey === 'all' ? null : cityKey, cat: cat === 'all' ? null : cat, q: typed.trim() }));
+    const catChips = this.CATS.map(c => ({
+      label: T(c.label),
+      bg: cat === c.key ? 'linear-gradient(160deg,#FF63AC 0%,#FF2E88 52%,#DE1468 100%)' : 'linear-gradient(160deg,#FFFFFF 0%,#FFF7EA 100%)',
+      fg: cat === c.key ? '#FFF6E5' : '#0C0F14',
+      href: this.href('Home', { city: cityKey === 'all' ? null : cityKey, cat: c.key === 'all' ? null : c.key, q: urlQ })
+    }));
+    const list = this.BIZ.filter(b =>
+      (cityKey === 'all' || b.city === cityKey) &&
+      (cat === 'all' || b.cat === cat) &&
+      (!q || (this.T(b.name) + ' ' + this.T(b.tag) + ' ' + b.hood).toLowerCase().includes(q))
+    ).map(b => this.card(b));
+    const spotKeys = cityKey === 'all' ? cityKeys : [cityKey];
+    const spots = spotKeys.map(k => {
+      const c = this.city(k), s = this.tx(this.SPOTS[k]), b = this.biz(s.biz), solo = spotKeys.length === 1;
+      return {
+        cityName: c.name, bg: c.castBg, biz: b.name, kind: s.kind, deal: s.deal, blurb: s.blurb,
+        photoSlot: 'spot-' + k, photoHint: T('Drop the spotlight photo — ') + b.hint.toLowerCase(),
+        rows: solo ? 'clamp(220px,32vw,380px) auto' : 'clamp(165px,20vw,230px) auto',
+        href: this.href('Business', { city: k, biz: b.id })
+      };
+    });
+    const cc = this.city(cityKey) || this.city('hialeah');
+    const cityPhoto = this.pickPhoto(cc.photoBase);
+    const heroRaw = cityKey === 'all'
+      ? [{ src: 'uploads/los-tres-bust-536a000f.png', bg: '#00feff', name: 'RIGO, RAFA &amp; TONI', z: 1, group: true }]
+      : this.CITIES[cityKey].cast;
+    return {
+      ...this.nlVals(),
+      t: t, price: price, cityKey: cityKey === 'all' ? '' : cityKey, searchBtn: this.lang() === 'es' ? 'BUSCAR' : 'SEARCH',
+      showSpot: this.props.showSpotlight !== false, showNl: true, notEvents: true,
+      spots: spots,
+      spotCols: spots.length === 1 ? 'minmax(0, 1fr)' : 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))',
+      spotNote: cityKey === 'all' ? T('ALL THREE CITIES') : T('{city} ONLY').replace('{city}', cc.name),
+      heroFrameH: 'auto', heroFrameAR: '4 / 3',
+      heroCast: heroRaw.map(m => ({ ...m, flip: 'none', h: '75%', w: '100%', mh: 'none', of: 'contain', av: 'flex-end', mt: '0px', mb: '0px', ml: '0px' })),
+      heroBg: cityKey === 'all'
+        ? 'linear-gradient(rgba(22,224,242,0.80), rgba(22,224,242,0.80)), url("' + this.pickPhoto('skyline-hero') + '") center 35%/cover no-repeat'
+        : 'linear-gradient(rgba(22,224,242,0.86), rgba(22,224,242,0.86)), url("' + cityPhoto + '") ' + (cc.photoPos || 'center') + '/cover no-repeat',
+      heroFrameBg: cityKey === 'all'
+        ? 'linear-gradient(rgba(22,224,242,0.18), rgba(22,224,242,0.18)), url("' + this.pickPhoto('skyline-hero') + '") center 35%/cover no-repeat'
+        : 'linear-gradient(rgba(22,224,242,0.18), rgba(22,224,242,0.18)), url("' + cityPhoto + '") ' + (cc.photoPos || 'center') + '/cover no-repeat',
+      catChips: catChips, list: list, empty: list.length === 0,
+      countLabel: list.length + ' ' + (list.length === 1 ? T('LISTING') : T('LISTINGS')),
+      q: typed, onQ: e => this.setState({ q: e.target.value }),
+      onQKey: e => { if (e.key === 'Enter') goSearch(); }, doSearch: goSearch,
+      resetHref: this.href('Home', {}), joinHref: this.href('ListYourSpot', {})
+    };
+  }
+}
+</script>
+</body>
+</html>

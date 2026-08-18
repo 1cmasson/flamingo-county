@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex,nofollow">
+<title>Form registration — Flamingo County</title>
+</head>
+<body>
+<!--
+  Netlify detects forms by scanning deployed HTML at deploy time. The real forms
+  on / and /list-your-spot are rendered into the DOM at runtime by the dc-runtime
+  (support.js), so that scan would find nothing and submissions would vanish
+  silently. This unlinked page carries the plain markup Netlify registers; the
+  live forms POST a matching payload via FCBase.netlifySubmit() in fc-data.js.
+
+  Field names here MUST stay in sync with fc-data.js and ListYourSpot.dc.html.
+-->
+
+<form name="list-your-spot" data-netlify="true" netlify-honeypot="bot-field" hidden>
+  <input type="hidden" name="form-name" value="list-your-spot">
+  <p hidden><label>Skip this: <input name="bot-field"></label></p>
+  <label>Business<input type="text" name="business"></label>
+  <label>Owner<input type="text" name="owner"></label>
+  <label>City<input type="text" name="city"></label>
+  <label>Category<input type="text" name="category"></label>
+  <label>Phone<input type="tel" name="phone"></label>
+  <label>Story<textarea name="story"></textarea></label>
+  <label>Language<input type="text" name="lang"></label>
+  <button type="submit">Send</button>
+</form>
+
+<form name="newsletter" data-netlify="true" netlify-honeypot="bot-field" hidden>
+  <input type="hidden" name="form-name" value="newsletter">
+  <p hidden><label>Skip this: <input name="bot-field"></label></p>
+  <label>Email<input type="email" name="email"></label>
+  <label>Language<input type="text" name="lang"></label>
+  <button type="submit">Subscribe</button>
+</form>
+
+<p>This page exists so Netlify can register the site's two forms. Nothing links to it.</p>
+</body>
+</html>

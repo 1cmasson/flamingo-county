@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Archivo:wght@400;600;800&family=Archivo+Black&display=swap" rel="stylesheet" />
+<link rel="icon" href="uploads/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="16x16" href="uploads/flamingo-city-favicon-16.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="uploads/flamingo-city-favicon-32.png" />
+<link rel="icon" type="image/png" sizes="48x48" href="uploads/flamingo-city-favicon-48.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="uploads/flamingo-city-favicon-512.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="uploads/flamingo-city-favicon-180.png" />
+<meta name="theme-color" content="#0C0F14" />
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#FF2E88;-webkit-text-size-adjust:100%}
+@media (max-width:900px){[data-stack]{grid-template-columns:1fr !important}}
+@media (max-width:620px){[data-hide-xs]{display:none !important}}
+a{color:#0C0F14;text-decoration:none}
+a:hover{color:#FFF6E5}
+input,button,select,textarea{font-family:inherit}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes riseIn{from{opacity:0;transform:translateY(34px)}to{opacity:1;transform:none}}
+@keyframes clipIn{from{opacity:0;clip-path:inset(0 0 90% 0);transform:translateY(24px)}to{opacity:1;clip-path:inset(0 0 0 0);transform:none}}
+@keyframes tiltIn{from{opacity:0;transform:translateY(44px) rotate(-5deg)}to{opacity:1;transform:rotate(-1.6deg)}}
+@keyframes barGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes walkDown{from{top:0}to{top:calc(100% - 88px)}}
+@media (max-width:1150px){[data-rail]{display:none !important}[data-storygrid]{grid-template-columns:minmax(0,1fr) !important}}
+[data-navdesk]{display:flex}
+[data-navburger]{display:none}
+[data-navpanel]{display:none}
+@media (max-width:1020px){[data-navdesk]{display:none !important}[data-navburger]{display:flex !important}[data-navpanel]{display:flex !important}}
+@media (max-width:720px){[data-caltitles]{display:none !important}[data-caldots]{display:flex !important}}
+</style>
+<script src="./image-slot.js"></script>
+<script src="./fc-data.js"></script>
+<script src="./no-touch-hover.js"></script>
+</helmet>
+<div style="min-height:100vh;font-family:Archivo, Helvetica, sans-serif;color:#0C0F14;padding-bottom:0">
+  <div aria-hidden="true" style="position:fixed;inset:0;z-index:-1;background-color:#FF2E88;background-image:radial-gradient(#0C0F14 1.7px, transparent 1.8px), linear-gradient(172deg, #FF2E88 0%, #FF4A97 34%, #FF74AD 58%, #FFB35C 82%, #FFD400 100%);background-size:15px 15px, 100% 100%;pointer-events:none"></div>
+
+  <dc-import name="Nav" active="events" style="position:sticky;top:0;z-index:60" hint-size="100%,150px"></dc-import>
+
+  <div style="max-width:1280px;margin:0 auto;padding:clamp(16px,4vw,26px) clamp(12px,3.5vw,22px) 0;display:flex;flex-direction:column;gap:clamp(18px,3vw,26px)">
+    <sc-if value="{{ showSpot }}" hint-placeholder-val="{{ true }}">
+    <div style="background:#0C0F14;border:4px solid #0C0F14;box-shadow:9px 9px 0 #FFF6E5;padding:22px">
+      <sc-if value="{{ notEvents }}" hint-placeholder-val="{{ true }}">
+      <div data-stack style="background:{{ heroBg }};border:4px solid #0C0F14;box-shadow:5px 5px 0 #16E0F2;padding:clamp(16px,3vw,22px);margin-bottom:20px;display:grid;grid-template-columns:1.15fr 0.85fr;gap:clamp(16px,2.5vw,20px);align-items:end">
+        <div style="display:flex;flex-direction:column;gap:13px">
+          <div style="align-self:flex-start;background:#0C0F14;color:#FFD400;font-weight:800;font-size:11px;line-height:1.5;letter-spacing:1.6px;padding:6px 10px">{{ t.heroKicker }}</div>
+          <h1 style="margin:0;font-family:'Luckiest Guy', cursive;font-size:clamp(28px,6.4vw,48px);line-height:0.94;letter-spacing:0.5px;text-wrap:balance">{{ t.heroH1a }}<br />{{ t.heroH1b }}</h1>
+          <p style="margin:0;max-width:52ch;font-size:15px;line-height:1.45;font-weight:600;text-wrap:pretty">{{ t.heroP }}</p>
+        </div>
+        <div style="background:{{ heroFrameBg }};border:4px solid #0C0F14;box-shadow:5px 5px 0 #0C0F14;display:flex;justify-content:center;gap:0;align-items:flex-start;height:{{ heroFrameH }};aspect-ratio:{{ heroFrameAR }};width:100%;overflow:hidden">
+          <sc-for list="{{ heroCast }}" as="m" hint-placeholder-count="3">
+            <img src="{{ m.src }}" alt="{{ m.name }}" style="position:relative;z-index:{{ m.z }};align-self:{{ m.av }};height:{{ m.h }};width:{{ m.w }};max-height:{{ m.mh }};object-fit:{{ m.of }};object-position:bottom;transform:{{ m.flip }};margin-top:{{ m.mt }};margin-bottom:{{ m.mb }};margin-left:{{ m.ml }};filter:drop-shadow(3px 3px 0 rgba(12,15,20,0.35))" />
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-bottom:16px">
+        <div style="background:#FFD400;border:3px solid #FFF6E5;padding:7px 14px 5px;font-family:'Luckiest Guy', cursive;font-size:22px;transform:rotate(-2deg)">{{ t.spotlight }}</div>
+        <div style="color:#16E0F2;font-weight:800;font-size:12px;letter-spacing:2px">{{ t.spotSub }}</div>
+        <div data-hide-xs style="margin-left:auto;color:#FFF6E5;font-weight:600;font-size:12px">{{ spotNote }}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:{{ spotCols }};gap:18px;align-items:stretch;padding:4px">
+        <sc-for list="{{ spots }}" as="s" hint-placeholder-count="3">
+          <div style="background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #FFF6E5;box-shadow:0 0 0 4px #0C0F14;display:grid;grid-template-columns:minmax(0,1fr);grid-template-rows:{{ s.rows }};min-width:0;overflow:hidden">
+            <div style="position:relative;min-width:0;overflow:hidden;border-bottom:4px solid #0C0F14">
+              <image-slot id="{{ s.photoSlot }}" shape="rect" placeholder="{{ s.photoHint }}"></image-slot>
+              <div style="position:absolute;top:10px;left:10px;right:10px;display:flex;flex-wrap:wrap;gap:7px;align-items:flex-start;justify-content:flex-start;pointer-events:none">
+                <div style="background:linear-gradient(160deg,#FF63AC 0%,#FF2E88 52%,#DE1468 100%);color:#FFF6E5;border:3px solid #0C0F14;font-family:'Luckiest Guy', cursive;font-size:13px;padding:5px 9px 3px;white-space:nowrap">{{ s.cityName }}</div>
+                <div style="background:#FFD400;border:3px solid #0C0F14;font-weight:800;font-size:10px;letter-spacing:1.4px;padding:6px 8px;white-space:nowrap;flex:0 0 auto">{{ t.thisWeek }}</div>
+              </div>
+            </div>
+            <div style="padding:15px 16px 18px;display:flex;flex-direction:column;gap:9px;min-width:0">
+              <div style="font-family:'Luckiest Guy', cursive;font-size:clamp(20px,2.1vw,24px);line-height:1.02;min-height:50px;overflow-wrap:anywhere">{{ s.biz }}</div>
+              <div style="font-weight:800;font-size:12px;letter-spacing:1.6px;color:#B0135E;min-height:16px;overflow-wrap:anywhere">{{ s.kind }}</div>
+              <div style="background:#FFD400;border:3px solid #0C0F14;padding:9px 11px;font-weight:800;font-size:clamp(14px,1.4vw,15px);line-height:1.25;min-height:62px;display:flex;align-items:center;overflow-wrap:anywhere">{{ s.deal }}</div>
+              <p style="margin:0;font-size:14px;line-height:1.5;font-weight:600;text-wrap:pretty;min-height:63px;overflow-wrap:anywhere">{{ s.blurb }}</p>
+              <a href="{{ s.href }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;margin-top:auto;font-family:'Luckiest Guy', cursive;font-size:16px;padding:11px 14px 9px;border:4px solid #0C0F14;background:linear-gradient(160deg,#7CF0FA 0%,#16E0F2 52%,#04AEBE 100%);color:#0C0F14;box-shadow:4px 4px 0 #0C0F14" style-hover="background:linear-gradient(160deg,#FF63AC 0%,#FF2E88 52%,#DE1468 100%);color:#FFF6E5">{{ t.seeSpot }}</a>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    </sc-if>
+  <sc-if value="{{ showNl }}" hint-placeholder-val="{{ true }}">
+  <div data-stack style="background:linear-gradient(160deg,#7CF0FA 0%,#16E0F2 52%,#04AEBE 100%);border:4px solid #0C0F14;box-shadow:9px 9px 0 #0C0F14;padding:clamp(16px,3.5vw,24px);display:grid;grid-template-columns:1fr 0.9fr;gap:clamp(16px,3vw,22px);align-items:center">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="align-self:flex-start;background:#0C0F14;color:#FFD400;font-weight:800;font-size:11px;letter-spacing:2px;padding:6px 10px">{{ t.nlKicker }}</div>
+        <div style="font-family:'Luckiest Guy', cursive;font-size:clamp(24px,6vw,34px);line-height:1;text-wrap:balance">{{ t.nlH }}</div>
+        <p style="margin:0;font-weight:600;font-size:15px;line-height:1.5;max-width:56ch;text-wrap:pretty">{{ t.nlP }}</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <sc-if value="{{ subbed }}">
+          <div style="background:#FFD400;border:4px solid #0C0F14;box-shadow:5px 5px 0 #0C0F14;padding:16px;font-family:'Luckiest Guy', cursive;font-size:clamp(18px,4.5vw,22px);line-height:1.12">{{ t.nlThanks }}</div>
+        </sc-if>
+        <sc-if value="{{ notSubbed }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <input value="{{ email }}" onChange="{{ onEmail }}" placeholder="{{ t.nlPh }}" style="flex:0 1 auto;width:50%;min-width:0;font-size:15px;font-weight:600;padding:13px 14px;border:4px solid #0C0F14;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);color:#0C0F14;outline:none" />
+            <button onClick="{{ subscribe }}" style="cursor:pointer;font-family:'Luckiest Guy', cursive;font-size:17px;padding:13px 18px 10px;border:4px solid #0C0F14;background:#FF2E88;color:#FFF6E5;box-shadow:4px 4px 0 #0C0F14" style-hover="transform:translate(-1px,-1px);box-shadow:6px 6px 0 #0C0F14">{{ t.nlBtn }}</button>
+          </div>
+          <div style="font-weight:800;font-size:11px;letter-spacing:1.4px">{{ t.nlFine }}</div>
+        </sc-if>
+      </div>
+    </div>
+  </sc-if>
+  </div>
+
+  <div data-screen-label="Events" style="max-width:1280px;margin:0 auto;padding:clamp(16px,4vw,26px) clamp(12px,3.5vw,22px) 70px;display:flex;flex-direction:column;gap:clamp(18px,3vw,26px)">
+    <sc-if value="{{ hasStars }}">
+      <div style="background:#0C0F14;border:4px solid #0C0F14;box-shadow:9px 9px 0 #FFF6E5;padding:clamp(16px,3vw,22px);display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+          <div style="background:#FFD400;border:3px solid #FFF6E5;padding:7px 14px 5px;font-family:'Luckiest Guy', cursive;font-size:22px;transform:rotate(-2deg)">{{ te.heads }}</div>
+          <div style="color:#16E0F2;font-weight:800;font-size:12px;letter-spacing:2px">{{ te.headsSub }}</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,290px),1fr));gap:clamp(14px,2.5vw,20px)">
+          <sc-for list="{{ evStars }}" as="e" hint-placeholder-count="3">
+            <div style="background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;box-shadow:7px 7px 0 #16E0F2;display:flex;flex-direction:column">
+              <div style="position:relative;aspect-ratio:4 / 3;border-bottom:4px solid #0C0F14;overflow:hidden">
+                <image-slot id="{{ e.slot }}" shape="rect" placeholder="{{ e.hint }}"></image-slot>
+                <div style="position:absolute;top:10px;left:10px;display:flex;flex-direction:column;align-items:flex-start;gap:6px;pointer-events:none">
+                  <div style="background:#0C0F14;color:#16E0F2;font-weight:800;font-size:10px;letter-spacing:1.4px;padding:5px 8px">{{ e.cityName }}</div>
+                  <div style="background:{{ e.bg }};color:{{ e.ink }};border:2px solid #0C0F14;font-weight:800;font-size:10px;letter-spacing:1.4px;padding:5px 8px">{{ e.kindLabel }}</div>
+                </div>
+                <div style="position:absolute;right:10px;top:10px;background:#FFD400;border:3px solid #0C0F14;padding:6px 10px 4px;font-family:'Luckiest Guy', cursive;font-size:17px;line-height:1;transform:rotate(3deg);pointer-events:none">{{ e.wd }} {{ e.day }}</div>
+                <img src="{{ e.mascot }}" alt="" style="position:absolute;right:4px;bottom:-8px;height:132px;width:auto;pointer-events:none;filter:drop-shadow(3px 3px 0 rgba(12,15,20,0.35))" />
+              </div>
+              <div style="padding:15px 16px 17px;display:flex;flex-direction:column;gap:9px;flex:1">
+                <a href="{{ e.href }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;font-family:'Luckiest Guy', cursive;font-size:clamp(20px,2.1vw,24px);line-height:1.03">{{ e.title }}</a>
+                <div style="font-weight:800;font-size:11px;letter-spacing:1.4px;color:#B0135E">{{ e.venue }} · {{ e.hood }}</div>
+                <div style="display:flex;flex-wrap:wrap;gap:7px;align-items:center">
+                  <div style="background:#0C0F14;color:#FFF6E5;font-weight:800;font-size:11px;letter-spacing:1.3px;padding:6px 9px">{{ e.time }}</div>
+                  <sc-if value="{{ e.hasFree }}"><div style="background:#FFD400;border:2px solid #0C0F14;font-weight:800;font-size:10px;letter-spacing:1.3px;padding:5px 8px">{{ e.free }}</div></sc-if>
+                </div>
+                <p style="margin:0;font-size:14px;line-height:1.5;font-weight:600;text-wrap:pretty">{{ e.note }}</p>
+                <div style="margin-top:auto;padding-top:11px;display:flex;flex-wrap:wrap;gap:7px;align-items:center;border-top:3px dotted #0C0F14">
+                  <button onClick="{{ e.toggleGoing }}" style="cursor:pointer;font-weight:800;font-size:11px;letter-spacing:1.2px;min-height:44px;padding:8px 11px;border:3px solid #0C0F14;background:{{ e.goBg }};color:{{ e.goInk }}" style-hover="transform:translateY(-2px)">{{ e.goLabel }}</button>
+                  <button onClick="{{ e.toggleSave }}" style="cursor:pointer;font-weight:800;font-size:11px;letter-spacing:1.2px;min-height:44px;padding:8px 11px;border:3px solid #0C0F14;background:{{ e.saveBg }};color:#0C0F14" style-hover="transform:translateY(-2px)">{{ e.saveLabel }}</button>
+                  <a href="{{ e.ics }}" download="{{ e.icsFile }}" style="margin-left:auto;display:inline-flex;align-items:center;font-weight:800;font-size:11px;letter-spacing:1.2px;min-height:44px;padding:8px 10px;border:3px solid #0C0F14;background:linear-gradient(160deg,#7CF0FA 0%,#16E0F2 52%,#04AEBE 100%);color:#0C0F14" style-hover="transform:translateY(-2px);color:#0C0F14">{{ te.addCal }}</a>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <div data-stack style="background:#0C0F14;border:4px solid #0C0F14;box-shadow:9px 9px 0 #FFF6E5;padding:clamp(16px,3.5vw,26px);display:grid;grid-template-columns:1.2fr 0.8fr;gap:clamp(16px,3vw,24px);align-items:end">
+      <div style="display:flex;flex-direction:column;gap:12px">
+        <div style="align-self:flex-start;background:#FFD400;color:#0C0F14;font-weight:800;font-size:11px;letter-spacing:2px;padding:6px 10px">{{ te.kicker }}</div>
+        <h1 style="margin:0;font-family:'Luckiest Guy', cursive;font-size:clamp(32px,7vw,54px);line-height:0.92;color:#FFF6E5;text-wrap:balance">{{ te.h1a }}<br /><span style="color:#16E0F2">{{ te.h1b }}</span></h1>
+        <p style="margin:0;max-width:54ch;font-weight:600;font-size:15px;line-height:1.5;color:#FFF6E5;text-wrap:pretty">{{ te.p }}</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <a href="{{ railHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;flex:1 1 110px;font-family:'Luckiest Guy', cursive;font-size:16px;min-height:46px;padding:11px 14px 8px;border:4px solid #0C0F14;background:{{ railBg }};color:#0C0F14;box-shadow:4px 4px 0 #FF2E88" style-hover="transform:translate(-1px,-1px);box-shadow:6px 6px 0 #FF2E88">{{ te.list }}</a>
+          <a href="{{ calHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;flex:1 1 110px;font-family:'Luckiest Guy', cursive;font-size:16px;min-height:46px;padding:11px 14px 8px;border:4px solid #0C0F14;background:{{ calBg }};color:#0C0F14;box-shadow:4px 4px 0 #FF2E88" style-hover="transform:translate(-1px,-1px);box-shadow:6px 6px 0 #FF2E88">{{ te.cal }}</a>
+        </div>
+        <div style="display:grid;grid-template-columns:minmax(0,1fr);gap:8px">
+          <div style="background:linear-gradient(160deg,#7CF0FA 0%,#16E0F2 52%,#04AEBE 100%);border:4px solid #0C0F14;padding:10px 12px;display:flex;flex-direction:column;gap:2px">
+            <div style="font-family:'Luckiest Guy', cursive;font-size:26px;line-height:1">{{ evCount }}</div>
+            <div style="font-weight:800;font-size:10px;letter-spacing:1.6px">{{ te.onBoard }}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div style="background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;box-shadow:6px 6px 0 #0C0F14;padding:12px 14px;display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        <div style="font-family:'Luckiest Guy', cursive;font-size:15px;margin-right:2px">{{ te.cityL }}</div>
+        <sc-for list="{{ evCityChips }}" as="c" hint-placeholder-count="4">
+          <a href="{{ c.href }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;font-weight:800;font-size:12px;letter-spacing:0.6px;padding:9px 13px;border:3px solid #0C0F14;border-radius:999px;background:{{ c.bg }};color:#0C0F14" style-hover="transform:translateY(-2px)">{{ c.label }}</a>
+        </sc-for>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding-top:10px;border-top:3px dotted #0C0F14">
+        <div style="font-family:'Luckiest Guy', cursive;font-size:15px;margin-right:2px">{{ te.kindL }}</div>
+        <sc-for list="{{ evKindChips }}" as="k" hint-placeholder-count="8">
+          <a href="{{ k.href }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;font-weight:800;font-size:12px;letter-spacing:0.6px;padding:9px 13px;border:3px solid #0C0F14;border-radius:999px;background:{{ k.bg }};color:{{ k.fg }}" style-hover="transform:translateY(-2px)">{{ k.label }}</a>
+        </sc-for>
+      </div>
+      <sc-if value="{{ savedOnly }}">
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;padding-top:10px;border-top:3px dotted #0C0F14">
+          <div style="background:#0C0F14;color:#FFD400;font-family:'Luckiest Guy', cursive;font-size:16px;padding:8px 12px 6px">{{ te.myWeek }} · {{ savedCount }} {{ te.savedWord }}</div>
+          <a href="{{ allHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;font-family:'Luckiest Guy', cursive;font-size:14px;padding:9px 13px 7px;border:3px solid #0C0F14;background:linear-gradient(160deg,#FF63AC 0%,#FF2E88 52%,#DE1468 100%);color:#FFF6E5;box-shadow:3px 3px 0 #0C0F14" style-hover="transform:translate(-1px,-1px);box-shadow:5px 5px 0 #0C0F14">{{ te.showAll }}</a>
+        </div>
+      </sc-if>
+    </div>
+
+
+    <sc-if value="{{ evRailV }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:clamp(18px,3vw,28px)">
+        <sc-for list="{{ evBuckets }}" as="bk" hint-placeholder-count="2">
+          <div style="display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:linear-gradient(160deg,#7CF0FA 0%,#16E0F2 52%,#04AEBE 100%);border:4px solid #0C0F14;box-shadow:6px 6px 0 #0C0F14;padding:11px 14px 9px">
+              <div style="font-family:'Luckiest Guy', cursive;font-size:clamp(20px,4.4vw,27px);line-height:1">{{ bk.label }}</div>
+              <div style="font-weight:800;font-size:11px;letter-spacing:1.8px">{{ bk.sub }}</div>
+              <div style="margin-left:auto;background:#0C0F14;color:#FFD400;font-weight:800;font-size:11px;letter-spacing:1.4px;padding:6px 9px">{{ bk.count }}</div>
+            </div>
+            <sc-for list="{{ bk.days }}" as="dy" hint-placeholder-count="2">
+              <div id="{{ dy.anchor }}" style="display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;align-items:center;gap:12px">
+                  <div style="display:flex;align-items:baseline;gap:9px;flex:0 0 auto;color:#FFF6E5">
+                    <div style="font-family:'Luckiest Guy', cursive;font-size:clamp(28px,5vw,34px);line-height:0.9;text-shadow:3px 3px 0 #0C0F14">{{ dy.big }}</div>
+                    <div style="font-weight:800;font-size:12px;letter-spacing:2px;text-shadow:2px 2px 0 #0C0F14">{{ dy.wd }} · {{ dy.mon }}</div>
+                  </div>
+                  <div style="flex:1 1 auto;height:0;border-top:4px dashed #FFF6E5;filter:drop-shadow(3px 3px 0 #0C0F14)"></div>
+                </div>
+                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr));gap:clamp(14px,2.2vw,18px)">
+                  <sc-for list="{{ dy.items }}" as="e" hint-placeholder-count="2">
+                    <div style="position:relative;display:grid;grid-template-columns:94px minmax(0,1fr);background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;box-shadow:7px 7px 0 #0C0F14" style-hover="transform:translate(-2px,-2px);box-shadow:10px 10px 0 #0C0F14">
+                      <div style="background:{{ e.bg }};color:{{ e.ink }};border-right:4px dashed #0C0F14;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px 6px">
+                        <div style="font-weight:800;font-size:11px;letter-spacing:2px">{{ e.wd }}</div>
+                        <div style="font-family:'Luckiest Guy', cursive;font-size:38px;line-height:1">{{ e.day }}</div>
+                        <div style="font-weight:800;font-size:10px;letter-spacing:2px">{{ e.mon }}</div>
+                        <div style="margin-top:9px;padding-top:8px;border-top:2px solid currentColor;font-weight:800;font-size:10px;letter-spacing:1px;text-align:center;line-height:1.25">{{ e.time }}</div>
+                      </div>
+                      <div style="padding:13px 15px 14px;display:flex;flex-direction:column;gap:8px;min-width:0">
+                        <div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center">
+                          <div style="background:{{ e.bg }};color:{{ e.ink }};border:2px solid #0C0F14;font-weight:800;font-size:10px;letter-spacing:1.3px;padding:4px 7px">{{ e.kindLabel }}</div>
+                          <sc-if value="{{ e.hasFree }}"><div style="background:#0C0F14;color:#FFD400;font-weight:800;font-size:10px;letter-spacing:1.3px;padding:4px 7px">{{ e.free }}</div></sc-if>
+                        </div>
+                        <a href="{{ e.href }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;font-family:'Luckiest Guy', cursive;font-size:20px;line-height:1.05;overflow-wrap:anywhere">{{ e.title }}</a>
+                        <div style="font-weight:800;font-size:11px;letter-spacing:1.2px;color:#B0135E;overflow-wrap:anywhere">{{ e.venue }} · {{ e.hood }} · {{ e.cityName }}</div>
+                        <div style="margin-top:auto;padding-top:10px;display:flex;flex-wrap:wrap;gap:7px;align-items:center;border-top:3px dotted #0C0F14">
+                          <button onClick="{{ e.toggleGoing }}" style="cursor:pointer;font-weight:800;font-size:11px;letter-spacing:1.2px;min-height:44px;padding:8px 10px;border:3px solid #0C0F14;background:{{ e.goBg }};color:{{ e.goInk }}" style-hover="transform:translateY(-2px)">{{ e.goLabel }}</button>
+                          <button onClick="{{ e.toggleSave }}" style="cursor:pointer;font-weight:800;font-size:11px;letter-spacing:1.2px;min-height:44px;padding:8px 10px;border:3px solid #0C0F14;background:{{ e.saveBg }};color:#0C0F14" style-hover="transform:translateY(-2px)">{{ e.saveLabel }}</button>
+                          <a href="{{ e.ics }}" download="{{ e.icsFile }}" style="margin-left:auto;display:inline-flex;align-items:center;font-weight:800;font-size:11px;letter-spacing:1.2px;min-height:44px;padding:8px 10px;border:3px solid #0C0F14;background:linear-gradient(160deg,#7CF0FA 0%,#16E0F2 52%,#04AEBE 100%);color:#0C0F14" style-hover="transform:translateY(-2px);color:#0C0F14">{{ te.addCal }}</a>
+                        </div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ evCalV }}">
+      <div style="background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;box-shadow:8px 8px 0 #0C0F14;padding:clamp(12px,2.5vw,18px);display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <a href="{{ evPrevHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;font-family:'Luckiest Guy', cursive;font-size:16px;min-height:44px;padding:9px 14px 7px;border:3px solid #0C0F14;background:linear-gradient(160deg,#7CF0FA 0%,#16E0F2 52%,#04AEBE 100%);color:#0C0F14;box-shadow:3px 3px 0 #0C0F14;opacity:{{ evPrevOp }}">←</a>
+          <div style="font-family:'Luckiest Guy', cursive;font-size:clamp(20px,4.4vw,26px)">{{ evMonthName }}</div>
+          <a href="{{ evNextHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;font-family:'Luckiest Guy', cursive;font-size:16px;min-height:44px;padding:9px 14px 7px;border:3px solid #0C0F14;background:linear-gradient(160deg,#7CF0FA 0%,#16E0F2 52%,#04AEBE 100%);color:#0C0F14;box-shadow:3px 3px 0 #0C0F14;opacity:{{ evNextOp }}">→</a>
+          <div style="margin-left:auto;font-weight:800;font-size:11px;letter-spacing:1.6px">{{ te.tapDay }}</div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px">
+          <sc-for list="{{ evWdHeads }}" as="w" hint-placeholder-count="7">
+            <div style="background:#0C0F14;color:#16E0F2;font-weight:800;font-size:10px;letter-spacing:1.4px;text-align:center;padding:7px 2px">{{ w }}</div>
+          </sc-for>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px">
+          <sc-for list="{{ evCells }}" as="c" hint-placeholder-count="35">
+            <a href="{{ c.href }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;min-height:clamp(62px,9vw,104px);border:{{ c.bd }};background:{{ c.bg }};opacity:{{ c.op }};cursor:{{ c.cursor }};padding:5px;display:flex;flex-direction:column;gap:3px;overflow:hidden">
+              <div style="display:flex;align-items:center;gap:4px">
+                <div style="font-weight:800;font-size:12px">{{ c.num }}</div>
+                <sc-if value="{{ c.isToday }}"><div style="background:#0C0F14;color:#FFD400;font-weight:800;font-size:8px;letter-spacing:1px;padding:2px 4px">{{ te.today }}</div></sc-if>
+              </div>
+              <div data-caltitles="1" style="display:flex;flex-direction:column;gap:3px;min-width:0">
+                <sc-for list="{{ c.items }}" as="i" hint-placeholder-count="0">
+                  <div style="background:{{ i.bg }};color:{{ i.ink }};font-weight:800;font-size:9.5px;letter-spacing:0.3px;line-height:1.2;padding:3px 4px;max-height:26px;overflow:hidden">{{ i.label }}</div>
+                </sc-for>
+                <sc-if value="{{ c.hasMore }}"><div style="font-weight:800;font-size:9px;letter-spacing:0.6px">+{{ c.more }}</div></sc-if>
+              </div>
+              <div data-caldots="1" style="display:none;flex-wrap:wrap;gap:3px;margin-top:auto">
+                <sc-for list="{{ c.dots }}" as="d" hint-placeholder-count="0">
+                  <div style="width:9px;height:9px;border:2px solid #0C0F14;background:{{ d.bg }}"></div>
+                </sc-for>
+              </div>
+            </a>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <sc-if value="{{ evEmpty }}">
+      <div style="background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;box-shadow:7px 7px 0 #0C0F14;padding:30px;text-align:center;font-family:'Luckiest Guy', cursive;font-size:clamp(18px,4vw,24px);line-height:1.15">{{ te.empty }}</div>
+    </sc-if>
+
+    <div style="background:#0C0F14;border:4px solid #0C0F14;box-shadow:9px 9px 0 #FFF6E5;padding:clamp(16px,3vw,22px);display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
+        <div style="font-family:'Luckiest Guy', cursive;font-size:clamp(22px,5vw,30px);color:#FFD400;line-height:1">{{ te.weekly }}</div>
+        <div style="font-weight:800;font-size:11px;letter-spacing:2px;color:#16E0F2">{{ te.weeklySub }}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,190px),1fr));gap:10px">
+        <sc-for list="{{ evWeekly }}" as="w" hint-placeholder-count="6">
+          <a href="{{ w.href }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;box-shadow:5px 5px 0 #16E0F2;padding:11px 12px 13px;display:flex;flex-direction:column;gap:7px" style-hover="transform:translate(-2px,-2px);box-shadow:8px 8px 0 #16E0F2">
+            <div style="display:flex;align-items:center;gap:7px">
+              <div style="background:{{ w.bg }};color:{{ w.ink }};border:2px solid #0C0F14;font-family:'Luckiest Guy', cursive;font-size:14px;padding:5px 8px 3px">{{ w.wd }}</div>
+              <div style="font-weight:800;font-size:11px;letter-spacing:1.2px">{{ w.time }}</div>
+              <div style="margin-left:auto;font-weight:800;font-size:9px;letter-spacing:1.2px;color:#B0135E">{{ te.weeklyTag }}</div>
+            </div>
+            <div style="font-family:'Luckiest Guy', cursive;font-size:17px;line-height:1.08;overflow-wrap:anywhere">{{ w.title }}</div>
+            <div style="font-weight:800;font-size:10px;letter-spacing:1.2px;color:#B0135E;overflow-wrap:anywhere">{{ w.venue }} · {{ w.cityName }}</div>
+          </a>
+        </sc-for>
+      </div>
+    </div>
+
+    <div data-stack style="background:linear-gradient(160deg,#FF63AC 0%,#FF2E88 52%,#DE1468 100%);border:4px solid #0C0F14;box-shadow:9px 9px 0 #0C0F14;padding:clamp(16px,3.5vw,24px);display:grid;grid-template-columns:1fr auto;gap:20px;align-items:center">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="font-family:'Luckiest Guy', cursive;font-size:clamp(22px,5.4vw,32px);line-height:1;color:#FFF6E5">{{ te.postH }}</div>
+        <p style="margin:0;font-weight:600;font-size:15px;line-height:1.5;max-width:60ch;color:#FFF6E5;text-wrap:pretty">{{ te.postP }}</p>
+      </div>
+      <a href="{{ joinHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;justify-self:start;font-family:'Luckiest Guy', cursive;font-size:clamp(17px,4.5vw,20px);min-height:52px;padding:15px 22px 12px;border:4px solid #0C0F14;background:#FFD400;color:#0C0F14;box-shadow:5px 5px 0 #0C0F14" style-hover="transform:translate(-2px,-2px);box-shadow:8px 8px 0 #0C0F14">{{ te.postBtn }}</a>
+    </div>
+
+    <div data-stack style="background:linear-gradient(160deg,#7CF0FA 0%,#16E0F2 52%,#04AEBE 100%);border:4px solid #0C0F14;box-shadow:9px 9px 0 #0C0F14;padding:clamp(16px,3.5vw,24px);display:grid;grid-template-columns:1fr 0.9fr;gap:clamp(16px,3vw,22px);align-items:center">
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <div style="align-self:flex-start;background:#0C0F14;color:#FFD400;font-weight:800;font-size:11px;letter-spacing:2px;padding:6px 10px">{{ t.nlKicker }}</div>
+        <div style="font-family:'Luckiest Guy', cursive;font-size:clamp(24px,6vw,34px);line-height:1;text-wrap:balance">{{ t.nlH }}</div>
+        <p style="margin:0;font-weight:600;font-size:15px;line-height:1.5;max-width:56ch;text-wrap:pretty">{{ t.nlP }}</p>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+        <sc-if value="{{ subbed }}">
+          <div style="background:#FFD400;border:4px solid #0C0F14;box-shadow:5px 5px 0 #0C0F14;padding:16px;font-family:'Luckiest Guy', cursive;font-size:clamp(18px,4.5vw,22px);line-height:1.12">{{ t.nlThanks }}</div>
+        </sc-if>
+        <sc-if value="{{ notSubbed }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <input value="{{ email }}" onChange="{{ onEmail }}" placeholder="{{ t.nlPh }}" style="flex:0 1 auto;width:50%;min-width:0;font-size:15px;font-weight:600;padding:13px 14px;border:4px solid #0C0F14;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);color:#0C0F14;outline:none" />
+            <button onClick="{{ subscribe }}" style="cursor:pointer;font-family:'Luckiest Guy', cursive;font-size:17px;padding:13px 18px 10px;border:4px solid #0C0F14;background:#FF2E88;color:#FFF6E5;box-shadow:4px 4px 0 #0C0F14" style-hover="transform:translate(-1px,-1px);box-shadow:6px 6px 0 #0C0F14">{{ t.nlBtn }}</button>
+          </div>
+          <div style="font-weight:800;font-size:11px;letter-spacing:1.4px">{{ t.nlFine }}</div>
+        </sc-if>
+      </div>
+    </div>
+  </div>
+
+  <dc-import name="Footer" hint-size="100%,300px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;price&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:20,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:5,&quot;max&quot;:99,&quot;unit&quot;:&quot;$/mo&quot;,&quot;section&quot;:&quot;Membership&quot;}}">
+class Component extends DCLogic {
+  state = {  vw: typeof window !== 'undefined' ? window.innerWidth : 1280 };
+  constructor(p) { super(p); this.adopt(); }
+  adopt() { if (this._ok) return true; const B = window.FCBase; if (!B) return false; Object.assign(this, B); this._ok = true; return true; }
+  componentDidMount() {
+    if (!this.adopt()) { window.addEventListener('fc-base', () => { this.adopt(); this.mount(); this.forceUpdate(); }, { once: true }); return; }
+    this.mount();
+  }
+  componentWillUnmount() { if (this._ok) this.unmount(); }
+  L(en, es) { return this.lang() === 'es' ? es : en; }
+  renderVals() {
+    if (!this.adopt()) return {};
+    const T = s => this.T(s), L = this.lang() === 'es' ? 'es' : 'en';
+    const cityKey = this.qp('city') || 'all', kind = this.qp('kind') || 'all';
+    const view = this.qp('view') === 'cal' ? 'cal' : 'rail';
+    const m = this.qp('month') === '9' ? 9 : 8;
+    const evH = patch => {
+      const o = Object.assign({ city: cityKey === 'all' ? null : cityKey, kind: kind === 'all' ? null : kind, view: view === 'rail' ? null : view, month: m === 8 ? null : m }, patch || {});
+      return this.href('Events', o);
+    };
+    const shown = this.evFilter(cityKey, kind, false);
+    const kindChips = this.EKINDS.map(k => ({
+      label: T(k.label),
+      bg: kind === k.key ? k.bg : 'linear-gradient(160deg,#FFFFFF 0%,#FFF7EA 100%)',
+      fg: kind === k.key ? k.ink : '#0C0F14',
+      href: evH({ kind: k.key === 'all' ? null : k.key })
+    }));
+    const cityChips = [{ key: 'all', label: T('ALL CITIES') }]
+      .concat(['hialeah', 'lakes', 'havana'].map(k => ({ key: k, label: this.city(k).name })))
+      .map(c => ({
+        label: c.label, bg: cityKey === c.key ? '#FFD400' : 'linear-gradient(160deg,#FFFFFF 0%,#FFF7EA 100%)',
+        href: evH({ city: c.key === 'all' ? null : c.key })
+      }));
+    const bucketDefs = [
+      { from: '2026-08-17', to: '2026-08-23', label: 'THIS WEEKEND', sub: 'THU 20 — SUN 23 AUG' },
+      { from: '2026-08-24', to: '2026-08-30', label: 'NEXT WEEK', sub: 'MON 24 — SUN 30 AUG' },
+      { from: '2026-08-31', to: '2026-12-31', label: 'LATER ON', sub: 'SEPTEMBER AND BEYOND' }
+    ];
+    const evBuckets = bucketDefs.map(bk => {
+      const inB = shown.filter(e => e.d >= bk.from && e.d <= bk.to);
+      const days = [];
+      inB.forEach(e => { if (days.indexOf(e.d) < 0) days.push(e.d); });
+      days.sort();
+      return {
+        label: T(bk.label), sub: T(bk.sub), count: inB.length,
+        days: days.map(d => {
+          const dt = this.evDate(d);
+          return { anchor: 'day-' + d, big: String(dt.getDate()), wd: this.WD[L][dt.getDay()], mon: this.MO[L][dt.getMonth()],
+            items: inB.filter(e => e.d === d).map(e => this.evCard(e)) };
+        })
+      };
+    }).filter(bk => bk.count > 0);
+    const stars = shown.filter(e => e.star).map(e => this.evCard(e));
+    const lead = new Date(2026, m - 1, 1).getDay(), dim = new Date(2026, m, 0).getDate();
+    const blank = { blank: true, real: false, num: '', items: [], dots: [], hasMore: false, more: 0, bg: 'transparent', bd: '3px solid rgba(12,15,20,0.22)', op: '1', cursor: 'default', isToday: false, href: evH({}) };
+    const cells = [];
+    for (let i = 0; i < lead; i++) cells.push({ ...blank });
+    for (let d = 1; d <= dim; d++) {
+      const iso = '2026-' + String(m).padStart(2, '0') + '-' + String(d).padStart(2, '0');
+      const items = shown.filter(e => e.d === iso);
+      const isToday = iso === this.EV_TODAY, past = iso < this.EV_TODAY;
+      cells.push({
+        blank: false, real: true, num: String(d), isToday: isToday,
+        items: items.slice(0, 2).map(e => { const k = this.ekind(e.kind); return { label: T(e.title), bg: k.bg, ink: k.ink }; }),
+        dots: items.map(e => ({ bg: this.ekind(e.kind).bg })),
+        hasMore: items.length > 2, more: items.length - 2,
+        bg: isToday ? '#FFD400' : (items.length ? 'linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%)' : 'rgba(255,246,229,0.45)'),
+        bd: items.length ? '3px solid #0C0F14' : '3px solid rgba(12,15,20,0.3)',
+        op: past ? '0.5' : '1',
+        cursor: items.length ? 'pointer' : 'default',
+        href: items.length ? evH({ view: null }) + '#day-' + iso : evH({})
+      });
+    }
+    while (cells.length % 7 !== 0) cells.push({ ...blank });
+    const weekly = this.WEEKLY.map(w => {
+      const b = this.biz(w.biz), k = this.ekind(w.kind);
+      return { wd: this.WD[L][w.dow], time: w.time, title: T(w.title), venue: b.name, cityName: this.city(b.city).name,
+        bg: k.bg, ink: k.ink, href: this.href('Business', { city: b.city, biz: b.id }) };
+    });
+    const ec = this.evCard(shown.find(e => e.star) || shown[0] || this.EVENTS[0]);
+    const t = this.tAll();
+    t.spotlight = T('ON DECK'); t.spotSub = T('THE ONE THING NOT TO MISS THIS WEEK');
+    t.thisWeek = ec.wd + ' ' + ec.day; t.seeSpot = T('SEE THE EVENT →');
+    return {
+      ...this.nlVals(),
+      t: t, price: this.props.price ?? 20,
+      showSpot: true, showNl: true, notEvents: false,
+      spots: [{ cityName: ec.cityName, biz: ec.title, kind: ec.venue + ' · ' + ec.kindLabel,
+        deal: ec.wd + ' ' + ec.day + ' ' + ec.mon + ' · ' + ec.time + (ec.hasFree ? ' · ' + ec.free : ''),
+        blurb: ec.note, photoSlot: ec.slot, photoHint: ec.hint, rows: 'clamp(220px,32vw,380px) auto', href: ec.href }],
+      spotCols: 'minmax(0, 1fr)', spotNote: ec.venue + ' · ' + ec.hood + ' · ' + ec.cityName,
+      te: {
+        kicker: T('WHAT THE CREWS ARE DOING NEXT'), h1a: T('THIS WEEK IN THE'), h1b: T('THREE CITIES.'),
+        p: T('Every domino table, live band, watch party and free city day worth leaving the house for. Members post theirs free — the city ones we hunt down ourselves.'),
+        list: T('LIST'), cal: T('CALENDAR'), onBoard: T('ON THE BOARD'), freeIn: T('FREE TO GET IN'),
+        heads: T('HEADLINERS'), headsSub: T('THE THREE WE WOULD CANCEL PLANS FOR'),
+        weekly: T('EVERY WEEK, LIKE CLOCKWORK'), weeklySub: T('THE REGULARS YOU CAN SET A WATCH BY'),
+        weeklyTag: T('WEEKLY'), myWeek: T('MY WEEK'), savedWord: T('SAVED'), showAll: T('SHOW EVERYTHING'),
+        empty: T('NOTHING ON THIS FILTER — TRY ANOTHER CITY OR ANOTHER KIND.'),
+        cityL: T('CITY:'), kindL: T('KIND:'), addCal: T('+ CALENDAR'), seeSpot: T('SEE THE EVENT →'),
+        tapDay: T('TAP A DAY TO JUMP STRAIGHT TO IT'), today: T('TODAY'),
+        postH: T('GOT SOMETHING HAPPENING?'),
+        postP: T('Members post events free — bands, tournaments, openings, watch parties. The good ones go in the Friday email and on the front page.'),
+        postBtn: T('POST AN EVENT'), nav: T('EVENTS')
+      },
+      evStars: stars, hasStars: stars.length > 0, evBuckets: evBuckets,
+      evRailV: view === 'rail', evCalV: view === 'cal',
+      railHref: evH({ view: null }), calHref: evH({ view: 'cal' }),
+      railBg: view === 'rail' ? '#FFD400' : 'linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%)',
+      calBg: view === 'cal' ? '#FFD400' : 'linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%)',
+      evKindChips: kindChips, evCityChips: cityChips,
+      evCount: shown.length, evFreeCount: shown.filter(e => e.free).length,
+      evEmpty: shown.length === 0, evCells: cells, evWdHeads: this.WD[L],
+      evMonthName: this.MONTHNAME[m][L],
+      evPrevHref: evH({ month: m > 8 ? m - 1 : null, view: 'cal' }), evNextHref: evH({ month: m < 9 ? m + 1 : m, view: 'cal' }),
+      evPrevOp: m > 8 ? '1' : '0.35', evNextOp: m < 9 ? '1' : '0.35',
+      evWeekly: weekly, savedOnly: false, savedCount: this.savedCount(), allHref: evH({}),
+      joinHref: this.href('ListYourSpot', {})
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="" />
+<link href="https://fonts.googleapis.com/css2?family=Luckiest+Guy&family=Archivo:wght@400;600;800&family=Archivo+Black&display=swap" rel="stylesheet" />
+<link rel="icon" href="uploads/favicon.ico" sizes="any" />
+<link rel="icon" type="image/png" sizes="16x16" href="uploads/flamingo-city-favicon-16.png" />
+<link rel="icon" type="image/png" sizes="32x32" href="uploads/flamingo-city-favicon-32.png" />
+<link rel="icon" type="image/png" sizes="48x48" href="uploads/flamingo-city-favicon-48.png" />
+<link rel="icon" type="image/png" sizes="512x512" href="uploads/flamingo-city-favicon-512.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="uploads/flamingo-city-favicon-180.png" />
+<meta name="theme-color" content="#0C0F14" />
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#FF2E88;-webkit-text-size-adjust:100%}
+@media (max-width:900px){[data-stack]{grid-template-columns:1fr !important}}
+@media (max-width:620px){[data-hide-xs]{display:none !important}}
+a{color:#0C0F14;text-decoration:none}
+a:hover{color:#FFF6E5}
+input,button,select,textarea{font-family:inherit}
+@keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+@keyframes riseIn{from{opacity:0;transform:translateY(34px)}to{opacity:1;transform:none}}
+@keyframes clipIn{from{opacity:0;clip-path:inset(0 0 90% 0);transform:translateY(24px)}to{opacity:1;clip-path:inset(0 0 0 0);transform:none}}
+@keyframes tiltIn{from{opacity:0;transform:translateY(44px) rotate(-5deg)}to{opacity:1;transform:rotate(-1.6deg)}}
+@keyframes barGrow{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes walkDown{from{top:0}to{top:calc(100% - 88px)}}
+@media (max-width:1150px){[data-rail]{display:none !important}[data-storygrid]{grid-template-columns:minmax(0,1fr) !important}}
+[data-navdesk]{display:flex}
+[data-navburger]{display:none}
+[data-navpanel]{display:none}
+@media (max-width:1020px){[data-navdesk]{display:none !important}[data-navburger]{display:flex !important}[data-navpanel]{display:flex !important}}
+@media (max-width:720px){[data-caltitles]{display:none !important}[data-caldots]{display:flex !important}}
+</style>
+<script src="./image-slot.js"></script>
+<script src="./fc-data.js"></script>
+<script src="./no-touch-hover.js"></script>
+</helmet>
+<div style="min-height:100vh;font-family:Archivo, Helvetica, sans-serif;color:#0C0F14;padding-bottom:0">
+  <div aria-hidden="true" style="position:fixed;inset:0;z-index:-1;background-color:#FF2E88;background-image:radial-gradient(#0C0F14 1.7px, transparent 1.8px), linear-gradient(172deg, #FF2E88 0%, #FF4A97 34%, #FF74AD 58%, #FFB35C 82%, #FFD400 100%);background-size:15px 15px, 100% 100%;pointer-events:none"></div>
+
+  <dc-import name="Nav" active="biz" city="{{ cityKeyProp }}" style="position:sticky;top:0;z-index:60" hint-size="100%,150px"></dc-import>
+
+  <div style="max-width:1180px;margin:0 auto;padding:clamp(14px,3.5vw,22px) clamp(12px,3.5vw,22px) 70px;display:flex;flex-direction:column;gap:clamp(16px,3vw,22px)">
+    <a href="{{ listingHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;align-self:flex-start;font-family:'Luckiest Guy', cursive;font-size:15px;padding:9px 14px 7px;border:4px solid #0C0F14;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);box-shadow:4px 4px 0 #0C0F14">{{ t.allListings }}</a>
+
+    <div style="background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;box-shadow:9px 9px 0 #0C0F14">
+      <div style="position:relative;height:clamp(190px,42vw,330px);border-bottom:4px solid #0C0F14">
+        <image-slot id="{{ d.heroSlot }}" shape="rect" placeholder="{{ t.heroSlotHint }}"></image-slot>
+        <div style="position:absolute;left:18px;bottom:18px;display:flex;gap:8px;align-items:flex-end;pointer-events:none">
+          <div style="background:#FFD400;border:4px solid #0C0F14;padding:8px 12px 5px;font-family:'Luckiest Guy', cursive;font-size:16px">{{ d.cityName }}</div>
+          <div style="background:linear-gradient(160deg,#FF63AC 0%,#FF2E88 52%,#DE1468 100%);border:4px solid #0C0F14;padding:8px 12px 5px;font-family:'Luckiest Guy', cursive;font-size:16px;color:#FFF6E5">{{ d.catLabel }}</div>
+        </div>
+        <div style="position:absolute;right:16px;bottom:-30px;background:{{ d.castBg }};border:4px solid #0C0F14;width:clamp(84px,17vw,132px);height:clamp(84px,17vw,132px);border-radius:50%;overflow:hidden;display:flex;align-items:flex-end;justify-content:center">
+          <img src="{{ d.mascot }}" alt="" style="height:91%;width:auto" />
+        </div>
+      </div>
+      <div style="padding:clamp(18px,3.5vw,24px) clamp(16px,3.5vw,26px) 26px;display:grid;grid-template-columns:1fr;gap:14px">
+        <h1 style="margin:0;font-family:'Luckiest Guy', cursive;font-size:clamp(30px,7vw,52px);line-height:0.94;max-width:24ch">{{ d.name }}</h1>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center">
+          <div style="background:#0C0F14;color:#FFD400;font-weight:800;font-size:13px;padding:7px 10px">★ {{ d.rating }} · {{ d.reviews }} {{ t.reviews }}</div>
+          <div style="font-weight:800;font-size:13px;letter-spacing:1px">{{ d.price }} · {{ d.hood }}</div>
+          <sc-if value="{{ d.showMember }}"><div style="background:#FFD400;border:3px solid #0C0F14;font-weight:800;font-size:12px;padding:6px 9px">{{ t.verifiedMember }}</div></sc-if>
+        </div>
+        <p style="margin:0;font-size:clamp(16px,4vw,19px);font-weight:600;line-height:1.45;max-width:70ch;text-wrap:pretty">{{ d.tag }}</p>
+      </div>
+    </div>
+
+    <div data-stack style="display:grid;grid-template-columns:1.55fr 0.85fr;gap:clamp(16px,3vw,22px);align-items:start">
+      <div style="display:flex;flex-direction:column;gap:clamp(16px,3vw,22px)">
+        <div style="background:linear-gradient(160deg,#7CF0FA 0%,#16E0F2 52%,#04AEBE 100%);border:4px solid #0C0F14;box-shadow:8px 8px 0 #0C0F14;padding:clamp(16px,3.5vw,24px)">
+          <div style="display:inline-block;background:#0C0F14;color:#FFD400;font-family:'Luckiest Guy', cursive;font-size:22px;padding:7px 12px 4px;margin-bottom:14px">{{ t.theStory }}</div>
+          <div style="display:flex;flex-direction:column;gap:12px">
+            <sc-for list="{{ d.story }}" as="p" hint-placeholder-count="3">
+              <p style="margin:0;font-size:16px;line-height:1.6;font-weight:600;text-wrap:pretty">{{ p }}</p>
+            </sc-for>
+          </div>
+          <div style="margin-top:18px;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;padding:16px;display:flex;gap:14px;align-items:center">
+            <div style="font-family:'Luckiest Guy', cursive;font-size:44px;line-height:0.8">“</div>
+            <div>
+              <div style="font-size:16px;font-weight:800;line-height:1.4;text-wrap:pretty">{{ d.quote }}</div>
+              <div style="font-weight:800;font-size:12px;letter-spacing:1.4px;margin-top:6px;color:#B0135E">{{ d.quoteBy }}</div>
+            </div>
+          </div>
+          <sc-if value="{{ d.hasFullStory }}">
+            <a href="{{ d.storyHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;margin-top:16px;font-family:'Luckiest Guy', cursive;font-size:17px;padding:13px 18px 10px;border:4px solid #0C0F14;background:#0C0F14;color:#FFD400;box-shadow:5px 5px 0 #FFF6E5" style-hover="background:linear-gradient(160deg,#FF63AC 0%,#FF2E88 52%,#DE1468 100%);color:#FFF6E5">{{ t.readFull }}</a>
+          </sc-if>
+        </div>
+
+        <sc-if value="{{ d.hasMenu }}">
+        <div style="background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;box-shadow:8px 8px 0 #0C0F14;padding:24px">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px">
+            <div style="background:linear-gradient(160deg,#FF63AC 0%,#FF2E88 52%,#DE1468 100%);color:#FFF6E5;font-family:'Luckiest Guy', cursive;font-size:22px;padding:7px 12px 4px">{{ t.theMenu }}</div>
+            <div style="font-weight:800;font-size:11px;letter-spacing:1.6px">{{ d.menuNote }}</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:0">
+            <sc-for list="{{ d.menu }}" as="m" hint-placeholder-count="5">
+              <div style="display:flex;gap:14px;align-items:baseline;padding:11px 0;border-bottom:3px dotted #0C0F14">
+                <div style="display:flex;flex-direction:column;gap:3px;flex:1">
+                  <div style="font-family:'Luckiest Guy', cursive;font-size:19px;line-height:1.05">{{ m.name }}</div>
+                  <div style="font-size:14px;font-weight:600;line-height:1.4">{{ m.desc }}</div>
+                </div>
+                <sc-if value="{{ showMenuPrices }}" hint-placeholder-val="{{ true }}">
+                  <div style="font-family:'Luckiest Guy', cursive;font-size:20px">{{ m.price }}</div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        </sc-if>
+
+        <sc-if value="{{ d.hasServices }}">
+        <div style="background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;box-shadow:8px 8px 0 #0C0F14;padding:24px">
+          <div style="display:inline-block;background:linear-gradient(160deg,#FF63AC 0%,#FF2E88 52%,#DE1468 100%);color:#FFF6E5;font-family:'Luckiest Guy', cursive;font-size:22px;padding:7px 12px 4px;margin-bottom:16px">{{ t.whatTheyDo }}</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px">
+            <sc-for list="{{ d.services }}" as="s" hint-placeholder-count="4">
+              <div style="border:3px solid #0C0F14;padding:12px;background:linear-gradient(160deg,#7CF0FA 0%,#16E0F2 52%,#04AEBE 100%)">
+                <div style="font-family:'Luckiest Guy', cursive;font-size:17px;line-height:1.1">{{ s.name }}</div>
+                <div style="font-size:13px;font-weight:600;margin-top:5px;line-height:1.4">{{ s.desc }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        </sc-if>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,135px),1fr));gap:clamp(10px,2vw,14px)">
+          <sc-for list="{{ d.gallery }}" as="g" hint-placeholder-count="3">
+            <div style="position:relative;height:clamp(130px,22vw,170px);border:4px solid #0C0F14;box-shadow:6px 6px 0 #0C0F14">
+              <image-slot id="{{ g.id }}" shape="rect" placeholder="{{ g.hint }}"></image-slot>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:18px">
+        <div style="background:#0C0F14;border:4px solid #0C0F14;box-shadow:8px 8px 0 #FFF6E5;padding:20px;color:#FFF6E5">
+          <div style="font-family:'Luckiest Guy', cursive;font-size:22px;color:#FFD400;margin-bottom:12px">{{ t.visit }}</div>
+          <div style="display:flex;flex-direction:column;gap:9px;font-weight:600;font-size:14px">
+            <div>{{ d.address }}</div>
+            <div>{{ d.phone }}</div>
+            <div style="color:#16E0F2;font-weight:800">{{ d.site }}</div>
+          </div>
+          <div style="margin-top:16px;display:flex;flex-direction:column;gap:6px">
+            <sc-for list="{{ d.hours }}" as="h" hint-placeholder-count="4">
+              <div style="display:flex;justify-content:space-between;gap:10px;font-weight:600;font-size:13px;border-bottom:2px dotted #43494f;padding-bottom:5px">
+                <span>{{ h.d }}</span><span style="font-weight:800;color:#FFD400">{{ h.t }}</span>
+              </div>
+            </sc-for>
+          </div>
+          <button style="cursor:pointer;margin-top:16px;width:100%;font-family:'Luckiest Guy', cursive;font-size:17px;padding:13px 14px 10px;border:4px solid #FFF6E5;background:linear-gradient(160deg,#FF63AC 0%,#FF2E88 52%,#DE1468 100%);color:#FFF6E5">{{ d.cta }}</button>
+        </div>
+
+        <div style="background:#FFD400;border:4px solid #0C0F14;box-shadow:8px 8px 0 #0C0F14;padding:18px">
+          <div style="font-family:'Luckiest Guy', cursive;font-size:20px;line-height:1.05">{{ t.withCrew }}</div>
+          <p style="margin:8px 0 0;font-size:14px;font-weight:600;line-height:1.45">{{ d.crewLine }}</p>
+          <div style="margin-top:12px;background:{{ d.castBg }};border:3px solid #0C0F14;height:{{ d.castH }};aspect-ratio:{{ d.castAR }};display:flex;align-items:flex-end;justify-content:center;overflow:hidden">
+            <sc-for list="{{ d.cast }}" as="m" hint-placeholder-count="2">
+              <img src="{{ m.src }}" alt="{{ m.name }}" style="position:relative;z-index:{{ m.z }};align-self:{{ m.as }};height:{{ m.h }};width:{{ m.w }};max-height:{{ m.mh }};object-fit:{{ m.of }};object-position:bottom;transform:{{ m.flip }};margin:{{ m.mx }}" />
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;box-shadow:8px 8px 0 #0C0F14;padding:18px">
+          <div style="font-weight:800;font-size:11px;letter-spacing:1.6px;color:#B0135E">{{ t.alsoIn }} {{ d.cityName }}</div>
+          <div style="display:flex;flex-direction:column;gap:10px;margin-top:12px">
+            <sc-for list="{{ d.nearby }}" as="n" hint-placeholder-count="3">
+              <a href="{{ n.href }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;display:flex;gap:10px;align-items:center;border:3px solid #0C0F14;padding:9px" style-hover="background:linear-gradient(160deg,#7CF0FA 0%,#16E0F2 52%,#04AEBE 100%)">
+                <div style="font-family:'Luckiest Guy', cursive;font-size:16px;line-height:1.05;flex:1">{{ n.name }}</div>
+                <div style="font-weight:800;font-size:11px">{{ n.catLabel }}</div>
+              </a>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <dc-import name="Footer" hint-size="100%,300px"></dc-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;price&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:20,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:5,&quot;max&quot;:99,&quot;unit&quot;:&quot;$/mo&quot;,&quot;section&quot;:&quot;Membership&quot;},&quot;showSpotlight&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Listing page&quot;},&quot;showRatings&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Listing page&quot;},&quot;memberBadges&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Listing page&quot;},&quot;showMenuPrices&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Business page&quot;}}">
+class Component extends DCLogic {
+  state = {  vw: typeof window !== 'undefined' ? window.innerWidth : 1280 };
+  constructor(p) { super(p); this.adopt(); }
+  adopt() { if (this._ok) return true; const B = window.FCBase; if (!B) return false; Object.assign(this, B); this._ok = true; return true; }
+  componentDidMount() {
+    if (!this.adopt()) { window.addEventListener('fc-base', () => { this.adopt(); this.mount(); this.forceUpdate(); }, { once: true }); return; }
+    this.mount();
+  }
+  componentWillUnmount() { if (this._ok) this.unmount(); }
+  renderVals() {
+    if (!this.adopt()) return {};
+    const T = s => this.T(s);
+    const id = this.qp('biz') || 'el-gallo';
+    const b = this.biz(id) || this.biz('el-gallo');
+    const dc = this.city(b.city), dcat = this.CATS.find(x => x.key === b.cat);
+    const det = this.tx(this.DETAIL[b.id]) || this.tx({
+      story: [
+        T('{name} has been working {city} addresses long enough that the neighbors call the owner by first name. No franchise, no call center, no script.').replace('{name}', b.name).replace('{city}', dc.name.toLowerCase()),
+        'The listing page for this business is waiting on its story. Members send us the history — how it started, who runs it now, what they will not change — and we write this section for them.',
+        'Until then: they show up, they pick up the phone, and the reviews below are from people on these same streets.'
+      ],
+      quote: 'We do the work, the block does the advertising.',
+      quoteBy: T('OWNER, ') + b.name.toUpperCase(),
+      address: b.hood + ', ' + (dc.name === 'HIALEAH' ? 'Hialeah, FL 33012' : dc.name === 'MIAMI LAKES' ? 'Miami Lakes, FL 33014' : 'Miami, FL 33135'),
+      phone: '(305) 555-0' + (100 + this.BIZ.findIndex(x => x.id === b.id)),
+      site: b.id.replace(/-/g, '') + '.com',
+      hours: [{ d: 'Mon – Fri', t: '9am – 6pm' }, { d: 'Saturday', t: '9am – 2pm' }, { d: 'Sunday', t: 'By appointment' }, { d: 'Emergencies', t: 'Call anytime' }],
+      cta: 'REQUEST A QUOTE',
+      crewLine: T('Members of the {city} crew get first callback. Mention the listing.').replace('{city}', dc.name.toLowerCase())
+    });
+    const food = b.cat === 'food' || b.cat === 'night';
+    const story = this.STORIES.find(s => s.biz === b.id);
+    const d = {
+      name: b.name, tag: b.tag, hood: b.hood, price: b.price, rating: b.rating.toFixed(1), reviews: b.reviews,
+      cityName: dc.name, catLabel: dcat ? T(dcat.label) : '', mascot: dc.solo || dc.cast[dc.lead || 0].src,
+      castBg: dc.castBg, castH: dc.cast[0].group ? 'auto' : '130px', castAR: dc.cast[0].group ? '4 / 3' : 'auto',
+      cast: this.sized(dc.cast, 124, '-10px'),
+      showMember: b.member && (this.props.memberBadges !== false),
+      heroSlot: 'hero-' + b.id,
+      hasFullStory: !!story, storyHref: story ? this.href('Story', { s: story.id }) : this.href('Stories', {}),
+      hasMenu: food, hasServices: !food, menu: det.menu || [], menuNote: det.menuNote || '',
+      services: this.tx([
+        { name: 'Free estimates', desc: 'On site within 48 hours, written before they leave.' },
+        { name: 'Licensed & insured', desc: 'State license and certificate of insurance on file with us.' },
+        { name: 'Warranty', desc: 'One year on labor, manufacturer coverage on parts.' },
+        { name: 'Bilingual crew', desc: 'English and Spanish, on every job.' }
+      ]),
+      story: det.story, quote: det.quote, quoteBy: det.quoteBy,
+      address: det.address, phone: det.phone, site: det.site, hours: det.hours, cta: det.cta, crewLine: det.crewLine,
+      gallery: [
+        { id: 'g1-' + b.id, hint: T('Drop: interior') },
+        { id: 'g2-' + b.id, hint: food ? T('Drop: a signature plate') : T('Drop: work in progress') },
+        { id: 'g3-' + b.id, hint: T('Drop: the people') }
+      ],
+      nearby: this.BIZ.filter(x => x.city === b.city && x.id !== b.id).slice(0, 3).map(x => this.card(x))
+    };
+    return {
+      t: this.tAll(), d: d, cityKeyProp: b.city,
+      showMenuPrices: this.props.showMenuPrices !== false,
+      listingHref: this.href('Home', { city: b.city })
+    };
+  }
+}
+</script>
+</body>
+</html>
