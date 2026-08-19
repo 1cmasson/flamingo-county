@@ -3,6 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- PWA — see README "Homescreen install". Re-apply after a Claude Design re-sync. -->
+<link rel="manifest" href="/manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black">
+<meta name="apple-mobile-web-app-title" content="Flamingo">
+<link rel="apple-touch-icon" sizes="180x180" href="/uploads/fc-apple-touch-180.png">
+<script src="./pwa.js" defer></script>
 <script src="./support.js"></script>
 </head>
 <body>
@@ -16,7 +24,6 @@
 <link rel="icon" type="image/png" sizes="32x32" href="uploads/flamingo-city-favicon-32.png" />
 <link rel="icon" type="image/png" sizes="48x48" href="uploads/flamingo-city-favicon-48.png" />
 <link rel="icon" type="image/png" sizes="512x512" href="uploads/flamingo-city-favicon-512.png" />
-<link rel="apple-touch-icon" sizes="180x180" href="uploads/flamingo-city-favicon-180.png" />
 <meta name="theme-color" content="#0C0F14" />
 <style>
 *{box-sizing:border-box}
