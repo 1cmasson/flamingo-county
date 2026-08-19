@@ -41,6 +41,15 @@ class Component extends DCLogic { renderVals() { … } }
 result with React (loaded UMD from unpkg with SRI). **There is no build step** —
 that is why `netlify.toml` has an empty build command.
 
+**Every script in the page's own `<helmet>` executes twice.** `<helmet>` is not a real
+element, so the browser's parser runs its `<script src>` children natively as body
+content; the runtime then clones those same tags into `<head>`, where they run a second
+time. (Imported components are a different path — they are fetched as text and their
+helmets rewritten to `<sc-helmet>`, so they never execute natively.) Anything with a
+side effect must therefore be idempotent, and all three of `image-slot.js`,
+`no-touch-hover.js` and `fc-data.js` carry a guard for exactly this:
+`customElements.get()`, a `__ntHoverPatched` flag, and `script[data-fc-i18n]`.
+
 | File | What it is |
 | --- | --- |
 | `support.js` | The dc-runtime. Generated upstream — never edit by hand. |

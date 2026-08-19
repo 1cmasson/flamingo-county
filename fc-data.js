@@ -873,8 +873,12 @@
   i18nScript.onerror = function () {
     console.warn('[fc] i18next failed to load — T() staying on the fallback path');
   };
-  // The runtime compiles Home + Nav + Footer into one document, so this file can be
-  // reached more than once per page; only ever inject the loader once.
+  // This file executes TWICE on every top-level page. <helmet> is not a real element,
+  // so the parser runs its <script src> children natively as body content, and then
+  // the runtime clones the same tags into <head> and they run again. (Imported
+  // components are fetched as text and rewritten to <sc-helmet>, so only the page's
+  // own helmet does this.) Everything above is idempotent; this append is not, hence
+  // the guard — image-slot.js and no-touch-hover.js guard themselves the same way.
   if (!document.querySelector('script[data-fc-i18n]')) document.head.appendChild(i18nScript);
 
   try { window.dispatchEvent(new Event('fc-base')); } catch (e) {}
