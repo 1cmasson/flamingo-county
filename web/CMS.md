@@ -57,8 +57,14 @@ city heroes, mascots, the founder shot — is imported.
 **`going` counts are seed integers**, not a live tally. Saved/going state is
 `localStorage`-only and has no server side until there are accounts.
 
-**Story outros render English on Spanish pages.** All 3 are missing from the ES
-dictionary; the old site had the same gap. `pnpm verify` prints a note about it.
+**Untranslated fields hold English in the ES locale, not blank.** The seed's
+`es()` mirrors the old `T()` — dictionary miss returns the English string — so a
+gap looks *filled in* in the admin rather than empty. With `fallback: true` we
+could have written `undefined` and let fallback supply the English at read time,
+which would surface gaps as blank fields. Current behaviour matches what the
+live site does today; worth revisiting if you want the admin to show you what
+still needs translating. The known gaps are the 3 story outros and one `sparkle`
+paragraph — `pnpm verify` prints a note about them.
 
 ## The seed reads `fc-data.js`, it does not duplicate it
 
@@ -83,6 +89,18 @@ the array as replaced and rebuilds it instead of translating in place.
   media `staticDir=/data/media` both have to sit under the mount or they vanish
   on redeploy. Run `payload migrate` on boot. SQLite on a volume pins the
   service to one instance — fine at this size.
+
+  The initial migration has been *executed*, not just generated: `payload
+  migrate` against an empty db, then `pnpm seed` and `pnpm verify` on the
+  resulting schema, all 50 checks passing. Dev uses push mode, so without that
+  run the artifact would be unproven until the first Railway boot. Re-check it
+  the same way after any schema change:
+
+  ```sh
+  # point DATABASE_URL at a scratch file in .env first — the CLI reads .env,
+  # so an inline env var will not override it
+  pnpm payload migrate && pnpm seed && pnpm verify
+  ```
 - **Forms.** `list-your-spot` and `newsletter` work today only because Netlify
   scans deployed HTML at deploy time. That mechanism does not exist on Railway;
   both need collections with anonymous `create` access.

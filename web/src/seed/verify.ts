@@ -80,6 +80,45 @@ async function main() {
   check('listing tag differs in ES', galloEs.tag !== g.tag, galloEs.tag?.slice(0, 46) + '…')
   check('business name is NOT translated', galloEs.name === g.name, galloEs.name)
 
+  /* `menu` and `hours` are NOT localized arrays — only the fields inside them
+   * are — so the ES write has to carry the English row ids or Payload rebuilds
+   * the array instead of translating it. Same mechanism as story blocks, but a
+   * different code path (the esData callback), so it needs its own assertions:
+   * a rebuilt array would still have the right length in the EN checks above. */
+  check(
+    'ES menu is the SAME 6 rows, not rebuilt',
+    galloEs.detail?.menu?.length === 6,
+    `got ${galloEs.detail?.menu?.length}`,
+  )
+  check(
+    'ES menu row ids preserved',
+    galloEs.detail?.menu?.every((m: any, i: number) => m.id === g.detail.menu[i].id),
+  )
+  check('ES hours is the SAME 4 rows', galloEs.detail?.hours?.length === 4)
+  check(
+    'ES hours row ids preserved',
+    galloEs.detail?.hours?.every((h: any, i: number) => h.id === g.detail.hours[i].id),
+  )
+  // The point of the whole withIds detour: text inside a non-localized array
+  // actually translates.
+  check(
+    'hours label translated inside a non-localized array',
+    galloEs.detail?.hours?.[0]?.d !== g.detail.hours[0].d,
+    `${g.detail.hours[0].d} -> ${galloEs.detail?.hours?.[0]?.d}`,
+  )
+  check(
+    'menu description translated',
+    galloEs.detail?.menu?.[0]?.desc !== g.detail.menu[0].desc,
+    galloEs.detail?.menu?.[0]?.desc,
+  )
+  check('non-localized price is shared', galloEs.detail?.menu?.[0]?.price === '$21')
+  // `story` IS a localized array, so each locale owns its own rows.
+  check('ES story still has 3 paragraphs', galloEs.detail?.story?.length === 3)
+  check(
+    'ES story text translated',
+    galloEs.detail?.story?.[0]?.text !== g.detail.story[0].text,
+  )
+
   /* blocks: structure shared across locales, text translated in place */
   const stEn: any = (
     await payload.find({
