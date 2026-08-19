@@ -1,0 +1,190 @@
+/**
+ * The global layer, lifted from the <style> block that was duplicated verbatim
+ * inside every .dc.html page's <helmet>. Kept as close to the original as
+ * possible — this is a translation, not a redesign.
+ *
+ * The responsive system is the interesting part: the source drives every
+ * breakpoint off `[data-*]` attribute selectors rather than classes, so those
+ * rules port across unchanged and the JSX just carries the same attributes.
+ */
+
+:root {
+  /* Palette. These five literals recur throughout the source as raw hex. */
+  --ink: #0c0f14;
+  --pink: #ff2e88;
+  --cyan: #16e0f2;
+  --yellow: #ffd400;
+  --cream: #fff6e5;
+  --magenta: #b0135e; /* the small-caps meta line under card titles */
+
+  /* Gradients the event kinds and step chips use. */
+  --grad-pink: linear-gradient(160deg, #ff63ac 0%, #ff2e88 52%, #de1468 100%);
+  --grad-cyan: linear-gradient(160deg, #7cf0fa 0%, #16e0f2 52%, #04aebe 100%);
+  --grad-cream: linear-gradient(160deg, #fffffa 0%, #fff6e5 55%, #f4e3c6 100%);
+
+  /* next/font supplies the hashed family names; the literals are the fallback
+     so a font failure still lands on something with the right metrics. */
+  --display: var(--font-luckiest), 'Luckiest Guy', cursive;
+  --body: var(--font-archivo), 'Archivo', system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  background: var(--pink);
+  -webkit-text-size-adjust: 100%;
+  font-family: var(--body);
+}
+
+a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+/* The source shipped no-touch-hover.js purely to gate every :hover rule behind
+   (hover:hover) at runtime so taps would not stick on touch devices. Authoring
+   the media query directly retires that script. */
+@media (hover: hover) {
+  a:hover {
+    color: var(--cream);
+  }
+}
+
+input,
+button,
+select,
+textarea {
+  font-family: inherit;
+}
+
+/* --- Responsive, driven by data attributes ------------------------------- */
+
+@media (max-width: 1150px) {
+  [data-rail] {
+    display: none !important;
+  }
+  [data-storygrid] {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+}
+
+@media (max-width: 900px) {
+  [data-stack] {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+@media (max-width: 620px) {
+  [data-hide-xs] {
+    display: none !important;
+  }
+}
+
+/* Nav swaps between a desktop bar and a burger + slide-out panel. */
+[data-navdesk] {
+  display: flex;
+}
+[data-navburger] {
+  display: none;
+}
+[data-navpanel] {
+  display: none;
+}
+
+@media (max-width: 1020px) {
+  [data-navdesk] {
+    display: none !important;
+  }
+  [data-navburger] {
+    display: flex !important;
+  }
+  [data-navpanel] {
+    display: flex !important;
+  }
+}
+
+/* The events calendar drops day names for dots on narrow screens. */
+@media (max-width: 720px) {
+  [data-caltitles] {
+    display: none !important;
+  }
+  [data-caldots] {
+    display: flex !important;
+  }
+}
+
+/* --- Animation ------------------------------------------------------------ */
+
+@keyframes tick {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+/* `bob` from the source is omitted: nothing in any page or script referenced it. */
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(34px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes clipIn {
+  from {
+    opacity: 0;
+    clip-path: inset(0 0 90% 0);
+    transform: translateY(24px);
+  }
+  to {
+    opacity: 1;
+    clip-path: inset(0 0 0 0);
+    transform: none;
+  }
+}
+@keyframes tiltIn {
+  from {
+    opacity: 0;
+    transform: translateY(44px) rotate(-5deg);
+  }
+  to {
+    opacity: 1;
+    transform: rotate(-1.6deg);
+  }
+}
+@keyframes barGrow {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes walkDown {
+  from {
+    top: 0;
+  }
+  to {
+    top: calc(100% - 88px);
+  }
+}
+
+/* The source animates unconditionally. Respect the OS setting instead — a
+   deliberate departure, and the only one in this file. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

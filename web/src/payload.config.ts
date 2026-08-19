@@ -15,6 +15,8 @@ import { Events } from './collections/Events'
 import { WeeklyEvents } from './collections/WeeklyEvents'
 import { Stories } from './collections/Stories'
 import { Spotlights } from './collections/Spotlights'
+import { Subscribers } from './collections/Subscribers'
+import { ListingRequests } from './collections/ListingRequests'
 
 import { SiteSettings } from './globals/SiteSettings'
 import { AboutPage } from './globals/AboutPage'
@@ -41,6 +43,8 @@ export default buildConfig({
     Events,
     WeeklyEvents,
     Spotlights,
+    Subscribers,
+    ListingRequests,
   ],
   globals: [SiteSettings, AboutPage, ListYourSpotPage],
 

@@ -77,6 +77,8 @@ export interface Config {
     events: Event;
     'weekly-events': WeeklyEvent;
     spotlights: Spotlight;
+    subscribers: Subscriber;
+    'listing-requests': ListingRequest;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -94,6 +96,8 @@ export interface Config {
     events: EventsSelect<false> | EventsSelect<true>;
     'weekly-events': WeeklyEventsSelect<false> | WeeklyEventsSelect<true>;
     spotlights: SpotlightsSelect<false> | SpotlightsSelect<true>;
+    subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
+    'listing-requests': ListingRequestsSelect<false> | ListingRequestsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -238,9 +242,13 @@ export interface City {
    */
   blurb?: string | null;
   /**
-   * Leads the city tabs. Only havana has this in the source.
+   * Order in the nav tabs and city lists. Source order: Hialeah, Miami Lakes, Little Havana.
    */
-  lead?: boolean | null;
+  order?: number | null;
+  /**
+   * Index into the cast array, picking which character represents the city. Vestigial in the source — every city sets `solo`, which wins over it.
+   */
+  lead?: number | null;
   /**
    * City accent hex, e.g. #FF2E88.
    */
@@ -684,6 +692,44 @@ export interface Spotlight {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscribers".
+ */
+export interface Subscriber {
+  id: number;
+  email: string;
+  /**
+   * Which version of the site they signed up from.
+   */
+  lang?: ('en' | 'es') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "listing-requests".
+ */
+export interface ListingRequest {
+  id: number;
+  status?: ('new' | 'contacted' | 'listed' | 'declined') | null;
+  business: string;
+  owner?: string | null;
+  phone: string;
+  email?: string | null;
+  city?: (number | null) | City;
+  category?: (number | null) | Category;
+  /**
+   * What they told us about the place.
+   */
+  story?: string | null;
+  /**
+   * Which version of the site they submitted from.
+   */
+  lang?: ('en' | 'es') | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -745,6 +791,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'spotlights';
         value: number | Spotlight;
+      } | null)
+    | ({
+        relationTo: 'subscribers';
+        value: number | Subscriber;
+      } | null)
+    | ({
+        relationTo: 'listing-requests';
+        value: number | ListingRequest;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -872,6 +926,7 @@ export interface CitiesSelect<T extends boolean = true> {
   name?: T;
   sub?: T;
   blurb?: T;
+  order?: T;
   lead?: T;
   accent?: T;
   castBg?: T;
@@ -1118,6 +1173,33 @@ export interface SpotlightsSelect<T extends boolean = true> {
   deal?: T;
   blurb?: T;
   image?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "subscribers_select".
+ */
+export interface SubscribersSelect<T extends boolean = true> {
+  email?: T;
+  lang?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "listing-requests_select".
+ */
+export interface ListingRequestsSelect<T extends boolean = true> {
+  status?: T;
+  business?: T;
+  owner?: T;
+  phone?: T;
+  email?: T;
+  city?: T;
+  category?: T;
+  story?: T;
+  lang?: T;
   updatedAt?: T;
   createdAt?: T;
 }

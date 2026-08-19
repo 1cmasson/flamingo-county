@@ -18,7 +18,8 @@
     "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts",
     "seed": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" tsx src/seed/index.ts",
     "seed:inspect": "cross-env NODE_OPTIONS=--no-deprecation tsx src/seed/inspect.ts",
-    "verify": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" tsx src/seed/verify.ts"
+    "verify": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" tsx src/seed/verify.ts",
+    "gen:dictionary": "cross-env NODE_OPTIONS=--no-deprecation tsx src/i18n/generate.ts"
   },
   "dependencies": {
     "@payloadcms/next": "3.88.0",

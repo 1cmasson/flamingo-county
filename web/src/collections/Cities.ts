@@ -38,12 +38,21 @@ export const Cities: CollectionConfig = {
       admin: { description: 'The paragraph on the city page.' },
     },
     {
-      name: 'lead',
-      type: 'checkbox',
-      defaultValue: false,
+      name: 'order',
+      type: 'number',
       admin: {
         position: 'sidebar',
-        description: 'Leads the city tabs. Only havana has this in the source.',
+        description: 'Order in the nav tabs and city lists. Source order: Hialeah, Miami Lakes, Little Havana.',
+      },
+    },
+    {
+      name: 'lead',
+      type: 'number',
+      defaultValue: 0,
+      admin: {
+        position: 'sidebar',
+        description:
+          'Index into the cast array, picking which character represents the city. Vestigial in the source — every city sets `solo`, which wins over it.',
       },
     },
     {

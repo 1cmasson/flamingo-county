@@ -214,7 +214,7 @@ async function seed() {
 
   /* --- Cities ------------------------------------------------------------- */
   console.log('cities…')
-  for (const [key, c] of Object.entries<any>(base.CITIES)) {
+  for (const [i, [key, c]] of Object.entries<any>(base.CITIES).entries()) {
     const doc = await upsert(
       payload,
       'cities',
@@ -223,7 +223,9 @@ async function seed() {
         name: en(c.name),
         sub: en(c.sub),
         blurb: en(c.blurb),
-        lead: Boolean(c.lead),
+        // Source key order is the tab order: hialeah, lakes, havana.
+        order: i,
+        lead: c.lead ?? 0,
         accent: c.accent,
         castBg: c.castBg,
         photo: cityPhoto[key],
