@@ -53,7 +53,7 @@ export async function Nav({
   const tabs: CityTab[] = [
     { label: t('ALL LISTINGS'), href: routes.home(lang), on: on('all') },
     ...cities.map((c) => ({
-      label: c.name ?? c.slug,
+      label: t(c.name ?? c.slug),
       href: routes.city(lang, c.slug),
       on: on(c.slug),
     })),

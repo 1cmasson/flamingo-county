@@ -151,3 +151,17 @@
     color: var(--cream) !important;
   }
 }
+
+/* The featured story panel and the About CTA lift further than a normal card. */
+.cardBig {
+  transition:
+    transform 160ms cubic-bezier(0.2, 0.8, 0.25, 1),
+    box-shadow 160ms cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+@media (hover: hover) {
+  .cardBig:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 13px 13px 0 var(--ink) !important;
+    color: var(--ink) !important;
+  }
+}
