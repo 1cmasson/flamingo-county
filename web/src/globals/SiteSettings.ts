@@ -42,5 +42,33 @@ export const SiteSettings: GlobalConfig = {
         { name: 'contactPhone', type: 'text' },
       ],
     },
+    {
+      type: 'collapsible',
+      label: 'All-cities hero',
+      admin: {
+        description:
+          'Used on the home page when no city filter is applied. Each city supplies its own hero photo and cast on its own record.',
+      },
+      fields: [
+        {
+          name: 'heroPhoto',
+          type: 'upload',
+          relationTo: 'media',
+          admin: { description: 'The skyline shot behind the headline.' },
+        },
+        {
+          name: 'heroCast',
+          type: 'upload',
+          relationTo: 'media',
+          admin: { description: 'The three mascots together.' },
+        },
+        {
+          name: 'heroCastBg',
+          type: 'text',
+          defaultValue: '#00feff',
+          admin: { description: 'Backdrop hex behind the group art.' },
+        },
+      ],
+    },
   ],
 }

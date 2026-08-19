@@ -1259,6 +1259,18 @@ export interface SiteSetting {
   showMenuPrices?: boolean | null;
   contactEmail?: string | null;
   contactPhone?: string | null;
+  /**
+   * The skyline shot behind the headline.
+   */
+  heroPhoto?: (number | null) | Media;
+  /**
+   * The three mascots together.
+   */
+  heroCast?: (number | null) | Media;
+  /**
+   * Backdrop hex behind the group art.
+   */
+  heroCastBg?: string | null;
   updatedAt?: string | null;
   createdAt?: string | null;
 }
@@ -1347,6 +1359,9 @@ export interface SiteSettingsSelect<T extends boolean = true> {
   showMenuPrices?: T;
   contactEmail?: T;
   contactPhone?: T;
+  heroPhoto?: T;
+  heroCast?: T;
+  heroCastBg?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

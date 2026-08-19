@@ -17,19 +17,26 @@ const initial: FormState = { ok: false }
 export function NewsletterForm({
   lang,
   t,
+  onLight,
 }: {
   lang: Lang
   t: { ph: string; btn: string; fine: string; thanks: string }
+  /** Home renders this on the cyan panel: ink borders and ink shadows, rather
+   *  than the Footer's cream-on-ink inversion. */
+  onLight?: boolean
 }) {
   const [state, formAction, pending] = useActionState(subscribe, initial)
+  const edge = onLight ? 'var(--ink)' : 'var(--cream)'
+  const shadow = onLight ? 'var(--ink)' : 'var(--cyan)'
+  const fine = onLight ? 'var(--ink)' : 'var(--cyan)'
 
   if (state.ok) {
     return (
       <div
         style={{
           background: 'var(--yellow)',
-          border: '4px solid var(--cream)',
-          boxShadow: '5px 5px 0 var(--cyan)',
+          border: `4px solid ${edge}`,
+          boxShadow: `5px 5px 0 ${shadow}`,
           padding: 14,
           fontFamily: 'var(--display)',
           fontSize: 'clamp(17px,4.2vw,21px)',
@@ -64,8 +71,8 @@ export function NewsletterForm({
             minWidth: 0,
             fontSize: 15,
             fontWeight: 600,
-            padding: '12px 13px',
-            border: '4px solid var(--cream)',
+            padding: onLight ? '13px 14px' : '12px 13px',
+            border: `4px solid ${edge}`,
             background: 'var(--grad-cream)',
             color: 'var(--ink)',
             outline: 'none',
@@ -79,10 +86,10 @@ export function NewsletterForm({
             fontFamily: 'var(--display)',
             fontSize: 16,
             padding: '12px 17px 9px',
-            border: '4px solid var(--cream)',
+            border: `4px solid ${edge}`,
             background: 'var(--pink)',
             color: 'var(--cream)',
-            boxShadow: '4px 4px 0 var(--cyan)',
+            boxShadow: `4px 4px 0 ${shadow}`,
             opacity: pending ? 0.7 : 1,
           }}
         >
@@ -90,7 +97,7 @@ export function NewsletterForm({
         </button>
       </div>
       <div
-        style={{ fontWeight: 800, fontSize: 11, letterSpacing: '1.4px', color: 'var(--cyan)' }}
+        style={{ fontWeight: 800, fontSize: 11, letterSpacing: '1.4px', color: fine }}
       >
         {t.fine}
       </div>

@@ -100,7 +100,7 @@ async function upsertMedia(
   relPath: string,
   altEn: string,
   altEs?: string,
-): Promise<number | string | undefined> {
+): Promise<number | undefined> {
   const abs = path.join(SITE_ROOT, relPath)
   if (!fs.existsSync(abs)) {
     console.warn(`  ! missing media, skipped: ${relPath}`)
@@ -114,7 +114,7 @@ async function upsertMedia(
     limit: 1,
     depth: 0,
   })
-  if (existing.docs.length) return existing.docs[0].id
+  if (existing.docs.length) return existing.docs[0].id as number
 
   const doc = await payload.create({
     collection: 'media',
@@ -132,7 +132,7 @@ async function upsertMedia(
       depth: 0,
     })
   }
-  return doc.id
+  return doc.id as number
 }
 
 /* -------------------------------------------------------------------- seeds */
@@ -210,6 +210,18 @@ async function seed() {
     'uploads/carlos.png',
     'Carlos Masson',
     'Carlos Masson',
+  )
+  // The all-cities hero, used on the home page when no city filter is applied.
+  const skylineHero = await upsertMedia(
+    payload,
+    'assets/skyline-hero.png',
+    'The Miami skyline',
+    'El horizonte de Miami',
+  )
+  const losTres = await upsertMedia(
+    payload,
+    'uploads/los-tres-bust-536a000f.png',
+    'Rigo, Rafa and Toni',
   )
 
   /* --- Cities ------------------------------------------------------------- */
@@ -537,6 +549,9 @@ async function seed() {
       showMenuPrices: true,
       contactEmail: 'hola@flamingocounty.com',
       contactPhone: '(305) 555-0100',
+      heroPhoto: skylineHero,
+      heroCast: losTres,
+      heroCastBg: '#00feff',
     },
   })
 

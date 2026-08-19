@@ -105,3 +105,38 @@
     color: var(--ink) !important;
   }
 }
+
+/* Category chips lift straight up rather than diagonally. */
+.chipLift {
+  transition: transform 160ms cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+@media (hover: hover) {
+  .chipLift:hover {
+    transform: translateY(-2px);
+    color: var(--ink) !important;
+  }
+}
+
+/* Search / reset buttons and other 3px-shadow controls. */
+.chipPress {
+  transition:
+    transform 160ms cubic-bezier(0.2, 0.8, 0.25, 1),
+    box-shadow 160ms cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+@media (hover: hover) {
+  .chipPress:hover {
+    transform: translate(-1px, -1px);
+    box-shadow: 5px 5px 0 var(--ink) !important;
+  }
+}
+
+/* The spotlight CTA inverts cyan to pink instead of lifting. */
+.chipSpot {
+  transition: background 160ms ease, color 160ms ease;
+}
+@media (hover: hover) {
+  .chipSpot:hover {
+    background: var(--grad-pink) !important;
+    color: var(--cream) !important;
+  }
+}

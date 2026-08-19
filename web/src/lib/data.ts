@@ -88,7 +88,9 @@ export async function getListings(lang: Lang, filter: ListingFilter = {}): Promi
     where,
     locale: lang,
     limit: 200,
-    depth: 1,
+    // depth 2, not 1: the card draws the city's mascot, which is an upload
+    // hanging off the city — one level below the listing's own relationship.
+    depth: 2,
   })
   return docs
 }
