@@ -6,6 +6,8 @@ export const LANG_COOKIE = 'fc.lang'
 export const PATH_HEADER = 'x-fc-pathname'
 
 /**
+ * Next 16 renamed the middleware file convention to `proxy`.
+ *
  * Resolves the language for URLs that carry no /[lang] prefix and redirects to
  * one that does. Mirrors the chain documented in the site README, in order:
  *
@@ -20,7 +22,7 @@ export const PATH_HEADER = 'x-fc-pathname'
  * request and the device setting would be ignored permanently. So this handler
  * only ever *reads* the cookie — the toggle is what writes it.
  */
-export function middleware(req: NextRequest) {
+export function proxy(req: NextRequest) {
   const { pathname, searchParams } = req.nextUrl
 
   const first = pathname.split('/')[1]

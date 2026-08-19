@@ -81,10 +81,79 @@ whose *inner* fields are localized — story blocks, menu rows, opening hours �
 must carry their generated row `id` into that second write, or Payload treats
 the array as replaced and rebuilds it instead of translating in place.
 
-## Not done yet
+## The frontend
 
-- **The frontend port.** `src/app/(frontend)/` is still the scaffold's page.
-  `../ROUTES.md` maps all ten routes.
+Ported so far: the chrome (nav, footer), **Home**, **City**, **Business** and
+**Story**. Still on the list: Events, Event, Stories index, My Week,
+List Your Spot, About.
+
+### How to check a port is faithful
+
+The reference implementation is still in this worktree, so serve it and compare:
+
+```sh
+python3 -m http.server 8080 --directory ..   # the old site
+pnpm dev                                     # the port
+```
+
+Then screenshot the same page from both at the same viewport — `/Home.dc.html`
+against `/en`, `/Story.dc.html?s=el-gallo` against `/en/stories/el-gallo`. Check
+1280 **and** 390; the whole burger-nav path only exists below 1020px. Do this
+before believing a page is done: it has already caught a full-width button that
+looked inline, a nav active-state that never fired, and two mascots that
+silently resolved to bare relationship ids.
+
+One caveat: `support.js` pulls React from unpkg, so confirm the reference
+actually rendered before trusting a comparison. A blank reference makes every
+diff look like a pass.
+
+### What changed in translation
+
+**Hover is CSS now.** `style-hover` compiled to real `:hover` rules at runtime,
+and `no-touch-hover.js` then rewrapped them in `@media (hover:hover)` so taps
+would not stick. Both are authored directly, which also retires the four
+booleans the nav kept in state purely to show a tooltip.
+
+**Responsive rules port unchanged.** Every breakpoint keys off a `[data-*]`
+attribute — `data-stack`, `data-navburger`, `data-rail` — so `globals.css` keeps
+them verbatim and the JSX carries the same attributes.
+
+**Language moved from localStorage to a cookie**, because a server render cannot
+read localStorage. The chain is unchanged — `?lang=` → cookie → `Accept-Language`
+→ `es` — and so is the rule that makes it work: **only the toggle writes.**
+Persisting a *detected* language would make it win on every later request and
+the device setting would never be consulted again. `src/proxy.ts` only reads.
+
+**Search is a plain GET form.** No client component: the page already reads its
+filters from `searchParams`, so the browser can serialise the fields itself.
+
+**`<image-slot>` became `<MediaSlot>`** — real image when the CMS has one, and
+otherwise the element's exact empty state, which is what the live site shows
+today.
+
+### Rendering is dynamic, on purpose
+
+Every route builds as `ƒ` rather than `○`. The nav lives in the layout and needs
+to know the current section, which it gets from a header stamped by the proxy —
+and reading a request header makes the segment dynamic.
+
+That is the right default for a CMS-backed site: an edit in the admin is live on
+the next request with no rebuild. Data comes from Payload's local API, so there
+is no network hop to pay for. If static rendering is ever wanted, the way back
+is to drop the header and pass `active` per page as the source did
+(`<dc-import name="Nav" active="story">`) — `generateStaticParams` is already in
+place on every dynamic route.
+
+### Still to do on the frontend
+
+- **The remaining six routes.**
+- **Old URLs.** `?biz=`, `?e=`, `?s=` are advertised as shareable in the site
+  README and exist in the wild. They need resolving routes that look the record
+  up and redirect — `?biz=el-gallo` has to become `/en/havana/el-gallo`, which
+  needs the city, so `next.config` rewrites cannot do it.
+- **Scroll-driven animations** on Story use `animation-timeline`, which is
+  Chromium-only. Other engines apply the `both` fill and show the end state
+  immediately — a graceful degradation, left as CSS rather than reimplemented.
 - **Railway.** Volume at `/data`; `DATABASE_URL=file:/data/content.db` *and*
   media `staticDir=/data/media` both have to sit under the mount or they vanish
   on redeploy. Run `payload migrate` on boot. SQLite on a volume pins the

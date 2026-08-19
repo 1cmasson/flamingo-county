@@ -1,5 +1,5 @@
 import { headers } from 'next/headers'
-import { PATH_HEADER } from '../middleware'
+import { PATH_HEADER } from '../proxy'
 
 export type ActiveSection =
   | 'home'

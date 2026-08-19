@@ -2,3 +2,7 @@
 .netlify/
 node_modules/
 *.log
+
+# Browser-automation artifacts from visual diffing against the static site
+.playwright-mcp/
+/*.png
