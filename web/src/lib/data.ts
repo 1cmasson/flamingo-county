@@ -149,7 +149,10 @@ export async function getEvents(lang: Lang): Promise<Event[]> {
     locale: lang,
     limit: 500,
     sort: 'date',
-    depth: 2,
+    // depth 3: the card draws the city's mascot. For a place-venue event the
+    // city hangs directly off the event (depth 2 is enough), but for a
+    // listing-venue one it is event -> listing -> city -> mascot upload.
+    depth: 3,
   })
   return docs
 }
@@ -161,7 +164,7 @@ export async function getEvent(lang: Lang, slug: string): Promise<Event | null> 
     where: { slug: { equals: slug } },
     locale: lang,
     limit: 1,
-    depth: 2,
+    depth: 3,
   })
   return docs[0] ?? null
 }
