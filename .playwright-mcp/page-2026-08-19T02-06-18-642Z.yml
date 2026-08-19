@@ -1,0 +1,326 @@
+- generic [active] [ref=f14e1]:
+  - generic [ref=f14e2]:
+    - navigation [ref=f14e3]:
+      - link "FLAMINGO COUNTY FLAMINGOCOUNTY.COM · 305" [ref=f14e4] [cursor=pointer]:
+        - /url: /en
+        - generic [ref=f14e5]:
+          - generic [ref=f14e6]: FLAMINGO COUNTY
+          - generic [ref=f14e7]: FLAMINGOCOUNTY.COM · 305
+      - generic [ref=f14e395]:
+        - button "LISTINGS" [ref=f14e397] [cursor=pointer]
+        - button "Léelo en español" [ref=f14e402] [cursor=pointer]:
+          - generic [ref=f14e405]: ES
+        - link "EVENTS" [ref=f14e407] [cursor=pointer]:
+          - /url: /en/events
+        - link "STORIES" [ref=f14e409] [cursor=pointer]:
+          - /url: /en/stories
+        - link "ABOUT" [ref=f14e410] [cursor=pointer]:
+          - /url: /en/about
+        - link "LIST YOUR SPOT" [ref=f14e412] [cursor=pointer]:
+          - /url: /en/list-your-spot
+    - generic [ref=f14e18]: "NOW ON THE LISTING · 412 LOCAL SPOTS · HIALEAH · MIAMI LAKES · LITTLE HAVANA · MEMBER SPOTLIGHTS EVERY FRIDAY · NEW: BANQUET HALLS · NOW ON THE LISTING · 412 LOCAL SPOTS · HIALEAH · MIAMI LAKES · LITTLE HAVANA · MEMBER SPOTLIGHTS EVERY FRIDAY · NEW: BANQUET HALLS ·"
+  - main [ref=f14e21]:
+    - generic [ref=f14e22]:
+      - generic [ref=f14e23]:
+        - generic [ref=f14e24]:
+          - generic [ref=f14e25]: EVERY BUSINESS. THREE CITIES. ONE LISTING.
+          - heading "EAT, HIRE & CELEBRATE WITH THE LOCALS." [level=1] [ref=f14e26]: EAT, HIRE & CELEBRATEWITH THE LOCALS.
+          - paragraph [ref=f14e27]: Bars, restaurants, contractors, home cleaning and banquet halls — vouched for by the neighborhoods that use them. Pick a city up top to meet its crew.
+        - img "Rigo, Rafa and Toni" [ref=f14e29]
+      - generic [ref=f14e30]:
+        - generic [ref=f14e31]:
+          - generic [ref=f14e32]: SPOTLIGHT
+          - generic [ref=f14e33]: WHERE THE CREWS ARE GOING OUT THIS WEEK
+          - generic [ref=f14e34]: ALL THREE CITIES
+        - generic [ref=f14e35]:
+          - generic [ref=f14e36]:
+            - generic [ref=f14e37]:
+              - generic [ref=f14e38]: Drop the spotlight photo — cantina bar
+              - generic:
+                - generic: LITTLE HAVANA
+                - generic: THIS WEEK
+            - generic [ref=f14e45]:
+              - generic [ref=f14e46]: El Gallo Cantina
+              - generic [ref=f14e47]: CANTINA · LIVE MUSIC
+              - generic [ref=f14e48]: Live son cubano Thursdays, no cover before 10pm
+              - paragraph [ref=f14e49]: Rigo brings Blanca and Daysi, orders three ropa viejas, and nobody leaves before last call.
+              - link "SEE THE SPOT →" [ref=f14e50] [cursor=pointer]:
+                - /url: /en/havana/el-gallo
+          - generic [ref=f14e51]:
+            - generic [ref=f14e52]:
+              - generic [ref=f14e53]: Drop the spotlight photo — patio dinner table
+              - generic:
+                - generic: MIAMI LAKES
+                - generic: THIS WEEK
+            - generic [ref=f14e60]:
+              - generic [ref=f14e61]: Main Street Chophouse
+              - generic [ref=f14e62]: STEAKHOUSE · FAMILY TABLE
+              - generic [ref=f14e63]: Sunday family platter for four — $68
+              - paragraph [ref=f14e64]: The whole herd shows up after church. Kids eat on the patio, Toni argues about the check.
+              - link "SEE THE SPOT →" [ref=f14e65] [cursor=pointer]:
+                - /url: /en/lakes/chophouse
+          - generic [ref=f14e66]:
+            - generic [ref=f14e67]:
+              - generic [ref=f14e68]: Drop the spotlight photo — dining room at night
+              - generic:
+                - generic: HIALEAH
+                - generic: THIS WEEK
+            - generic [ref=f14e75]:
+              - generic [ref=f14e76]: The Flamingo Room Supper Club
+              - generic [ref=f14e77]: SUPPER CLUB · DATE NIGHT
+              - generic [ref=f14e78]: 2-for-1 mojitos, Thursday to Saturday, 7–9pm
+              - paragraph [ref=f14e79]: Rafa books the corner booth and Yoli makes him wear the good guayabera. Live trio starts at nine.
+              - link "SEE THE SPOT →" [ref=f14e80] [cursor=pointer]:
+                - /url: /en/hialeah/flamingo-room
+      - generic [ref=f14e81]:
+        - generic [ref=f14e82]:
+          - generic [ref=f14e83]: NEWSLETTER
+          - generic [ref=f14e84]: DEALS IN YOUR INBOX EVERY FRIDAY
+          - paragraph [ref=f14e85]: "One email a week: the spotlight deals, the new listings and where the crews are eating. No spam, ever."
+        - generic [ref=f14e86]:
+          - generic [ref=f14e87]:
+            - textbox "you@email.com" [ref=f14e88]
+            - button "SIGN ME UP" [ref=f14e89] [cursor=pointer]
+          - generic [ref=f14e90]: FRIDAYS ONLY · ENGLISH OR SPANISH · UNSUBSCRIBE ANYTIME
+    - generic [ref=f14e91]:
+      - generic [ref=f14e92]:
+        - generic [ref=f14e93]: "FILTER:"
+        - link "EVERYTHING" [ref=f14e94] [cursor=pointer]:
+          - /url: /en
+        - link "BARS & RESTAURANTS" [ref=f14e95] [cursor=pointer]:
+          - /url: /en?cat=food
+        - link "NIGHT CLUBS" [ref=f14e96] [cursor=pointer]:
+          - /url: /en?cat=night
+        - link "CONTRACTORS" [ref=f14e97] [cursor=pointer]:
+          - /url: /en?cat=contract
+        - link "HOME CLEANING" [ref=f14e98] [cursor=pointer]:
+          - /url: /en?cat=clean
+        - link "BANQUET HALLS" [ref=f14e99] [cursor=pointer]:
+          - /url: /en?cat=halls
+        - generic [ref=f14e100]:
+          - textbox "Search a business, dish or trade…" [ref=f14e101]
+          - button "SEARCH" [ref=f14e102] [cursor=pointer]
+          - link "RESET" [ref=f14e103] [cursor=pointer]:
+            - /url: /en
+          - generic [ref=f14e104]: 14 LISTINGS
+      - generic [ref=f14e105]:
+        - link "LITTLE HAVANA MEMBER Ocho Clean Crew HOME CLEANING · SW 17th Ave Apartment turnovers, post-renovation dust, and windows that finally see the street. ★ 4.6 $ DETAILS →" [ref=f14e106] [cursor=pointer]:
+          - /url: /en/havana/ocho-clean
+          - generic [ref=f14e107]:
+            - generic [ref=f14e108]: "Drop: Cleaning crew"
+            - generic:
+              - generic: LITTLE HAVANA
+              - generic: MEMBER
+          - generic [ref=f14e115]:
+            - generic [ref=f14e116]: Ocho Clean Crew
+            - generic [ref=f14e117]: HOME CLEANING · SW 17th Ave
+            - paragraph [ref=f14e118]: Apartment turnovers, post-renovation dust, and windows that finally see the street.
+            - generic [ref=f14e119]:
+              - generic [ref=f14e120]: ★ 4.6
+              - generic [ref=f14e121]: $
+              - generic [ref=f14e122]: DETAILS →
+        - link "LITTLE HAVANA Salón Habana Events BANQUET HALLS · SW 12th Ave Old tile floors, string lights, and a stage that has held every kind of band. ★ 4.4 $$ DETAILS →" [ref=f14e123] [cursor=pointer]:
+          - /url: /en/havana/havana-hall
+          - generic [ref=f14e124]:
+            - generic [ref=f14e125]: "Drop: Event hall stage"
+            - generic: LITTLE HAVANA
+          - generic [ref=f14e132]:
+            - generic [ref=f14e133]: Salón Habana Events
+            - generic [ref=f14e134]: BANQUET HALLS · SW 12th Ave
+            - paragraph [ref=f14e135]: Old tile floors, string lights, and a stage that has held every kind of band.
+            - generic [ref=f14e136]:
+              - generic [ref=f14e137]: ★ 4.4
+              - generic [ref=f14e138]: $$
+              - generic [ref=f14e139]: DETAILS →
+        - link "LITTLE HAVANA Ventanita Domino Café BARS & RESTAURANTS · Máximo Gómez Park A colada, a pastelito, and the loudest political debate on the block. Free with purchase. ★ 4.8 $ DETAILS →" [ref=f14e140] [cursor=pointer]:
+          - /url: /en/havana/domino-cafe
+          - generic [ref=f14e141]:
+            - generic [ref=f14e142]: "Drop: Ventanita window"
+            - generic: LITTLE HAVANA
+          - generic [ref=f14e149]:
+            - generic [ref=f14e150]: Ventanita Domino Café
+            - generic [ref=f14e151]: BARS & RESTAURANTS · Máximo Gómez Park
+            - paragraph [ref=f14e152]: A colada, a pastelito, and the loudest political debate on the block. Free with purchase.
+            - generic [ref=f14e153]:
+              - generic [ref=f14e154]: ★ 4.8
+              - generic [ref=f14e155]: $
+              - generic [ref=f14e156]: DETAILS →
+        - link "LITTLE HAVANA MEMBER La Corona Cigar Lounge NIGHT CLUBS · Calle Ocho Rollers up front, rum in the back, dominoes going until the last table gives up. ★ 4.7 $$ DETAILS →" [ref=f14e157] [cursor=pointer]:
+          - /url: /en/havana/cigar-lounge
+          - generic [ref=f14e158]:
+            - generic [ref=f14e159]: "Drop: Cigar lounge"
+            - generic:
+              - generic: LITTLE HAVANA
+              - generic: MEMBER
+          - generic [ref=f14e166]:
+            - generic [ref=f14e167]: La Corona Cigar Lounge
+            - generic [ref=f14e168]: NIGHT CLUBS · Calle Ocho
+            - paragraph [ref=f14e169]: Rollers up front, rum in the back, dominoes going until the last table gives up.
+            - generic [ref=f14e170]:
+              - generic [ref=f14e171]: ★ 4.7
+              - generic [ref=f14e172]: $$
+              - generic [ref=f14e173]: DETAILS →
+        - link "LITTLE HAVANA MEMBER El Gallo Cantina BARS & RESTAURANTS · SW 8th St Ropa vieja, a nine-piece band on Thursdays, and mojitos poured with too much rum. ★ 4.9 $$ DETAILS →" [ref=f14e174] [cursor=pointer]:
+          - /url: /en/havana/el-gallo
+          - generic [ref=f14e175]:
+            - generic [ref=f14e176]: "Drop: Cantina bar"
+            - generic:
+              - generic: LITTLE HAVANA
+              - generic: MEMBER
+          - generic [ref=f14e183]:
+            - generic [ref=f14e184]: El Gallo Cantina
+            - generic [ref=f14e185]: BARS & RESTAURANTS · SW 8th St
+            - paragraph [ref=f14e186]: Ropa vieja, a nine-piece band on Thursdays, and mojitos poured with too much rum.
+            - generic [ref=f14e187]:
+              - generic [ref=f14e188]: ★ 4.9
+              - generic [ref=f14e189]: $$
+              - generic [ref=f14e190]: DETAILS →
+        - link "MIAMI LAKES The Oaks Banquet & Events BANQUET HALLS · Main St Weddings, sweet sixteens and Sunday church luncheons under one very tall ceiling. ★ 4.5 $$$ DETAILS →" [ref=f14e191] [cursor=pointer]:
+          - /url: /en/lakes/oak-hall
+          - generic [ref=f14e192]:
+            - generic [ref=f14e193]: "Drop: Wedding reception"
+            - generic: MIAMI LAKES
+          - generic [ref=f14e200]:
+            - generic [ref=f14e201]: The Oaks Banquet & Events
+            - generic [ref=f14e202]: BANQUET HALLS · Main St
+            - paragraph [ref=f14e203]: Weddings, sweet sixteens and Sunday church luncheons under one very tall ceiling.
+            - generic [ref=f14e204]:
+              - generic [ref=f14e205]: ★ 4.5
+              - generic [ref=f14e206]: $$$
+              - generic [ref=f14e207]: DETAILS →
+        - link "MIAMI LAKES Miami Lakes Cooling & Air CONTRACTORS · NW 67th Ave Same-day A/C repair in August, which is the only month that counts. ★ 4.8 $$ DETAILS →" [ref=f14e208] [cursor=pointer]:
+          - /url: /en/lakes/cool-air
+          - generic [ref=f14e209]:
+            - generic [ref=f14e210]: "Drop: Technician at work"
+            - generic: MIAMI LAKES
+          - generic [ref=f14e217]:
+            - generic [ref=f14e218]: Miami Lakes Cooling & Air
+            - generic [ref=f14e219]: CONTRACTORS · NW 67th Ave
+            - paragraph [ref=f14e220]: Same-day A/C repair in August, which is the only month that counts.
+            - generic [ref=f14e221]:
+              - generic [ref=f14e222]: ★ 4.8
+              - generic [ref=f14e223]: $$
+              - generic [ref=f14e224]: DETAILS →
+        - link "MIAMI LAKES MEMBER Lakes Sparkle Home Cleaning HOME CLEANING · Royal Oaks Same two-person team every visit. Deep clean, move-outs, and post-party rescues. ★ 4.9 $$ DETAILS →" [ref=f14e225] [cursor=pointer]:
+          - /url: /en/lakes/sparkle
+          - generic [ref=f14e226]:
+            - generic [ref=f14e227]: "Drop: Spotless kitchen"
+            - generic:
+              - generic: MIAMI LAKES
+              - generic: MEMBER
+          - generic [ref=f14e234]:
+            - generic [ref=f14e235]: Lakes Sparkle Home Cleaning
+            - generic [ref=f14e236]: HOME CLEANING · Royal Oaks
+            - paragraph [ref=f14e237]: Same two-person team every visit. Deep clean, move-outs, and post-party rescues.
+            - generic [ref=f14e238]:
+              - generic [ref=f14e239]: ★ 4.9
+              - generic [ref=f14e240]: $$
+              - generic [ref=f14e241]: DETAILS →
+        - link "MIAMI LAKES MEMBER Main Street Chophouse BARS & RESTAURANTS · Town Center Dry-aged steaks, a patio under the oaks, and a kids menu that is not an afterthought. ★ 4.7 $$$ DETAILS →" [ref=f14e242] [cursor=pointer]:
+          - /url: /en/lakes/chophouse
+          - generic [ref=f14e243]:
+            - generic [ref=f14e244]: "Drop: Patio dinner table"
+            - generic:
+              - generic: MIAMI LAKES
+              - generic: MEMBER
+          - generic [ref=f14e251]:
+            - generic [ref=f14e252]: Main Street Chophouse
+            - generic [ref=f14e253]: BARS & RESTAURANTS · Town Center
+            - paragraph [ref=f14e254]: Dry-aged steaks, a patio under the oaks, and a kids menu that is not an afterthought.
+            - generic [ref=f14e255]:
+              - generic [ref=f14e256]: ★ 4.7
+              - generic [ref=f14e257]: $$$
+              - generic [ref=f14e258]: DETAILS →
+        - link "HIALEAH Neón 305 NIGHT CLUBS · Hialeah Dr Reggaetón downstairs, timba upstairs, croquetas at 3am from the window out back. ★ 4.4 $$ DETAILS →" [ref=f14e259] [cursor=pointer]:
+          - /url: /en/hialeah/club-neon
+          - generic [ref=f14e260]:
+            - generic [ref=f14e261]: "Drop: Club dance floor"
+            - generic: HIALEAH
+          - generic [ref=f14e268]:
+            - generic [ref=f14e269]: Neón 305
+            - generic [ref=f14e270]: NIGHT CLUBS · Hialeah Dr
+            - paragraph [ref=f14e271]: Reggaetón downstairs, timba upstairs, croquetas at 3am from the window out back.
+            - generic [ref=f14e272]:
+              - generic [ref=f14e273]: ★ 4.4
+              - generic [ref=f14e274]: $$
+              - generic [ref=f14e275]: DETAILS →
+        - link "HIALEAH MEMBER Salón Tropical Banquet Hall BANQUET HALLS · Okeechobee Rd 400 seats, a real dance floor, and a quinceañera package your tía will approve. ★ 4.6 $$$ DETAILS →" [ref=f14e276] [cursor=pointer]:
+          - /url: /en/hialeah/salon-tropical
+          - generic [ref=f14e277]:
+            - generic [ref=f14e278]: "Drop: Hall set for a party"
+            - generic:
+              - generic: HIALEAH
+              - generic: MEMBER
+          - generic [ref=f14e285]:
+            - generic [ref=f14e286]: Salón Tropical Banquet Hall
+            - generic [ref=f14e287]: BANQUET HALLS · Okeechobee Rd
+            - paragraph [ref=f14e288]: 400 seats, a real dance floor, and a quinceañera package your tía will approve.
+            - generic [ref=f14e289]:
+              - generic [ref=f14e290]: ★ 4.6
+              - generic [ref=f14e291]: $$$
+              - generic [ref=f14e292]: DETAILS →
+        - link "HIALEAH Rivera Roofing & Repairs CONTRACTORS · W 12th St Third-generation roofers. Permits pulled, tile matched, no ghosting after the deposit. ★ 4.7 $$ DETAILS →" [ref=f14e293] [cursor=pointer]:
+          - /url: /en/hialeah/rivera-roof
+          - generic [ref=f14e294]:
+            - generic [ref=f14e295]: "Drop: Crew on a roof"
+            - generic: HIALEAH
+          - generic [ref=f14e302]:
+            - generic [ref=f14e303]: Rivera Roofing & Repairs
+            - generic [ref=f14e304]: CONTRACTORS · W 12th St
+            - paragraph [ref=f14e305]: Third-generation roofers. Permits pulled, tile matched, no ghosting after the deposit.
+            - generic [ref=f14e306]:
+              - generic [ref=f14e307]: ★ 4.7
+              - generic [ref=f14e308]: $$
+              - generic [ref=f14e309]: DETAILS →
+        - link "HIALEAH MEMBER Panadería El Progreso BARS & RESTAURANTS · E 4th Ave Croquetas out of the fryer at 6am and pan cubano still warm at noon. ★ 4.9 $ DETAILS →" [ref=f14e310] [cursor=pointer]:
+          - /url: /en/hialeah/pan-cubano
+          - generic [ref=f14e311]:
+            - generic [ref=f14e312]: "Drop: Bakery counter"
+            - generic:
+              - generic: HIALEAH
+              - generic: MEMBER
+          - generic [ref=f14e319]:
+            - generic [ref=f14e320]: Panadería El Progreso
+            - generic [ref=f14e321]: BARS & RESTAURANTS · E 4th Ave
+            - paragraph [ref=f14e322]: Croquetas out of the fryer at 6am and pan cubano still warm at noon.
+            - generic [ref=f14e323]:
+              - generic [ref=f14e324]: ★ 4.9
+              - generic [ref=f14e325]: $
+              - generic [ref=f14e326]: DETAILS →
+        - link "HIALEAH MEMBER The Flamingo Room Supper Club BARS & RESTAURANTS · Palm Ave White tablecloths, a house trio, and the best palomilla north of the Miami River. ★ 4.8 $$$ DETAILS →" [ref=f14e327] [cursor=pointer]:
+          - /url: /en/hialeah/flamingo-room
+          - generic [ref=f14e328]:
+            - generic [ref=f14e329]: "Drop: Dining room at night"
+            - generic:
+              - generic: HIALEAH
+              - generic: MEMBER
+          - generic [ref=f14e336]:
+            - generic [ref=f14e337]: The Flamingo Room Supper Club
+            - generic [ref=f14e338]: BARS & RESTAURANTS · Palm Ave
+            - paragraph [ref=f14e339]: White tablecloths, a house trio, and the best palomilla north of the Miami River.
+            - generic [ref=f14e340]:
+              - generic [ref=f14e341]: ★ 4.8
+              - generic [ref=f14e342]: $$$
+              - generic [ref=f14e343]: DETAILS →
+      - generic [ref=f14e344]:
+        - generic [ref=f14e345]:
+          - generic [ref=f14e346]: OWN A SPOT IN ONE OF THE THREE?
+          - paragraph [ref=f14e347]: Get your listing, your story page, your menu and a shot at the weekly spotlight for $20 a month. Cancel whenever.
+        - link "JOIN FOR $20/MO" [ref=f14e348] [cursor=pointer]:
+          - /url: /en/list-your-spot
+  - contentinfo [ref=f14e350]:
+    - generic [ref=f14e351]:
+      - generic [ref=f14e352]:
+        - generic [ref=f14e353]: NEWSLETTER
+        - generic [ref=f14e354]: DEALS IN YOUR INBOX EVERY FRIDAY
+      - generic [ref=f14e355]: YOU'RE IN — SEE YOU FRIDAY.
+    - generic [ref=f14e361]:
+      - generic [ref=f14e362]:
+        - img "Flamingo County" [ref=f14e363]
+        - generic [ref=f14e364]: FLAMINGOCOUNTY.COM · 305
+      - generic [ref=f14e365]: Hialeah · Miami Lakes · Little Havana
+      - link "ABOUT" [ref=f14e366] [cursor=pointer]:
+        - /url: /en/about
+      - generic [ref=f14e367]: a local listing, run by locals. © 2026
+  - button "Open Next.js Dev Tools" [ref=f14e373] [cursor=pointer]
+  - alert [ref=f14e394]

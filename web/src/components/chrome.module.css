@@ -140,3 +140,14 @@
     color: var(--cream) !important;
   }
 }
+
+/* "Read the full story" inverts ink to pink. */
+.chipStory {
+  transition: background 160ms ease, color 160ms ease;
+}
+@media (hover: hover) {
+  .chipStory:hover {
+    background: var(--grad-pink) !important;
+    color: var(--cream) !important;
+  }
+}
