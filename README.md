@@ -47,6 +47,7 @@ that is why `netlify.toml` has an empty build command.
 | `fc-data.js` | `window.FCBase`: cities, listings, events, stories, the EN→ES dictionary, ICS generation, `href()`, `qp()`, and the Netlify form POST helper. |
 | `image-slot.js` | The `<image-slot>` element (see *Photos* below). |
 | `no-touch-hover.js` | Gates every `:hover` rule behind `(hover:hover)` so taps don't stick. |
+| `vendor/i18next.min.js` | i18next `26.3.6`, UMD build, copied verbatim from `https://unpkg.com/i18next@26.3.6/dist/umd/i18next.min.js`. Vendored rather than CDN-linked so local dev works offline. See *Language*. |
 | `*.dc.html` | One file per route, plus `Nav` and `Footer` as shared components. |
 | `forms.html` | Unlinked. Exists only so Netlify can register the forms — see *Forms*. |
 | `ROUTES.md` | Route map, and a sketch of a future Next.js port. Reference only. |
@@ -55,8 +56,9 @@ that is why `netlify.toml` has an empty build command.
 
 Links are real `<a href>` navigations and all state lives in the query string, so
 every view is shareable: `?city=`, `?biz=`, `?s=`, `?e=`, `?cat=`, `?q=`, `?kind=`,
-`?view=`, `?month=`, `?lang=en|es`. The language also persists per device in
-`localStorage`.
+`?view=`, `?month=`, `?lang=en|es`. The language starts from the device's own
+language settings and persists per device once the visitor picks one — see
+*Language*.
 
 `_redirects` adds clean aliases (`/events`, `/about`, `/list-your-spot`, …) as 200
 rewrites alongside the canonical `.dc.html` paths. **Read the comments in that file
@@ -65,6 +67,46 @@ before changing it** — the no-trailing-slash rule is load-bearing.
 *Follow-up, deliberately not done yet:* point `href()` in `fc-data.js` at the clean
 paths so internal links use them too. It's a one-line map change, but it alters
 which URL the runtime resolves `Nav.dc.html` against, so it wants its own test pass.
+
+## Language
+
+EN/ES resolution lives in `fc-data.js`, first hit wins:
+
+1. `?lang=en|es` — shared links keep their language. Clamped and case-insensitive:
+   `?lang=ES` works, and anything that isn't Spanish (`?lang=fr`) resolves to `en`
+   rather than landing in `<html lang>` as-is.
+2. The saved choice in `localStorage` (`fc.lang`) — written **only** by `setLang()`,
+   i.e. only when someone clicks the EN/ES toggle in the nav.
+3. `detectLang(navigator.languages)` — the first entry whose primary subtag is `es`
+   or `en`, so `es-419`, `es-MX` and `es-US` all resolve to Spanish, and
+   `["fr-FR", "en-US"]` resolves to English.
+4. `'es'` — only reached when the device asks for nothing this site can serve.
+
+**Step 3 must never be persisted.** If a detected language were written to `fc.lang`,
+that stored value would win on step 2 from then on and the device setting would be
+ignored forever. This is also why `i18next-browser-languagedetector` is not used: it
+caches to `localStorage` by default, and its localStorage reader expects raw strings
+while `lsSet()` here stores JSON.
+
+`T()` looks strings up through i18next; the dictionary is the `ES`/`EV_ES` maps in
+`fc-data.js`, handed to `i18next.init()` at the bottom of that file. Two init options
+are load-bearing:
+
+- `keySeparator: false` **and** `nsSeparator: false` — the keys *are* the English
+  strings, and 120 of them contain `.` or `:` (`"FILTER:"`). Without these, i18next
+  reads those as nesting/namespace paths and the lookup silently misses.
+- `lng: 'es'` is pinned, because `T()` returns the key untouched for English.
+
+i18next is loaded by `fc-data.js` itself rather than from a `<helmet>` script tag:
+helmet injects scripts with `createElement` + `appendChild`, which makes them async,
+so load order relative to `fc-data.js` is not guaranteed. Until it lands, `T()` reads
+`ES`/`EV_ES` directly — byte-identical output for all 367 keys, so there is no flash.
+The trade-off is that a failed load is invisible in the page; `isInitialized` is the
+assertion worth checking, and there is an `onerror` warning in the console.
+
+The `{city}`-style single-brace placeholders in the dictionary are replaced by this
+site's own code, not by i18next (whose syntax is `{{ }}`). Moving them to i18next
+interpolation is an optional follow-up.
 
 ## Forms
 
@@ -100,7 +142,11 @@ back. Rule of thumb:
 - **Edit in the Claude Design canvas, then re-pull:** `*.dc.html`, `fc-data.js`,
   and anything under `assets/`, `mascots/`, `uploads/`.
 - **Edit here — these do not exist in the design project:** `netlify.toml`,
-  `_redirects`, `forms.html`, `README.md`, `.gitignore`.
+  `_redirects`, `forms.html`, `README.md`, `.gitignore`, `vendor/`.
+- **`fc-data.js` carries local edits on top of the design version.** A re-pull
+  overwrites them, so re-apply these four hunks (all described under *Language*):
+  `detectLang()`, `resolveLang()` + `lang()`, the i18next branch in `T()`, and the
+  `<html lang>` + loader block above `window.FCBase = B`.
 
 Two things bit us on the way in, worth knowing before the next pull:
 

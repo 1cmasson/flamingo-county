@@ -3,7 +3,25 @@
     qp(k) { try { return new URLSearchParams(location.search).get(k); } catch (e) { return null; } },
     lsGet(k, d) { try { const v = localStorage.getItem('fc.' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
     lsSet(k, v) { try { localStorage.setItem('fc.' + k, JSON.stringify(v)); } catch (e) {} },
-    lang() { return this.state.lang || this.qp('lang') || this.lsGet('lang', 'es'); },
+    // en/es picked from the device, first entry the site can actually serve.
+    // Pure, so it can be checked with a stub list: detectLang(['fr-FR','en-US']) === 'en'.
+    detectLang(langs) {
+      const list = langs && langs.length ? langs : [];
+      for (const l of list) {
+        const p = String(l).toLowerCase().split('-')[0];
+        if (p === 'es' || p === 'en') return p;
+      }
+      return 'es';
+    },
+    // Explicit choice first (?lang=, then the Nav toggle's saved pick), device after.
+    // Never persists what it detects — see setLang, the only writer of fc.lang.
+    resolveLang() {
+      const pick = this.qp('lang') || this.lsGet('lang', null);
+      // Clamped, so ?lang=ES works and ?lang=fr can't end up in <html lang>.
+      if (pick) return String(pick).toLowerCase() === 'es' ? 'es' : 'en';
+      return this.detectLang(typeof navigator !== 'undefined' ? (navigator.languages || [navigator.language]) : null);
+    },
+    lang() { return (this.state && this.state.lang) || this.resolveLang(); },
     href(page, params) {
       const p = new URLSearchParams(), o = params || {};
       for (const k in o) if (o[k] !== null && o[k] !== undefined && o[k] !== '') p.set(k, o[k]);
@@ -11,7 +29,14 @@
       return page + '.dc.html?' + p.toString();
     },
     setLang(l) { this.lsSet('lang', l); const u = new URL(location.href); u.searchParams.set('lang', l); location.assign(u.toString()); },
-    T(s) { if (typeof s !== 'string' || this.lang() !== 'es') return s; return this.ES[s] || this.EV_ES[s] || s; },
+    // ES/EV_ES below are the i18next resource bundle (loaded at the bottom of this
+    // file). The direct lookup is the pre-init fallback — same output, no flash.
+    T(s) {
+      if (typeof s !== 'string' || this.lang() !== 'es') return s;
+      const i = window.i18next;
+      if (i && i.isInitialized) return i.t(s, { defaultValue: s });
+      return this.ES[s] || this.EV_ES[s] || s;
+    },
     tx(v) {
       if (typeof v === 'string') return this.T(v);
       if (Array.isArray(v)) return v.map(x => this.tx(x));
@@ -821,5 +846,36 @@
     }
   };
   window.FCBase = B;
+
+  document.documentElement.lang = B.resolveLang();
+
+  // i18next is loaded from here rather than from a <helmet> script tag: helmet
+  // injects scripts with createElement + appendChild, which makes them async, so
+  // load order relative to this file is not guaranteed. T() reads the dictionaries
+  // directly until this lands, so nothing user-visible waits on it.
+  //
+  // keySeparator/nsSeparator must stay false — 120 of the keys are English strings
+  // containing '.' or ':' ("FILTER:"), which i18next would otherwise read as paths.
+  // lng is pinned to 'es' because T() returns the key untouched for English.
+  const i18nScript = document.createElement('script');
+  i18nScript.src = './vendor/i18next.min.js';
+  i18nScript.setAttribute('data-fc-i18n', '');   // marker: the guard below keeps this to one tag
+  i18nScript.onload = function () {
+    window.i18next.init({
+      lng: 'es',
+      resources: { es: { translation: Object.assign({}, B.EV_ES, B.ES) } },
+      fallbackLng: false,
+      keySeparator: false,
+      nsSeparator: false,
+      initImmediate: false
+    });
+  };
+  i18nScript.onerror = function () {
+    console.warn('[fc] i18next failed to load — T() staying on the fallback path');
+  };
+  // The runtime compiles Home + Nav + Footer into one document, so this file can be
+  // reached more than once per page; only ever inject the loader once.
+  if (!document.querySelector('script[data-fc-i18n]')) document.head.appendChild(i18nScript);
+
   try { window.dispatchEvent(new Event('fc-base')); } catch (e) {}
 })();
