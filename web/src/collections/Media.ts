@@ -25,6 +25,19 @@ export const Media: CollectionConfig = {
     },
   ],
   upload: {
+    /**
+     * Where the files actually land.
+     *
+     * Payload's default is a `media` directory beside the config, which lives
+     * inside the deployed app — so on Railway every uploaded photo, plus the
+     * three resized variants Sharp writes per image, disappears on the next
+     * redeploy. `MEDIA_DIR` points this at the persistent volume in production
+     * (`/data/media`) and is simply unset locally, where the default is fine.
+     *
+     * This and `DATABASE_URL` are the two paths that must sit under the mount.
+     * Getting one right and not the other loses half the content.
+     */
+    staticDir: process.env.MEDIA_DIR || undefined,
     imageSizes: [
       { name: 'thumbnail', width: 400, position: 'centre' },
       { name: 'card', width: 828 },

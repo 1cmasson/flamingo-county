@@ -1,0 +1,17 @@
+# Build context is the repo root, so this keeps the image lean and — more
+# importantly — keeps local state out of it. content.db in particular must NOT
+# ship: production's database lives on the volume, and copying a local one in
+# would overwrite or shadow it.
+**/node_modules
+**/.next
+**/.git
+**/.claude
+web/content.db
+web/*.db
+web/migration-check.db
+web/media
+web/.env
+.env
+**/.DS_Store
+**/npm-debug.log*
+**/*.tsbuildinfo

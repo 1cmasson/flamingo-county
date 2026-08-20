@@ -38,8 +38,125 @@ create-first-user screen handles it instead.
 | `spotlights` | 3 | `SPOTS` |
 | `media` | 10 | Real photography only |
 
+The table above is what `fc-data.js` *contains*. By default only cities,
+categories, event-kinds, media and the globals are actually imported from it —
+see *Only real businesses are seeded* below.
+
 Globals: `site-settings` (the old per-page `data-props`), `about-page` and
 `list-your-spot-page` (copy that was inline `L(en, es)` pairs in the components).
+
+## Only real businesses are seeded
+
+`fc-data.js` is design fiction — 14 listings whose phone and hours were
+generated from the array index, plus the 20 events, 6 weekly events, 3
+spotlights and 3 stories written around them. **None of it is imported.**
+
+What the seed still takes from `fc-data.js`: the three cities, both taxonomies,
+the photography, and the site copy. Those describe real places and real words.
+
+`SEED_MOCK_CONTENT=1` puts the fiction back — seed and verify both read it, and
+the full assertion suite runs again. Nothing is lost by leaving it off:
+`fc-data.js` is still in the repo and still the source of truth for it.
+
+The content that ships is 11 researched listings, and `publicationStatus`
+records how solid each one is:
+
+| Value | N | What it is |
+| --- | --- | --- |
+| `ready` | 4 | Every published field traces to a source. |
+| `needs_owner_confirmation` | 7 | Publishable, but `research.blockingGaps` names what still has to be asked. |
+| `unsourced` | 0 | Design placeholders. Only present with `SEED_MOCK_CONTENT=1`. |
+
+**What this empties.** The events board, the stories index and the home
+spotlight row have no content, and Little Havana has no listings — there is no
+research for it yet. Every one of those renders its empty state rather than
+breaking. That is the honest picture: the site now shows exactly what is known
+about real businesses and nothing else.
+
+The researched 11 come from `data-import/listings.json`, a tracked copy of the
+file generated from the per-business dossiers in the sibling `flamingo-city`
+repo's `research/<city>/`. The importer is `src/seed/research-listings.ts`; it
+prefers the in-repo copy and falls back to the sibling checkout, so a deploy
+that only has this repo still gets all 11. Override with `RESEARCH_JSON`.
+
+Keeping the copy tracked matters: `flamingo-city` is a different git repo and
+does not exist on Railway, and the importer skips silently when it finds
+nothing — so relying on the sibling would have produced a short seed with no
+error.
+
+Three rules that file states and the importer obeys — all three are enforced by
+assertions in `pnpm verify`, because each is a way the import could quietly lie:
+
+- **`corporate_record.filing_date` is never an opening date.** It is a Florida
+  registration event, and several of these businesses registered decades after
+  they opened. Only `established` / `opened` reach `research.established`.
+- **`"N/A"` is a gap marker, not a value.** It never becomes a string.
+- **Conflicting hours are not resolved by picking one.** They arrive with
+  `detail.hoursConfidence` and the disagreements in `detail.hoursConflicts`.
+
+Coverage is partial and uneven on purpose: Miami Lakes and Hialeah only,
+restaurants and bars only. Little Havana and the `clean` / `contract` / `halls`
+categories have no research behind them yet.
+
+## Deploying to Railway
+
+Verified by building the image and running it against a Docker volume, not just
+written. `railway.json` at the repo root points at `web/Dockerfile`.
+
+| Setting | Value |
+| --- | --- |
+| Root Directory | the repo root — **not** `web/` |
+| Builder | Dockerfile, `web/Dockerfile` |
+| Volume mount | `/data` |
+| `DATABASE_URL` | `file:/data/content.db` |
+| `MEDIA_DIR` | `/data/media` |
+| `PAYLOAD_SECRET` | a fresh random string |
+
+After the first deploy, run `pnpm seed` once from Railway's shell.
+
+**The build context is the repo root on purpose.** The seed reads `../fc-data.js`
+and `../data-import/listings.json`, and uploads photography from `assets/`,
+`mascots/` and `uploads/` — all outside `web/`. Build with `web/` as the context
+and the image looks fine until someone seeds, then produces 0 media.
+
+Three things this arrangement got wrong the first time, all found by running the
+container rather than reading it:
+
+- **pnpm must be pinned.** Newer pnpm stopped reading the `pnpm` field in
+  `package.json`, so `onlyBuiltDependencies` was ignored, sharp never built and
+  the install failed. `packageManager` in `package.json` fixes it.
+- **`generateStaticParams` routes 500'd** with `DYNAMIC_SERVER_USAGE`. The build
+  database is empty, so those hooks return nothing and Next falls back to
+  generating on demand — where the nav's header read throws. The four affected
+  routes are now `force-dynamic`. Note that `pnpm build` **and** a local
+  `pnpm start` both pass while this is broken, because a local build has a
+  seeded database. Only a container build reproduces it.
+- **Media and the database both have to sit under the mount.** Getting one right
+  loses the other half of the content.
+
+### Sourced listings lead the grids
+
+`getListings` returns `ready`, then `needs_owner_confirmation`, then
+`unsourced` — real businesses ahead of design placeholders — with seed order
+preserved inside each tier. The tiering is applied in `lib/data.ts` rather than
+in the query, because Payload would sort `publicationStatus` alphabetically and
+put `needs_owner_confirmation` ahead of `ready`.
+
+This matters most on the city pages, which show only three picks each
+(`City.dc.html:127` does the same). Hialeah and Miami Lakes now lead with
+researched businesses; Little Havana still shows fc-data records, because no
+research covers it yet.
+
+The **home spotlight row is not affected** — those three are curated one-per-city
+records in the `spotlights` collection, not the head of the grid.
+
+### Hours print only when they are trustworthy
+
+7 of the 11 researched listings have hours below `high` confidence, two of them
+with three sources that flatly disagree. The Business page renders a schedule
+only at `high` confidence, or when `hoursConfidence` is empty — empty means
+authored design content, not a failed verification. Anything less shows
+"Hours vary by source — call to confirm." next to the phone number.
 
 ## Things that are deliberate, not oversights
 
@@ -146,7 +263,24 @@ place on every dynamic route.
 
 ### Still to do on the frontend
 
-- **The remaining six routes.**
+All ten routes are ported. Six of them were only ever checked by status code,
+typecheck and build; that gap is now closed — see `VISUAL-REVIEW.md` for the
+by-eye pass over Events, Event, Stories, My Week, List Your Spot and About,
+including the 720px calendar breakpoint. Nine defects came out of it. Five are
+fixed; the four below are the remainder.
+
+- **Sections that were never ported.** The **Event** page is missing its whole
+  right-hand column — *when & where*, *going with the crew* and *post an event*
+  (`Event.dc.html:85` wraps them in a `1.5fr 0.9fr` `data-stack` grid). The
+  **events board** is missing the **ON DECK** spotlight hero and its own
+  *post an event* card. **Stories** is missing the cyan *your story goes here*
+  card in the third shelf slot. **My Week**'s hero is missing its **SAVED** and
+  **GOING** counters.
+
+  Two of those draw a mascot on a tinted panel. Use `lib/castBg.ts` — the
+  literal `castBg` on each city is dead data that renders flat cyan, and that
+  helper computes what the source actually draws.
+
 - **Old URLs.** `?biz=`, `?e=`, `?s=` are advertised as shareable in the site
   README and exist in the wild. They need resolving routes that look the record
   up and redirect — `?biz=el-gallo` has to become `/en/havana/el-gallo`, which
@@ -161,22 +295,39 @@ place on every dynamic route.
 
   The initial migration has been *executed*, not just generated: `payload
   migrate` against an empty db, then `pnpm seed` and `pnpm verify` on the
-  resulting schema, all 50 checks passing. Dev uses push mode, so without that
-  run the artifact would be unproven until the first Railway boot. Re-check it
-  the same way after any schema change:
+  resulting schema, all checks passing. Dev uses push mode, so without that
+  run the artifact would be unproven until the first Railway boot.
+
+  **The migration was regenerated on 2026-08-20 and the old one deleted.** It
+  had drifted out of sync with the config and no longer built a working schema:
+  `cities.order`, three `site_settings.hero_*` columns and the two form-inbox
+  join columns on `payload_locked_documents_rels` existed in the config and in
+  the push-mode dev database but were absent from the migration. Adding a
+  migration on top could not fix it — the generated repair tried to rebuild
+  `cities` by selecting a column the migrated schema had never had, and failed.
+  Nothing had shipped, so one clean initial migration was the honest artifact.
+
+  The lesson generalises: **push mode hides migration drift completely.** Adding
+  a field and seeing it work in dev proves nothing about the migration. Re-check
+  it the same way after any schema change:
 
   ```sh
   # point DATABASE_URL at a scratch file in .env first — the CLI reads .env,
   # so an inline env var will not override it
   pnpm payload migrate && pnpm seed && pnpm verify
   ```
-- **Forms.** `list-your-spot` and `newsletter` work today only because Netlify
-  scans deployed HTML at deploy time. That mechanism does not exist on Railway;
-  both need collections with anonymous `create` access.
-- **Event date logic.** The old calendar is a hardcoded two-month window
-  (`EV_TODAY: '2026-08-17'`, `MONTHNAME` with only keys 8 and 9). Records
-  migrated; the this-weekend/next-week bucketing has to be rebuilt. `date` is a
-  bare day and `timeLabel` is unparsed display text — decide then whether to
-  normalize to real datetimes.
-- **URL contract.** Everything is `?biz=` / `?e=` / `?s=` today and advertised as
-  shareable. Path routes need redirects preserving those.
+
+### One rule worth keeping
+
+Every Payload query in `lib/data.ts` sets an explicit `sort`. Three did not, and
+all three were wrong in the same way: Payload's default is `-createdAt`, so the
+stories index featured the newest story instead of the first, and the home page
+printed its spotlight row Little Havana first. Seed order is authored order — if
+you add a `find`, sort it.
+
+The three use `sort: 'createdAt'` rather than the `sort: 'order'` field that
+cities, categories and event-kinds carry. That is a deliberate shortcut: it
+restores authored order without a schema change, but it is **not** editor
+controllable, so re-ordering the stories shelf from the admin is not possible
+today. Promoting them to a real `order` field is the proper fix whenever
+someone needs to reorder content without re-seeding.

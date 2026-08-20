@@ -7,6 +7,11 @@ const __filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(__filename)
 
 const nextConfig: NextConfig = {
+  // Required by the Dockerfile: `next build` then emits `.next/standalone` with
+  // a self-contained server.js and only the traced node_modules, which is what
+  // the runtime stage copies. Without it the image builds and then fails at
+  // `node server.js` because that file is never produced.
+  output: 'standalone',
   images: {
     localPatterns: [
       {

@@ -10,6 +10,21 @@ import { StoryBlocks } from '../../../../../components/StoryBlocks'
 import { MediaSlot } from '../../../../../components/MediaSlot'
 import chrome from '../../../../../components/chrome.module.css'
 
+/**
+ * Rendered per request, always.
+ *
+ * `generateStaticParams` below is kept because it is the way back to static
+ * rendering if that is ever wanted (see CMS.md). But this page reads the
+ * request header the nav uses for its active section, so Next must not attempt
+ * to statically generate it — in a production build whose database is empty at
+ * build time, `generateStaticParams` returns nothing and Next falls back to
+ * generating on demand, where that header read throws DYNAMIC_SERVER_USAGE and
+ * the route 500s. Dev and a locally-seeded build both hide this; the container
+ * does not.
+ */
+export const dynamic = 'force-dynamic'
+
+
 const mono = 'ui-monospace, SFMono-Regular, Menlo, monospace'
 
 export async function generateStaticParams() {

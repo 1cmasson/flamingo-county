@@ -12,6 +12,21 @@ import { EventActions } from '../../../../../components/EventActions'
 import { eventActionStrings, eventVenue } from '../../../../../components/EventCard'
 import s from '../../../../../components/chrome.module.css'
 
+/**
+ * Rendered per request, always.
+ *
+ * `generateStaticParams` below is kept because it is the way back to static
+ * rendering if that is ever wanted (see CMS.md). But this page reads the
+ * request header the nav uses for its active section, so Next must not attempt
+ * to statically generate it — in a production build whose database is empty at
+ * build time, `generateStaticParams` returns nothing and Next falls back to
+ * generating on demand, where that header read throws DYNAMIC_SERVER_USAGE and
+ * the route 500s. Dev and a locally-seeded build both hide this; the container
+ * does not.
+ */
+export const dynamic = 'force-dynamic'
+
+
 export async function generateStaticParams() {
   const events = await getEvents('en')
   return events.flatMap((e) => [

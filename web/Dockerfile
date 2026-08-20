@@ -1,71 +1,85 @@
-# To use this Dockerfile, you have to set `output: 'standalone'` in your next.config.mjs file.
-# From https://github.com/vercel/next.js/blob/canary/examples/with-docker/Dockerfile
+# Flamingo County — Payload CMS + Next.js, for Railway.
+#
+# BUILD CONTEXT IS THE REPO ROOT, not `web/`. That is deliberate and it is the
+# one thing to preserve if this file is ever rewritten: `pnpm seed` reads
+# `../fc-data.js` (src/seed/load-fc-data.ts) and `../data-import/listings.json`,
+# both of which live outside `web/`. Building with `web/` as the context makes
+# the image look fine and then fail the moment anyone seeds.
+#
+# Requires `output: 'standalone'` in next.config.ts, which produces the
+# server.js the runtime stage starts.
 
 FROM node:22.17.0-alpine AS base
-
-# Install dependencies only when needed
-FROM base AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
 RUN apk add --no-cache libc6-compat
-WORKDIR /app
+# Pinned via package.json's `packageManager`. It matters: newer pnpm stopped
+# reading the `pnpm` field in package.json, so `onlyBuiltDependencies` was
+# ignored and sharp's build script never ran — the install then failed outright.
+RUN corepack enable pnpm && corepack prepare pnpm@10.30.3 --activate
 
-# Install dependencies based on the preferred package manager
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
-RUN \
-  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then npm ci; \
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm i --frozen-lockfile; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
+# ---------------------------------------------------------------- deps
+FROM base AS deps
+WORKDIR /app/web
+COPY web/package.json web/pnpm-lock.yaml* web/.npmrc* ./
+RUN pnpm install --frozen-lockfile
 
-
-# Rebuild the source code only when needed
+# ---------------------------------------------------------------- build
 FROM base AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+COPY --from=deps /app/web/node_modules ./web/node_modules
+# The whole repo: web/ plus the seed's data sources at the root.
 COPY . .
+WORKDIR /app/web
+# A build-time value is enough to satisfy config loading; the real secret and
+# database URL arrive as runtime env vars.
+ENV PAYLOAD_SECRET=build-only-not-a-real-secret
+ENV DATABASE_URL=file:/tmp/build.db
+ENV NEXT_TELEMETRY_DISABLED=1
+# `generateStaticParams` runs during the build and queries Payload, so the build
+# database needs a schema or the build dies on "no such table: cities". The
+# tables stay empty, which is correct — every route renders dynamically, so
+# nothing is prerendered from this throwaway database.
+RUN pnpm payload migrate && pnpm run build
 
-# Next.js collects completely anonymous telemetry data about general usage.
-# Learn more here: https://nextjs.org/telemetry
-# Uncomment the following line in case you want to disable telemetry during the build.
-# ENV NEXT_TELEMETRY_DISABLED 1
-
-RUN \
-  if [ -f yarn.lock ]; then yarn run build; \
-  elif [ -f package-lock.json ]; then npm run build; \
-  elif [ -f pnpm-lock.yaml ]; then corepack enable pnpm && pnpm run build; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
-
-# Production image, copy all the files and run next
+# ---------------------------------------------------------------- runtime
 FROM base AS runner
-WORKDIR /app
+WORKDIR /app/web
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-ENV NODE_ENV production
-# Uncomment the following line in case you want to disable telemetry during runtime.
-# ENV NEXT_TELEMETRY_DISABLED 1
+RUN addgroup --system --gid 1001 nodejs && adduser --system --uid 1001 nextjs
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+COPY --from=builder /app/web/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/web/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/web/.next/static ./.next/static
 
-# Remove this line if you do not have this folder
-COPY --from=builder /app/public ./public
+# Kept in the image so the container can seed itself on first boot — the seed
+# evaluates fc-data.js, reads the researched dossiers, and uploads the source
+# photography from assets/ mascots/ uploads/ (src/seed/index.ts:168+). Without
+# those three directories the seed completes with 0 media and every photo slot
+# on the site renders as its empty state.
+COPY --from=builder --chown=nextjs:nodejs /app/fc-data.js /app/fc-data.js
+COPY --from=builder --chown=nextjs:nodejs /app/data-import /app/data-import
+COPY --from=builder --chown=nextjs:nodejs /app/assets /app/assets
+COPY --from=builder --chown=nextjs:nodejs /app/mascots /app/mascots
+COPY --from=builder --chown=nextjs:nodejs /app/uploads /app/uploads
 
-# Set the correct permission for prerender cache
-RUN mkdir .next
-RUN chown nextjs:nodejs .next
+# Migrations run from source at boot, so the CLI and the TS files have to be
+# present in the runtime image, not just the build stage.
+COPY --from=builder --chown=nextjs:nodejs /app/web/node_modules ./node_modules
+COPY --from=builder --chown=nextjs:nodejs /app/web/src ./src
+COPY --from=builder --chown=nextjs:nodejs /app/web/package.json ./package.json
+COPY --from=builder --chown=nextjs:nodejs /app/web/tsconfig.json ./tsconfig.json
+COPY --from=builder --chown=nextjs:nodejs /app/web/next.config.ts ./next.config.ts
 
-# Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# The volume mount point. Both the database and the uploads live under here;
+# anything written outside it is gone on the next deploy.
+RUN mkdir -p /data/media && chown -R nextjs:nodejs /data
 
 USER nextjs
-
 EXPOSE 3000
+ENV PORT=3000
+ENV HOSTNAME=0.0.0.0
 
-ENV PORT 3000
-
-# server.js is created by next build from the standalone output
-# https://nextjs.org/docs/pages/api-reference/next-config-js/output
-CMD HOSTNAME="0.0.0.0" node server.js
+# Migrate before serving. A failed migration must stop the boot rather than
+# start a server against a schema that does not match the code.
+CMD ["sh", "-c", "pnpm payload migrate && node server.js"]
