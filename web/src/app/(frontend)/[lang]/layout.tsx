@@ -77,9 +77,14 @@ export default async function LangLayout({
       className={`${luckiest.variable} ${archivo.variable}`}
     >
       <body>
-        <Nav lang={lang} active={active} city={city} />
-        {children}
-        <Footer lang={lang} />
+        {/* The source's outer div: `min-height:100vh` over nav, content and
+            footer together, so a short page leaves its slack below the footer
+            rather than above it. */}
+        <div style={{ minHeight: '100vh' }}>
+          <Nav lang={lang} active={active} city={city} />
+          {children}
+          <Footer lang={lang} />
+        </div>
       </body>
     </html>
   )

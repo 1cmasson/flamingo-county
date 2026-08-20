@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import { isLang, translator, type Lang } from '../../../../i18n'
 import { routes } from '../../../../lib/routes'
 import { getAboutPage, getCities, getSiteSettings, rel } from '../../../../lib/data'
+import { castBg } from '../../../../lib/castBg'
 import type { Media } from '../../../../payload-types'
 import { PageShell } from '../../../../components/PageShell'
 import s from '../../../../components/chrome.module.css'
@@ -225,7 +226,7 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
               >
                 <div
                   style={{
-                    background: c.castBg ?? 'var(--cyan)',
+                    background: castBg(c),
                     borderBottom: '4px solid var(--ink)',
                     height: 220,
                     display: 'flex',

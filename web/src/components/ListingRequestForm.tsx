@@ -34,6 +34,12 @@ export type Option = { slug: string; label: string }
  * it submitted whatever the option displayed — meaning the same city arrived as
  * "Little Havana" or "La Pequeña Habana" depending on which version of the site
  * the owner happened to be reading. Now the language only affects what they see.
+ *
+ * Both selects open blank and are `required`, which is a deliberate deviation:
+ * the source pre-selected the first option, so every request from someone who
+ * never touched the field arrived labelled Hialeah / Bares y Restaurantes. Blank
+ * plus `required` makes the browser ask instead of guessing wrong quietly. The
+ * empty `<option>` is what gives the field somewhere invalid to start from.
  */
 export function ListingRequestForm({
   lang,
@@ -116,7 +122,7 @@ export function ListingRequestForm({
         </label>
         <label style={label}>
           {t.city}
-          <select name="city" style={field} defaultValue="">
+          <select name="city" required style={field} defaultValue="">
             <option value="" />
             {cities.map((c) => (
               <option key={c.slug} value={c.slug}>
@@ -127,7 +133,7 @@ export function ListingRequestForm({
         </label>
         <label style={label}>
           {t.category}
-          <select name="category" style={field} defaultValue="">
+          <select name="category" required style={field} defaultValue="">
             <option value="" />
             {categories.map((c) => (
               <option key={c.slug} value={c.slug}>

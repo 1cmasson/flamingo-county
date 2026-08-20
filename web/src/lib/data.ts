@@ -88,11 +88,40 @@ export async function getListings(lang: Lang, filter: ListingFilter = {}): Promi
     where,
     locale: lang,
     limit: 200,
+    // Same reason as stories: seed order is the authored order, and the default
+    // would hand the grids back newest-first.
+    sort: 'createdAt',
     // depth 2, not 1: the card draws the city's mascot, which is an upload
     // hanging off the city — one level below the listing's own relationship.
     depth: 2,
   })
-  return docs
+  return docs.sort(byResearchThenAuthored)
+}
+
+/** Sourced records lead the grids; within a tier, authored order is preserved. */
+const STATUS_RANK: Record<string, number> = {
+  ready: 0,
+  needs_owner_confirmation: 1,
+  unsourced: 2,
+}
+
+/**
+ * Real businesses first, design placeholders last.
+ *
+ * Sorted here rather than in the query because Payload would order
+ * `publicationStatus` alphabetically, which puts `needs_owner_confirmation`
+ * ahead of `ready` — backwards, since `ready` is the tier where every field
+ * traces to a source. The alternative was a numeric rank column and another
+ * migration for what is purely a display concern. `find` already caps at 200,
+ * so this sorts a bounded list.
+ *
+ * `sort: 'createdAt'` above still does the real work: it fixes the order
+ * *within* each tier, and this is a stable sort, so seed order survives.
+ */
+function byResearchThenAuthored(a: Listing, b: Listing): number {
+  const ra = STATUS_RANK[a.publicationStatus ?? 'unsourced'] ?? 2
+  const rb = STATUS_RANK[b.publicationStatus ?? 'unsourced'] ?? 2
+  return ra - rb
 }
 
 export async function getListing(lang: Lang, slug: string): Promise<Listing | null> {
@@ -111,7 +140,16 @@ export async function getListing(lang: Lang, slug: string): Promise<Listing | nu
 
 export async function getStories(lang: Lang): Promise<Story[]> {
   const payload = await db()
-  const { docs } = await payload.find({ collection: 'stories', locale: lang, limit: 50, depth: 2 })
+  const { docs } = await payload.find({
+    collection: 'stories',
+    locale: lang,
+    limit: 50,
+    // Seed order, which is `fc-data.js` order. The index features whichever
+    // story comes back first, so leaving this to Payload's default `-createdAt`
+    // silently featured the newest one and reversed the shelf below it.
+    sort: 'createdAt',
+    depth: 2,
+  })
   return docs
 }
 
@@ -189,6 +227,10 @@ export async function getSpotlights(lang: Lang): Promise<Spotlight[]> {
     collection: 'spotlights',
     locale: lang,
     limit: 20,
+    // Seed order is city order — Hialeah, Miami Lakes, Little Havana — and the
+    // home page prints the row as it arrives. The default `-createdAt` reversed
+    // it into Havana-first.
+    sort: 'createdAt',
     depth: 2,
   })
   return docs

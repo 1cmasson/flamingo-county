@@ -668,7 +668,10 @@ function CalendarView({
         </div>
       </div>
 
-      <div data-caltitles style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 6 }}>
+      {/* No `data-caltitles` here: that attribute is the ≤720 switch that swaps
+          per-day event titles for dots, and the source only ever puts it on a
+          day cell. Carrying it on the heading row hid SUN–SAT on mobile too. */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 6 }}>
         {weekdayHeadings(lang).map((w) => (
           <div
             key={w}
