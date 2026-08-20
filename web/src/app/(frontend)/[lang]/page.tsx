@@ -64,7 +64,6 @@ export default async function HomePage({
     ? `linear-gradient(rgba(22,224,242,0.18), rgba(22,224,242,0.18)), url("${heroPhoto.url}") ${heroPos}/cover no-repeat`
     : (city?.castBg ?? settings.heroCastBg ?? '#00feff')
 
-  const price = settings.price ?? 20
   const chips = [{ slug: '', label: t('EVERYTHING') }, ...categories.map((c) => ({ slug: c.slug, label: c.label ?? c.slug }))]
 
   return (
@@ -450,10 +449,7 @@ export default async function HomePage({
                   lineHeight: 1.5,
                 }}
               >
-                {t(
-                  'Get your listing, your story page, your menu and a shot at the weekly spotlight for',
-                )}{' '}
-                ${price} {t('a month. Cancel whenever.')}
+                {t('Get your listing, your story page and a shot at the weekly spotlight.')}
               </p>
             </div>
             <Link
@@ -476,10 +472,7 @@ export default async function HomePage({
                 boxShadow: '5px 5px 0 var(--yellow)',
               }}
             >
-              <span>
-                {t('JOIN FOR')}&#160;${price}
-                {t('/MO')}
-              </span>
+              <span>{t('LIST YOUR SPOT')}</span>
             </Link>
           </div>
         </div>

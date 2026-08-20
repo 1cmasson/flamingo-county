@@ -88,7 +88,7 @@ async function upsert(
     })
   }
 
-  // Non-localized arrays (menu rows, opening hours) are matched on their
+  // Non-localized arrays (opening hours) are matched on their
   // generated row `id`, so callers that translate fields inside such an array
   // need to see the English doc first — pass a function to get it.
   const resolved = typeof esData === 'function' ? esData(doc) : esData
@@ -323,18 +323,12 @@ async function seed() {
             site: d.site,
             cta: en(d.cta),
             hours: (d.hours ?? []).map((h: any) => ({ d: en(h.d), t: h.t })),
-            menuNote: en(d.menuNote),
-            menu: (d.menu ?? []).map((m: any) => ({
-              name: en(m.name),
-              desc: en(m.desc),
-              price: m.price,
-            })),
           }
         : undefined
 
       // `story` is a localized array (each locale owns its own rows), but `hours`
-      // and `menu` are not — only the fields inside them are. Those two need the
-      // English row ids carried over or the ES write rebuilds the array.
+      // is not — only the fields inside it are. It needs the English row ids
+      // carried over or the ES write rebuilds the array.
       const detailEs = (enDoc: any) => {
         if (!d) return {}
         const enDetail = enDoc?.detail ?? {}
@@ -344,18 +338,9 @@ async function seed() {
             quote: es(d.quote),
             crewLine: es(d.crewLine),
             cta: es(d.cta),
-            menuNote: es(d.menuNote),
             hours: withIds(
               (d.hours ?? []).map((h: any) => ({ d: es(h.d), t: h.t })),
               enDetail.hours,
-            ),
-            menu: withIds(
-              (d.menu ?? []).map((m: any) => ({
-                name: es(m.name),
-                desc: es(m.desc),
-                price: m.price,
-              })),
-              enDetail.menu,
             ),
           },
         }
@@ -373,7 +358,6 @@ async function seed() {
           tag: en(b.tag),
           rating: b.rating,
           reviews: b.reviews,
-          price: b.price,
           member: Boolean(b.member),
           // Design content, not researched: phone/hours/story were synthesized
           // from the array index. Flagged so a sourced record is distinguishable
@@ -591,11 +575,9 @@ async function seed() {
     slug: 'site-settings',
     locale: 'en',
     data: {
-      price: 20,
       showSpotlight: true,
       showRatings: true,
       memberBadges: true,
-      showMenuPrices: true,
       contactEmail: 'hola@flamingocounty.com',
       contactPhone: '(305) 555-0100',
       heroPhoto: skylineHero,
@@ -649,7 +631,7 @@ async function seedAboutPage(payload: Payload, photo: any) {
     founderTag: 'SOFTWARE DEVELOPER · HIALEAH RAISED · MIAMI LAKES NOW',
     howH: 'HOW IT WORKS',
     ctaH: 'OWN A SPOT IN ONE OF THE THREE?',
-    ctaP: 'One flat price, first thirty days free, and your city mascot on the card.',
+    ctaP: 'Your city mascot on the card.',
     ctaBtn: 'LIST YOUR BUSINESS',
     reachH: 'REACH ME',
     reachP:
@@ -671,7 +653,7 @@ async function seedAboutPage(payload: Payload, photo: any) {
     founderTag: 'DESARROLLADOR DE SOFTWARE · CRIADO EN HIALEAH · AHORA EN MIAMI LAKES',
     howH: 'CÓMO FUNCIONA',
     ctaH: '¿TIENES NEGOCIO EN UNA DE LAS TRES?',
-    ctaP: 'Un solo precio, los primeros treinta días gratis y la mascota de tu ciudad en la ficha.',
+    ctaP: 'La mascota de tu ciudad en la ficha.',
     ctaBtn: T('LIST YOUR BUSINESS'),
     reachH: 'ESCRÍBEME',
     reachP:
@@ -756,17 +738,17 @@ async function seedListYourSpotPage(payload: Payload) {
     {
       icon: 'nfc',
       t: 'NFC card + a landing page',
-      d: 'We print your tap-to-open card and build the landing page it opens — menu, hours, directions, all of it.',
+      d: 'We print your tap-to-open card and build the landing page it opens — hours, directions, all of it.',
     },
     {
       icon: 'qr-code',
       t: 'QR codes, hosted by us',
-      d: 'Menu, promo or contact QR codes we host for you. Change where they point anytime, the sticker stays the same.',
+      d: 'Promo or contact QR codes we host for you. Change where they point anytime, the sticker stays the same.',
     },
     {
       icon: 'newspaper',
       t: 'A real story page',
-      d: 'We interview you and write it. Menu, services, hours, gallery included.',
+      d: 'We interview you and write it. Services, hours, gallery included.',
     },
     {
       icon: 'megaphone',
@@ -781,7 +763,7 @@ async function seedListYourSpotPage(payload: Payload) {
   ]
 
   const services = [
-    'Free estimates',
+    'Estimates on request',
     'Licensed & insured',
     'Warranty on the work',
     'Bilingual crew',

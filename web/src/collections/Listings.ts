@@ -55,19 +55,6 @@ export const Listings: CollectionConfig = {
       fields: [
         { name: 'rating', type: 'number', min: 0, max: 5 },
         { name: 'reviews', type: 'number', min: 0 },
-        {
-          name: 'price',
-          type: 'select',
-          options: [
-            { label: '$', value: '$' },
-            { label: '$$', value: '$$' },
-            { label: '$$$', value: '$$$' },
-            // Added for the sourced imports: the research carries a `$$$$` band
-            // and demoting it to `$$$` to fit the old select would be exactly
-            // the quiet falsification that data exists to avoid.
-            { label: '$$$$', value: '$$$$' },
-          ],
-        },
       ],
     },
     {
@@ -211,27 +198,6 @@ export const Listings: CollectionConfig = {
           fields: [
             { name: 'source', type: 'text', required: true },
             { name: 'detail', type: 'text', required: true },
-          ],
-        },
-        {
-          name: 'menuNote',
-          type: 'text',
-          localized: true,
-          admin: { description: 'e.g. "KITCHEN OPEN UNTIL 1AM".' },
-        },
-        {
-          name: 'menu',
-          type: 'array',
-          fields: [
-            {
-              name: 'name',
-              type: 'text',
-              required: true,
-              localized: true,
-              admin: { description: 'Dish names are often already Spanish — leave those as-is.' },
-            },
-            { name: 'desc', type: 'textarea', localized: true },
-            { name: 'price', type: 'text' },
           ],
         },
       ],

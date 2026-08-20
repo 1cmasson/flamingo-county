@@ -126,7 +126,6 @@ export function toListing(r: ResearchListing, ids: Record<string, any>) {
   const con = r.contact ?? {}
   const soc = r.social ?? {}
   const hrs = r.hours ?? {}
-  const price = r.price ?? {}
 
   const addressParts = [val(loc.street), val(loc.locality), val(loc.region), val(loc.postal_code)]
   const address = addressParts.filter(Boolean).join(', ')
@@ -157,7 +156,6 @@ export function toListing(r: ResearchListing, ids: Record<string, any>) {
     category: ids.categories[catKey],
     hood: val(loc.district) ?? val(loc.cross_street),
     tag: val(r.short_description),
-    price: val(price.band),
     member: false,
     publicationStatus: r.publication_status === 'ready' ? 'ready' : 'needs_owner_confirmation',
     detail: {
@@ -178,12 +176,6 @@ export function toListing(r: ResearchListing, ids: Record<string, any>) {
       hoursConflicts: (hrs.conflicts ?? []).map((c: any) => ({
         source: c.source,
         detail: c.detail,
-      })),
-      // Price anchors are real sourced menu prices, which is exactly what the
-      // detail page's menu rows are for.
-      menu: (price.anchors ?? []).map((a: any) => ({
-        name: a.item,
-        price: typeof a.price === 'number' ? `$${a.price}` : val(a.price),
       })),
     },
     research: {

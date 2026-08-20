@@ -17,7 +17,7 @@ function check(label: string, ok: boolean, detail = '') {
 
 /**
  * Mirrors the seed's `SEED_MOCK_CONTENT`. Most of the assertions below describe
- * `fc-data.js` fiction — el-gallo's menu, the story blocks, the event venues.
+ * `fc-data.js` fiction — el-gallo's story blocks, the event venues.
  * With the mocks not imported there is nothing for them to check, so they are
  * gated rather than deleted: turn the flag back on and the full suite runs.
  */
@@ -86,7 +86,6 @@ async function main() {
     (bend?.research?.blockingGaps ?? []).some((g: string) => /city_disputed|line/i.test(g)),
   )
   const p1910: any = sourced.docs.find((d: any) => d.slug === '1910-restaurant-bar')
-  check('the $$$$ band survived import', p1910?.price === '$$$$', `got ${p1910?.price}`)
   check(
     'contested hours keep their conflicts rather than resolving them',
     (p1910?.detail?.hoursConflicts?.length ?? 0) === 2,
@@ -102,7 +101,7 @@ async function main() {
     filingLeak.length ? `leaked: ${filingLeak.map((d: any) => d.slug).join(', ')}` : '',
   )
 
-  /* Everything below describes `fc-data.js` fiction — el-gallo's menu and
+  /* Everything below describes `fc-data.js` fiction — el-gallo's
    * hours, the story blocks, the event venues, the synthetic weekly slugs.
    * It runs only when the mocks were actually seeded. */
   if (SEED_MOCKS) {
@@ -116,7 +115,6 @@ async function main() {
     })
     const g: any = gallo.docs[0]
     check('el-gallo address imported', g?.detail?.address === '1412 SW 8th St, Miami, FL 33135')
-    check('el-gallo has 6 menu items', g?.detail?.menu?.length === 6, `got ${g?.detail?.menu?.length}`)
     check('el-gallo has 4 hours rows', g?.detail?.hours?.length === 4)
     check('el-gallo has 3 story paragraphs', g?.detail?.story?.length === 3)
 
@@ -155,20 +153,11 @@ async function main() {
     check('listing tag differs in ES', galloEs.tag !== g.tag, galloEs.tag?.slice(0, 46) + '…')
     check('business name is NOT translated', galloEs.name === g.name, galloEs.name)
 
-    /* `menu` and `hours` are NOT localized arrays — only the fields inside them
-     * are — so the ES write has to carry the English row ids or Payload rebuilds
-     * the array instead of translating it. Same mechanism as story blocks, but a
-     * different code path (the esData callback), so it needs its own assertions:
-     * a rebuilt array would still have the right length in the EN checks above. */
-    check(
-      'ES menu is the SAME 6 rows, not rebuilt',
-      galloEs.detail?.menu?.length === 6,
-      `got ${galloEs.detail?.menu?.length}`,
-    )
-    check(
-      'ES menu row ids preserved',
-      galloEs.detail?.menu?.every((m: any, i: number) => m.id === g.detail.menu[i].id),
-    )
+    /* `hours` is NOT a localized array — only the fields inside it are — so the
+     * ES write has to carry the English row ids or Payload rebuilds the array
+     * instead of translating it. Same mechanism as story blocks, but a different
+     * code path (the esData callback), so it needs its own assertions: a rebuilt
+     * array would still have the right length in the EN checks above. */
     check('ES hours is the SAME 4 rows', galloEs.detail?.hours?.length === 4)
     check(
       'ES hours row ids preserved',
@@ -181,12 +170,6 @@ async function main() {
       galloEs.detail?.hours?.[0]?.d !== g.detail.hours[0].d,
       `${g.detail.hours[0].d} -> ${galloEs.detail?.hours?.[0]?.d}`,
     )
-    check(
-      'menu description translated',
-      galloEs.detail?.menu?.[0]?.desc !== g.detail.menu[0].desc,
-      galloEs.detail?.menu?.[0]?.desc,
-    )
-    check('non-localized price is shared', galloEs.detail?.menu?.[0]?.price === '$21')
     // `story` IS a localized array, so each locale owns its own rows.
     check('ES story still has 3 paragraphs', galloEs.detail?.story?.length === 3)
     check(
@@ -310,7 +293,6 @@ async function main() {
 
   /* globals */
   const settings: any = await payload.findGlobal({ slug: 'site-settings' })
-  check('site settings price = 20', settings.price === 20)
   const about: any = await payload.findGlobal({ slug: 'about-page', locale: 'es' })
   check('about page ES copy present', about.h1a === 'HECHO POR UNO', about.h1a)
   check('about page has 3 steps', about.steps?.length === 3)

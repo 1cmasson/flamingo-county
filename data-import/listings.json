@@ -477,7 +477,7 @@
         "source": "N/A"
       },
       "short_description": "Peruvian ceviche bar in Cypress Village — the Dr. Limón brand's first franchise, run by the Paulino family since 2017.",
-      "long_description": "When Dr. Limón opened in Miami Lakes in 2017, it was the Peruvian brand's first franchised location, and it remains family-run. Rufino Paulino emigrated from the Dominican Republic, studied civil engineering, then learned the kitchen working stations at the company's Kendall restaurant before opening this one with parents, sisters, daughter and girlfriend as shareholders. The menu is built on ceviche, most priced at $19, with a weekday happy hour from 4 to 7.",
+      "long_description": "When Dr. Limón opened in Miami Lakes in 2017, it was the Peruvian brand's first franchised location, and it remains family-run. Rufino Paulino emigrated from the Dominican Republic, studied civil engineering, then learned the kitchen working stations at the company's Kendall restaurant before opening this one with parents, sisters, daughter and girlfriend as shareholders. The menu is built on ceviche, with a weekday happy hour from 4 to 7.",
       "description_sources": [
         "https://miamilaker.com/dr-limons-ceviche-bar-opens-in-miami-lakes",
         "https://www.doctorlimon.com/dr-limon-miami-lakes/",
@@ -516,7 +516,7 @@
       ],
       "seo": {
         "meta_title": "Dr. Limón Ceviche Bar Miami Lakes | Peruvian Ceviche in Cypress Village",
-        "meta_description": "Family-run Peruvian ceviche bar in Miami Lakes. Most ceviches $19, happy hour weekdays 4-7pm. The Dr. Limón brand's first franchise.",
+        "meta_description": "Family-run Peruvian ceviche bar in Miami Lakes. Happy hour weekdays 4-7pm. The Dr. Limón brand's first franchise.",
         "json_ld": {
           "@context": "https://schema.org",
           "@type": "Restaurant",
@@ -1844,7 +1844,7 @@
         "source": "N/A"
       },
       "short_description": "Cash-only Cuban cafeteria in Hialeah, family owned and operated since 1966 by its own account, known for fritas and churros.",
-      "long_description": "Morro Castle is an old-school Cuban cafeteria on West 44th Place, counter service and tables, open from eight in the morning and cash only with an ATM by the door. The family's story runs back to Alejandro Villalobos, who left Havana's Jaruco neighborhood in 1961 and opened the first Morro Castle in Little Havana a year later inside a former Dairy Queen; when his brother later escaped Cuba, he helped open this Hialeah location, run by the next generation of cousins. Fritas and churros are what regulars come for, with most of the menu under $16.",
+      "long_description": "Morro Castle is an old-school Cuban cafeteria on West 44th Place, counter service and tables, open from eight in the morning and cash only with an ATM by the door. The family's story runs back to Alejandro Villalobos, who left Havana's Jaruco neighborhood in 1961 and opened the first Morro Castle in Little Havana a year later inside a former Dairy Queen; when his brother later escaped Cuba, he helped open this Hialeah location, run by the next generation of cousins. Fritas and churros are what regulars come for.",
       "description_sources": [
         "https://www.miaminewtimes.com/food-drink/morro-castle-sells-little-havana-property-looks-to-move-west-9308150/",
         "https://burgerbeast.com/morro-castle-hialeah/",

@@ -96,7 +96,6 @@ export default async function BusinessPage({
 
   const d = listing.detail ?? {}
   const storyParas = (d.story ?? []).map((p) => p.text).filter(Boolean)
-  const menu = d.menu ?? []
   /**
    * Hours print only when they are trustworthy.
    *
@@ -264,7 +263,7 @@ export default async function BusinessPage({
                 </div>
               ) : null}
               <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: '1px' }}>
-                {listing.price} · {listing.hood}
+                {listing.hood}
               </div>
               {listing.member && settings.memberBadges !== false ? (
                 <div
@@ -422,63 +421,6 @@ export default async function BusinessPage({
               </section>
             ) : null}
 
-            {menu.length ? (
-              <section
-                style={{
-                  background: 'var(--grad-cream)',
-                  border: '4px solid var(--ink)',
-                  boxShadow: '8px 8px 0 var(--ink)',
-                  padding: 24,
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-                  <h2
-                    style={{
-                      margin: 0,
-                      background: 'var(--grad-pink)',
-                      color: 'var(--cream)',
-                      fontFamily: 'var(--display)',
-                      fontSize: 22,
-                      fontWeight: 400,
-                      padding: '7px 12px 4px',
-                    }}
-                  >
-                    {t('THE MENU')}
-                  </h2>
-                  <div style={{ fontWeight: 800, fontSize: 11, letterSpacing: '1.6px' }}>
-                    {d.menuNote}
-                  </div>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                  {menu.map((m, i) => (
-                    <div
-                      key={m.id ?? i}
-                      style={{
-                        display: 'flex',
-                        gap: 14,
-                        alignItems: 'baseline',
-                        padding: '11px 0',
-                        borderBottom: '3px dotted var(--ink)',
-                      }}
-                    >
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 3, flex: 1 }}>
-                        <div
-                          style={{ fontFamily: 'var(--display)', fontSize: 19, lineHeight: 1.05 }}
-                        >
-                          {m.name}
-                        </div>
-                        <div style={{ fontSize: 14, fontWeight: 600, lineHeight: 1.4 }}>
-                          {m.desc}
-                        </div>
-                      </div>
-                      {settings.showMenuPrices !== false ? (
-                        <div style={{ fontFamily: 'var(--display)', fontSize: 20 }}>{m.price}</div>
-                      ) : null}
-                    </div>
-                  ))}
-                </div>
-              </section>
-            ) : null}
 
             {services.length ? (
               <section

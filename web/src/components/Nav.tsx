@@ -32,10 +32,14 @@ const linkChip = (shadow: string) => ({
 
 /**
  * Ported from Nav.dc.html. Server-rendered apart from three islands: the
- * listings dropdown, the burger panel and the language toggle. The four hover
+ * listings dropdown, the burger panel and the language toggle. The hover
  * tooltips that each needed their own state flag are CSS now.
  *
- * `active` marks the current section so the matching chip gets the cyan shadow.
+ * EVENTS and STORIES are deliberately absent — both sections are still routed
+ * and rendered, but there is no live content for them yet, so they stay out of
+ * the nav until there is.
+ *
+ * `active` marks the current section; only the listings tabs read it now.
  */
 export async function Nav({
   lang,
@@ -58,11 +62,6 @@ export async function Nav({
       on: on(c.slug),
     })),
   ]
-
-  // The source lights EVENTS for both the index and a single event, and
-  // STORIES likewise — see evSh/storiesSh in Nav.dc.html.
-  const sh = (...keys: ActiveSection[]) =>
-    active && keys.includes(active) ? 'var(--cyan)' : 'var(--pink)'
 
   return (
     <div
@@ -150,25 +149,13 @@ export async function Nav({
             <LangToggle lang={lang} />
           </Tooltip>
 
-          <Tooltip text={t('FREE THINGS TO DO THIS WEEKEND')} rotate={-1.4}>
-            <Link href={routes.events(lang)} className={s.chip} style={linkChip(sh('events', 'event'))}>
-              {t('EVENTS')}
-            </Link>
-          </Tooltip>
-
           <MyWeekLink href={routes.myWeek(lang)} label={t('MY WEEK')} />
-
-          <Tooltip text={t('THE LONG READS — NEW ONE EVERY OTHER FRIDAY')} rotate={1.4}>
-            <Link href={routes.stories(lang)} className={s.chip} style={linkChip(sh('stories', 'story'))}>
-              {t('STORIES')}
-            </Link>
-          </Tooltip>
 
           <Link href={routes.about(lang)} className={s.chip} style={linkChip('var(--pink)')}>
             {aboutLabel(lang)}
           </Link>
 
-          <Tooltip text={t('GET YOUR SHOP ON THE MAP — FREE')} align="right" rotate={-1.6}>
+          <Tooltip text={t('GET YOUR SHOP ON THE MAP')} align="right" rotate={-1.6}>
             <Link
               href={routes.listYourSpot(lang)}
               className={`${s.chip} ${s.chipJoin}`}
@@ -192,18 +179,6 @@ export async function Nav({
             citiesLabel={t('CITIES')}
             tabs={tabs}
             links={[
-              {
-                href: routes.events(lang),
-                label: t('EVENTS'),
-                shadow: sh('events', 'event'),
-                background: 'var(--grad-cream)',
-              },
-              {
-                href: routes.stories(lang),
-                label: t('STORIES'),
-                shadow: sh('stories', 'story'),
-                background: 'var(--grad-cream)',
-              },
               {
                 href: routes.about(lang),
                 label: aboutLabel(lang),

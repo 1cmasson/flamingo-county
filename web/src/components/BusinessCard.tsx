@@ -170,7 +170,6 @@ export function BusinessCard({
               ★ {listing.rating.toFixed(1)}
             </div>
           ) : null}
-          <div style={{ fontWeight: 800, fontSize: 12 }}>{listing.price}</div>
           <div style={{ marginLeft: 'auto', fontFamily: 'var(--display)', fontSize: 14 }}>
             {t('DETAILS →')}
           </div>

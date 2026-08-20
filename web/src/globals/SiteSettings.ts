@@ -14,27 +14,13 @@ export const SiteSettings: GlobalConfig = {
   admin: { group: 'Settings' },
   fields: [
     {
-      name: 'price',
-      type: 'number',
-      defaultValue: 20,
-      min: 5,
-      max: 99,
-      admin: { description: 'Membership price in $/month.' },
-    },
-    {
       type: 'row',
       fields: [
         { name: 'showSpotlight', type: 'checkbox', defaultValue: true },
         { name: 'showRatings', type: 'checkbox', defaultValue: true },
       ],
     },
-    {
-      type: 'row',
-      fields: [
-        { name: 'memberBadges', type: 'checkbox', defaultValue: true },
-        { name: 'showMenuPrices', type: 'checkbox', defaultValue: true },
-      ],
-    },
+    { name: 'memberBadges', type: 'checkbox', defaultValue: true },
     {
       type: 'row',
       fields: [
