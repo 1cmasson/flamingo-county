@@ -19,7 +19,7 @@ create-first-user screen handles it instead.
 | Command | What it does |
 | --- | --- |
 | `pnpm seed` | Import `../fc-data.js`. Upserts on slug — re-running changes nothing. |
-| `pnpm verify` | 40 assertions over what the seed wrote. Exits non-zero on failure. |
+| `pnpm verify` | 43 assertions over what the seed wrote. Exits non-zero on failure. |
 | `pnpm seed:inspect` | Dump what the sandbox reads out of `fc-data.js`. Writes nothing. |
 | `pnpm generate:types` | Regenerate `src/payload-types.ts` after a schema change. |
 | `pnpm payload migrate:create <name>` | New migration. Do this before deploying a schema change. |
@@ -194,7 +194,7 @@ so a shape change fails loudly instead of importing half a dataset.
 
 Two writes per record, always: Payload stores one locale per write, so English
 creates the row and a second `update({ locale: 'es' })` translates it. Arrays
-whose *inner* fields are localized — story blocks, menu rows, opening hours —
+whose *inner* fields are localized — story blocks, opening hours —
 must carry their generated row `id` into that second write, or Payload treats
 the array as replaced and rebuilds it instead of translating in place.
 

@@ -20,7 +20,7 @@ export async function generateMetadata({
   return {
     title: t('GET FOUND BY YOUR OWN NEIGHBORHOOD.'),
     description: t(
-      'One flat price. Your listing on your own city page, a full story page, your menu or service list, and rotation into the Friday spotlight.',
+      'Your listing on your own city page, a full story page, your service list, and rotation into the Friday spotlight.',
     ),
     alternates: {
       canonical: routes.listYourSpot(lang),
@@ -45,8 +45,6 @@ export default async function ListYourSpotPage({
     getCategories(lang),
   ])
 
-  const price = settings.price ?? 20
-
   return (
     <PageShell>
       <main
@@ -67,7 +65,6 @@ export default async function ListYourSpotPage({
             boxShadow: '9px 9px 0 var(--ink)',
             padding: 'clamp(16px,3.5vw,26px)',
             display: 'grid',
-            gridTemplateColumns: '1.1fr 0.9fr',
             gap: 18,
             alignItems: 'center',
           }}
@@ -108,47 +105,9 @@ export default async function ListYourSpotPage({
               }}
             >
               {t(
-                'One flat price. Your listing on your own city page, a full story page, your menu or service list, and rotation into the Friday spotlight.',
+                'Your listing on your own city page, a full story page, your service list, and rotation into the Friday spotlight.',
               )}
             </p>
-          </div>
-          <div
-            style={{
-              background: 'var(--grad-cream)',
-              border: '4px solid var(--ink)',
-              boxShadow: '6px 6px 0 var(--pink)',
-              padding: 22,
-              textAlign: 'center',
-            }}
-          >
-            <div style={{ fontWeight: 800, fontSize: 12, letterSpacing: '2px' }}>
-              {t('MEMBER LISTING')}
-            </div>
-            <div
-              style={{
-                fontFamily: 'var(--display)',
-                fontSize: 'clamp(52px,13vw,76px)',
-                lineHeight: 0.9,
-                margin: '6px 0',
-              }}
-            >
-              ${price}
-            </div>
-            <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: '1.5px' }}>
-              {t('PER MONTH · NO CONTRACT')}
-            </div>
-            <div
-              style={{
-                marginTop: 14,
-                background: 'var(--yellow)',
-                border: '3px solid var(--ink)',
-                fontWeight: 800,
-                fontSize: 13,
-                padding: 9,
-              }}
-            >
-              {t('FIRST 30 DAYS FREE')}
-            </div>
           </div>
         </header>
 
@@ -252,7 +211,7 @@ export default async function ListYourSpotPage({
             }}
           >
             {t(
-              'Our AI receptionist answers your phone in English or Spanish, takes reservations and texts you the details. Free while we test it — tell us in the form below if you want in.',
+              'Our AI receptionist answers your phone in English or Spanish, takes reservations and texts you the details. Tell us in the form below if you want in.',
             )}
           </p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -310,7 +269,7 @@ export default async function ListYourSpotPage({
               story: t('TELL US THE STORY (WE WRITE THE PAGE FOR YOU)'),
               phName: t('Your name'),
               phStory: t('Opened in 1994 by my abuela…'),
-              submit: t('START MY 30 FREE DAYS'),
+              submit: t('CLAIM YOUR LISTING'),
               error:
                 lang === 'es'
                   ? 'FALTA EL NOMBRE DEL NEGOCIO O EL TELÉFONO'
@@ -318,8 +277,8 @@ export default async function ListYourSpotPage({
               sentH: lang === 'es' ? '¡RECIBIDO! TE ESCRIBIMOS.' : 'GOT IT — WE’LL BE IN TOUCH.',
               sentP:
                 lang === 'es'
-                  ? 'Te llamamos o te escribimos en un par de días para hacerte las fotos y la entrevista. Los primeros treinta días van por la casa.'
-                  : 'We’ll call or write within a couple of days to set up the photos and the interview. The first thirty days are on us.',
+                  ? 'Te llamamos o te escribimos en un par de días para hacerte las fotos y la entrevista.'
+                  : 'We’ll call or write within a couple of days to set up the photos and the interview.',
             }}
           />
         </section>

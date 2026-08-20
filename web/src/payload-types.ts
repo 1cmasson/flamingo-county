@@ -399,7 +399,6 @@ export interface Listing {
   tag?: string | null;
   rating?: number | null;
   reviews?: number | null;
-  price?: ('$' | '$$' | '$$$' | '$$$$') | null;
   /**
    * How much of this record is actually known. `unsourced` is the original design content, whose phone and hours were synthesized from the array index — it is not a smaller version of `ready`, it is a different kind of data. Filter on this before publishing anything.
    */
@@ -471,21 +470,6 @@ export interface Listing {
       | {
           source: string;
           detail: string;
-          id?: string | null;
-        }[]
-      | null;
-    /**
-     * e.g. "KITCHEN OPEN UNTIL 1AM".
-     */
-    menuNote?: string | null;
-    menu?:
-      | {
-          /**
-           * Dish names are often already Spanish — leave those as-is.
-           */
-          name: string;
-          desc?: string | null;
-          price?: string | null;
           id?: string | null;
         }[]
       | null;
@@ -1061,7 +1045,6 @@ export interface ListingsSelect<T extends boolean = true> {
   tag?: T;
   rating?: T;
   reviews?: T;
-  price?: T;
   publicationStatus?: T;
   member?: T;
   imageHint?: T;
@@ -1097,15 +1080,6 @@ export interface ListingsSelect<T extends boolean = true> {
           | {
               source?: T;
               detail?: T;
-              id?: T;
-            };
-        menuNote?: T;
-        menu?:
-          | T
-          | {
-              name?: T;
-              desc?: T;
-              price?: T;
               id?: T;
             };
       };
@@ -1348,14 +1322,9 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
  */
 export interface SiteSetting {
   id: number;
-  /**
-   * Membership price in $/month.
-   */
-  price?: number | null;
   showSpotlight?: boolean | null;
   showRatings?: boolean | null;
   memberBadges?: boolean | null;
-  showMenuPrices?: boolean | null;
   contactEmail?: string | null;
   contactPhone?: string | null;
   /**
@@ -1451,11 +1420,9 @@ export interface ListYourSpotPage {
  * via the `definition` "site-settings_select".
  */
 export interface SiteSettingsSelect<T extends boolean = true> {
-  price?: T;
   showSpotlight?: T;
   showRatings?: T;
   memberBadges?: T;
-  showMenuPrices?: T;
   contactEmail?: T;
   contactPhone?: T;
   heroPhoto?: T;

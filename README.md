@@ -154,9 +154,15 @@ back. Rule of thumb:
   `_redirects`, `forms.html`, `README.md`, `.gitignore`, `vendor/`, `manifest.json`,
   `sw.js`, `pwa.js`, `offline.html`.
 - **`fc-data.js` carries local edits on top of the design version.** A re-pull
-  overwrites them, so re-apply these four hunks (all described under *Language*):
-  `detectLang()`, `resolveLang()` + `lang()`, the i18next branch in `T()`, and the
-  `<html lang>` + loader block above `window.FCBase = B`.
+  overwrites them, so re-apply these five hunks. Four are described under
+  *Language*: `detectLang()`, `resolveLang()` + `lang()`, the i18next branch in
+  `T()`, and the `<html lang>` + loader block above `window.FCBase = B`. The
+  fifth is the **pricing removal in the `ES` map** — the membership-fee keys
+  (`JOIN FOR`, `/MO`, `PER MONTH · NO CONTRACT`, `FIRST 30 DAYS FREE`,
+  `START MY 30 FREE DAYS`, `THE MENU`, …) were deleted and several strings
+  rewritten to drop the price. `web/src/i18n/dictionary.generated.ts` is built
+  from this map by `pnpm gen:dictionary`, so a re-pull silently puts `$20` and
+  `al mes` back into the Spanish copy.
 - **The `.dc.html` files carry two PWA edits each** (described under *Homescreen
   install*). A re-pull overwrites both, so re-apply: the 8-line block in the real
   `<head>` of the ten route pages, and the deletion of the `apple-touch-icon` line
