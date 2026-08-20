@@ -15,6 +15,7 @@ import { getPayload } from 'payload'
 import type { Payload } from 'payload'
 import config from '../payload.config'
 import type { ListYourSpotPage } from '../payload-types'
+import { loadResearch, toListing, CITY, CATEGORY } from './research-listings'
 import {
   loadFCBase,
   makeTranslator,
@@ -23,6 +24,20 @@ import {
   SITE_ROOT,
   type FCBase,
 } from './load-fc-data'
+
+/**
+ * `fc-data.js` is design fiction: 14 listings whose phone and hours were
+ * generated from the array index, plus the events, weekly events, spotlights
+ * and stories written around them. None of it describes a real business, so by
+ * default none of it is imported.
+ *
+ * What still comes from `fc-data.js` regardless: the three cities, the two
+ * taxonomies, the photography and the site copy — those are real.
+ *
+ * Set `SEED_MOCK_CONTENT=1` to bring the fiction back. Nothing is lost by
+ * leaving it off; `fc-data.js` is still in the repo and still the source.
+ */
+const SEED_MOCKS = process.env.SEED_MOCK_CONTENT === '1'
 
 const base: FCBase = loadFCBase()
 const T = makeTranslator(base)
@@ -288,250 +303,284 @@ async function seed() {
   }
 
   /* --- Listings ----------------------------------------------------------- */
-  console.log('listings…')
-  for (const b of base.BIZ) {
-    // DETAIL has exactly one authored entry. The other 13 listings' phone,
-    // site, hours, story and quote are fabricated at render time from the array
-    // index in Business.dc.html — importing that would launder placeholders in
-    // as authored content, so anything without a DETAIL record gets no detail.
-    const d = base.DETAIL[b.id]
+  if (SEED_MOCKS) {
+    console.log('listings…')
+    for (const b of base.BIZ) {
+      // DETAIL has exactly one authored entry. The other 13 listings' phone,
+      // site, hours, story and quote are fabricated at render time from the array
+      // index in Business.dc.html — importing that would launder placeholders in
+      // as authored content, so anything without a DETAIL record gets no detail.
+      const d = base.DETAIL[b.id]
 
-    const detailEn = d
-      ? {
-          story: (d.story ?? []).map((t: string) => ({ text: en(t) })),
-          quote: en(d.quote),
-          quoteBy: en(d.quoteBy),
-          crewLine: en(d.crewLine),
-          address: d.address,
-          phone: d.phone,
-          site: d.site,
-          cta: en(d.cta),
-          hours: (d.hours ?? []).map((h: any) => ({ d: en(h.d), t: h.t })),
-          menuNote: en(d.menuNote),
-          menu: (d.menu ?? []).map((m: any) => ({
-            name: en(m.name),
-            desc: en(m.desc),
-            price: m.price,
-          })),
-        }
-      : undefined
-
-    // `story` is a localized array (each locale owns its own rows), but `hours`
-    // and `menu` are not — only the fields inside them are. Those two need the
-    // English row ids carried over or the ES write rebuilds the array.
-    const detailEs = (enDoc: any) => {
-      if (!d) return {}
-      const enDetail = enDoc?.detail ?? {}
-      return {
-        detail: {
-          story: (d.story ?? []).map((t: string) => ({ text: es(t) })),
-          quote: es(d.quote),
-          crewLine: es(d.crewLine),
-          cta: es(d.cta),
-          menuNote: es(d.menuNote),
-          hours: withIds(
-            (d.hours ?? []).map((h: any) => ({ d: es(h.d), t: h.t })),
-            enDetail.hours,
-          ),
-          menu: withIds(
-            (d.menu ?? []).map((m: any) => ({
-              name: es(m.name),
-              desc: es(m.desc),
+      const detailEn = d
+        ? {
+            story: (d.story ?? []).map((t: string) => ({ text: en(t) })),
+            quote: en(d.quote),
+            quoteBy: en(d.quoteBy),
+            crewLine: en(d.crewLine),
+            address: d.address,
+            phone: d.phone,
+            site: d.site,
+            cta: en(d.cta),
+            hours: (d.hours ?? []).map((h: any) => ({ d: en(h.d), t: h.t })),
+            menuNote: en(d.menuNote),
+            menu: (d.menu ?? []).map((m: any) => ({
+              name: en(m.name),
+              desc: en(m.desc),
               price: m.price,
             })),
-            enDetail.menu,
-          ),
-        },
-      }
-    }
+          }
+        : undefined
 
-    const doc = await upsert(
-      payload,
-      'listings',
-      b.id,
-      {
-        name: en(b.name),
-        city: id.cities[b.city],
-        category: id.categories[b.cat],
-        hood: b.hood,
-        tag: en(b.tag),
-        rating: b.rating,
-        reviews: b.reviews,
-        price: b.price,
-        member: Boolean(b.member),
-        imageHint: en(b.hint),
-        ...(detailEn ? { detail: detailEn } : {}),
-      },
-      (enDoc) => ({
-        tag: es(b.tag),
-        imageHint: es(b.hint),
-        ...detailEs(enDoc),
-      }),
-    )
-    id.listings[b.id] = doc.id
+      // `story` is a localized array (each locale owns its own rows), but `hours`
+      // and `menu` are not — only the fields inside them are. Those two need the
+      // English row ids carried over or the ES write rebuilds the array.
+      const detailEs = (enDoc: any) => {
+        if (!d) return {}
+        const enDetail = enDoc?.detail ?? {}
+        return {
+          detail: {
+            story: (d.story ?? []).map((t: string) => ({ text: es(t) })),
+            quote: es(d.quote),
+            crewLine: es(d.crewLine),
+            cta: es(d.cta),
+            menuNote: es(d.menuNote),
+            hours: withIds(
+              (d.hours ?? []).map((h: any) => ({ d: es(h.d), t: h.t })),
+              enDetail.hours,
+            ),
+            menu: withIds(
+              (d.menu ?? []).map((m: any) => ({
+                name: es(m.name),
+                desc: es(m.desc),
+                price: m.price,
+              })),
+              enDetail.menu,
+            ),
+          },
+        }
+      }
+
+      const doc = await upsert(
+        payload,
+        'listings',
+        b.id,
+        {
+          name: en(b.name),
+          city: id.cities[b.city],
+          category: id.categories[b.cat],
+          hood: b.hood,
+          tag: en(b.tag),
+          rating: b.rating,
+          reviews: b.reviews,
+          price: b.price,
+          member: Boolean(b.member),
+          // Design content, not researched: phone/hours/story were synthesized
+          // from the array index. Flagged so a sourced record is distinguishable
+          // from a plausible one at a glance and by query.
+          publicationStatus: 'unsourced',
+          imageHint: en(b.hint),
+          ...(detailEn ? { detail: detailEn } : {}),
+        },
+        (enDoc) => ({
+          tag: es(b.tag),
+          imageHint: es(b.hint),
+          ...detailEs(enDoc),
+        }),
+      )
+      id.listings[b.id] = doc.id
+    }
+  }
+
+  /* --- Researched listings ------------------------------------------------ */
+  // Additive: these carry their own slugs and never collide with BIZ. Skipped
+  // rather than fatal when the sibling research repo is not checked out, so a
+  // clone of this repo alone still seeds.
+  try {
+    const research = loadResearch()
+    console.log(`researched listings… (${research.length})`)
+    for (const r of research) {
+      if (!CITY[r.city] || !CATEGORY[r.category]) {
+        console.log(`  skip ${r.slug}: no mapping for ${r.city}/${r.category}`)
+        continue
+      }
+      const data = toListing(r, id)
+      const doc = await upsert(payload, 'listings', r.slug, data)
+      id.listings[r.slug] = doc.id
+    }
+  } catch (err) {
+    console.log(`researched listings… skipped (${(err as Error).message})`)
   }
 
   /* --- Stories ------------------------------------------------------------ */
-  console.log('stories…')
-  for (const s of base.STORIES) {
-    // The source body is a positional tuple array: ['q', text, by],
-    // ['pair', [hintA, capA], [hintB, capB]], ['img', hint, cap, ar] and so on,
-    // decoded by storyBlocks() at fc-data.js:492.
-    const toBlock = (b: any[], locale: 'en' | 'es') => {
-      const t = locale === 'en' ? en : es
-      switch (b[0]) {
-        case 'drop':
-          return { blockType: 'dropCap', text: t(b[1]) }
-        case 'p':
-          return { blockType: 'paragraph', text: t(b[1]) }
-        case 'q':
-          return { blockType: 'pullQuote', text: t(b[1]), attribution: en(b[2]) }
-        case 'img':
-          return {
-            blockType: 'image',
-            hint: t(b[1]),
-            caption: t(b[2]),
-            aspectRatio: b[3] ?? '16 / 9',
-          }
-        case 'pair':
-          return {
-            blockType: 'imagePair',
-            a: { hint: t(b[1]?.[0]), caption: t(b[1]?.[1]) },
-            b: { hint: t(b[2]?.[0]), caption: t(b[2]?.[1]) },
-          }
-        case 'note':
-          return { blockType: 'calloutNote', title: t(b[1]), text: t(b[2]) }
-        case 'beat':
-          return { blockType: 'sectionBreak' }
-        default:
-          throw new Error(`Unknown story block type "${b[0]}" in story ${s.id}`)
+  if (SEED_MOCKS) {
+    console.log('stories…')
+    for (const s of base.STORIES) {
+      // The source body is a positional tuple array: ['q', text, by],
+      // ['pair', [hintA, capA], [hintB, capB]], ['img', hint, cap, ar] and so on,
+      // decoded by storyBlocks() at fc-data.js:492.
+      const toBlock = (b: any[], locale: 'en' | 'es') => {
+        const t = locale === 'en' ? en : es
+        switch (b[0]) {
+          case 'drop':
+            return { blockType: 'dropCap', text: t(b[1]) }
+          case 'p':
+            return { blockType: 'paragraph', text: t(b[1]) }
+          case 'q':
+            return { blockType: 'pullQuote', text: t(b[1]), attribution: en(b[2]) }
+          case 'img':
+            return {
+              blockType: 'image',
+              hint: t(b[1]),
+              caption: t(b[2]),
+              aspectRatio: b[3] ?? '16 / 9',
+            }
+          case 'pair':
+            return {
+              blockType: 'imagePair',
+              a: { hint: t(b[1]?.[0]), caption: t(b[1]?.[1]) },
+              b: { hint: t(b[2]?.[0]), caption: t(b[2]?.[1]) },
+            }
+          case 'note':
+            return { blockType: 'calloutNote', title: t(b[1]), text: t(b[2]) }
+          case 'beat':
+            return { blockType: 'sectionBreak' }
+          default:
+            throw new Error(`Unknown story block type "${b[0]}" in story ${s.id}`)
+        }
       }
+
+      const doc = await upsert(payload, 'stories', s.id, {
+        title: en(s.title),
+        dek: en(s.dek),
+        kicker: en(s.kicker),
+        readTime: s.readTime,
+        byline: en(s.byline),
+        listing: id.listings[s.biz],
+        bizCta: en(s.bizCta),
+        coverHint: en(s.coverHint),
+        coverCap: en(s.coverCap),
+        outro: en(s.outro),
+        blocks: s.blocks.map((b: any[]) => toBlock(b, 'en')),
+      })
+
+      // Block STRUCTURE is shared across locales; only the text inside is
+      // localized. Payload matches array rows on their generated `id`, so the ES
+      // pass has to carry the ids back from the EN write — without them the
+      // update is treated as a replacement and the array is rebuilt (duplicated
+      // or reordered) instead of translated in place.
+      const fresh = await payload.findByID({
+        collection: 'stories',
+        id: doc.id,
+        locale: 'en',
+        depth: 0,
+      })
+      const enBlocks = (fresh as any).blocks ?? []
+
+      await payload.update({
+        collection: 'stories',
+        id: doc.id,
+        locale: 'es',
+        depth: 0,
+        data: {
+          title: es(s.title),
+          dek: es(s.dek),
+          kicker: es(s.kicker),
+          bizCta: es(s.bizCta),
+          coverHint: es(s.coverHint),
+          coverCap: es(s.coverCap),
+          // KNOWN GAP: no story has a Spanish outro in the dictionary, so es()
+          // returns the English string. The old site rendered English here too.
+          outro: es(s.outro),
+          blocks: s.blocks.map((b: any[], i: number) => ({
+            ...toBlock(b, 'es'),
+            id: enBlocks[i]?.id,
+          })),
+        },
+      })
     }
-
-    const doc = await upsert(payload, 'stories', s.id, {
-      title: en(s.title),
-      dek: en(s.dek),
-      kicker: en(s.kicker),
-      readTime: s.readTime,
-      byline: en(s.byline),
-      listing: id.listings[s.biz],
-      bizCta: en(s.bizCta),
-      coverHint: en(s.coverHint),
-      coverCap: en(s.coverCap),
-      outro: en(s.outro),
-      blocks: s.blocks.map((b: any[]) => toBlock(b, 'en')),
-    })
-
-    // Block STRUCTURE is shared across locales; only the text inside is
-    // localized. Payload matches array rows on their generated `id`, so the ES
-    // pass has to carry the ids back from the EN write — without them the
-    // update is treated as a replacement and the array is rebuilt (duplicated
-    // or reordered) instead of translated in place.
-    const fresh = await payload.findByID({
-      collection: 'stories',
-      id: doc.id,
-      locale: 'en',
-      depth: 0,
-    })
-    const enBlocks = (fresh as any).blocks ?? []
-
-    await payload.update({
-      collection: 'stories',
-      id: doc.id,
-      locale: 'es',
-      depth: 0,
-      data: {
-        title: es(s.title),
-        dek: es(s.dek),
-        kicker: es(s.kicker),
-        bizCta: es(s.bizCta),
-        coverHint: es(s.coverHint),
-        coverCap: es(s.coverCap),
-        // KNOWN GAP: no story has a Spanish outro in the dictionary, so es()
-        // returns the English string. The old site rendered English here too.
-        outro: es(s.outro),
-        blocks: s.blocks.map((b: any[], i: number) => ({
-          ...toBlock(b, 'es'),
-          id: enBlocks[i]?.id,
-        })),
-      },
-    })
   }
 
   /* --- Events ------------------------------------------------------------- */
-  console.log('events…')
-  for (const e of base.EVENTS) {
-    // Venue is a branch in the source: 16 events carry `biz`, 4 carry
-    // `place` + `hood` + `city`.
-    const atListing = Boolean(e.biz)
-    await upsert(
-      payload,
-      'events',
-      e.id,
-      {
-        title: en(e.title),
-        date: new Date(`${e.d}T12:00:00.000Z`).toISOString(),
-        timeLabel: e.time,
-        kind: id.kinds[e.kind],
-        venueType: atListing ? 'listing' : 'place',
-        listing: atListing ? id.listings[e.biz] : undefined,
-        place: atListing ? undefined : en(e.place),
-        hood: atListing ? undefined : e.hood,
-        city: atListing ? undefined : id.cities[e.city],
-        star: Boolean(e.star),
-        going: e.going ?? 0,
-        freeLabel: en(e.free),
-        note: en(e.note),
-        imageHint: en(e.hint),
-      },
-      {
-        title: es(e.title),
-        place: atListing ? undefined : es(e.place),
-        freeLabel: es(e.free),
-        note: es(e.note),
-        imageHint: es(e.hint),
-      },
-    )
+  if (SEED_MOCKS) {
+    console.log('events…')
+    for (const e of base.EVENTS) {
+      // Venue is a branch in the source: 16 events carry `biz`, 4 carry
+      // `place` + `hood` + `city`.
+      const atListing = Boolean(e.biz)
+      await upsert(
+        payload,
+        'events',
+        e.id,
+        {
+          title: en(e.title),
+          date: new Date(`${e.d}T12:00:00.000Z`).toISOString(),
+          timeLabel: e.time,
+          kind: id.kinds[e.kind],
+          venueType: atListing ? 'listing' : 'place',
+          listing: atListing ? id.listings[e.biz] : undefined,
+          place: atListing ? undefined : en(e.place),
+          hood: atListing ? undefined : e.hood,
+          city: atListing ? undefined : id.cities[e.city],
+          star: Boolean(e.star),
+          going: e.going ?? 0,
+          freeLabel: en(e.free),
+          note: en(e.note),
+          imageHint: en(e.hint),
+        },
+        {
+          title: es(e.title),
+          place: atListing ? undefined : es(e.place),
+          freeLabel: es(e.free),
+          note: es(e.note),
+          imageHint: es(e.hint),
+        },
+      )
+    }
   }
 
   /* --- Weekly ------------------------------------------------------------- */
-  console.log('weekly events…')
-  for (const w of base.WEEKLY) {
-    // No id in the source — mint a stable one so re-runs update rather than
-    // appending six more rows every time.
-    const slug = `weekly-${w.dow}-${slugify(w.title)}`
-    await upsert(
-      payload,
-      'weekly-events',
-      slug,
-      {
-        title: en(w.title),
-        dow: String(w.dow),
-        time: w.time,
-        listing: id.listings[w.biz],
-        kind: id.kinds[w.kind],
-      },
-      { title: es(w.title) },
-    )
+  if (SEED_MOCKS) {
+    console.log('weekly events…')
+    for (const w of base.WEEKLY) {
+      // No id in the source — mint a stable one so re-runs update rather than
+      // appending six more rows every time.
+      const slug = `weekly-${w.dow}-${slugify(w.title)}`
+      await upsert(
+        payload,
+        'weekly-events',
+        slug,
+        {
+          title: en(w.title),
+          dow: String(w.dow),
+          time: w.time,
+          listing: id.listings[w.biz],
+          kind: id.kinds[w.kind],
+        },
+        { title: es(w.title) },
+      )
+    }
   }
 
   /* --- Spotlights --------------------------------------------------------- */
-  console.log('spotlights…')
-  for (const [cityKey, s] of Object.entries<any>(base.SPOTS)) {
-    // Same story: SPOTS is keyed by city with no id inside the record.
-    await upsert(
-      payload,
-      'spotlights',
-      `spotlight-${cityKey}`,
-      {
-        city: id.cities[cityKey],
-        listing: id.listings[s.biz],
-        kind: en(s.kind),
-        deal: en(s.deal),
-        blurb: en(s.blurb),
-      },
-      { kind: es(s.kind), deal: es(s.deal), blurb: es(s.blurb) },
-    )
+  if (SEED_MOCKS) {
+    console.log('spotlights…')
+    for (const [cityKey, s] of Object.entries<any>(base.SPOTS)) {
+      // Same story: SPOTS is keyed by city with no id inside the record.
+      await upsert(
+        payload,
+        'spotlights',
+        `spotlight-${cityKey}`,
+        {
+          city: id.cities[cityKey],
+          listing: id.listings[s.biz],
+          kind: en(s.kind),
+          deal: en(s.deal),
+          blurb: en(s.blurb),
+        },
+        { kind: es(s.kind), deal: es(s.deal), blurb: es(s.blurb) },
+      )
+    }
   }
 
   /* --- Globals ------------------------------------------------------------ */

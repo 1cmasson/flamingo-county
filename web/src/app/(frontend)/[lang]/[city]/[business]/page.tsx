@@ -17,6 +17,21 @@ import { PageShell } from '../../../../../components/PageShell'
 import { MediaSlot } from '../../../../../components/MediaSlot'
 import s from '../../../../../components/chrome.module.css'
 
+/**
+ * Rendered per request, always.
+ *
+ * `generateStaticParams` below is kept because it is the way back to static
+ * rendering if that is ever wanted (see CMS.md). But this page reads the
+ * request header the nav uses for its active section, so Next must not attempt
+ * to statically generate it — in a production build whose database is empty at
+ * build time, `generateStaticParams` returns nothing and Next falls back to
+ * generating on demand, where that header read throws DYNAMIC_SERVER_USAGE and
+ * the route 500s. Dev and a locally-seeded build both hide this; the container
+ * does not.
+ */
+export const dynamic = 'force-dynamic'
+
+
 export async function generateStaticParams() {
   const listings = await getListings('en')
   return listings.flatMap((b) => {
@@ -82,8 +97,22 @@ export default async function BusinessPage({
   const d = listing.detail ?? {}
   const storyParas = (d.story ?? []).map((p) => p.text).filter(Boolean)
   const menu = d.menu ?? []
-  const hours = d.hours ?? []
-  const hasVisit = Boolean(d.address || d.phone || d.site || hours.length)
+  /**
+   * Hours print only when they are trustworthy.
+   *
+   * Researched listings carry the confidence their sources actually supported,
+   * and 7 of 11 are below `high` — two of those have three sources that flatly
+   * disagree. Printing a schedule we know is contested is how a directory earns
+   * angry calls from owners, so anything under `high` shows the phone number
+   * and an invitation to call instead. An EMPTY confidence means authored
+   * design content rather than a failed verification, so it still prints.
+   */
+  const hoursConfidence = d.hoursConfidence ?? null
+  const hoursTrusted = hoursConfidence === null || hoursConfidence === 'high'
+  const allHours = d.hours ?? []
+  const hours = hoursTrusted ? allHours : []
+  const hoursUnconfirmed = !hoursTrusted && allHours.length > 0
+  const hasVisit = Boolean(d.address || d.phone || d.site || hours.length || hoursUnconfirmed)
   // Services are page copy shared by every non-food listing, not per-business
   // data — the source hardcoded the same four for all of them.
   const services = category?.slug !== 'food' ? (lys.services ?? []) : []
@@ -596,6 +625,19 @@ export default async function BusinessPage({
                         <span style={{ fontWeight: 800, color: 'var(--yellow)' }}>{h.t}</span>
                       </div>
                     ))}
+                  </div>
+                ) : null}
+                {hoursUnconfirmed ? (
+                  <div
+                    style={{
+                      marginTop: 16,
+                      fontWeight: 600,
+                      fontSize: 13,
+                      lineHeight: 1.5,
+                      color: '#c9ced4',
+                    }}
+                  >
+                    {t('Hours vary by source — call to confirm.')}
                   </div>
                 ) : null}
                 {d.cta && d.phone ? (

@@ -1,0 +1,208 @@
+import fs from 'fs'
+import path from 'path'
+
+/**
+ * The sourced business dossiers from the sibling `flamingo-city` repo.
+ *
+ * These are a different kind of record from everything in `fc-data.js`. The 14
+ * listings there are design content whose phone, hours and story were
+ * synthesized from the array index; these 11 were researched, and every field
+ * that carries risk arrives with a source URL and, where sources disagreed, the
+ * disagreement itself. The whole point is that a reader can audit them, so the
+ * import's job is to preserve provenance, not to flatten it into strings.
+ *
+ * Three rules the source file states explicitly, and this importer obeys:
+ *
+ * 1. `corporate_record.filing_date` is a Florida registration event and is
+ *    NEVER an opening date. Only `established` / `opened` reach the record.
+ * 2. `hours.conflicts` is not resolved by picking one. It is carried across
+ *    alongside a confidence level, and the frontend gates on that.
+ * 3. `"N/A"` is a known gap, not a value. It never becomes a string.
+ */
+
+/**
+ * Where the research repo sits.
+ *
+ * Found by walking up from the cwd looking for a sibling `flamingo-city`, not
+ * by a fixed `../../..` — this repo is checked out both directly and as a git
+ * worktree under `.claude/worktrees/<name>/`, and those sit at different depths.
+ * `RESEARCH_JSON` overrides it outright for CI.
+ */
+function findResearchJson(): string {
+  if (process.env.RESEARCH_JSON) return process.env.RESEARCH_JSON
+  // In-repo copy FIRST. The sibling `flamingo-city` checkout is a different git
+  // repo and will not exist on a deploy target, so relying on it would mean the
+  // seed quietly produced 14 listings instead of 25 in production. The tracked
+  // copy is what ships; the sibling is a convenience for local work.
+  const candidates = [
+    path.join('data-import', 'listings.json'),
+    path.join('flamingo-city', 'data', 'listings.json'),
+  ]
+  let dir = process.cwd()
+  for (let i = 0; i < 8; i++) {
+    for (const rel of candidates) {
+      const candidate = path.join(dir, rel)
+      if (fs.existsSync(candidate)) return candidate
+    }
+    const parent = path.dirname(dir)
+    if (parent === dir) break
+    dir = parent
+  }
+  return path.resolve(process.cwd(), '..', candidates[0])
+}
+
+export const RESEARCH_JSON = findResearchJson()
+
+/** `"N/A"` is the file's explicit gap marker — never let it become a value. */
+export function val<T>(v: T | null | undefined): T | undefined {
+  if (v == null) return undefined
+  if (typeof v === 'string') {
+    const t = v.trim()
+    return t === '' || t === 'N/A' ? undefined : (t as unknown as T)
+  }
+  return v
+}
+
+export function list(v: unknown): string[] {
+  return Array.isArray(v) ? v.filter((x): x is string => typeof x === 'string' && x !== 'N/A') : []
+}
+
+/** research city slug → the site's city slug. */
+const CITY: Record<string, string> = { 'miami-lakes': 'lakes', hialeah: 'hialeah' }
+/** research category → the site's taxonomy. Only restaurants and bars exist so far. */
+const CATEGORY: Record<string, string> = { restaurant: 'food', bar: 'night' }
+
+const DAY_SHORT: Record<string, string> = {
+  Monday: 'Mon',
+  Tuesday: 'Tue',
+  Wednesday: 'Wed',
+  Thursday: 'Thu',
+  Friday: 'Fri',
+  Saturday: 'Sat',
+  Sunday: 'Sun',
+}
+
+/** "13:00" → "1pm", "11:30" → "11:30am" — the display shape the detail page uses. */
+function clock(hhmm: string): string {
+  const [hStr, mStr] = hhmm.split(':')
+  const h = Number(hStr)
+  const m = Number(mStr)
+  const suffix = h >= 12 ? 'pm' : 'am'
+  const h12 = h % 12 === 0 ? 12 : h % 12
+  return m ? `${h12}:${String(m).padStart(2, '0')}${suffix}` : `${h12}${suffix}`
+}
+
+/** [Mon..Sun] → "Mon – Sun"; non-contiguous sets stay comma separated. */
+function dayLabel(days: string[]): string {
+  const short = days.map((d) => DAY_SHORT[d] ?? d)
+  if (short.length <= 2) return short.join(' & ')
+  const order = Object.values(DAY_SHORT)
+  const idx = short.map((d) => order.indexOf(d)).sort((a, b) => a - b)
+  const contiguous = idx.every((n, i) => i === 0 || n === idx[i - 1] + 1)
+  return contiguous ? `${order[idx[0]]} – ${order[idx[idx.length - 1]]}` : short.join(', ')
+}
+
+export type ResearchListing = Record<string, any>
+
+export function loadResearch(): ResearchListing[] {
+  if (!fs.existsSync(RESEARCH_JSON)) {
+    throw new Error(
+      `Research file not found at ${RESEARCH_JSON}. Set RESEARCH_JSON to the path of flamingo-city/data/listings.json.`,
+    )
+  }
+  const doc = JSON.parse(fs.readFileSync(RESEARCH_JSON, 'utf8'))
+  return doc.listings ?? []
+}
+
+/**
+ * One research record → the English half of a Payload listing.
+ *
+ * `tag` is the only localized field written here, and it is written in English
+ * ONLY. The research has no Spanish, and copying English into the `es` locale
+ * would make the admin look translated when it is not.
+ */
+export function toListing(r: ResearchListing, ids: Record<string, any>) {
+  const loc = r.location ?? {}
+  const con = r.contact ?? {}
+  const soc = r.social ?? {}
+  const hrs = r.hours ?? {}
+  const price = r.price ?? {}
+
+  const addressParts = [val(loc.street), val(loc.locality), val(loc.region), val(loc.postal_code)]
+  const address = addressParts.filter(Boolean).join(', ')
+
+  // The city relationship is required, so a disputed municipality still has to
+  // resolve to something. It resolves to the research's own `city` key and the
+  // dispute is recorded as a blocking gap rather than silently asserted away.
+  const cityKey = CITY[r.city]
+  const catKey = CATEGORY[r.category]
+
+  const blockingGaps = [...list(r.blocking_gaps)]
+  if (val(loc.verification) && loc.verification !== 'confirmed') {
+    blockingGaps.push(
+      `Address ${loc.verification}: ${val(loc.verification_note) ?? 'see research dossier'}`,
+    )
+  }
+  for (const key of ['phone_note', 'website_status', 'email_note'] as const) {
+    const note = val(con[key])
+    if (note) blockingGaps.push(`${key.replace(/_/g, ' ')}: ${note}`)
+  }
+
+  const schedule = Array.isArray(hrs.schedule) ? hrs.schedule : []
+  const quote = (r.notable_quotes ?? [])[0]
+
+  return {
+    name: r.name,
+    city: ids.cities[cityKey],
+    category: ids.categories[catKey],
+    hood: val(loc.district) ?? val(loc.cross_street),
+    tag: val(r.short_description),
+    price: val(price.band),
+    member: false,
+    publicationStatus: r.publication_status === 'ready' ? 'ready' : 'needs_owner_confirmation',
+    detail: {
+      story: val(r.long_description) ? [{ text: r.long_description }] : [],
+      quote: quote ? val(quote.quote) : undefined,
+      quoteBy: quote ? val(quote.attributed_to) : undefined,
+      address: address || undefined,
+      phone: val(con.phone_display) ?? val(con.phone),
+      // The field wants a bare host — the research stores a full URL.
+      site: val(con.website)?.replace(/^https?:\/\//, '').replace(/\/$/, ''),
+      email: val(con.email),
+      instagram: val(soc.instagram),
+      hours: schedule.map((s: any) => ({
+        d: dayLabel(s.days ?? []),
+        t: `${clock(s.opens)} – ${clock(s.closes)}`,
+      })),
+      hoursConfidence: val(hrs.confidence),
+      hoursConflicts: (hrs.conflicts ?? []).map((c: any) => ({
+        source: c.source,
+        detail: c.detail,
+      })),
+      // Price anchors are real sourced menu prices, which is exactly what the
+      // detail page's menu rows are for.
+      menu: (price.anchors ?? []).map((a: any) => ({
+        name: a.item,
+        price: typeof a.price === 'number' ? `$${a.price}` : val(a.price),
+      })),
+    },
+    research: {
+      established: val(r.established) ?? val((r.opened ?? {}).label),
+      establishedNote:
+        val((r.opened ?? {}).note) ?? val(r.established_note) ?? undefined,
+      cuisine: list(r.cuisine),
+      signatureItems: list(r.signature_items),
+      blockingGaps,
+      sources: (r.references ?? []).map((ref: any) => ({
+        url: ref.url,
+        title: val(ref.title),
+        publisher: val(ref.publisher),
+        type: val(ref.type),
+      })),
+      legalEntity: val(r.legal_entity),
+      sourceFile: `flamingo-city/research/${r.city}/${r.slug}.md`,
+    },
+  }
+}
+
+export { CITY, CATEGORY }

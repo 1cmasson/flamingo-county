@@ -1,0 +1,3058 @@
+{
+  "$comment": "Flamingo City business listings. Generated from the sourced dossiers in /research. Read _meta before consuming.",
+  "_meta": {
+    "schema_version": "1.0.0",
+    "generated": "2026-08-18",
+    "source_of_truth": "research/<city>/<slug>.md — each listing below traces to one dossier file",
+    "listing_count": 11,
+    "categories_present": [
+      "restaurant",
+      "bar"
+    ],
+    "cities": [
+      "miami-lakes",
+      "hialeah"
+    ],
+    "how_to_use": {
+      "publication_status": "Filter on this. 'ready' = every published field traces to a source and no blocking gap remains. 'needs_owner_confirmation' = publishable, but blocking_gaps lists what must be asked before the listing is complete. No listing here is unusable; they differ in how much is still open.",
+      "field_provenance": "Fields carrying real risk (hours, price, owners, founding dates) are objects with a 'source' URL and, where sources disagree, a 'conflicts' array. Do not flatten a conflicts array by picking one silently.",
+      "seo.json_ld": "Spec-valid schema.org object built ONLY from validated fields, ready to emit in a <script type=\"application/ld+json\"> tag. Kept separate from the internal fields because schema.org has no way to express 'this claim is unverified'.",
+      "hours_policy": "openingHoursSpecification is present in json_ld ONLY where an owned channel (the business's own site or its own Instagram bio) supplies a single unambiguous schedule. Where sources conflict it is omitted entirely rather than guessed, because wrong hours in structured data surface directly in Google and generate owner complaints.",
+      "founding_dates": "corporate_record.filing_date is the date an entity was registered with Florida. It is NEVER an opening date and must never be rendered as 'since ____'. Where an opening or founding year is known it lives in its own 'established' field with its own source. Several businesses have no established year at all; those fields are null by design, not by omission.",
+      "privacy": "Officer residential addresses appear in Florida corporate records but are deliberately excluded here. Owner names and titles only.",
+      "missing_values": "Any field with the literal string \"N/A\" has no sourced value yet — it is a known gap, not an error. List-typed fields (owners, references, signature_items, cuisine, ...) stay as arrays and are EMPTY rather than \"N/A\", so iterating them is always safe. Each listing carries a 'missing_fields' array naming every gap on that record. seo.json_ld deliberately OMITS unknown fields rather than filling them with \"N/A\" — schema.org output goes to search engines, and a literal \"N/A\" in structured data would publish as real content.",
+      "uniform_keys": "Every listing now carries an identical key set, so the site can render one template across all records without existence checks.",
+      "missing_fields": "Lists only the CORE fields that are absent and worth chasing - identity, contact, hours, price, owners, corporate record. Optional blocks that simply do not apply to a given business (capacity, brand, awards, related_locations) are filled with \"N/A\" for template uniformity but are NOT counted here, so the number reflects real work outstanding rather than schema padding."
+    },
+    "known_limitations": [
+      "Research is web-only. No owner has been contacted. Each dossier's 'Ask the owner' section holds the open questions.",
+      "search.sunbiz.org, Yelp, Tripadvisor and the Herald sites block automated retrieval. Corporate fields sourced via aggregators are marked with verification: 'aggregator'.",
+      "No images are included. Each dossier lists candidate image URLs with provenance and a rights contact; licensing is unresolved and is the site owner's decision."
+    ]
+  },
+  "listings": [
+    {
+      "id": "1910-restaurant-bar",
+      "slug": "1910-restaurant-bar",
+      "name": "1910 Restaurant & Bar",
+      "legal_entity": "1910 Restaurant & Bar Miami Corp",
+      "city": "miami-lakes",
+      "city_display": "Miami Lakes",
+      "category": "restaurant",
+      "schema_type": "Restaurant",
+      "publication_status": "ready",
+      "blocking_gaps": [],
+      "cuisine": [
+        "Latin fusion",
+        "Steakhouse",
+        "Seafood",
+        "Italian",
+        "Cuban"
+      ],
+      "established": "N/A",
+      "opened": {
+        "value": "2025-02-21",
+        "label": "Opened February 21, 2025",
+        "source": "https://miamilaker.com/Business/restaurant-review-1910-restaurante-bar",
+        "note": "Grand opening date from local press. The corporate filing date of 2024-12-20 is a separate fact and must not be rendered as an opening or founding date. The name '1910' is NOT a founding year — no source explains it."
+      },
+      "location": {
+        "street": "6743 Main St",
+        "locality": "Miami Lakes",
+        "region": "FL",
+        "postal_code": "33014",
+        "country": "US",
+        "district": "Main Street Miami Lakes",
+        "verification": "confirmed",
+        "verification_note": "Address agrees across the business's own contact page, the Main Street Miami Lakes merchant directory, the Miami Laker, and the corporate principal address.",
+        "city_label_conflicts": "N/A",
+        "cross_street": "N/A"
+      },
+      "contact": {
+        "phone": "+1-305-456-4915",
+        "phone_display": "(305) 456-4915",
+        "email": "info@1910restaurantbarml.com",
+        "website": "https://1910restaurantbarml.com/",
+        "phone_note": "N/A",
+        "website_note": "N/A",
+        "website_status": "N/A",
+        "email_note": "N/A"
+      },
+      "social": {
+        "instagram": "https://www.instagram.com/1910restaurantbarmiamilakes/",
+        "instagram_handle": "@1910restaurantbarmiamilakes",
+        "instagram_followers": 37600,
+        "facebook": "N/A",
+        "facebook_note": "A page exists at ID 61574608162862 but the vanity URL is unconfirmed. Omitted rather than guessed.",
+        "instagram_note": "N/A"
+      },
+      "hours": {
+        "source_type": "owned_channel",
+        "source": "https://1910restaurantbarml.com/",
+        "schedule": [
+          {
+            "days": [
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday",
+              "Saturday",
+              "Sunday"
+            ],
+            "opens": "11:30",
+            "closes": "23:00"
+          }
+        ],
+        "conflicts": [
+          {
+            "source": "https://mainstreetmiamilakes.com/business-posts/1910-restaurant-bar/",
+            "detail": "Sun-Thu 11:30-22:00; Fri-Sat 11:30-23:00"
+          },
+          {
+            "source": "https://miamilaker.com/Business/restaurant-review-1910-restaurante-bar",
+            "detail": "11:30-22:00 weekdays and Sundays; 11:30-23:00 Saturdays"
+          }
+        ],
+        "confidence": "medium",
+        "happy_hour": "N/A",
+        "confidence_note": "N/A",
+        "closed_days": []
+      },
+      "price": {
+        "band": "$$$$",
+        "band_source": "https://www.miamiandbeaches.com/l/eat-and-drink/1910-restaurant-and-bar-miami-lakes/62049",
+        "anchors": [
+          {
+            "item": "Grilled octopus, garlic butter sauce",
+            "price": 34
+          },
+          {
+            "item": "New York Prime Angus",
+            "price": 40
+          },
+          {
+            "item": "Iberico Pork Secret",
+            "price": 62
+          },
+          {
+            "item": "1910 Burger",
+            "price": 22
+          },
+          {
+            "item": "Octopus Montadito",
+            "price": 16
+          }
+        ],
+        "anchors_source": "https://miamilaker.com/Business/restaurant-review-1910-restaurante-bar",
+        "note": "N/A",
+        "band_note": "N/A"
+      },
+      "owners": [
+        {
+          "name": "Pedro Alvarez",
+          "role": "President",
+          "source": "https://www.bizprofile.net/fl/miami-lakes/1910-restaurant-bar-miami",
+          "verification": "aggregator"
+        },
+        {
+          "name": "Ignacio \"Nacho\" De La Cruz",
+          "role": "Officer",
+          "source": "https://www.bizprofile.net/fl/miami-lakes/1910-restaurant-bar-miami",
+          "verification": "aggregator",
+          "note": "Recorded title string reads 'Vice President, President', which appears to be an aggregator parse artifact. Confirm the exact title before publishing it."
+        }
+      ],
+      "corporate_record": {
+        "entity_name": "1910 Restaurant & Bar Miami Corp",
+        "document_number": "P24000076510",
+        "entity_type": "Florida Profit Corporation",
+        "filing_date": "2024-12-20",
+        "filing_date_is_not_an_opening_date": true,
+        "status": "Active",
+        "principal_address": "6743 Main Street, Miami Lakes, FL 33014",
+        "source": "https://www.bizprofile.net/fl/miami-lakes/1910-restaurant-bar-miami",
+        "verification": "aggregator",
+        "note": "N/A",
+        "effective_date": "N/A",
+        "document_number_note": "N/A",
+        "historical_records": [],
+        "beverage_licensee": "N/A",
+        "beverage_license_source": "N/A"
+      },
+      "capacity": {
+        "total_guests": 160,
+        "private_room_guests": 20,
+        "source": "https://www.miamiandbeaches.com/l/eat-and-drink/1910-restaurant-and-bar-miami-lakes/62049"
+      },
+      "short_description": "Latin fusion steakhouse and seafood room on Miami Lakes' Main Street, opened in 2025 and built around whole grilled octopus.",
+      "long_description": "1910 Restaurant & Bar opened on Main Street in February 2025, pairing charcoal-grilled steaks and wild seafood with a menu local press has described as Florida, Cuban, Peruvian and Italian by turns. Whole grilled octopus is the signature dish and the reason most first-timers come. The room seats up to 160 across an indoor dining room and an outdoor patio, with a side room for parties of up to 20, and live music runs through dinner service.",
+      "description_sources": [
+        "https://miamilaker.com/Business/restaurant-review-1910-restaurante-bar",
+        "https://mainstreetmiamilakes.com/business-posts/1910-restaurant-bar/",
+        "https://www.miamiandbeaches.com/l/eat-and-drink/1910-restaurant-and-bar-miami-lakes/62049"
+      ],
+      "signature_items": [
+        "Whole grilled octopus",
+        "Octopus Montadito",
+        "New York Prime Angus",
+        "Iberico Pork Secret"
+      ],
+      "references": [
+        {
+          "title": "Restaurant Review: 1910 Restaurante & Bar",
+          "publisher": "The Miami Laker",
+          "date": "2025-03-19",
+          "url": "https://miamilaker.com/Business/restaurant-review-1910-restaurante-bar",
+          "type": "press",
+          "independent": true
+        },
+        {
+          "title": "1910 Restaurant & Bar",
+          "publisher": "Main Street Miami Lakes",
+          "url": "https://mainstreetmiamilakes.com/business-posts/1910-restaurant-bar/",
+          "type": "directory",
+          "independent": true
+        },
+        {
+          "title": "1910 Restaurant & Bar Miami Lakes",
+          "publisher": "Greater Miami CVB",
+          "url": "https://www.miamiandbeaches.com/l/eat-and-drink/1910-restaurant-and-bar-miami-lakes/62049",
+          "type": "directory",
+          "independent": true
+        },
+        {
+          "title": "From Cuba to Miami: the story behind 1910 and the octopus",
+          "publisher": "CiberCuba",
+          "date": "2025-11-17",
+          "url": "https://en.cibercuba.com/noticias/2025-11-17-u209376-e208487-s27061-nid315048-cuba-miami-historia-detras-1910-restaurant-bar",
+          "type": "branded_content",
+          "independent": false,
+          "note": "Bylined to the restaurant itself. This is marketing, not journalism. Do not cite as independent coverage."
+        },
+        {
+          "title": "Official site",
+          "publisher": "1910 Restaurant & Bar",
+          "url": "https://1910restaurantbarml.com/",
+          "type": "owned",
+          "independent": false
+        }
+      ],
+      "caveats": [
+        "The Holguin, Cuba origin story and the '800 lb of octopus a week' figure come from a CiberCuba item bylined to the restaurant. Treat as a business claim, not reported fact.",
+        "'1910' is not a founding year. No source explains the name.",
+        "Two Yelp records exist for this address (slugs -miami-lakes and -miami-gardens). Likely a duplicate; worth flagging to the owner."
+      ],
+      "seo": {
+        "meta_title": "1910 Restaurant & Bar | Steak & Seafood on Main Street, Miami Lakes",
+        "meta_description": "Latin fusion steakhouse and seafood in Miami Lakes. Whole grilled octopus, prime Angus and Iberico pork on Main Street. Open daily from 11:30am.",
+        "json_ld": {
+          "@context": "https://schema.org",
+          "@type": "Restaurant",
+          "name": "1910 Restaurant & Bar",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "6743 Main St",
+            "addressLocality": "Miami Lakes",
+            "addressRegion": "FL",
+            "postalCode": "33014",
+            "addressCountry": "US"
+          },
+          "telephone": "+1-305-456-4915",
+          "email": "info@1910restaurantbarml.com",
+          "url": "https://1910restaurantbarml.com/",
+          "servesCuisine": [
+            "Latin American",
+            "Steakhouse",
+            "Seafood"
+          ],
+          "priceRange": "$$$$",
+          "sameAs": [
+            "https://www.instagram.com/1910restaurantbarmiamilakes/"
+          ],
+          "openingHoursSpecification": [
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": [
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+                "Sunday"
+              ],
+              "opens": "11:30",
+              "closes": "23:00"
+            }
+          ]
+        }
+      },
+      "brand": {
+        "name": "N/A",
+        "brand_founded": "N/A",
+        "brand_entity": "N/A",
+        "relationship": "N/A",
+        "relationship_note": "N/A",
+        "brand_url": "N/A"
+      },
+      "notable_quotes": [],
+      "serves_food": "N/A",
+      "serves_food_note": "N/A",
+      "related_locations": [],
+      "established_note": "N/A",
+      "awards": [],
+      "payment": {
+        "cash_only": "N/A",
+        "atm_on_site": "N/A",
+        "source": "N/A"
+      },
+      "owners_note": "N/A",
+      "alternate_names": [],
+      "service_model": "N/A",
+      "service": {
+        "takeout": "N/A",
+        "delivery": "N/A",
+        "catering": "N/A",
+        "reservations": "N/A",
+        "alcohol": "N/A",
+        "outdoor_seating": "N/A",
+        "parking": "N/A",
+        "source": "N/A"
+      },
+      "tagline": "N/A",
+      "missing_fields": [
+        "established",
+        "social.facebook"
+      ],
+      "missing_core_count": 2
+    },
+    {
+      "id": "dr-limon-ceviche-bar-miami-lakes",
+      "slug": "dr-limon-ceviche-bar",
+      "name": "Dr. Limón Ceviche Bar — Miami Lakes",
+      "legal_entity": "Limontree Branch Investments, LLC",
+      "city": "miami-lakes",
+      "city_display": "Miami Lakes",
+      "category": "restaurant",
+      "schema_type": "Restaurant",
+      "publication_status": "ready",
+      "blocking_gaps": [],
+      "cuisine": [
+        "Peruvian",
+        "Ceviche",
+        "Seafood"
+      ],
+      "established": "N/A",
+      "opened": {
+        "value": "2017",
+        "label": "Opened 2017",
+        "source": "https://miamilaker.com/dr-limons-ceviche-bar-opens-in-miami-lakes",
+        "note": "Year is solid; the exact date is not. Sources give August 2017, a September 1 ribbon-cutting, and early October. Publish the year only. The 2016 LLC filing and the 2012 brand founding are separate facts."
+      },
+      "location": {
+        "street": "7341 Miami Lakes Dr",
+        "locality": "Miami Lakes",
+        "region": "FL",
+        "postal_code": "33014",
+        "country": "US",
+        "district": "Cypress Village",
+        "verification": "confirmed",
+        "verification_note": "N/A",
+        "city_label_conflicts": "N/A",
+        "cross_street": "N/A"
+      },
+      "contact": {
+        "phone": "+1-305-228-9199",
+        "phone_display": "(305) 228-9199",
+        "email": "N/A",
+        "website": "https://drlimonmiamilakes.com/",
+        "phone_note": "A variant (305) 228-9200 circulates on aggregators but is not on any owned channel.",
+        "website_note": "N/A",
+        "website_status": "N/A",
+        "email_note": "N/A"
+      },
+      "social": {
+        "instagram": "https://www.instagram.com/drlimon_miamilakes/",
+        "instagram_handle": "@drlimon_miamilakes",
+        "instagram_followers": "N/A",
+        "facebook": "https://www.facebook.com/DrLimonMiamiLakes/",
+        "facebook_note": "N/A",
+        "instagram_note": "N/A"
+      },
+      "hours": {
+        "source_type": "owned_channel",
+        "source": "https://www.doctorlimon.com/dr-limon-miami-lakes/",
+        "schedule": [
+          {
+            "days": [
+              "Sunday",
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday"
+            ],
+            "opens": "11:30",
+            "closes": "22:00"
+          },
+          {
+            "days": [
+              "Friday",
+              "Saturday"
+            ],
+            "opens": "11:30",
+            "closes": "23:00"
+          }
+        ],
+        "conflicts": [],
+        "confidence": "high",
+        "happy_hour": {
+          "days": [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday"
+          ],
+          "opens": "16:00",
+          "closes": "19:00",
+          "source": "https://drlimonmiamilakes.com/"
+        },
+        "confidence_note": "N/A",
+        "closed_days": []
+      },
+      "price": {
+        "band": "$$",
+        "band_source": "https://restaurantguru.com/Dr-Limon-Miami-Lakes-Miami-Lakes",
+        "anchors": [
+          {
+            "item": "Most ceviches",
+            "price": 19
+          }
+        ],
+        "anchors_source": "https://drlimonmiamilakes.com/menu",
+        "note": "A previously drafted '$10-$45' range was withdrawn on re-check; the menu's actual bounds are $0.60-$95.00, which is not a useful band. Per-person estimate $20-$60.",
+        "band_note": "N/A"
+      },
+      "owners": [
+        {
+          "name": "Rufino Paulino",
+          "role": "Franchisee / Manager",
+          "source": "https://miamilaker.com/dr-limons-ceviche-bar-opens-in-miami-lakes",
+          "verification": "press_and_corporate"
+        },
+        {
+          "name": "Johanna Paulino",
+          "role": "Manager",
+          "source": "https://www.bizprofile.net/fl/miami-lakes/limontree-branch-investments-llc",
+          "verification": "aggregator"
+        },
+        {
+          "name": "Julissa Paulino",
+          "role": "Manager / Registered Agent",
+          "source": "https://www.bizprofile.net/fl/miami-lakes/limontree-branch-investments-llc",
+          "verification": "aggregator"
+        }
+      ],
+      "corporate_record": {
+        "entity_name": "Limontree Branch Investments, LLC",
+        "document_number": "L16000116701",
+        "entity_type": "Florida Limited Liability Company",
+        "filing_date": "2016-06-16",
+        "filing_date_is_not_an_opening_date": true,
+        "status": "Active",
+        "principal_address": "7341 Miami Lakes Drive, Miami Lakes, FL 33014",
+        "source": "https://www.bizprofile.net/fl/miami-lakes/limontree-branch-investments-llc",
+        "verification": "aggregator",
+        "note": "N/A",
+        "effective_date": "N/A",
+        "document_number_note": "N/A",
+        "historical_records": [],
+        "beverage_licensee": "N/A",
+        "beverage_license_source": "N/A"
+      },
+      "capacity": {
+        "total_guests": "N/A",
+        "private_room_guests": "N/A",
+        "source": "N/A"
+      },
+      "short_description": "Peruvian ceviche bar in Cypress Village — the Dr. Limón brand's first franchise, run by the Paulino family since 2017.",
+      "long_description": "When Dr. Limón opened in Miami Lakes in 2017, it was the Peruvian brand's first franchised location, and it remains family-run. Rufino Paulino emigrated from the Dominican Republic, studied civil engineering, then learned the kitchen working stations at the company's Kendall restaurant before opening this one with parents, sisters, daughter and girlfriend as shareholders. The menu is built on ceviche, most priced at $19, with a weekday happy hour from 4 to 7.",
+      "description_sources": [
+        "https://miamilaker.com/dr-limons-ceviche-bar-opens-in-miami-lakes",
+        "https://www.doctorlimon.com/dr-limon-miami-lakes/",
+        "https://drlimonmiamilakes.com/menu"
+      ],
+      "signature_items": [
+        "Ceviche"
+      ],
+      "references": [
+        {
+          "title": "Dr. Limon's Ceviche Bar opens in Miami Lakes",
+          "publisher": "The Miami Laker",
+          "date": "2017-10-19",
+          "url": "https://miamilaker.com/dr-limons-ceviche-bar-opens-in-miami-lakes",
+          "type": "press",
+          "independent": true
+        },
+        {
+          "title": "Dr. Limón Miami Lakes",
+          "publisher": "Dr. Limón (brand)",
+          "url": "https://www.doctorlimon.com/dr-limon-miami-lakes/",
+          "type": "owned",
+          "independent": false
+        },
+        {
+          "title": "Location site & menu",
+          "publisher": "Dr. Limón Miami Lakes",
+          "url": "https://drlimonmiamilakes.com/",
+          "type": "owned",
+          "independent": false
+        }
+      ],
+      "caveats": [
+        "The owner of this location is Rufino Paulino, not brand founder Carlos Brescia. Do not attribute the brand's founding story to this restaurant.",
+        "Three separate years apply and must not be merged: brand founded 2012, local LLC filed 2016, restaurant opened 2017."
+      ],
+      "seo": {
+        "meta_title": "Dr. Limón Ceviche Bar Miami Lakes | Peruvian Ceviche in Cypress Village",
+        "meta_description": "Family-run Peruvian ceviche bar in Miami Lakes. Most ceviches $19, happy hour weekdays 4-7pm. The Dr. Limón brand's first franchise.",
+        "json_ld": {
+          "@context": "https://schema.org",
+          "@type": "Restaurant",
+          "name": "Dr. Limón Ceviche Bar — Miami Lakes",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "7341 Miami Lakes Dr",
+            "addressLocality": "Miami Lakes",
+            "addressRegion": "FL",
+            "postalCode": "33014",
+            "addressCountry": "US"
+          },
+          "telephone": "+1-305-228-9199",
+          "url": "https://drlimonmiamilakes.com/",
+          "servesCuisine": [
+            "Peruvian",
+            "Seafood"
+          ],
+          "priceRange": "$$",
+          "sameAs": [
+            "https://www.instagram.com/drlimon_miamilakes/",
+            "https://www.facebook.com/DrLimonMiamiLakes/"
+          ],
+          "openingHoursSpecification": [
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": [
+                "Sunday",
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday"
+              ],
+              "opens": "11:30",
+              "closes": "22:00"
+            },
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": [
+                "Friday",
+                "Saturday"
+              ],
+              "opens": "11:30",
+              "closes": "23:00"
+            }
+          ]
+        }
+      },
+      "brand": {
+        "name": "Dr. Limón Ceviche Bar",
+        "brand_founded": "2012",
+        "brand_entity": "Doctor Limon, Corp. (P12000035278, filed 2012-04-12)",
+        "relationship": "franchise",
+        "relationship_note": "Miami Lakes is the brand's FIRST franchised location, separately owned and operated by the Paulino family — not by the brand's founders.",
+        "brand_url": "https://www.doctorlimon.com/locations/"
+      },
+      "notable_quotes": [
+        {
+          "quote": "Miami Lakes is a cool place, but it's so quiet. I want to make some noise.",
+          "attributed_to": "Rufino Paulino",
+          "source": "https://miamilaker.com/dr-limons-ceviche-bar-opens-in-miami-lakes",
+          "date": "2017-10-19"
+        }
+      ],
+      "serves_food": "N/A",
+      "serves_food_note": "N/A",
+      "related_locations": [],
+      "established_note": "N/A",
+      "awards": [],
+      "payment": {
+        "cash_only": "N/A",
+        "atm_on_site": "N/A",
+        "source": "N/A"
+      },
+      "owners_note": "N/A",
+      "alternate_names": [],
+      "service_model": "N/A",
+      "service": {
+        "takeout": "N/A",
+        "delivery": "N/A",
+        "catering": "N/A",
+        "reservations": "N/A",
+        "alcohol": "N/A",
+        "outdoor_seating": "N/A",
+        "parking": "N/A",
+        "source": "N/A"
+      },
+      "tagline": "N/A",
+      "missing_fields": [
+        "established",
+        "contact.email"
+      ],
+      "missing_core_count": 2
+    },
+    {
+      "id": "the-bend-liquor-lounge",
+      "slug": "the-bend-liquor-lounge",
+      "name": "The Bend Liquor Lounge",
+      "legal_entity": "Bend Hospitality Group, LLC",
+      "city": "miami-lakes",
+      "city_display": "Miami Lakes",
+      "category": "bar",
+      "schema_type": "BarOrPub",
+      "publication_status": "needs_owner_confirmation",
+      "blocking_gaps": [
+        "City label is disputed across sources — filed under Miami Lakes by site-owner decision, but the venue sits in ZIP 33015 on unincorporated county land between Miami Lakes and Hialeah.",
+        "No live website — thebendmiami.com now redirects to Yelp.",
+        "Price band contradicts itself across every source."
+      ],
+      "cuisine": [],
+      "established": "N/A",
+      "opened": {
+        "value": "2015-02",
+        "label": "Opened February 2015",
+        "source": "https://miamilaker.com/Business/the-bend-becomes-modern-day-upscale-version-of-former-area-lounge",
+        "note": "The corporate filing date of 2014-12-02 is a separate fact. Do not write 'since 2014'."
+      },
+      "location": {
+        "street": "6844 NW 169th St",
+        "locality": "Miami Lakes",
+        "region": "FL",
+        "postal_code": "33015",
+        "country": "US",
+        "district": "N/A",
+        "verification": "street_confirmed_city_disputed",
+        "verification_note": "Every source agrees on street and ZIP. The municipality label does not agree. Recommended public phrasing: the street address plus 'on the Miami Lakes/Hialeah line'.",
+        "city_label_conflicts": [
+          {
+            "label": "just north of Miami Lakes",
+            "source": "https://miamilaker.com/Business/the-bend-becomes-modern-day-upscale-version-of-former-area-lounge"
+          },
+          {
+            "label": "Miami Lakes",
+            "source": "https://www.miaminewtimes.com/food-drink/miami-lakes-favorite-dive-bar-celebrates-10-years-22659013/"
+          },
+          {
+            "label": "Hialeah",
+            "source": "https://www.theinfatuation.com/miami/reviews/the-bend"
+          },
+          {
+            "label": "Miami",
+            "source": "Sunbiz principal address"
+          }
+        ],
+        "cross_street": "N/A"
+      },
+      "contact": {
+        "phone": "+1-786-542-1948",
+        "phone_display": "786-542-1948",
+        "email": "N/A",
+        "website": "N/A",
+        "phone_note": "N/A",
+        "website_note": "thebendmiami.com 301-redirects to Yelp as of 2026-08-17. There is no live owned site.",
+        "website_status": "N/A",
+        "email_note": "N/A"
+      },
+      "social": {
+        "instagram": "https://www.instagram.com/thebendmiami/",
+        "instagram_handle": "@thebendmiami",
+        "instagram_followers": 8811,
+        "facebook": "https://www.facebook.com/thebendmiami/",
+        "facebook_note": "N/A",
+        "instagram_note": "N/A"
+      },
+      "hours": {
+        "source_type": "owned_channel",
+        "source": "https://www.instagram.com/thebendmiami/",
+        "schedule": [
+          {
+            "days": [
+              "Sunday",
+              "Monday",
+              "Tuesday"
+            ],
+            "opens": "20:00",
+            "closes": "03:00"
+          },
+          {
+            "days": [
+              "Wednesday",
+              "Thursday",
+              "Friday",
+              "Saturday"
+            ],
+            "opens": "17:00",
+            "closes": "03:00"
+          }
+        ],
+        "conflicts": [
+          {
+            "source": "https://www.timeout.com/miami/bars/the-bend",
+            "detail": "Sun-Wed 17:00-01:00 / Thu-Sat 17:00-03:00 — differs from the owned channel; not used."
+          }
+        ],
+        "confidence": "medium",
+        "happy_hour": {
+          "days": [
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday"
+          ],
+          "opens": "17:00",
+          "closes": "20:00",
+          "source": "https://www.instagram.com/thebendmiami/"
+        },
+        "confidence_note": "N/A",
+        "closed_days": []
+      },
+      "price": {
+        "band": "N/A",
+        "band_source": "N/A",
+        "anchors": [
+          {
+            "item": "Specialty cocktails",
+            "price": 11,
+            "as_of": "2025"
+          },
+          {
+            "item": "Beer and shot combo",
+            "price": 10,
+            "as_of": "2025"
+          }
+        ],
+        "anchors_source": "https://www.miaminewtimes.com/food-drink/miami-lakes-favorite-dive-bar-celebrates-10-years-22659013/",
+        "note": "N/A",
+        "band_note": "Do not publish a band. Sources contradict: $11 specialty cocktails and $10 beer-and-shot combos (New Times 2025); $4-$8 drinks (Miami Laker 2015); $7-$8 cocktails (New Times 2015); and The Infatuation lists $$$$, which contradicts every dollar figure and every 'dive bar' description."
+      },
+      "owners": [
+        {
+          "name": "Mauricio \"Mo\" Lacayo",
+          "role": "Owner",
+          "source": "https://www.miaminewtimes.com/food-drink/miami-lakes-favorite-dive-bar-celebrates-10-years-22659013/",
+          "verification": "press_and_corporate"
+        },
+        {
+          "name": "Orlando \"Landy\" Lamas",
+          "role": "Owner",
+          "source": "https://www.miaminewtimes.com/food-drink/miami-lakes-favorite-dive-bar-celebrates-10-years-22659013/",
+          "verification": "press_and_corporate"
+        }
+      ],
+      "corporate_record": {
+        "entity_name": "Bend Hospitality Group, LLC",
+        "document_number": "L14000184500",
+        "entity_type": "Florida Limited Liability Company",
+        "filing_date": "2014-12-02",
+        "filing_date_is_not_an_opening_date": true,
+        "status": "Active",
+        "principal_address": "N/A",
+        "source": "search.sunbiz.org (record blocks automated retrieval)",
+        "verification": "search_snippet",
+        "note": "The strongest link between this LLC and the bar is that its authorized persons match the owner names in press — not the address match. Exact legal name may or may not carry a leading 'The'.",
+        "effective_date": "N/A",
+        "document_number_note": "N/A",
+        "historical_records": [],
+        "beverage_licensee": "N/A",
+        "beverage_license_source": "N/A"
+      },
+      "capacity": {
+        "total_guests": "N/A",
+        "private_room_guests": "N/A",
+        "source": "N/A"
+      },
+      "short_description": "Ten-year-old neighborhood dive and cocktail lounge on the Miami Lakes/Hialeah line, open late seven nights a week.",
+      "long_description": "The Bend opened in February 2015 in a space with a colorful past — its predecessor, Our Place Lounge, had been raided the previous May over an illegal poker game. A decade on, owners Mauricio Lacayo and Orlando Lamas marked the anniversary by signing a twenty-year lease extension, with a courtyard and a bottle shop in the plans. It is a bar rather than a restaurant, open until 3am every night, with happy hour Wednesday through Saturday.",
+      "description_sources": [
+        "https://www.miaminewtimes.com/food-drink/miami-lakes-favorite-dive-bar-celebrates-10-years-22659013/",
+        "https://www.miaminewtimes.com/music/the-bend-liquor-lounge-opens-in-old-miami-lakes-bar-busted-for-gambling-and-drugs-6450399/",
+        "https://miamilaker.com/Business/the-bend-becomes-modern-day-upscale-version-of-former-area-lounge",
+        "https://www.instagram.com/thebendmiami/"
+      ],
+      "signature_items": [],
+      "references": [
+        {
+          "title": "Miami Lakes' favorite dive bar celebrates 10 years",
+          "publisher": "Miami New Times",
+          "date": "2025-03-19",
+          "url": "https://www.miaminewtimes.com/food-drink/miami-lakes-favorite-dive-bar-celebrates-10-years-22659013/",
+          "type": "press",
+          "independent": true
+        },
+        {
+          "title": "The Bend Liquor Lounge opens in old Miami Lakes bar busted for gambling and drugs",
+          "publisher": "Miami New Times",
+          "date": "2015-02-17",
+          "url": "https://www.miaminewtimes.com/music/the-bend-liquor-lounge-opens-in-old-miami-lakes-bar-busted-for-gambling-and-drugs-6450399/",
+          "type": "press",
+          "independent": true
+        },
+        {
+          "title": "The Bend becomes modern-day upscale version of former area lounge",
+          "publisher": "The Miami Laker",
+          "date": "2015-07-14",
+          "url": "https://miamilaker.com/Business/the-bend-becomes-modern-day-upscale-version-of-former-area-lounge",
+          "type": "press",
+          "independent": true
+        },
+        {
+          "title": "The Bend",
+          "publisher": "The Infatuation",
+          "url": "https://www.theinfatuation.com/miami/reviews/the-bend",
+          "type": "review",
+          "independent": true
+        }
+      ],
+      "caveats": [
+        "A quote fragment previously attributed to Lamas — 'No disco balls or Saturday Night Fever' — does not appear in the cited article and must not be published.",
+        "The February 2015 opening is confirmed by the Miami Laker, not by the New Times piece that was originally cited for it."
+      ],
+      "seo": {
+        "meta_title": "The Bend Liquor Lounge | Late-Night Cocktail Bar, Miami Lakes",
+        "meta_description": "Neighborhood dive and cocktail lounge open until 3am seven nights a week, on the Miami Lakes/Hialeah line. Happy hour Wednesday to Saturday.",
+        "json_ld": {
+          "@context": "https://schema.org",
+          "@type": "BarOrPub",
+          "name": "The Bend Liquor Lounge",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "6844 NW 169th St",
+            "addressLocality": "Miami Lakes",
+            "addressRegion": "FL",
+            "postalCode": "33015",
+            "addressCountry": "US"
+          },
+          "telephone": "+1-786-542-1948",
+          "sameAs": [
+            "https://www.instagram.com/thebendmiami/",
+            "https://www.facebook.com/thebendmiami/"
+          ],
+          "openingHoursSpecification": [
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": [
+                "Sunday",
+                "Monday",
+                "Tuesday"
+              ],
+              "opens": "20:00",
+              "closes": "03:00"
+            },
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": [
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday"
+              ],
+              "opens": "17:00",
+              "closes": "03:00"
+            }
+          ]
+        }
+      },
+      "brand": {
+        "name": "N/A",
+        "brand_founded": "N/A",
+        "brand_entity": "N/A",
+        "relationship": "N/A",
+        "relationship_note": "N/A",
+        "brand_url": "N/A"
+      },
+      "notable_quotes": [],
+      "serves_food": false,
+      "serves_food_note": "This is a bar, not a restaurant. The only documented food is gourmet popcorn from 2015. Do not describe it as a restaurant or attribute a chef to it.",
+      "related_locations": [],
+      "established_note": "N/A",
+      "awards": [],
+      "payment": {
+        "cash_only": "N/A",
+        "atm_on_site": "N/A",
+        "source": "N/A"
+      },
+      "owners_note": "N/A",
+      "alternate_names": [],
+      "service_model": "N/A",
+      "service": {
+        "takeout": "N/A",
+        "delivery": "N/A",
+        "catering": "N/A",
+        "reservations": "N/A",
+        "alcohol": "N/A",
+        "outdoor_seating": "N/A",
+        "parking": "N/A",
+        "source": "N/A"
+      },
+      "tagline": "N/A",
+      "missing_fields": [
+        "established",
+        "contact.email",
+        "contact.website",
+        "price.band",
+        "signature_items"
+      ],
+      "missing_core_count": 5
+    },
+    {
+      "id": "the-garrison-taproom-billiards",
+      "slug": "the-garrison-taproom-billiards",
+      "name": "The Garrison Taproom & Billiards",
+      "legal_entity": "The Garrison Taproom, LLC",
+      "city": "miami-lakes",
+      "city_display": "Miami Lakes",
+      "category": "bar",
+      "schema_type": "BarOrPub",
+      "publication_status": "needs_owner_confirmation",
+      "blocking_gaps": [
+        "Own website garrisontaproom.com is down on an expired TLS certificate as of 2026-08-17.",
+        "The LLC's principal address (33016) is not the venue address (33014); the entity has not been positively confirmed as the operator at 6709 Main Street.",
+        "Whether the Pizza Scene / BurgerIM food partnerships still hold in 2026 is unverified."
+      ],
+      "cuisine": [],
+      "established": "N/A",
+      "opened": {
+        "value": "2022-01",
+        "label": "Opened early January 2022",
+        "source": "https://miamilaker.com/Business/on-the-menu-at-the-garrison-taproom-billiards-friendship-and-flights-of-craft-beers",
+        "note": "The corporate filing date of 2020-12-11 is a separate fact, roughly 13 months earlier and unexplained by any source. Never render as 'since 2020'."
+      },
+      "location": {
+        "street": "6709 Main Street",
+        "locality": "Miami Lakes",
+        "region": "FL",
+        "postal_code": "33014",
+        "country": "US",
+        "district": "Main Street Miami Lakes",
+        "verification": "confirmed",
+        "verification_note": "Four independent sources agree: the Town of Miami Lakes business listing, the Main Street merchant directory, Yelp, and a Miami Laker feature.",
+        "city_label_conflicts": "N/A",
+        "cross_street": "N/A"
+      },
+      "contact": {
+        "phone": "+1-786-251-3756",
+        "phone_display": "786-251-3756",
+        "email": "N/A",
+        "website": "http://www.garrisontaproom.com",
+        "phone_note": "N/A",
+        "website_note": "Expired TLS certificate on both apex and www as of 2026-08-17. Do not link publicly until fixed — worth telling the owner.",
+        "website_status": "down",
+        "email_note": "N/A"
+      },
+      "social": {
+        "instagram": "https://www.instagram.com/garrisonmiamilakes/",
+        "instagram_handle": "@garrisonmiamilakes",
+        "instagram_followers": 8773,
+        "facebook": "https://www.facebook.com/garrisonmiamilakes/",
+        "facebook_note": "N/A",
+        "instagram_note": "N/A"
+      },
+      "hours": {
+        "source_type": "directory",
+        "source": "https://mainstreetmiamilakes.com/business-posts/the-garrison-taproom/",
+        "schedule": [
+          {
+            "days": [
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday"
+            ],
+            "opens": "16:00",
+            "closes": "00:00"
+          },
+          {
+            "days": [
+              "Friday"
+            ],
+            "opens": "16:00",
+            "closes": "01:00"
+          },
+          {
+            "days": [
+              "Saturday",
+              "Sunday"
+            ],
+            "opens": "12:00",
+            "closes": "01:00"
+          }
+        ],
+        "conflicts": [],
+        "confidence": "medium",
+        "happy_hour": "N/A",
+        "confidence_note": "Corroborated by Restaurantji, but not sourced from an owned channel — the business's own site is down. Confirm with the owner.",
+        "closed_days": []
+      },
+      "price": {
+        "band": "$",
+        "band_source": "https://www.restaurantji.com/fl/miami-lakes/the-garrison-taproom-/",
+        "anchors": [
+          {
+            "item": "Domestic / imported beer",
+            "price_range": "3.50-6.00",
+            "as_of": "2022"
+          },
+          {
+            "item": "Craft beer",
+            "price_range": "6.00-8.00",
+            "as_of": "2022"
+          },
+          {
+            "item": "Chimay Grande Reserve Blue",
+            "price": 19,
+            "as_of": "2022"
+          }
+        ],
+        "anchors_source": "https://miamilaker.com/Business/on-the-menu-at-the-garrison-taproom-billiards-friendship-and-flights-of-craft-beers",
+        "note": "Aggregators disagree: Restaurantji says '$', Restaurant Guru says '$10-$20 per person'.",
+        "band_note": "N/A"
+      },
+      "owners": [
+        {
+          "name": "Alex Perez",
+          "role": "Owner",
+          "source": "https://miamilaker.com/Business/on-the-menu-at-the-garrison-taproom-billiards-friendship-and-flights-of-craft-beers",
+          "verification": "press"
+        },
+        {
+          "name": "Sue Perez",
+          "role": "Owner",
+          "source": "https://miamilaker.com/Business/on-the-menu-at-the-garrison-taproom-billiards-friendship-and-flights-of-craft-beers",
+          "verification": "press"
+        }
+      ],
+      "corporate_record": {
+        "entity_name": "The Garrison Taproom, LLC",
+        "document_number": "L20000388008",
+        "entity_type": "Florida Limited Liability Company",
+        "filing_date": "2020-12-11",
+        "filing_date_is_not_an_opening_date": true,
+        "status": "Active",
+        "principal_address": "8261 NW 165 Ter, Miami Lakes, FL 33016",
+        "source": "search.sunbiz.org (record blocks automated retrieval)",
+        "verification": "search_snippet",
+        "note": "Principal address differs from the venue address, which is normal for an LLC registered at a residence. The link to the venue rests on the Town of Miami Lakes business listing.",
+        "effective_date": "N/A",
+        "document_number_note": "N/A",
+        "historical_records": [],
+        "beverage_licensee": "N/A",
+        "beverage_license_source": "N/A"
+      },
+      "capacity": {
+        "total_guests": "N/A",
+        "private_room_guests": "N/A",
+        "source": "N/A"
+      },
+      "short_description": "Craft beer taproom and billiards hall on Main Street, opened in 2022 by Alex and Sue Perez.",
+      "long_description": "The Garrison brought a proper taproom to Main Street in January 2022, an idea Alex Perez had carried for roughly a decade after helping a friend open one in South Carolina. It pours craft flights alongside a full liquor bar and keeps pool tables going in the back; food comes from neighboring partners rather than a house kitchen. Perez describes the street plainly as the hub of Miami Lakes, the focal point of Miami Lakes.",
+      "description_sources": [
+        "https://miamilaker.com/Business/on-the-menu-at-the-garrison-taproom-billiards-friendship-and-flights-of-craft-beers",
+        "https://mainstreetmiamilakes.com/business-posts/the-garrison-taproom/"
+      ],
+      "signature_items": [
+        "Craft beer flights",
+        "Billiards"
+      ],
+      "references": [
+        {
+          "title": "On the menu at The Garrison Taproom & Billiards: friendship and flights of craft beers",
+          "publisher": "The Miami Laker",
+          "url": "https://miamilaker.com/Business/on-the-menu-at-the-garrison-taproom-billiards-friendship-and-flights-of-craft-beers",
+          "type": "press",
+          "independent": true
+        },
+        {
+          "title": "The Garrison: Taproom & Billiards",
+          "publisher": "Main Street Miami Lakes",
+          "url": "https://mainstreetmiamilakes.com/dine/the-garrison-taproom-billiards/",
+          "type": "directory",
+          "independent": true
+        }
+      ],
+      "caveats": [
+        "No source explains where the name 'The Garrison' comes from. Do not invent an origin.",
+        "'The Garrison' is a common pub name in other cities; this listing refers only to the Miami Lakes venue at 6709 Main Street."
+      ],
+      "seo": {
+        "meta_title": "The Garrison Taproom & Billiards | Craft Beer & Pool, Miami Lakes",
+        "meta_description": "Craft beer taproom and billiards hall on Main Street, Miami Lakes. Flights, full liquor bar and pool tables, open daily from 4pm.",
+        "json_ld": {
+          "@context": "https://schema.org",
+          "@type": "BarOrPub",
+          "name": "The Garrison Taproom & Billiards",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "6709 Main Street",
+            "addressLocality": "Miami Lakes",
+            "addressRegion": "FL",
+            "postalCode": "33014",
+            "addressCountry": "US"
+          },
+          "telephone": "+1-786-251-3756",
+          "priceRange": "$",
+          "sameAs": [
+            "https://www.instagram.com/garrisonmiamilakes/",
+            "https://www.facebook.com/garrisonmiamilakes/"
+          ]
+        }
+      },
+      "brand": {
+        "name": "N/A",
+        "brand_founded": "N/A",
+        "brand_entity": "N/A",
+        "relationship": "N/A",
+        "relationship_note": "N/A",
+        "brand_url": "N/A"
+      },
+      "notable_quotes": [
+        {
+          "quote": "the hub of Miami Lakes, the focal point of Miami Lakes",
+          "attributed_to": "Alex Perez",
+          "source": "https://miamilaker.com/Business/on-the-menu-at-the-garrison-taproom-billiards-friendship-and-flights-of-craft-beers"
+        }
+      ],
+      "serves_food": true,
+      "serves_food_note": "No house kitchen. At opening, food was supplied through partnerships with Pizza Scene and BurgerIM. Do not describe it as a restaurant or attribute a chef to it.",
+      "related_locations": [],
+      "established_note": "N/A",
+      "awards": [],
+      "payment": {
+        "cash_only": "N/A",
+        "atm_on_site": "N/A",
+        "source": "N/A"
+      },
+      "owners_note": "N/A",
+      "alternate_names": [],
+      "service_model": "N/A",
+      "service": {
+        "takeout": "N/A",
+        "delivery": "N/A",
+        "catering": "N/A",
+        "reservations": "N/A",
+        "alcohol": "N/A",
+        "outdoor_seating": "N/A",
+        "parking": "N/A",
+        "source": "N/A"
+      },
+      "tagline": "N/A",
+      "missing_fields": [
+        "established",
+        "contact.email"
+      ],
+      "missing_core_count": 2
+    },
+    {
+      "id": "cancun-grill-miami-lakes",
+      "slug": "cancun-grill",
+      "name": "Cancun Grill",
+      "legal_entity": "Cancun Grill, Inc.",
+      "city": "miami-lakes",
+      "city_display": "Miami Lakes",
+      "category": "restaurant",
+      "schema_type": "Restaurant",
+      "publication_status": "ready",
+      "blocking_gaps": [],
+      "cuisine": [
+        "Mexican",
+        "Michoacán"
+      ],
+      "established": {
+        "value": "1990",
+        "label": "Since 1990",
+        "source": "https://www.instagram.com/cancungrillml/",
+        "verification": "self_published",
+        "note": "The 'Since 1990' claim appears on the restaurant's own site, its Instagram bio and the Doral Chamber. It is a business claim, not a public record. The corporate filing date is 1988-01-26 — two years earlier, and a different fact. Do not merge them."
+      },
+      "opened": "N/A",
+      "location": {
+        "street": "15406 NW 77th Ct",
+        "locality": "Miami Lakes",
+        "region": "FL",
+        "postal_code": "33016",
+        "country": "US",
+        "district": "N/A",
+        "verification": "confirmed",
+        "verification_note": "Delivery platforms list this same street address under the city 'Hialeah'. Same building, different city label — not a separate restaurant.",
+        "city_label_conflicts": "N/A",
+        "cross_street": "N/A"
+      },
+      "contact": {
+        "phone": "+1-786-917-4747",
+        "phone_display": "786-917-4747",
+        "email": "N/A",
+        "website": "https://cancungrillmiamilakes.com/",
+        "phone_note": "A second number, (305) 826-8571, appears on third-party listings for the same address. Both are in circulation; ask which is the live line.",
+        "website_note": "N/A",
+        "website_status": "N/A",
+        "email_note": "N/A"
+      },
+      "social": {
+        "instagram": "https://www.instagram.com/cancungrillml/",
+        "instagram_handle": "@cancungrillml",
+        "instagram_followers": 8309,
+        "facebook": "https://www.facebook.com/CancunGrill/",
+        "facebook_note": "N/A",
+        "instagram_note": "N/A"
+      },
+      "hours": {
+        "source_type": "owned_channel",
+        "source": "https://cancungrillmiamilakes.com/",
+        "schedule": [
+          {
+            "days": [
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday"
+            ],
+            "opens": "11:30",
+            "closes": "22:00"
+          },
+          {
+            "days": [
+              "Friday"
+            ],
+            "opens": "11:30",
+            "closes": "23:00"
+          },
+          {
+            "days": [
+              "Saturday"
+            ],
+            "opens": "11:00",
+            "closes": "23:00"
+          },
+          {
+            "days": [
+              "Sunday"
+            ],
+            "opens": "11:00",
+            "closes": "22:00"
+          }
+        ],
+        "conflicts": [],
+        "confidence": "high",
+        "happy_hour": "N/A",
+        "confidence_note": "N/A",
+        "closed_days": []
+      },
+      "price": {
+        "band": "$$",
+        "band_source": "https://restaurantguru.com/Cancun-Grill-Miramar",
+        "anchors": [
+          {
+            "item": "Guacamole",
+            "price": 9.5
+          },
+          {
+            "item": "Molcajete de mariscos",
+            "price": 25
+          }
+        ],
+        "anchors_source": "https://www.allmenus.com/fl/miami-lakes/350569-cancun-grill/menu/",
+        "note": "Menu prices carry no date stamp on the aggregator and may be stale. Verify against the owner-published PDF menus.",
+        "band_note": "N/A"
+      },
+      "owners": [
+        {
+          "name": "Martín Cardenas",
+          "role": "Family owner and executive chef",
+          "source": "https://cancun-grill-doral.menu-page.com/",
+          "verification": "self_published"
+        }
+      ],
+      "corporate_record": {
+        "entity_name": "Cancun Grill, Inc.",
+        "document_number": "M66501",
+        "entity_type": "N/A",
+        "filing_date": "1988-01-26",
+        "filing_date_is_not_an_opening_date": true,
+        "status": "Active",
+        "principal_address": "N/A",
+        "source": "search.sunbiz.org (record blocks automated retrieval)",
+        "verification": "search_snippet",
+        "note": "The entity's principal address was never surfaced, so the link between this corporation and 15406 NW 77th Ct is UNCONFIRMED.",
+        "effective_date": "N/A",
+        "document_number_note": "N/A",
+        "historical_records": [],
+        "beverage_licensee": "N/A",
+        "beverage_license_source": "N/A"
+      },
+      "capacity": {
+        "total_guests": "N/A",
+        "private_room_guests": "N/A",
+        "source": "N/A"
+      },
+      "short_description": "Family-run Mexican kitchen in Miami Lakes since 1990, cooking in the Michoacán style.",
+      "long_description": "Cancun Grill has been a neighborhood Mexican restaurant in Miami Lakes since 1990, run by the Cardenas family with Martín Cardenas as executive chef. The kitchen's own account traces the family to San José de Gracia in Michoacán and describes the business as a family's dream to bring authentic Michoacán-style cooking to South Florida. A second location in Doral operated from 2018 and has since closed, leaving this as the original and only address.",
+      "description_sources": [
+        "https://cancungrillmiamilakes.com/",
+        "https://www.instagram.com/cancungrillml/",
+        "https://cancun-grill-doral.menu-page.com/",
+        "https://www.doralchamber.org/doral-chamber-welcomes-cancun-grill/"
+      ],
+      "signature_items": [
+        "Molcajete de mariscos",
+        "Guacamole"
+      ],
+      "references": [
+        {
+          "title": "Official site",
+          "publisher": "Cancun Grill Miami Lakes",
+          "url": "https://cancungrillmiamilakes.com/",
+          "type": "owned",
+          "independent": false
+        },
+        {
+          "title": "Doral Chamber welcomes Cancun Grill",
+          "publisher": "Doral Chamber of Commerce",
+          "url": "https://www.doralchamber.org/doral-chamber-welcomes-cancun-grill/",
+          "type": "directory",
+          "independent": true
+        },
+        {
+          "title": "Menu",
+          "publisher": "AllMenus",
+          "url": "https://www.allmenus.com/fl/miami-lakes/350569-cancun-grill/menu/",
+          "type": "aggregator",
+          "independent": true
+        }
+      ],
+      "caveats": [
+        "The Michoacán / San José de Gracia origin copy sits on the company's DORAL location page, not the Miami Lakes one. It is the same family, but note the provenance before quoting it as this location's own words.",
+        "No independent press coverage was found in the Miami Laker, Main Street Miami Lakes, the Herald, New Times, Local10 or NBC6, in English or Spanish.",
+        "Do not confuse with 'Cancun Mexican Grill' in Hialeah, a separately named business."
+      ],
+      "seo": {
+        "meta_title": "Cancun Grill | Michoacán-Style Mexican Restaurant, Miami Lakes",
+        "meta_description": "Family-run Mexican restaurant in Miami Lakes since 1990. Michoacán-style cooking, molcajetes and house guacamole. Open daily.",
+        "json_ld": {
+          "@context": "https://schema.org",
+          "@type": "Restaurant",
+          "name": "Cancun Grill",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "15406 NW 77th Ct",
+            "addressLocality": "Miami Lakes",
+            "addressRegion": "FL",
+            "postalCode": "33016",
+            "addressCountry": "US"
+          },
+          "telephone": "+1-786-917-4747",
+          "url": "https://cancungrillmiamilakes.com/",
+          "servesCuisine": [
+            "Mexican"
+          ],
+          "priceRange": "$$",
+          "sameAs": [
+            "https://www.instagram.com/cancungrillml/",
+            "https://www.facebook.com/CancunGrill/"
+          ],
+          "openingHoursSpecification": [
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": [
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday"
+              ],
+              "opens": "11:30",
+              "closes": "22:00"
+            },
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": [
+                "Friday"
+              ],
+              "opens": "11:30",
+              "closes": "23:00"
+            },
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": [
+                "Saturday"
+              ],
+              "opens": "11:00",
+              "closes": "23:00"
+            },
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": [
+                "Sunday"
+              ],
+              "opens": "11:00",
+              "closes": "22:00"
+            }
+          ]
+        }
+      },
+      "brand": {
+        "name": "N/A",
+        "brand_founded": "N/A",
+        "brand_entity": "N/A",
+        "relationship": "N/A",
+        "relationship_note": "N/A",
+        "brand_url": "N/A"
+      },
+      "notable_quotes": [],
+      "serves_food": "N/A",
+      "serves_food_note": "N/A",
+      "related_locations": [
+        {
+          "name": "Cancun Grill Doral",
+          "address": "7835 NW 107th Ave, Doral, FL 33178",
+          "status": "closed",
+          "entity": "Cancun Grill Doral, LLC (L15000150761)",
+          "dissolved": "2026-02-12",
+          "note": "Voluntarily dissolved and the Yelp listing is marked closed. The Instagram bio still lists both addresses, so confirm with the owner before publishing. Miami Lakes appears to be the only operating location again."
+        }
+      ],
+      "established_note": "N/A",
+      "awards": [],
+      "payment": {
+        "cash_only": "N/A",
+        "atm_on_site": "N/A",
+        "source": "N/A"
+      },
+      "owners_note": "N/A",
+      "alternate_names": [],
+      "service_model": "N/A",
+      "service": {
+        "takeout": "N/A",
+        "delivery": "N/A",
+        "catering": "N/A",
+        "reservations": "N/A",
+        "alcohol": "N/A",
+        "outdoor_seating": "N/A",
+        "parking": "N/A",
+        "source": "N/A"
+      },
+      "tagline": "N/A",
+      "missing_fields": [
+        "opened",
+        "contact.email"
+      ],
+      "missing_core_count": 2
+    },
+    {
+      "id": "trattoria-pampered-chef",
+      "slug": "trattoria-pampered-chef",
+      "name": "Trattoria Pampered Chef",
+      "legal_entity": "Trattoria Pampered Chef Miami Lakes, Inc.",
+      "city": "miami-lakes",
+      "city_display": "Miami Lakes",
+      "category": "restaurant",
+      "schema_type": "Restaurant",
+      "publication_status": "needs_owner_confirmation",
+      "blocking_gaps": [
+        "This dossier was researched after the independent verification pass ran and has NOT been through it. Its claims are single-sourced in the way the others were before checking.",
+        "Four conflicting founding years appear across sources (1989, ~1991, 1995, 1990). No founding year is published here.",
+        "The contact email is spelled two different ways on the restaurant's own site; neither has been confirmed as live."
+      ],
+      "cuisine": [
+        "Italian"
+      ],
+      "established": "N/A",
+      "opened": "N/A",
+      "location": {
+        "street": "7347 Miami Lakes Drive",
+        "locality": "Miami Lakes",
+        "region": "FL",
+        "postal_code": "33014",
+        "country": "US",
+        "district": "N/A",
+        "verification": "confirmed",
+        "verification_note": "Confirmed by the site owner. Delivery platforms render the same address as Hialeah; 33014 straddles the two municipalities.",
+        "city_label_conflicts": "N/A",
+        "cross_street": "N/A"
+      },
+      "contact": {
+        "phone": "+1-305-825-8919",
+        "phone_display": "(305) 825-8919",
+        "email": "N/A",
+        "website": "https://trattoriapamperedchefs.com/",
+        "phone_note": "N/A",
+        "website_note": "N/A",
+        "website_status": "N/A",
+        "email_note": "The own site spells it 'trattoriapameredchef@hotmail.com' on the home page and 'trattoriapaperedchef@hotmail.com' on the contact page. Both are reproduced in the dossier verbatim; neither is published here."
+      },
+      "social": {
+        "instagram": "N/A",
+        "instagram_handle": "N/A",
+        "instagram_followers": "N/A",
+        "facebook": "https://www.facebook.com/Trattoria-Pampered-Chef-565138070544791/",
+        "facebook_note": "N/A",
+        "instagram_note": "No Instagram account was located. The restaurant's own site links only Facebook. Do not assume one exists."
+      },
+      "hours": {
+        "source_type": "owned_channel",
+        "source": "https://trattoriapamperedchefs.com/contact/",
+        "schedule": [
+          {
+            "days": [
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday",
+              "Saturday",
+              "Sunday"
+            ],
+            "opens": "11:00",
+            "closes": "22:00"
+          }
+        ],
+        "conflicts": [],
+        "confidence": "medium",
+        "happy_hour": "N/A",
+        "confidence_note": "N/A",
+        "closed_days": [
+          "Monday"
+        ]
+      },
+      "price": {
+        "band": "$$",
+        "band_source": "https://trattoriapamperedchefs.com/menu/",
+        "anchors": [
+          {
+            "item": "Pasta",
+            "price_range": "20-28"
+          },
+          {
+            "item": "Chicken entrées",
+            "price": 24
+          },
+          {
+            "item": "Steak / lamb / seafood entrées",
+            "price": 35
+          },
+          {
+            "item": "10\" pizza",
+            "price": 18
+          }
+        ],
+        "anchors_source": "https://trattoriapamperedchefs.com/menu/",
+        "note": "N/A",
+        "band_note": "N/A"
+      },
+      "owners": [
+        {
+          "name": "Nashat N. Ghobrial",
+          "role": "Owner / Key principal",
+          "source": "https://miamilaker.com/Business/town-council-congratulates-trattoria-pampered-chef-for-anniversary-community-support",
+          "verification": "press_and_corporate"
+        }
+      ],
+      "corporate_record": {
+        "entity_name": "Trattoria Pampered Chef Miami Lakes, Inc.",
+        "document_number": "P95000008657",
+        "entity_type": "Florida Profit Corporation",
+        "filing_date": "1995-01-30",
+        "filing_date_is_not_an_opening_date": true,
+        "status": "Active",
+        "principal_address": "7347 Miami Lakes Drive, Miami Lakes, FL 33014",
+        "source": "search.sunbiz.org (record blocks automated retrieval)",
+        "verification": "search_snippet",
+        "note": "The 1995 filing coincides with the year the About page gives for the restaurant's arrival in Miami Lakes, which makes it corroborating — it does not make it a founding year.",
+        "effective_date": "1995-01-23",
+        "document_number_note": "N/A",
+        "historical_records": [],
+        "beverage_licensee": "N/A",
+        "beverage_license_source": "N/A"
+      },
+      "capacity": {
+        "total_guests": "N/A",
+        "private_room_guests": "N/A",
+        "source": "N/A"
+      },
+      "short_description": "Family-run Italian kitchen on Miami Lakes Drive, recognized by the town council as the community's kitchen table.",
+      "long_description": "Trattoria Pampered Chef is Nashat Ghobrial's Italian kitchen on Miami Lakes Drive, serving handmade pastas, pizzas and classic entrées with whole-wheat, vegetarian, vegan and gluten-free options throughout the menu. Ghobrial cooked in Rome from 1974 to 1984 before opening in South Florida. In March 2024 the town council issued a proclamation naming the restaurant the kitchen table of Miami Lakes, citing meals cooked for elders and veterans and the feeding of volunteers during the pandemic.",
+      "description_sources": [
+        "https://trattoriapamperedchefs.com/about-us/",
+        "https://trattoriapamperedchefs.com/menu/",
+        "https://miamilaker.com/Business/town-council-congratulates-trattoria-pampered-chef-for-anniversary-community-support"
+      ],
+      "signature_items": [
+        "Handmade pasta",
+        "Wood-oven pizza"
+      ],
+      "references": [
+        {
+          "title": "Town council congratulates Trattoria Pampered Chef for anniversary, community support",
+          "publisher": "The Miami Laker",
+          "date": "2024-03-12",
+          "url": "https://miamilaker.com/Business/town-council-congratulates-trattoria-pampered-chef-for-anniversary-community-support",
+          "type": "press",
+          "independent": true
+        },
+        {
+          "title": "About Us",
+          "publisher": "Trattoria Pampered Chef",
+          "url": "https://trattoriapamperedchefs.com/about-us/",
+          "type": "owned",
+          "independent": false
+        }
+      ],
+      "caveats": [
+        "This listing was your original 'Trattorini'. No Miami Lakes business trades under that name.",
+        "A separate Broward entity, Trattoria Pampered Chef Miramar LLC, shares the trade name. Nothing found connects it to this owner or corporation. Do not write 'they expanded to Miramar'."
+      ],
+      "seo": {
+        "meta_title": "Trattoria Pampered Chef | Italian Restaurant in Miami Lakes",
+        "meta_description": "Family-run Italian kitchen on Miami Lakes Drive. Handmade pastas, pizza and entrées with vegan, vegetarian and gluten-free options. Closed Mondays.",
+        "json_ld": {
+          "@context": "https://schema.org",
+          "@type": "Restaurant",
+          "name": "Trattoria Pampered Chef",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "7347 Miami Lakes Drive",
+            "addressLocality": "Miami Lakes",
+            "addressRegion": "FL",
+            "postalCode": "33014",
+            "addressCountry": "US"
+          },
+          "telephone": "+1-305-825-8919",
+          "url": "https://trattoriapamperedchefs.com/",
+          "servesCuisine": [
+            "Italian"
+          ],
+          "priceRange": "$$",
+          "sameAs": [
+            "https://www.facebook.com/Trattoria-Pampered-Chef-565138070544791/"
+          ],
+          "openingHoursSpecification": [
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": [
+                "Tuesday",
+                "Wednesday",
+                "Thursday",
+                "Friday",
+                "Saturday",
+                "Sunday"
+              ],
+              "opens": "11:00",
+              "closes": "22:00"
+            }
+          ]
+        }
+      },
+      "brand": {
+        "name": "N/A",
+        "brand_founded": "N/A",
+        "brand_entity": "N/A",
+        "relationship": "N/A",
+        "relationship_note": "N/A",
+        "brand_url": "N/A"
+      },
+      "notable_quotes": [],
+      "serves_food": "N/A",
+      "serves_food_note": "N/A",
+      "related_locations": [],
+      "established_note": "Deliberately omitted. Four candidate years conflict and none is confirmed. Ask the owner before publishing any 'since' date.",
+      "awards": [
+        {
+          "title": "Town of Miami Lakes council proclamation",
+          "date": "2024-03-12",
+          "detail": "Recognized for community support; the restaurant described as the 'kitchen table' of Miami Lakes.",
+          "source": "https://miamilaker.com/Business/town-council-congratulates-trattoria-pampered-chef-for-anniversary-community-support"
+        }
+      ],
+      "payment": {
+        "cash_only": "N/A",
+        "atm_on_site": "N/A",
+        "source": "N/A"
+      },
+      "owners_note": "N/A",
+      "alternate_names": [],
+      "service_model": "N/A",
+      "service": {
+        "takeout": "N/A",
+        "delivery": "N/A",
+        "catering": "N/A",
+        "reservations": "N/A",
+        "alcohol": "N/A",
+        "outdoor_seating": "N/A",
+        "parking": "N/A",
+        "source": "N/A"
+      },
+      "tagline": "N/A",
+      "missing_fields": [
+        "established",
+        "opened",
+        "contact.email",
+        "social.instagram"
+      ],
+      "missing_core_count": 4
+    },
+    {
+      "id": "morro-castle",
+      "slug": "morro-castle",
+      "name": "Morro Castle",
+      "legal_entity": "Morro Castle Cafeteria Restaurant Corp.",
+      "city": "hialeah",
+      "city_display": "Hialeah",
+      "category": "restaurant",
+      "schema_type": "Restaurant",
+      "publication_status": "needs_owner_confirmation",
+      "blocking_gaps": [
+        "Officer roster is contested — Horacio vs Leonardo Villalobos — and the dossier explicitly forbids publishing an officer list until the primary record is opened in a browser. No owners are published here.",
+        "Hours conflict between the own site and the Instagram bio.",
+        "The claimed 1966 founding does not reconcile with the 1985 corporate filing or with reported journalism placing the original Little Havana location at ~1962."
+      ],
+      "cuisine": [
+        "Cuban"
+      ],
+      "established": {
+        "value": "1966",
+        "label": "Family owned and operated since 1966",
+        "source": "https://www.instagram.com/morrocastlerestaurant/",
+        "verification": "self_published",
+        "note": "This is the business's own claim, carried on its Instagram bio. It does not reconcile with two other sourced facts: the corporation was filed 1985-11-15, and Miami New Times reports the FIRST Morro Castle (Little Havana) opened around 1962 with the Hialeah location following about a decade later. Three claims, no clean fit. Do not assert continuity between them."
+      },
+      "opened": "N/A",
+      "location": {
+        "street": "1201 West 44th Place",
+        "locality": "Hialeah",
+        "region": "FL",
+        "postal_code": "33012",
+        "country": "US",
+        "district": "N/A",
+        "verification": "confirmed",
+        "verification_note": "Confirmed on the own site, Miami New Times, Burger Beast, Time Out and the corporate principal address.",
+        "city_label_conflicts": "N/A",
+        "cross_street": "N/A"
+      },
+      "contact": {
+        "phone": "+1-305-556-4252",
+        "phone_display": "(305) 556-4252",
+        "email": "contact@morrocastlerestaurant.com",
+        "website": "https://morrocastlerestaurant.com",
+        "phone_note": "N/A",
+        "website_note": "N/A",
+        "website_status": "N/A",
+        "email_note": "N/A"
+      },
+      "social": {
+        "instagram": "https://www.instagram.com/morrocastlerestaurant/",
+        "instagram_handle": "@morrocastlerestaurant",
+        "instagram_followers": 1211,
+        "facebook": "N/A",
+        "facebook_note": "Two candidate pages exist; neither is confirmed as official. Omitted rather than guessed.",
+        "instagram_note": "N/A"
+      },
+      "hours": {
+        "source_type": "owned_channel",
+        "source": "https://morrocastlerestaurant.com/about-us/",
+        "schedule": [
+          {
+            "days": [
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday",
+              "Friday",
+              "Saturday",
+              "Sunday"
+            ],
+            "opens": "08:00",
+            "closes": "00:00"
+          }
+        ],
+        "conflicts": [
+          {
+            "source": "https://www.instagram.com/morrocastlerestaurant/",
+            "detail": "Mon-Sun 8:00-23:30 — the business's own Instagram bio disagrees with its own website by 30 minutes."
+          }
+        ],
+        "confidence": "medium",
+        "happy_hour": "N/A",
+        "confidence_note": "N/A",
+        "closed_days": []
+      },
+      "price": {
+        "band": "$",
+        "band_source": "https://morrocastlerestaurant.com/menu/",
+        "anchors": [
+          {
+            "item": "Coffee",
+            "price": 1.25
+          },
+          {
+            "item": "Cuban sandwich (small)",
+            "price": 6.69
+          },
+          {
+            "item": "Cuban sandwich (large)",
+            "price": 9.59
+          },
+          {
+            "item": "Steak with fried eggs",
+            "price": 12.99
+          },
+          {
+            "item": "Breaded chicken with two sides",
+            "price": 15.99
+          }
+        ],
+        "anchors_source": "https://morrocastlerestaurant.com/menu/",
+        "note": "N/A",
+        "band_note": "N/A"
+      },
+      "owners": [],
+      "corporate_record": {
+        "entity_name": "Morro Castle Cafeteria Restaurant Corp.",
+        "document_number": "M23455",
+        "entity_type": "Domestic for-profit corporation",
+        "filing_date": "1985-11-15",
+        "filing_date_is_not_an_opening_date": true,
+        "status": "Active",
+        "principal_address": "1201 West 44th Place, Hialeah, FL 33012",
+        "source": "https://bisprofiles.com/fl/morro-castle-cafeteria-restaurant-m23455",
+        "verification": "aggregator",
+        "note": "N/A",
+        "effective_date": "N/A",
+        "document_number_note": "N/A",
+        "historical_records": [],
+        "beverage_licensee": "N/A",
+        "beverage_license_source": "N/A"
+      },
+      "capacity": {
+        "total_guests": "N/A",
+        "private_room_guests": "N/A",
+        "source": "N/A"
+      },
+      "short_description": "Cash-only Cuban cafeteria in Hialeah, family owned and operated since 1966 by its own account, known for fritas and churros.",
+      "long_description": "Morro Castle is an old-school Cuban cafeteria on West 44th Place, counter service and tables, open from eight in the morning and cash only with an ATM by the door. The family's story runs back to Alejandro Villalobos, who left Havana's Jaruco neighborhood in 1961 and opened the first Morro Castle in Little Havana a year later inside a former Dairy Queen; when his brother later escaped Cuba, he helped open this Hialeah location, run by the next generation of cousins. Fritas and churros are what regulars come for, with most of the menu under $16.",
+      "description_sources": [
+        "https://www.miaminewtimes.com/food-drink/morro-castle-sells-little-havana-property-looks-to-move-west-9308150/",
+        "https://burgerbeast.com/morro-castle-hialeah/",
+        "https://morrocastlerestaurant.com/about-us/",
+        "https://morrocastlerestaurant.com/menu/"
+      ],
+      "signature_items": [
+        "Frita cubana",
+        "Churros",
+        "Cuban sandwich"
+      ],
+      "references": [
+        {
+          "title": "Morro Castle sells Little Havana property, looks to move west",
+          "publisher": "Miami New Times",
+          "date": "2017-04-27",
+          "author": "Zachary Fagenson",
+          "url": "https://www.miaminewtimes.com/food-drink/morro-castle-sells-little-havana-property-looks-to-move-west-9308150/",
+          "type": "press",
+          "independent": true,
+          "note": "The spine of the family history. Every element independently re-verified."
+        },
+        {
+          "title": "Morro Castle in Hialeah",
+          "publisher": "Burger Beast",
+          "url": "https://burgerbeast.com/morro-castle-hialeah/",
+          "type": "press",
+          "independent": true
+        },
+        {
+          "title": "Morro Castle",
+          "publisher": "The Infatuation",
+          "url": "https://www.theinfatuation.com/miami/reviews/morro-castle",
+          "type": "review",
+          "independent": true
+        },
+        {
+          "title": "Morro Castle",
+          "publisher": "Miami New Times (venue page)",
+          "url": "https://www.miaminewtimes.com/location/morro-castle-6421131/",
+          "type": "directory",
+          "independent": true
+        },
+        {
+          "title": "About us",
+          "publisher": "Morro Castle",
+          "url": "https://morrocastlerestaurant.com/about-us/",
+          "type": "owned",
+          "independent": false
+        }
+      ],
+      "caveats": [
+        "The Little Havana Morro Castle is a separate, now-closed location. Keep the two distinct; the family-history quotes come from the Little Havana side of the family.",
+        "This dossier passed independent verification with 24 of 24 claims confirmed — the strongest sourcing in the set."
+      ],
+      "seo": {
+        "meta_title": "Morro Castle | Old-School Cuban Cafeteria in Hialeah",
+        "meta_description": "Family-owned Cuban cafeteria on W 44th Place, Hialeah. Fritas, churros and Cuban sandwiches, open from 8am daily. Cash only.",
+        "json_ld": {
+          "@context": "https://schema.org",
+          "@type": "Restaurant",
+          "name": "Morro Castle",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "1201 West 44th Place",
+            "addressLocality": "Hialeah",
+            "addressRegion": "FL",
+            "postalCode": "33012",
+            "addressCountry": "US"
+          },
+          "telephone": "+1-305-556-4252",
+          "email": "contact@morrocastlerestaurant.com",
+          "url": "https://morrocastlerestaurant.com",
+          "servesCuisine": [
+            "Cuban"
+          ],
+          "priceRange": "$",
+          "paymentAccepted": "Cash",
+          "sameAs": [
+            "https://www.instagram.com/morrocastlerestaurant/"
+          ]
+        },
+        "json_ld_note": "openingHoursSpecification omitted: the business's own website and own Instagram bio give different closing times. Confirm with the owner before adding."
+      },
+      "brand": {
+        "name": "N/A",
+        "brand_founded": "N/A",
+        "brand_entity": "N/A",
+        "relationship": "N/A",
+        "relationship_note": "N/A",
+        "brand_url": "N/A"
+      },
+      "notable_quotes": [
+        {
+          "quote": "He was an entrepreneur, he was an actor, he was a radio personality, he had cafeterias in Cuba.",
+          "attributed_to": "Alberto Villalobos, on his father Alejandro",
+          "source": "https://www.miaminewtimes.com/food-drink/morro-castle-sells-little-havana-property-looks-to-move-west-9308150/",
+          "date": "2017-04-27"
+        }
+      ],
+      "serves_food": "N/A",
+      "serves_food_note": "N/A",
+      "related_locations": [],
+      "established_note": "N/A",
+      "awards": [],
+      "payment": {
+        "cash_only": true,
+        "atm_on_site": true,
+        "source": "https://burgerbeast.com/morro-castle-hialeah/"
+      },
+      "owners_note": "Deliberately empty. Florida corporate records for this entity are contested between Horacio Villalobos and Leonardo Villalobos, and Miami New Times separately names a 'Leo Villalba' that the research treats as a probable misspelling. Do not publish an officer list until the Sunbiz record is opened directly. Family name is Villalobos.",
+      "alternate_names": [],
+      "service_model": "N/A",
+      "service": {
+        "takeout": "N/A",
+        "delivery": "N/A",
+        "catering": "N/A",
+        "reservations": "N/A",
+        "alcohol": "N/A",
+        "outdoor_seating": "N/A",
+        "parking": "N/A",
+        "source": "N/A"
+      },
+      "tagline": "N/A",
+      "missing_fields": [
+        "opened",
+        "social.facebook",
+        "owners"
+      ],
+      "missing_core_count": 3
+    },
+    {
+      "id": "el-mejor-batido-de-hialeah",
+      "slug": "el-mejor-batido-de-hialeah",
+      "name": "El Mejor Batido de Hialeah",
+      "legal_entity": "S & N Vegetables, Inc.",
+      "city": "hialeah",
+      "city_display": "Hialeah",
+      "category": "restaurant",
+      "schema_type": "Restaurant",
+      "publication_status": "needs_owner_confirmation",
+      "blocking_gaps": [
+        "Hours conflict across all three available sources and no owned channel publishes them. No hours are published here.",
+        "An Instagram-claimed Miami New Times 2012 'Best Cuban Restaurant' award could not be confirmed; the winner page was never located.",
+        "A second address, 364 W 29th St, is listed under the name 'Batidos cubanos' with the identical phone number. Unresolved."
+      ],
+      "cuisine": [
+        "Cuban",
+        "Juice & smoothies",
+        "Sandwiches"
+      ],
+      "established": {
+        "value": "1982",
+        "label": "Run by the Alvisa family since 1982",
+        "source": "https://burgerbeast.com/best-cuban-food-hialeah/",
+        "verification": "press",
+        "note": "Reported by Burger Beast and re-verified verbatim. The corporate filing date is 1986-03-24, four years later, and is a separate fact. The officer surname Alvisa on the corporate record independently corroborates the family name."
+      },
+      "opened": "N/A",
+      "location": {
+        "street": "360 W 29th St",
+        "locality": "Hialeah",
+        "region": "FL",
+        "postal_code": "33012",
+        "country": "US",
+        "district": "N/A",
+        "verification": "confirmed",
+        "verification_note": "N/A",
+        "city_label_conflicts": "N/A",
+        "cross_street": "at W 3rd Ct"
+      },
+      "contact": {
+        "phone": "+1-305-884-4860",
+        "phone_display": "(305) 884-4860",
+        "email": "N/A",
+        "website": "N/A",
+        "phone_note": "N/A",
+        "website_note": "No independent website. An ordering page exists at elmejorbatidodehialeah.netwaiter.com but it is unconfirmed whether the business controls it.",
+        "website_status": "N/A",
+        "email_note": "N/A"
+      },
+      "social": {
+        "instagram": "https://www.instagram.com/elmejorbatidodehialeah305/",
+        "instagram_handle": "@elmejorbatidodehialeah305",
+        "instagram_followers": 1488,
+        "facebook": "https://www.facebook.com/p/SN-Vegetable-INC-El-Mejor-Batido-de-Hialeah-100057468609524/",
+        "facebook_note": "N/A",
+        "instagram_note": "N/A"
+      },
+      "hours": {
+        "source_type": "N/A",
+        "source": "N/A",
+        "schedule": [],
+        "conflicts": [
+          {
+            "source": "https://www.timeout.com/miami/restaurants/s-n-vegetable",
+            "detail": "Mon-Sat 07:00-18:00 (2017)"
+          },
+          {
+            "source": "https://www.restaurantji.com/fl/hialeah/batidos-cubanos-/",
+            "detail": "Mon-Fri 08:00-18:00, Sat 08:00-16:00, Sun closed"
+          },
+          {
+            "source": "https://elmejorbatidodehialeah.netwaiter.com/hialeah/about/",
+            "detail": "Mon-Fri 08:00-21:00, Sat 08:00-16:00, Sun closed"
+          }
+        ],
+        "confidence": "none",
+        "happy_hour": "N/A",
+        "confidence_note": "Do not publish a single set. Three sources, three different schedules, no owned channel. Ask the owner.",
+        "closed_days": []
+      },
+      "price": {
+        "band": "$",
+        "band_source": "https://www.timeout.com/miami/restaurants/s-n-vegetable",
+        "anchors": [
+          {
+            "item": "Fresh fruit juices",
+            "price_range": "under 5"
+          }
+        ],
+        "anchors_source": "https://www.timeout.com/miami/restaurants/s-n-vegetable",
+        "note": "N/A",
+        "band_note": "N/A"
+      },
+      "owners": [
+        {
+          "name": "Salomé Nestor Alvisa",
+          "role": "Founder",
+          "source": "https://burgerbeast.com/best-cuban-food-hialeah/",
+          "verification": "press_and_corporate",
+          "note": "Listed on the corporate record as Salome N. Alvisa. The business is now in its third generation."
+        },
+        {
+          "name": "Angela Alvisa",
+          "role": "Officer",
+          "source": "search.sunbiz.org (record blocks automated retrieval)",
+          "verification": "search_snippet"
+        }
+      ],
+      "corporate_record": {
+        "entity_name": "S & N Vegetables, Inc.",
+        "document_number": "M29402",
+        "entity_type": "N/A",
+        "filing_date": "1986-03-24",
+        "filing_date_is_not_an_opening_date": true,
+        "status": "Active",
+        "principal_address": "N/A",
+        "source": "search.sunbiz.org (record blocks automated retrieval)",
+        "verification": "search_snippet",
+        "note": "The officer/registered address on file (770 W 35th St) differs from the operating address. Do not merge the two.",
+        "effective_date": "N/A",
+        "document_number_note": "N/A",
+        "historical_records": [],
+        "beverage_licensee": "N/A",
+        "beverage_license_source": "N/A"
+      },
+      "capacity": {
+        "total_guests": "N/A",
+        "private_room_guests": "N/A",
+        "source": "N/A"
+      },
+      "short_description": "Cash-only Hialeah ventanita pouring batidos since 1982, run by the same family for three generations.",
+      "long_description": "El Mejor Batido de Hialeah is a walk-up window on West 29th Street, trading corporately as S & N Vegetables and pouring fruit batidos, juices and Cuban sandwiches to a mostly to-go crowd. The Alvisa family has run it since 1982, when Salomé Nestor Alvisa and his wife opened a small walk-up window after arriving in Hialeah during the Mariel boatlift with $1,800. Three generations later it is still cash only, still a counter with barely room to stand, and still one of the most quietly beloved stops in the city.",
+      "description_sources": [
+        "https://burgerbeast.com/best-cuban-food-hialeah/",
+        "https://www.theinfatuation.com/miami/reviews/sn-vegetables",
+        "https://www.timeout.com/miami/restaurants/s-n-vegetable"
+      ],
+      "signature_items": [
+        "Batidos",
+        "Pan con bistec",
+        "Fresh fruit juices"
+      ],
+      "references": [
+        {
+          "title": "The Best Cuban Food in Hialeah",
+          "publisher": "Burger Beast",
+          "url": "https://burgerbeast.com/best-cuban-food-hialeah/",
+          "type": "press",
+          "independent": true,
+          "note": "Source of the 1982 founding, the Mariel boatlift account and the $1,800 figure. Re-verified verbatim."
+        },
+        {
+          "title": "Best pan con bistec",
+          "publisher": "Burger Beast",
+          "url": "https://burgerbeast.com/best-pan-con-bistec/",
+          "type": "press",
+          "independent": true
+        },
+        {
+          "title": "S&N Vegetables",
+          "publisher": "The Infatuation",
+          "date": "2024",
+          "url": "https://www.theinfatuation.com/miami/reviews/sn-vegetables",
+          "type": "review",
+          "independent": true
+        },
+        {
+          "title": "S N Vegetable",
+          "publisher": "Time Out Miami",
+          "date": "2017",
+          "url": "https://www.timeout.com/miami/restaurants/s-n-vegetable",
+          "type": "review",
+          "independent": true
+        }
+      ],
+      "caveats": [
+        "Your list called this 'Mejores Batidos de Hialeah'. The name is singular — El Mejor Batido de Hialeah — and the corporate/press name is S & N Vegetables.",
+        "This dossier passed independent verification with 21 of 21 claims confirmed, including every number in the founding account."
+      ],
+      "seo": {
+        "meta_title": "El Mejor Batido de Hialeah | Cuban Batidos & Ventanita Since 1982",
+        "meta_description": "Family-run walk-up ventanita on W 29th St, Hialeah. Fruit batidos, fresh juices and pan con bistec since 1982. Cash only.",
+        "json_ld": {
+          "@context": "https://schema.org",
+          "@type": "Restaurant",
+          "name": "El Mejor Batido de Hialeah",
+          "alternateName": "S & N Vegetables",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "360 W 29th St",
+            "addressLocality": "Hialeah",
+            "addressRegion": "FL",
+            "postalCode": "33012",
+            "addressCountry": "US"
+          },
+          "telephone": "+1-305-884-4860",
+          "servesCuisine": [
+            "Cuban"
+          ],
+          "priceRange": "$",
+          "paymentAccepted": "Cash",
+          "sameAs": [
+            "https://www.instagram.com/elmejorbatidodehialeah305/"
+          ]
+        },
+        "json_ld_note": "openingHoursSpecification omitted: three sources give three different schedules and none is an owned channel."
+      },
+      "brand": {
+        "name": "N/A",
+        "brand_founded": "N/A",
+        "brand_entity": "N/A",
+        "relationship": "N/A",
+        "relationship_note": "N/A",
+        "brand_url": "N/A"
+      },
+      "notable_quotes": [],
+      "serves_food": "N/A",
+      "serves_food_note": "N/A",
+      "related_locations": [],
+      "established_note": "N/A",
+      "awards": [],
+      "payment": {
+        "cash_only": true,
+        "atm_on_site": "N/A",
+        "source": "https://burgerbeast.com/best-cuban-food-hialeah/"
+      },
+      "owners_note": "N/A",
+      "alternate_names": [
+        "S & N Vegetables",
+        "S&N Vegetables, Inc."
+      ],
+      "service_model": "Walk-up ventanita and counter-service sandwich shop. Mostly to-go, very little standing counter space, no table seating.",
+      "service": {
+        "takeout": "N/A",
+        "delivery": "N/A",
+        "catering": "N/A",
+        "reservations": "N/A",
+        "alcohol": "N/A",
+        "outdoor_seating": "N/A",
+        "parking": "N/A",
+        "source": "N/A"
+      },
+      "tagline": "N/A",
+      "missing_fields": [
+        "opened",
+        "contact.email",
+        "contact.website",
+        "hours.schedule"
+      ],
+      "missing_core_count": 4
+    },
+    {
+      "id": "trigo-cafe-tapas-wine",
+      "slug": "trigo-cafe",
+      "name": "Trigo Café Tapas Wine",
+      "legal_entity": "Trigo Cafe Corp.",
+      "city": "hialeah",
+      "city_display": "Hialeah",
+      "category": "restaurant",
+      "schema_type": "Restaurant",
+      "publication_status": "needs_owner_confirmation",
+      "blocking_gaps": [
+        "No opening or founding year exists in any source. None is published.",
+        "Hours conflict across three sources and the own site showed only a single day's hours.",
+        "The Florida document number could not be tied to this business — MATCH NOT PROVEN — so no document number is published."
+      ],
+      "cuisine": [
+        "Cuban",
+        "Spanish",
+        "Tapas",
+        "American"
+      ],
+      "established": "N/A",
+      "opened": "N/A",
+      "location": {
+        "street": "839 W 49th St",
+        "locality": "Hialeah",
+        "region": "FL",
+        "postal_code": "33012",
+        "country": "US",
+        "district": "N/A",
+        "verification": "confirmed",
+        "verification_note": "Confirmed on the own site, Yelp and 2016 press.",
+        "city_label_conflicts": "N/A",
+        "cross_street": "N/A"
+      },
+      "contact": {
+        "phone": "+1-786-616-8952",
+        "phone_display": "(786) 616-8952",
+        "email": "N/A",
+        "website": "https://trigohialeah.com/",
+        "phone_note": "Unchanged for roughly ten years — the same number appears in 2016 press.",
+        "website_note": "N/A",
+        "website_status": "N/A",
+        "email_note": "N/A"
+      },
+      "social": {
+        "instagram": "https://www.instagram.com/trigocafe/",
+        "instagram_handle": "@trigocafe",
+        "instagram_followers": "N/A",
+        "facebook": "https://www.facebook.com/trigocafe",
+        "facebook_note": "N/A",
+        "instagram_note": "N/A"
+      },
+      "hours": {
+        "source_type": "N/A",
+        "source": "N/A",
+        "schedule": [],
+        "conflicts": [
+          {
+            "source": "https://www.restaurantji.com/fl/hialeah/trigo-cafe-/",
+            "detail": "Mon-Wed 08:00-15:30, Thu-Fri 08:00-22:00, Sat 08:00-17:00, Sun 10:00-15:00"
+          },
+          {
+            "source": "https://trigohialeah.com/",
+            "detail": "Own site showed only 'Open today 08:00-15:30' on 2026-08-17"
+          },
+          {
+            "source": "https://www.roostcafeandbistro.com/trigo-cafe-tapas-wine-33012/",
+            "detail": "A materially longer schedule; this mirror's prices are demonstrably stale, so treat its hours as stale too."
+          }
+        ],
+        "confidence": "none",
+        "happy_hour": "N/A",
+        "confidence_note": "Do not publish. Confirm with the owner.",
+        "closed_days": []
+      },
+      "price": {
+        "band": "$$",
+        "band_source": "https://trigohialeah.com/breakfast",
+        "anchors": [
+          {
+            "item": "Belgian Waffle",
+            "price": 7
+          },
+          {
+            "item": "Hialeah Comfort",
+            "price": 7.5
+          },
+          {
+            "item": "Avocado Toast",
+            "price": 10
+          },
+          {
+            "item": "Chef's Omelet",
+            "price": 13
+          },
+          {
+            "item": "The Jockey",
+            "price": 15
+          }
+        ],
+        "anchors_source": "https://trigohialeah.com/breakfast",
+        "note": "First-party breakfast prices. Dinner runs higher. Third-party mirrors list every overlapping item below the first-party page, so treat mirror prices as stale.",
+        "band_note": "N/A"
+      },
+      "owners": [
+        {
+          "name": "Julio Barrero",
+          "role": "Owner",
+          "source": "https://www.miaminewtimes.com/food-drink/trigo-cafe-brings-cuban-food-with-a-twist-to-hialeah-8615056/",
+          "verification": "press"
+        },
+        {
+          "name": "Kathy Barrero",
+          "role": "Owner",
+          "source": "https://www.miaminewtimes.com/food-drink/trigo-cafe-brings-cuban-food-with-a-twist-to-hialeah-8615056/",
+          "verification": "press"
+        }
+      ],
+      "corporate_record": {
+        "entity_name": "Trigo Cafe Corp.",
+        "document_number": "N/A",
+        "entity_type": "N/A",
+        "filing_date": "N/A",
+        "filing_date_is_not_an_opening_date": "N/A",
+        "status": "N/A",
+        "principal_address": "N/A",
+        "source": "https://www.bizapedia.com/fl/trigo-cafe-corp.html",
+        "verification": "aggregator",
+        "note": "N/A",
+        "effective_date": "N/A",
+        "document_number_note": "A candidate number, P15000092207, surfaced only in the query string of an unrelated Sunbiz search. Nothing ties it to this Hialeah business. MATCH NOT PROVEN — deliberately not published.",
+        "historical_records": [],
+        "beverage_licensee": "N/A",
+        "beverage_license_source": "N/A"
+      },
+      "capacity": {
+        "total_guests": "N/A",
+        "private_room_guests": "N/A",
+        "source": "N/A"
+      },
+      "short_description": "Cuban and Spanish café in the heart of Hialeah — a diner by day, a tapas and wine room by night.",
+      "long_description": "Trigo takes its name from the wheat shake every Cuban kid grew up on, and still serves it as Abuelo Benny's recipe. Owners Julio and Kathy Barrero, who came from Cuba young, opened it as a family-run café blending American, Cuban and Spanish cooking; Julio had worked his parents' Medley restaurant, Benny's Café, since '85. It runs as a breakfast and lunch diner through the day and turns into a tapas and wine tasting room at night, with a list drawn from California, Spain and France.",
+      "description_sources": [
+        "https://www.miaminewtimes.com/food-drink/trigo-cafe-brings-cuban-food-with-a-twist-to-hialeah-8615056/",
+        "https://trigohialeah.com/",
+        "https://trigohialeah.com/breakfast"
+      ],
+      "signature_items": [
+        "Trigo (wheat) shake — 'Abuelo Benny's recipe'",
+        "Croquetas",
+        "Pulpo picón",
+        "Spanish tapas"
+      ],
+      "references": [
+        {
+          "title": "Trigo Cafe brings Cuban food with a twist to Hialeah",
+          "publisher": "Miami New Times",
+          "date": "2016-07-22",
+          "author": "Cindy Ferreiro",
+          "url": "https://www.miaminewtimes.com/food-drink/trigo-cafe-brings-cuban-food-with-a-twist-to-hialeah-8615056/",
+          "type": "press",
+          "independent": true
+        },
+        {
+          "title": "Trigo Cafe",
+          "publisher": "The Infatuation",
+          "date": "2024-04-22",
+          "url": "https://www.theinfatuation.com/miami/reviews/trigo-cafe",
+          "type": "review",
+          "independent": true
+        },
+        {
+          "title": "Official site",
+          "publisher": "Trigo Café Tapas Wine",
+          "url": "https://trigohialeah.com/",
+          "type": "owned",
+          "independent": false
+        }
+      ],
+      "caveats": [
+        "Not a bakery, despite the name. 'Trigo' is Spanish for wheat and refers to the shake.",
+        "Two phrases were previously published as The Infatuation's words and are not in that review. The underlying facts hold; the quotation marks did not."
+      ],
+      "seo": {
+        "meta_title": "Trigo Café Tapas Wine | Cuban & Spanish Café in Hialeah",
+        "meta_description": "Family-run café in the heart of Hialeah. Breakfast and lunch by day, Spanish tapas and curated wine by night, plus the trigo shake it's named for.",
+        "json_ld": {
+          "@context": "https://schema.org",
+          "@type": "Restaurant",
+          "name": "Trigo Café Tapas Wine",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "839 W 49th St",
+            "addressLocality": "Hialeah",
+            "addressRegion": "FL",
+            "postalCode": "33012",
+            "addressCountry": "US"
+          },
+          "telephone": "+1-786-616-8952",
+          "url": "https://trigohialeah.com/",
+          "servesCuisine": [
+            "Cuban",
+            "Spanish"
+          ],
+          "priceRange": "$$",
+          "sameAs": [
+            "https://www.instagram.com/trigocafe/",
+            "https://www.facebook.com/trigocafe"
+          ]
+        },
+        "json_ld_note": "openingHoursSpecification omitted: three sources conflict and the own site published only a single day."
+      },
+      "brand": {
+        "name": "N/A",
+        "brand_founded": "N/A",
+        "brand_entity": "N/A",
+        "relationship": "N/A",
+        "relationship_note": "N/A",
+        "brand_url": "N/A"
+      },
+      "notable_quotes": [
+        {
+          "quote": "Every Cuban kid grew up drinking trigo shakes, but Americans aren't too familiar with it. We wanted to introduce the classic to our customers.",
+          "attributed_to": "Kathy Barrero",
+          "source": "https://www.miaminewtimes.com/food-drink/trigo-cafe-brings-cuban-food-with-a-twist-to-hialeah-8615056/",
+          "date": "2016-07-22"
+        }
+      ],
+      "serves_food": "N/A",
+      "serves_food_note": "N/A",
+      "related_locations": [],
+      "established_note": "No source anywhere states an opening year for Trigo. Do not publish one.",
+      "awards": [],
+      "payment": {
+        "cash_only": "N/A",
+        "atm_on_site": "N/A",
+        "source": "N/A"
+      },
+      "owners_note": "N/A",
+      "alternate_names": [],
+      "service_model": "Family-run café and diner by day; tapas and wine tasting room at night.",
+      "service": {
+        "takeout": "N/A",
+        "delivery": "N/A",
+        "catering": "N/A",
+        "reservations": "N/A",
+        "alcohol": "N/A",
+        "outdoor_seating": "N/A",
+        "parking": "N/A",
+        "source": "N/A"
+      },
+      "tagline": "N/A",
+      "missing_fields": [
+        "established",
+        "opened",
+        "contact.email",
+        "hours.schedule",
+        "corporate_record.document_number",
+        "corporate_record.filing_date",
+        "corporate_record.status"
+      ],
+      "missing_core_count": 7
+    },
+    {
+      "id": "polo-norte-cuban-restaurant",
+      "slug": "polo-norte",
+      "name": "Polo Norte Cuban Restaurant",
+      "legal_entity": "N/A",
+      "city": "hialeah",
+      "city_display": "Hialeah",
+      "category": "restaurant",
+      "schema_type": "Restaurant",
+      "publication_status": "needs_owner_confirmation",
+      "blocking_gaps": [
+        "No current operating entity could be located for 540 W 29th St. No active Florida corporation or fictitious name was found at this address.",
+        "The Infatuation states this location 'is no longer associated with the other locations' and it is absent from the Polo Norte group's own location list. The relationship — split, sale, or something else — is unknown.",
+        "No founding year and no owner name is published by the business itself."
+      ],
+      "cuisine": [
+        "Cuban",
+        "Pizza cubana",
+        "Ice cream"
+      ],
+      "established": "N/A",
+      "opened": "N/A",
+      "location": {
+        "street": "540 W 29th St",
+        "locality": "Hialeah",
+        "region": "FL",
+        "postal_code": "33012",
+        "country": "US",
+        "district": "N/A",
+        "verification": "confirmed",
+        "verification_note": "540 per the business's own contact page and Instagram. The Infatuation and the 1992 corporate filing use 546 W 29th St, same block. Both numbers documented, unreconciled.",
+        "city_label_conflicts": "N/A",
+        "cross_street": "N/A"
+      },
+      "contact": {
+        "phone": "+1-305-884-0880",
+        "phone_display": "(305) 884-0880",
+        "email": "N/A",
+        "website": "https://www.polonortecubanrestaurant.com/",
+        "phone_note": "N/A",
+        "website_note": "Publishes English and Spanish (/es/) versions.",
+        "website_status": "N/A",
+        "email_note": "N/A"
+      },
+      "social": {
+        "instagram": "https://www.instagram.com/polonortecubanrestaurant/",
+        "instagram_handle": "@polonortecubanrestaurant",
+        "instagram_followers": 4213,
+        "facebook": "https://www.facebook.com/PoloNorteCubanRestaurant/",
+        "facebook_note": "N/A",
+        "instagram_note": "N/A"
+      },
+      "hours": {
+        "source_type": "owned_channel",
+        "source": "https://www.polonortecubanrestaurant.com/about-us/",
+        "schedule": [
+          {
+            "days": [
+              "Tuesday",
+              "Wednesday",
+              "Thursday"
+            ],
+            "opens": "11:00",
+            "closes": "22:00"
+          },
+          {
+            "days": [
+              "Friday",
+              "Saturday"
+            ],
+            "opens": "11:00",
+            "closes": "23:00"
+          },
+          {
+            "days": [
+              "Sunday"
+            ],
+            "opens": "12:00",
+            "closes": "22:00"
+          }
+        ],
+        "conflicts": [],
+        "confidence": "high",
+        "happy_hour": "N/A",
+        "confidence_note": "Owned channel, corroborated by the business's own ordering page.",
+        "closed_days": [
+          "Monday"
+        ]
+      },
+      "price": {
+        "band": "N/A",
+        "band_source": "N/A",
+        "anchors": [],
+        "anchors_source": "N/A",
+        "note": "N/A",
+        "band_note": "Not published. A '$' reading was withdrawn on re-check — it does not appear at the cited URL, which renders $$$$."
+      },
+      "owners": [],
+      "corporate_record": {
+        "entity_name": "N/A",
+        "document_number": "N/A",
+        "entity_type": "N/A",
+        "filing_date": "N/A",
+        "filing_date_is_not_an_opening_date": "N/A",
+        "status": "not_located",
+        "principal_address": "N/A",
+        "source": "N/A",
+        "verification": "N/A",
+        "note": "No active Florida corporation or fictitious name was found at 540 W 29th St. Two historical Polo Norte corporations were filed on this block and both are administratively dissolved: Polo Norte Ice Cream Corp. (S39286, filed 1991-03-18, 540 W 29 St, dissolved 1993) and New Polo Norte Ice Cream Inc. (V62886, filed 1992-09-10, 546 W 29th St, Busquet, dissolved 1998). Neither is the current operator.",
+        "effective_date": "N/A",
+        "document_number_note": "N/A",
+        "historical_records": [
+          {
+            "entity_name": "Polo Norte Ice Cream Corp.",
+            "document_number": "S39286",
+            "filing_date": "1991-03-18",
+            "address": "540 W 29 St",
+            "status": "Administratively dissolved 1993",
+            "source": "https://opengovus.com/florida-corporation/S39286"
+          },
+          {
+            "entity_name": "New Polo Norte Ice Cream Inc.",
+            "document_number": "V62886",
+            "filing_date": "1992-09-10",
+            "address": "546 W 29th St",
+            "status": "Administratively dissolved 1998",
+            "source": "https://opengovus.com/florida-corporation/V62886"
+          }
+        ],
+        "beverage_licensee": "N/A",
+        "beverage_license_source": "N/A"
+      },
+      "capacity": {
+        "total_guests": "N/A",
+        "private_room_guests": "N/A",
+        "source": "N/A"
+      },
+      "short_description": "Cuban restaurant and ice cream parlor on W 29th Street, known for pizza cubana.",
+      "long_description": "Polo Norte is a Cuban kitchen and ice cream parlor on West 29th Street, serving classic plates alongside pizza cubana and scooped desserts. It runs Tuesday through Sunday with takeout, delivery and catering, beer and wine, and its own parking lot, and it publishes its site in both English and Spanish. Note that this address operates independently of the similarly named Polo Norte group elsewhere in Hialeah.",
+      "description_sources": [
+        "https://www.polonortecubanrestaurant.com/",
+        "https://www.polonortecubanrestaurant.com/about-us/",
+        "https://polonorte.netwaiter.com/"
+      ],
+      "signature_items": [
+        "Pizza cubana",
+        "Ice cream"
+      ],
+      "references": [
+        {
+          "title": "Official site",
+          "publisher": "Polo Norte Cuban Restaurant",
+          "url": "https://www.polonortecubanrestaurant.com/",
+          "type": "owned",
+          "independent": false
+        },
+        {
+          "title": "Polo Norte Cuban Restaurant",
+          "publisher": "The Infatuation",
+          "url": "https://www.theinfatuation.com/miami/reviews/polo-norte-cuban-restaurant",
+          "type": "review",
+          "independent": true,
+          "note": "Source of the statement that this location is no longer associated with the other Polo Norte locations."
+        },
+        {
+          "title": "Online ordering",
+          "publisher": "NetWaiter",
+          "url": "https://polonorte.netwaiter.com/",
+          "type": "owned",
+          "independent": false
+        }
+      ],
+      "caveats": [
+        "CRITICAL: do not use the Polo Norte group's history, the Busquet family story, or the 'opened three days before Hurricane Andrew' account on this listing. They belong to a different business.",
+        "A quote about opening before Hurricane Andrew was previously attributed to Raul Busquet; CBS attributes it to Eugenio Busquet. Neither belongs on this listing."
+      ],
+      "seo": {
+        "meta_title": "Polo Norte Cuban Restaurant | Pizza Cubana & Ice Cream, Hialeah",
+        "meta_description": "Cuban restaurant and ice cream parlor on W 29th St, Hialeah. Pizza cubana, classic plates, takeout, delivery and catering. Closed Mondays.",
+        "json_ld": {
+          "@context": "https://schema.org",
+          "@type": "Restaurant",
+          "name": "Polo Norte Cuban Restaurant",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "540 W 29th St",
+            "addressLocality": "Hialeah",
+            "addressRegion": "FL",
+            "postalCode": "33012",
+            "addressCountry": "US"
+          },
+          "telephone": "+1-305-884-0880",
+          "url": "https://www.polonortecubanrestaurant.com/",
+          "servesCuisine": [
+            "Cuban"
+          ],
+          "sameAs": [
+            "https://www.instagram.com/polonortecubanrestaurant/",
+            "https://www.facebook.com/PoloNorteCubanRestaurant/"
+          ],
+          "openingHoursSpecification": [
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": [
+                "Tuesday",
+                "Wednesday",
+                "Thursday"
+              ],
+              "opens": "11:00",
+              "closes": "22:00"
+            },
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": [
+                "Friday",
+                "Saturday"
+              ],
+              "opens": "11:00",
+              "closes": "23:00"
+            },
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": [
+                "Sunday"
+              ],
+              "opens": "12:00",
+              "closes": "22:00"
+            }
+          ]
+        }
+      },
+      "brand": {
+        "name": "N/A",
+        "brand_founded": "N/A",
+        "brand_entity": "N/A",
+        "relationship": "N/A",
+        "relationship_note": "N/A",
+        "brand_url": "N/A"
+      },
+      "notable_quotes": [],
+      "serves_food": "N/A",
+      "serves_food_note": "N/A",
+      "related_locations": [],
+      "established_note": "Not published. The business at this address states no founding year. Two Polo Norte corporations were filed on this block 18 months apart (1991 and 1992), but neither has been tied to the current operation.",
+      "awards": [],
+      "payment": {
+        "cash_only": "N/A",
+        "atm_on_site": "N/A",
+        "source": "N/A"
+      },
+      "owners_note": "Deliberately empty. No current owning entity was located for this address, and the business publishes no owner name. The Busquet family history belongs to the separate Polo Norte group and must NOT be attributed here.",
+      "alternate_names": [],
+      "service_model": "N/A",
+      "service": {
+        "takeout": true,
+        "delivery": true,
+        "catering": true,
+        "reservations": false,
+        "alcohol": "Beer and wine only",
+        "outdoor_seating": false,
+        "parking": "Private lot",
+        "source": "https://polonorte.netwaiter.com/"
+      },
+      "tagline": "N/A",
+      "missing_fields": [
+        "legal_entity",
+        "established",
+        "opened",
+        "contact.email",
+        "price.band",
+        "owners",
+        "corporate_record.entity_name",
+        "corporate_record.document_number",
+        "corporate_record.filing_date"
+      ],
+      "missing_core_count": 9
+    },
+    {
+      "id": "molinas-ranch-restaurant",
+      "slug": "molinas-ranch",
+      "name": "Molina's Ranch Restaurant",
+      "legal_entity": "J & Z Restaurant, Inc.",
+      "city": "hialeah",
+      "city_display": "Hialeah",
+      "category": "restaurant",
+      "schema_type": "Restaurant",
+      "publication_status": "ready",
+      "blocking_gaps": [],
+      "cuisine": [
+        "Cuban",
+        "Latin American"
+      ],
+      "established": {
+        "value": "1982",
+        "label": "Roots going back to 1982",
+        "source": "https://burgerbeast.com/molinas-ranch-hialeah",
+        "verification": "press",
+        "note": "Burger Beast: 'this place has always had roots, starting with Adolfo Molina in 1982 before longtime chef Jose Orlando took over in 1994.' Attribute to Burger Beast rather than stating flat — it is a single blog source with no cited documentation. The 1994-10-20 corporate filing is a separate fact and is not proof of a takeover date."
+      },
+      "opened": "N/A",
+      "location": {
+        "street": "4090 East 8th Avenue",
+        "locality": "Hialeah",
+        "region": "FL",
+        "postal_code": "33013",
+        "country": "US",
+        "district": "N/A",
+        "verification": "confirmed",
+        "verification_note": "N/A",
+        "city_label_conflicts": "N/A",
+        "cross_street": "N/A"
+      },
+      "contact": {
+        "phone": "+1-305-693-4440",
+        "phone_display": "(305) 693-4440",
+        "email": "N/A",
+        "website": "https://molinasranch.com",
+        "phone_note": "N/A",
+        "website_note": "N/A",
+        "website_status": "N/A",
+        "email_note": "N/A"
+      },
+      "social": {
+        "instagram": "https://www.instagram.com/molinasranch/",
+        "instagram_handle": "@molinasranch",
+        "instagram_followers": "N/A",
+        "facebook": "https://www.facebook.com/molinasranchrestaurant/",
+        "facebook_note": "N/A",
+        "instagram_note": "N/A"
+      },
+      "hours": {
+        "source_type": "owned_channel",
+        "source": "https://molinasranch.com/contact-us",
+        "schedule": [
+          {
+            "days": [
+              "Sunday",
+              "Monday",
+              "Tuesday",
+              "Wednesday",
+              "Thursday"
+            ],
+            "opens": "07:00",
+            "closes": "22:00"
+          },
+          {
+            "days": [
+              "Friday",
+              "Saturday"
+            ],
+            "opens": "07:00",
+            "closes": "23:00"
+          }
+        ],
+        "conflicts": [
+          {
+            "source": "https://www.instagram.com/molinasranch/",
+            "detail": "IG bio: 'Open 7 days a week! 7am-Noon Breakfast 11am-10pm Lunch and Dinner' — service windows rather than a closing time."
+          }
+        ],
+        "confidence": "high",
+        "happy_hour": "N/A",
+        "confidence_note": "N/A",
+        "closed_days": []
+      },
+      "price": {
+        "band": "$$",
+        "band_source": "https://www.checkpleasefl.com/restaurants/molinas-ranch/",
+        "anchors": [
+          {
+            "item": "Lunch, per person",
+            "price": 10
+          },
+          {
+            "item": "Dinner, per person incl. tax and gratuity, excl. alcohol",
+            "price": 20
+          }
+        ],
+        "anchors_source": "https://www.checkpleasefl.com/restaurants/molinas-ranch/",
+        "note": "The Infatuation lists $$$$, which contradicts every other source and the sub-$20 dinner figures. Treat $$ as correct.",
+        "band_note": "N/A"
+      },
+      "owners": [
+        {
+          "name": "Jose Jorge",
+          "role": "Owner and executive chef",
+          "source": "https://www.checkpleasefl.com/restaurants/molinas-ranch/",
+          "verification": "press_and_corporate",
+          "note": "Listed on the corporate record as Jose O. Jorge, registered agent and officer of J & Z Restaurant, Inc."
+        },
+        {
+          "name": "Mildred Jorge",
+          "role": "Owner",
+          "source": "https://www.checkpleasefl.com/restaurants/molinas-ranch/",
+          "verification": "press"
+        }
+      ],
+      "corporate_record": {
+        "entity_name": "J & Z Restaurant, Inc.",
+        "document_number": "P94000077218",
+        "entity_type": "N/A",
+        "filing_date": "1994-10-20",
+        "filing_date_is_not_an_opening_date": true,
+        "status": "Active",
+        "principal_address": "4090 E. 8th Ave, Hialeah, FL 33013",
+        "source": "search.sunbiz.org (record blocks automated retrieval)",
+        "verification": "search_snippet",
+        "note": "N/A",
+        "effective_date": "N/A",
+        "document_number_note": "N/A",
+        "historical_records": [],
+        "beverage_licensee": "O & J Restaurant Corp, d/b/a Molina's Ranch Restaurant",
+        "beverage_license_source": "https://www.myfloridalicense.com/LicenseDetail.asp?SID=&id=1251A935579A1CD2A6AB3E32BFC41AFC"
+      },
+      "capacity": {
+        "total_guests": "N/A",
+        "private_room_guests": "N/A",
+        "source": "N/A"
+      },
+      "short_description": "Full-service Cuban restaurant on East 8th Avenue, open from 7am daily with a full bar and a name older than its owners.",
+      "long_description": "Molina's Ranch has been feeding East 8th Avenue since the early eighties, opening at seven every morning for breakfast and running through lunch and dinner with a full bar. Burger Beast traces its roots to Adolfo Molina in 1982, with longtime chef Jose Orlando taking over in 1994; today it is run by the Jorge family, with Jose Jorge as executive chef. The kitchen leans classic Cuban — croquetas, bistec artesano, guarapo pressed fresh, cafecito with espumita, and flan worth ordering.",
+      "description_sources": [
+        "https://burgerbeast.com/molinas-ranch-hialeah",
+        "https://molinasranch.com/",
+        "https://www.checkpleasefl.com/restaurants/molinas-ranch/",
+        "https://www.miaminewtimes.com/location/molinas-ranch-restaurant-6411014/"
+      ],
+      "signature_items": [
+        "Bistec Artesano",
+        "House-made ham croquetas",
+        "Fresh guarapo",
+        "Flan",
+        "Cafecito con espumita"
+      ],
+      "references": [
+        {
+          "title": "Molina's Ranch, Hialeah",
+          "publisher": "Burger Beast",
+          "date": "2025-12-04",
+          "url": "https://burgerbeast.com/molinas-ranch-hialeah",
+          "type": "press",
+          "independent": true
+        },
+        {
+          "title": "Molina's Ranch",
+          "publisher": "Check, Please! South Florida",
+          "url": "https://www.checkpleasefl.com/restaurants/molinas-ranch/",
+          "type": "press",
+          "independent": true
+        },
+        {
+          "title": "Molina's Ranch Restaurant",
+          "publisher": "Miami New Times (venue page)",
+          "url": "https://www.miaminewtimes.com/location/molinas-ranch-restaurant-6411014/",
+          "type": "directory",
+          "independent": true
+        },
+        {
+          "title": "Official site",
+          "publisher": "Molina's Ranch Restaurant",
+          "url": "https://molinasranch.com",
+          "type": "owned",
+          "independent": false
+        }
+      ],
+      "caveats": [
+        "The business contradicts itself on its own age: the Instagram bio says 'more then 40 years' while an August 2026 post advertises a 50-year anniversary. Unresolved — ask before publishing either.",
+        "Florida records show a separate Adolfo Molina corporation at 4100 E 8th Ave, one block over. Do not conflate the two addresses.",
+        "Your list called this 'Molina'. No Hialeah restaurant trades under that bare name."
+      ],
+      "seo": {
+        "meta_title": "Molina's Ranch Restaurant | Cuban Food in Hialeah Since 1982",
+        "meta_description": "Classic Cuban restaurant on E 8th Ave, Hialeah. Breakfast from 7am, bistec artesano, croquetas, fresh guarapo and a full bar. Open daily.",
+        "json_ld": {
+          "@context": "https://schema.org",
+          "@type": "Restaurant",
+          "name": "Molina's Ranch Restaurant",
+          "slogan": "¡Donde El Gusto Es Nuestro!",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "4090 East 8th Avenue",
+            "addressLocality": "Hialeah",
+            "addressRegion": "FL",
+            "postalCode": "33013",
+            "addressCountry": "US"
+          },
+          "telephone": "+1-305-693-4440",
+          "url": "https://molinasranch.com",
+          "servesCuisine": [
+            "Cuban",
+            "Latin American"
+          ],
+          "priceRange": "$$",
+          "acceptsReservations": "False",
+          "sameAs": [
+            "https://www.instagram.com/molinasranch/",
+            "https://www.facebook.com/molinasranchrestaurant/"
+          ],
+          "openingHoursSpecification": [
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": [
+                "Sunday",
+                "Monday",
+                "Tuesday",
+                "Wednesday",
+                "Thursday"
+              ],
+              "opens": "07:00",
+              "closes": "22:00"
+            },
+            {
+              "@type": "OpeningHoursSpecification",
+              "dayOfWeek": [
+                "Friday",
+                "Saturday"
+              ],
+              "opens": "07:00",
+              "closes": "23:00"
+            }
+          ]
+        }
+      },
+      "brand": {
+        "name": "N/A",
+        "brand_founded": "N/A",
+        "brand_entity": "N/A",
+        "relationship": "N/A",
+        "relationship_note": "N/A",
+        "brand_url": "N/A"
+      },
+      "notable_quotes": [],
+      "serves_food": "N/A",
+      "serves_food_note": "N/A",
+      "related_locations": [],
+      "established_note": "N/A",
+      "awards": [],
+      "payment": {
+        "cash_only": "N/A",
+        "atm_on_site": "N/A",
+        "source": "N/A"
+      },
+      "owners_note": "The restaurant carries the Molina name but is operated by the Jorge family. Burger Beast attributes its 1982 beginnings to Adolfo Molina. How the business passed from the Molina name to the Jorge family is documented by no source located — do not narrate that transition.",
+      "alternate_names": [],
+      "service_model": "N/A",
+      "service": {
+        "takeout": true,
+        "delivery": "N/A",
+        "catering": true,
+        "reservations": false,
+        "alcohol": "Full bar (4COP license)",
+        "outdoor_seating": "N/A",
+        "parking": "N/A",
+        "source": "https://www.checkpleasefl.com/restaurants/molinas-ranch/"
+      },
+      "tagline": "¡Donde El Gusto Es Nuestro!",
+      "missing_fields": [
+        "opened",
+        "contact.email"
+      ],
+      "missing_core_count": 2
+    }
+  ]
+}

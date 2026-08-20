@@ -62,9 +62,29 @@ export const Listings: CollectionConfig = {
             { label: '$', value: '$' },
             { label: '$$', value: '$$' },
             { label: '$$$', value: '$$$' },
+            // Added for the sourced imports: the research carries a `$$$$` band
+            // and demoting it to `$$$` to fit the old select would be exactly
+            // the quiet falsification that data exists to avoid.
+            { label: '$$$$', value: '$$$$' },
           ],
         },
       ],
+    },
+    {
+      name: 'publicationStatus',
+      type: 'select',
+      required: true,
+      defaultValue: 'unsourced',
+      options: [
+        { label: 'Ready — every field traces to a source', value: 'ready' },
+        { label: 'Needs owner confirmation', value: 'needs_owner_confirmation' },
+        { label: 'Unsourced — design placeholder', value: 'unsourced' },
+      ],
+      admin: {
+        position: 'sidebar',
+        description:
+          'How much of this record is actually known. `unsourced` is the original design content, whose phone and hours were synthesized from the array index — it is not a smaller version of `ready`, it is a different kind of data. Filter on this before publishing anything.',
+      },
     },
     {
       name: 'member',
@@ -134,6 +154,20 @@ export const Listings: CollectionConfig = {
           ],
         },
         {
+          type: 'row',
+          fields: [
+            { name: 'email', type: 'text' },
+            {
+              name: 'instagram',
+              type: 'text',
+              admin: {
+                description:
+                  'Full profile URL. For the researched listings this is more reliable than the website — 10 of 11 have one, 9 have a site, and one of those sites is down.',
+              },
+            },
+          ],
+        },
+        {
           name: 'hours',
           type: 'array',
           fields: [
@@ -150,6 +184,33 @@ export const Listings: CollectionConfig = {
               required: true,
               admin: { description: 'e.g. "11am – 11pm"' },
             },
+          ],
+        },
+        {
+          name: 'hoursConfidence',
+          type: 'select',
+          options: [
+            { label: 'High — one unambiguous owned-channel schedule', value: 'high' },
+            { label: 'Medium — sources mostly agree', value: 'medium' },
+            { label: 'Low', value: 'low' },
+            { label: 'None — sources disagree', value: 'none' },
+          ],
+          admin: {
+            description:
+              'Empty means authored design content rather than researched. The Business page renders hours only at `high` or empty; anything less shows a "call to confirm" line instead, because wrong hours generate owner complaints.',
+          },
+        },
+        {
+          name: 'hoursConflicts',
+          type: 'array',
+          labels: { singular: 'Conflict', plural: 'Conflicts' },
+          admin: {
+            description:
+              'Where sources disagreed. Kept rather than resolved — picking one silently is what this record exists to prevent.',
+          },
+          fields: [
+            { name: 'source', type: 'text', required: true },
+            { name: 'detail', type: 'text', required: true },
           ],
         },
         {
@@ -172,6 +233,75 @@ export const Listings: CollectionConfig = {
             { name: 'desc', type: 'textarea', localized: true },
             { name: 'price', type: 'text' },
           ],
+        },
+      ],
+    },
+    {
+      name: 'research',
+      type: 'group',
+      label: 'Research & provenance',
+      admin: {
+        description:
+          'Only populated for imported listings. This is what separates a sourced record from a plausible one — if you edit a field above, add or update the source here too, or the record quietly stops being auditable.',
+      },
+      fields: [
+        {
+          name: 'established',
+          type: 'text',
+          admin: {
+            description:
+              'The year the business actually opened or was founded, with a source. NOT the Florida corporate filing date — that is a registration event and several businesses here filed decades after opening. Blank means unknown, which is a fact, not an omission to fill in.',
+          },
+        },
+        {
+          name: 'establishedNote',
+          type: 'textarea',
+          admin: { description: 'Why the date is what it is, or why there is none.' },
+        },
+        {
+          name: 'cuisine',
+          type: 'text',
+          hasMany: true,
+          admin: { description: 'e.g. Peruvian, Ceviche, Seafood.' },
+        },
+        {
+          name: 'signatureItems',
+          type: 'text',
+          hasMany: true,
+          admin: { description: 'The dishes a first-timer comes for.' },
+        },
+        {
+          name: 'blockingGaps',
+          type: 'text',
+          hasMany: true,
+          admin: {
+            description:
+              'What must be asked of the owner before this listing is complete. Non-empty is what `needs owner confirmation` means.',
+          },
+        },
+        {
+          name: 'sources',
+          type: 'array',
+          labels: { singular: 'Source', plural: 'Sources' },
+          fields: [
+            { name: 'url', type: 'text', required: true },
+            { name: 'title', type: 'text' },
+            { name: 'publisher', type: 'text' },
+            { name: 'type', type: 'text', admin: { description: 'e.g. press, owned, aggregator.' } },
+          ],
+        },
+        {
+          name: 'legalEntity',
+          type: 'text',
+          admin: { description: 'Registered entity name, where it differs from the trading name.' },
+        },
+        {
+          name: 'sourceFile',
+          type: 'text',
+          admin: {
+            description:
+              'The dossier this record was generated from, e.g. research/hialeah/molina.md in the flamingo-city repo.',
+          },
         },
       ],
     },

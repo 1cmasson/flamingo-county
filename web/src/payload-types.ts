@@ -399,7 +399,11 @@ export interface Listing {
   tag?: string | null;
   rating?: number | null;
   reviews?: number | null;
-  price?: ('$' | '$$' | '$$$') | null;
+  price?: ('$' | '$$' | '$$$' | '$$$$') | null;
+  /**
+   * How much of this record is actually known. `unsourced` is the original design content, whose phone and hours were synthesized from the array index — it is not a smaller version of `ready`, it is a different kind of data. Filter on this before publishing anything.
+   */
+  publicationStatus: 'ready' | 'needs_owner_confirmation' | 'unsourced';
   /**
    * Paying member — earns the badge.
    */
@@ -438,6 +442,11 @@ export interface Listing {
      */
     site?: string | null;
     cta?: string | null;
+    email?: string | null;
+    /**
+     * Full profile URL. For the researched listings this is more reliable than the website — 10 of 11 have one, 9 have a site, and one of those sites is down.
+     */
+    instagram?: string | null;
     hours?:
       | {
           /**
@@ -448,6 +457,20 @@ export interface Listing {
            * e.g. "11am – 11pm"
            */
           t: string;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * Empty means authored design content rather than researched. The Business page renders hours only at `high` or empty; anything less shows a "call to confirm" line instead, because wrong hours generate owner complaints.
+     */
+    hoursConfidence?: ('high' | 'medium' | 'low' | 'none') | null;
+    /**
+     * Where sources disagreed. Kept rather than resolved — picking one silently is what this record exists to prevent.
+     */
+    hoursConflicts?:
+      | {
+          source: string;
+          detail: string;
           id?: string | null;
         }[]
       | null;
@@ -466,6 +489,51 @@ export interface Listing {
           id?: string | null;
         }[]
       | null;
+  };
+  /**
+   * Only populated for imported listings. This is what separates a sourced record from a plausible one — if you edit a field above, add or update the source here too, or the record quietly stops being auditable.
+   */
+  research?: {
+    /**
+     * The year the business actually opened or was founded, with a source. NOT the Florida corporate filing date — that is a registration event and several businesses here filed decades after opening. Blank means unknown, which is a fact, not an omission to fill in.
+     */
+    established?: string | null;
+    /**
+     * Why the date is what it is, or why there is none.
+     */
+    establishedNote?: string | null;
+    /**
+     * e.g. Peruvian, Ceviche, Seafood.
+     */
+    cuisine?: string[] | null;
+    /**
+     * The dishes a first-timer comes for.
+     */
+    signatureItems?: string[] | null;
+    /**
+     * What must be asked of the owner before this listing is complete. Non-empty is what `needs owner confirmation` means.
+     */
+    blockingGaps?: string[] | null;
+    sources?:
+      | {
+          url: string;
+          title?: string | null;
+          publisher?: string | null;
+          /**
+           * e.g. press, owned, aggregator.
+           */
+          type?: string | null;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * Registered entity name, where it differs from the trading name.
+     */
+    legalEntity?: string | null;
+    /**
+     * The dossier this record was generated from, e.g. research/hialeah/molina.md in the flamingo-city repo.
+     */
+    sourceFile?: string | null;
   };
   updatedAt: string;
   createdAt: string;
@@ -994,6 +1062,7 @@ export interface ListingsSelect<T extends boolean = true> {
   rating?: T;
   reviews?: T;
   price?: T;
+  publicationStatus?: T;
   member?: T;
   imageHint?: T;
   gallery?: T;
@@ -1013,11 +1082,21 @@ export interface ListingsSelect<T extends boolean = true> {
         phone?: T;
         site?: T;
         cta?: T;
+        email?: T;
+        instagram?: T;
         hours?:
           | T
           | {
               d?: T;
               t?: T;
+              id?: T;
+            };
+        hoursConfidence?: T;
+        hoursConflicts?:
+          | T
+          | {
+              source?: T;
+              detail?: T;
               id?: T;
             };
         menuNote?: T;
@@ -1029,6 +1108,26 @@ export interface ListingsSelect<T extends boolean = true> {
               price?: T;
               id?: T;
             };
+      };
+  research?:
+    | T
+    | {
+        established?: T;
+        establishedNote?: T;
+        cuisine?: T;
+        signatureItems?: T;
+        blockingGaps?: T;
+        sources?:
+          | T
+          | {
+              url?: T;
+              title?: T;
+              publisher?: T;
+              type?: T;
+              id?: T;
+            };
+        legalEntity?: T;
+        sourceFile?: T;
       };
   updatedAt?: T;
   createdAt?: T;
