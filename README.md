@@ -151,11 +151,17 @@ back. Rule of thumb:
 - **Edit in the Claude Design canvas, then re-pull:** `*.dc.html`, `fc-data.js`,
   and anything under `assets/`, `mascots/`, `uploads/`.
 - **Edit here — these do not exist in the design project:** `netlify.toml`,
-  `_redirects`, `forms.html`, `README.md`, `.gitignore`, `vendor/`.
+  `_redirects`, `forms.html`, `README.md`, `.gitignore`, `vendor/`, `manifest.json`,
+  `sw.js`, `pwa.js`, `offline.html`.
 - **`fc-data.js` carries local edits on top of the design version.** A re-pull
   overwrites them, so re-apply these four hunks (all described under *Language*):
   `detectLang()`, `resolveLang()` + `lang()`, the i18next branch in `T()`, and the
   `<html lang>` + loader block above `window.FCBase = B`.
+- **The `.dc.html` files carry two PWA edits each** (described under *Homescreen
+  install*). A re-pull overwrites both, so re-apply: the 8-line block in the real
+  `<head>` of the ten route pages, and the deletion of the `apple-touch-icon` line
+  from the `<helmet>` of **all twelve** files — `Nav` and `Footer` included, because
+  their helmets are hoisted into `<head>` too.
 
 Two things bit us on the way in, worth knowing before the next pull:
 
@@ -163,6 +169,49 @@ Two things bit us on the way in, worth knowing before the next pull:
    Anything larger comes back corrupt — check that flag.
 2. `Flamingo County.dc.html`, the deprecated single-page build, was left behind
    deliberately. Don't deploy or link it.
+
+## Homescreen install (PWA)
+
+The site installs to an iPhone or Android homescreen and launches full-screen with no
+browser chrome. There is no app-store build — this is the web app itself.
+
+| File | What it is |
+| --- | --- |
+| `manifest.json` | Name, icons, `start_url: "/"`, `scope: "/"`, `display: standalone`. `theme_color` matches the sticky nav (`#0C0F14`), `background_color` matches `body` (`#FF2E88`) so the launch splash is on-brand. |
+| `sw.js` | The service worker. **Android Chrome only offers to install when one with a `fetch` handler is registered** — it is not optional. |
+| `pwa.js` | Registers the worker; shows Chrome's install prompt on Android and a "Share → Add to Home Screen" hint on iOS. Loaded from each page's real `<head>`. |
+| `offline.html` | Shown when a navigation fails and nothing is cached. |
+| `uploads/fc-*.png` | The install icons: 192, 512, a padded 512 `maskable`, and an opaque 180 `apple-touch-icon`. |
+
+**`sw.js` caching mirrors `netlify.toml` on purpose.** `.dc.html` pages and the
+root-level `.js` runtime are **network-first**, because they carry
+`max-age=0, must-revalidate` there for the reason given above — they version as a unit,
+and a cached page served against a newer `fc-data.js` is a page the runtime cannot
+compile. `/assets`, `/mascots`, `/uploads` and `/vendor` are cache-first, matching their
+one-year `max-age`. **Bump `CACHE` in `sw.js` on any deploy that touches a page or a
+runtime script**; `activate` drops every other cache.
+
+`support.js` fetches React, ReactDOM and Babel from unpkg at runtime, so nothing renders
+without them — `sw.js` caches those pinned URLs too, or an offline revisit would be a
+blank page. This is also why `offline.html` is plain HTML rather than a `.dc.html`.
+
+**Two things that will break silently if changed:**
+
+- `sw.js` returns early on any non-GET request. `FCBase.netlifySubmit()` POSTs to `/`,
+  so touching non-GET requests kills both forms — in production, for installed users
+  only. See *Forms*: a page that renders is not proof a submission lands.
+- The PWA tags live in the real `<head>`, not in `<helmet>`. Chrome reads
+  `<link rel="manifest">` off the parsed document to decide installability, and helmet
+  tags only reach `<head>` after the runtime boots. The static head also keeps `pwa.js`
+  clear of the double-execution problem above.
+
+The old transparent `apple-touch-icon` was removed from every `<helmet>`, including
+`Nav` and `Footer`. Imported components' helmets are hoisted into `<head>` as well, so
+leaving it there would append it *after* the opaque one and win — iOS composites black
+behind transparency, which is the artifact the new icon exists to avoid.
+
+iOS standalone behavior cannot be checked in DevTools or Playwright. Verify install on a
+real iPhone before calling a change to any of this done.
 
 ## Deploy
 
