@@ -10,7 +10,9 @@
 # server.js the runtime stage starts.
 
 FROM node:22.17.0-alpine AS base
-RUN apk add --no-cache libc6-compat
+# su-exec drops privileges in the entrypoint after it has fixed the volume's
+# ownership — see docker-entrypoint.sh.
+RUN apk add --no-cache libc6-compat su-exec
 # Pinned via package.json's `packageManager`. It matters: newer pnpm stopped
 # reading the `pnpm` field in package.json, so `onlyBuiltDependencies` was
 # ignored and sharp's build script never ran — the install then failed outright.
@@ -72,14 +74,18 @@ COPY --from=builder --chown=nextjs:nodejs /app/web/tsconfig.json ./tsconfig.json
 COPY --from=builder --chown=nextjs:nodejs /app/web/next.config.ts ./next.config.ts
 
 # The volume mount point. Both the database and the uploads live under here;
-# anything written outside it is gone on the next deploy.
+# anything written outside it is gone on the next deploy. Creating it here only
+# covers the no-volume case — a real mount shadows this directory, which is why
+# the entrypoint fixes ownership at boot.
 RUN mkdir -p /data/media && chown -R nextjs:nodejs /data
 
-USER nextjs
+COPY --chown=nextjs:nodejs web/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+# Deliberately NOT `USER nextjs`: the entrypoint needs root to chown the mount,
+# and drops to nextjs itself before starting the server.
 EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
 
-# Migrate before serving. A failed migration must stop the boot rather than
-# start a server against a schema that does not match the code.
-CMD ["sh", "-c", "pnpm payload migrate && node server.js"]
+ENTRYPOINT ["/usr/local/bin/docker-entrypoint.sh"]
