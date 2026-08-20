@@ -97,7 +97,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	\`id\` integer PRIMARY KEY NOT NULL,
   	\`slug\` text NOT NULL,
   	\`name\` text NOT NULL,
-  	\`lead\` integer DEFAULT false,
+  	\`order\` numeric,
+  	\`lead\` numeric DEFAULT 0,
   	\`accent\` text,
   	\`cast_bg\` text,
   	\`photo_id\` integer,
@@ -203,6 +204,17 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   );
   `)
   await db.run(sql`CREATE UNIQUE INDEX \`listings_detail_hours_locales_locale_parent_id_unique\` ON \`listings_detail_hours_locales\` (\`_locale\`,\`_parent_id\`);`)
+  await db.run(sql`CREATE TABLE \`listings_detail_hours_conflicts\` (
+  	\`_order\` integer NOT NULL,
+  	\`_parent_id\` integer NOT NULL,
+  	\`id\` text PRIMARY KEY NOT NULL,
+  	\`source\` text NOT NULL,
+  	\`detail\` text NOT NULL,
+  	FOREIGN KEY (\`_parent_id\`) REFERENCES \`listings\`(\`id\`) ON UPDATE no action ON DELETE cascade
+  );
+  `)
+  await db.run(sql`CREATE INDEX \`listings_detail_hours_conflicts_order_idx\` ON \`listings_detail_hours_conflicts\` (\`_order\`);`)
+  await db.run(sql`CREATE INDEX \`listings_detail_hours_conflicts_parent_id_idx\` ON \`listings_detail_hours_conflicts\` (\`_parent_id\`);`)
   await db.run(sql`CREATE TABLE \`listings_detail_menu\` (
   	\`_order\` integer NOT NULL,
   	\`_parent_id\` integer NOT NULL,
@@ -223,6 +235,19 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   );
   `)
   await db.run(sql`CREATE UNIQUE INDEX \`listings_detail_menu_locales_locale_parent_id_unique\` ON \`listings_detail_menu_locales\` (\`_locale\`,\`_parent_id\`);`)
+  await db.run(sql`CREATE TABLE \`listings_research_sources\` (
+  	\`_order\` integer NOT NULL,
+  	\`_parent_id\` integer NOT NULL,
+  	\`id\` text PRIMARY KEY NOT NULL,
+  	\`url\` text NOT NULL,
+  	\`title\` text,
+  	\`publisher\` text,
+  	\`type\` text,
+  	FOREIGN KEY (\`_parent_id\`) REFERENCES \`listings\`(\`id\`) ON UPDATE no action ON DELETE cascade
+  );
+  `)
+  await db.run(sql`CREATE INDEX \`listings_research_sources_order_idx\` ON \`listings_research_sources\` (\`_order\`);`)
+  await db.run(sql`CREATE INDEX \`listings_research_sources_parent_id_idx\` ON \`listings_research_sources\` (\`_parent_id\`);`)
   await db.run(sql`CREATE TABLE \`listings\` (
   	\`id\` integer PRIMARY KEY NOT NULL,
   	\`slug\` text NOT NULL,
@@ -233,11 +258,19 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	\`rating\` numeric,
   	\`reviews\` numeric,
   	\`price\` text,
+  	\`publication_status\` text DEFAULT 'unsourced' NOT NULL,
   	\`member\` integer DEFAULT false,
   	\`detail_quote_by\` text,
   	\`detail_address\` text,
   	\`detail_phone\` text,
   	\`detail_site\` text,
+  	\`detail_email\` text,
+  	\`detail_instagram\` text,
+  	\`detail_hours_confidence\` text,
+  	\`research_established\` text,
+  	\`research_established_note\` text,
+  	\`research_legal_entity\` text,
+  	\`research_source_file\` text,
   	\`updated_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
   	\`created_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
   	FOREIGN KEY (\`city_id\`) REFERENCES \`cities\`(\`id\`) ON UPDATE no action ON DELETE set null,
@@ -263,6 +296,16 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   );
   `)
   await db.run(sql`CREATE UNIQUE INDEX \`listings_locales_locale_parent_id_unique\` ON \`listings_locales\` (\`_locale\`,\`_parent_id\`);`)
+  await db.run(sql`CREATE TABLE \`listings_texts\` (
+  	\`id\` integer PRIMARY KEY NOT NULL,
+  	\`order\` integer NOT NULL,
+  	\`parent_id\` integer NOT NULL,
+  	\`path\` text NOT NULL,
+  	\`text\` text,
+  	FOREIGN KEY (\`parent_id\`) REFERENCES \`listings\`(\`id\`) ON UPDATE no action ON DELETE cascade
+  );
+  `)
+  await db.run(sql`CREATE INDEX \`listings_texts_order_parent\` ON \`listings_texts\` (\`order\`,\`parent_id\`);`)
   await db.run(sql`CREATE TABLE \`listings_rels\` (
   	\`id\` integer PRIMARY KEY NOT NULL,
   	\`order\` integer,
@@ -562,6 +605,38 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   );
   `)
   await db.run(sql`CREATE UNIQUE INDEX \`spotlights_locales_locale_parent_id_unique\` ON \`spotlights_locales\` (\`_locale\`,\`_parent_id\`);`)
+  await db.run(sql`CREATE TABLE \`subscribers\` (
+  	\`id\` integer PRIMARY KEY NOT NULL,
+  	\`email\` text NOT NULL,
+  	\`lang\` text,
+  	\`updated_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
+  	\`created_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL
+  );
+  `)
+  await db.run(sql`CREATE UNIQUE INDEX \`subscribers_email_idx\` ON \`subscribers\` (\`email\`);`)
+  await db.run(sql`CREATE INDEX \`subscribers_updated_at_idx\` ON \`subscribers\` (\`updated_at\`);`)
+  await db.run(sql`CREATE INDEX \`subscribers_created_at_idx\` ON \`subscribers\` (\`created_at\`);`)
+  await db.run(sql`CREATE TABLE \`listing_requests\` (
+  	\`id\` integer PRIMARY KEY NOT NULL,
+  	\`status\` text DEFAULT 'new',
+  	\`business\` text NOT NULL,
+  	\`owner\` text,
+  	\`phone\` text NOT NULL,
+  	\`email\` text,
+  	\`city_id\` integer,
+  	\`category_id\` integer,
+  	\`story\` text,
+  	\`lang\` text,
+  	\`updated_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
+  	\`created_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
+  	FOREIGN KEY (\`city_id\`) REFERENCES \`cities\`(\`id\`) ON UPDATE no action ON DELETE set null,
+  	FOREIGN KEY (\`category_id\`) REFERENCES \`categories\`(\`id\`) ON UPDATE no action ON DELETE set null
+  );
+  `)
+  await db.run(sql`CREATE INDEX \`listing_requests_city_idx\` ON \`listing_requests\` (\`city_id\`);`)
+  await db.run(sql`CREATE INDEX \`listing_requests_category_idx\` ON \`listing_requests\` (\`category_id\`);`)
+  await db.run(sql`CREATE INDEX \`listing_requests_updated_at_idx\` ON \`listing_requests\` (\`updated_at\`);`)
+  await db.run(sql`CREATE INDEX \`listing_requests_created_at_idx\` ON \`listing_requests\` (\`created_at\`);`)
   await db.run(sql`CREATE TABLE \`payload_kv\` (
   	\`id\` integer PRIMARY KEY NOT NULL,
   	\`key\` text NOT NULL,
@@ -594,6 +669,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	\`events_id\` integer,
   	\`weekly_events_id\` integer,
   	\`spotlights_id\` integer,
+  	\`subscribers_id\` integer,
+  	\`listing_requests_id\` integer,
   	FOREIGN KEY (\`parent_id\`) REFERENCES \`payload_locked_documents\`(\`id\`) ON UPDATE no action ON DELETE cascade,
   	FOREIGN KEY (\`users_id\`) REFERENCES \`users\`(\`id\`) ON UPDATE no action ON DELETE cascade,
   	FOREIGN KEY (\`media_id\`) REFERENCES \`media\`(\`id\`) ON UPDATE no action ON DELETE cascade,
@@ -604,7 +681,9 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	FOREIGN KEY (\`stories_id\`) REFERENCES \`stories\`(\`id\`) ON UPDATE no action ON DELETE cascade,
   	FOREIGN KEY (\`events_id\`) REFERENCES \`events\`(\`id\`) ON UPDATE no action ON DELETE cascade,
   	FOREIGN KEY (\`weekly_events_id\`) REFERENCES \`weekly_events\`(\`id\`) ON UPDATE no action ON DELETE cascade,
-  	FOREIGN KEY (\`spotlights_id\`) REFERENCES \`spotlights\`(\`id\`) ON UPDATE no action ON DELETE cascade
+  	FOREIGN KEY (\`spotlights_id\`) REFERENCES \`spotlights\`(\`id\`) ON UPDATE no action ON DELETE cascade,
+  	FOREIGN KEY (\`subscribers_id\`) REFERENCES \`subscribers\`(\`id\`) ON UPDATE no action ON DELETE cascade,
+  	FOREIGN KEY (\`listing_requests_id\`) REFERENCES \`listing_requests\`(\`id\`) ON UPDATE no action ON DELETE cascade
   );
   `)
   await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_order_idx\` ON \`payload_locked_documents_rels\` (\`order\`);`)
@@ -620,6 +699,8 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_events_id_idx\` ON \`payload_locked_documents_rels\` (\`events_id\`);`)
   await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_weekly_events_id_idx\` ON \`payload_locked_documents_rels\` (\`weekly_events_id\`);`)
   await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_spotlights_id_idx\` ON \`payload_locked_documents_rels\` (\`spotlights_id\`);`)
+  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_subscribers_id_idx\` ON \`payload_locked_documents_rels\` (\`subscribers_id\`);`)
+  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_listing_requests_id_idx\` ON \`payload_locked_documents_rels\` (\`listing_requests_id\`);`)
   await db.run(sql`CREATE TABLE \`payload_preferences\` (
   	\`id\` integer PRIMARY KEY NOT NULL,
   	\`key\` text,
@@ -664,10 +745,17 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	\`show_menu_prices\` integer DEFAULT true,
   	\`contact_email\` text,
   	\`contact_phone\` text,
+  	\`hero_photo_id\` integer,
+  	\`hero_cast_id\` integer,
+  	\`hero_cast_bg\` text DEFAULT '#00feff',
   	\`updated_at\` text,
-  	\`created_at\` text
+  	\`created_at\` text,
+  	FOREIGN KEY (\`hero_photo_id\`) REFERENCES \`media\`(\`id\`) ON UPDATE no action ON DELETE set null,
+  	FOREIGN KEY (\`hero_cast_id\`) REFERENCES \`media\`(\`id\`) ON UPDATE no action ON DELETE set null
   );
   `)
+  await db.run(sql`CREATE INDEX \`site_settings_hero_photo_idx\` ON \`site_settings\` (\`hero_photo_id\`);`)
+  await db.run(sql`CREATE INDEX \`site_settings_hero_cast_idx\` ON \`site_settings\` (\`hero_cast_id\`);`)
   await db.run(sql`CREATE TABLE \`about_page_steps\` (
   	\`_order\` integer NOT NULL,
   	\`_parent_id\` integer NOT NULL,
@@ -783,10 +871,13 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   await db.run(sql`DROP TABLE \`listings_detail_story\`;`)
   await db.run(sql`DROP TABLE \`listings_detail_hours\`;`)
   await db.run(sql`DROP TABLE \`listings_detail_hours_locales\`;`)
+  await db.run(sql`DROP TABLE \`listings_detail_hours_conflicts\`;`)
   await db.run(sql`DROP TABLE \`listings_detail_menu\`;`)
   await db.run(sql`DROP TABLE \`listings_detail_menu_locales\`;`)
+  await db.run(sql`DROP TABLE \`listings_research_sources\`;`)
   await db.run(sql`DROP TABLE \`listings\`;`)
   await db.run(sql`DROP TABLE \`listings_locales\`;`)
+  await db.run(sql`DROP TABLE \`listings_texts\`;`)
   await db.run(sql`DROP TABLE \`listings_rels\`;`)
   await db.run(sql`DROP TABLE \`stories_blocks_drop_cap\`;`)
   await db.run(sql`DROP TABLE \`stories_blocks_drop_cap_locales\`;`)
@@ -809,6 +900,8 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   await db.run(sql`DROP TABLE \`weekly_events_locales\`;`)
   await db.run(sql`DROP TABLE \`spotlights\`;`)
   await db.run(sql`DROP TABLE \`spotlights_locales\`;`)
+  await db.run(sql`DROP TABLE \`subscribers\`;`)
+  await db.run(sql`DROP TABLE \`listing_requests\`;`)
   await db.run(sql`DROP TABLE \`payload_kv\`;`)
   await db.run(sql`DROP TABLE \`payload_locked_documents\`;`)
   await db.run(sql`DROP TABLE \`payload_locked_documents_rels\`;`)
