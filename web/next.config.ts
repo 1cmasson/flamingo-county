@@ -17,6 +17,11 @@ const nextConfig: NextConfig = {
       {
         pathname: '/api/media/file/**',
       },
+      // Art that ships with the repo rather than through the CMS — the AI
+      // receptionist bust is a 1.2MB PNG drawn into a ~190px box.
+      {
+        pathname: '/assets/**',
+      },
     ],
   },
   webpack: (webpackConfig) => {
