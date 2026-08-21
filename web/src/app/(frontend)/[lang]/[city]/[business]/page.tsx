@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { isLang, translator, type Lang } from '../../../../../i18n'
-import { routes, withQuery } from '../../../../../lib/routes'
+import { routes } from '../../../../../lib/routes'
 import {
   getCity,
   getListing,
@@ -129,7 +129,7 @@ export default async function BusinessPage({
         }}
       >
         <Link
-          href={withQuery(routes.home(lang), { city: citySlug })}
+          href={routes.city(lang, citySlug)}
           className={s.chip}
           style={{
             textDecoration: 'none',

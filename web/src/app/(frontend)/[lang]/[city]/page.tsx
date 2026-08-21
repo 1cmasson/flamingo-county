@@ -2,24 +2,22 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { isLang, translator, type Lang } from '../../../../i18n'
-import { routes, withQuery } from '../../../../lib/routes'
-import { getCities, getCity, getListings, rel } from '../../../../lib/data'
-import type { Category, Media } from '../../../../payload-types'
+import { routes } from '../../../../lib/routes'
+import { getCities, getCity, getListings, getSiteSettings, rel } from '../../../../lib/data'
+import { castBg } from '../../../../lib/castBg'
+import type { City, Media } from '../../../../payload-types'
 import { PageShell } from '../../../../components/PageShell'
-import { MediaSlot } from '../../../../components/MediaSlot'
-import s from '../../../../components/chrome.module.css'
+import { BusinessCard } from '../../../../components/BusinessCard'
+import { SearchForm } from '../../../../components/SearchForm'
 
 /**
  * Rendered per request, always.
  *
  * `generateStaticParams` below is kept because it is the way back to static
- * rendering if that is ever wanted (see CMS.md). But this page reads the
- * request header the nav uses for its active section, so Next must not attempt
- * to statically generate it — in a production build whose database is empty at
- * build time, `generateStaticParams` returns nothing and Next falls back to
- * generating on demand, where that header read throws DYNAMIC_SERVER_USAGE and
- * the route 500s. Dev and a locally-seeded build both hide this; the container
- * does not.
+ * rendering if that is ever wanted (see CMS.md). It cannot be relied on today:
+ * in a production build whose database is empty at build time it returns
+ * nothing and Next falls back to generating on demand. This page also reads
+ * `searchParams` for its search box, which is dynamic in its own right.
  */
 export const dynamic = 'force-dynamic'
 
@@ -60,21 +58,32 @@ export async function generateMetadata({
 
 export default async function CityPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ lang: string; city: string }>
+  searchParams: Promise<{ q?: string }>
 }) {
   const { lang, city: slug } = await params
   if (!isLang(lang)) notFound()
+  const q = (await searchParams).q ?? ''
   const t = translator(lang as Lang)
 
-  // Only three cities exist, so anything else is a 404 rather than an empty
-  // city page — this route sits at /[lang]/[city] and would otherwise match
-  // every unrecognised path.
+  // A city page only exists for a city we have, so anything else is a 404
+  // rather than an empty page — this route sits at /[lang]/[city] and would
+  // otherwise match every unrecognised path.
   const city = await getCity(lang, slug)
   if (!city) notFound()
 
-  const list = await getListings(lang, { city: slug })
-  const picks = list.slice(0, 3)
+  // The city page is the browse surface now: every listing in the city, not a
+  // curated three. `total` is the unsearched count, so the hero button and the
+  // empty state can tell "no listings yet" apart from "no search results".
+  const [settings, list, everything] = await Promise.all([
+    getSiteSettings(lang),
+    getListings(lang, { city: slug, q: q || undefined }),
+    q ? getListings(lang, { city: slug }) : Promise.resolve(null),
+  ])
+  const total = everything ? everything.length : list.length
+  const soon = total === 0
 
   const photo = rel<Media>(city.photo)
   const pos = city.photoPos || 'center'
@@ -165,7 +174,7 @@ export default async function CityPage({
             </p>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
               <Link
-                href={withQuery(routes.home(lang), { city: slug })}
+                href={soon ? routes.listYourSpot(lang) : '#listings'}
                 style={{
                   textDecoration: 'none',
                   display: 'flex',
@@ -184,7 +193,14 @@ export default async function CityPage({
                 }}
               >
                 <span>
-                  {t('BROWSE')}&#160;{list.length}&#160;{t('LISTINGS')}
+                  {soon ? (
+                    t('COMING SOON')
+                  ) : (
+                    <>
+                      {t('BROWSE')}&#160;{total}&#160;
+                      {total === 1 ? t('LISTING') : t('LISTINGS')}
+                    </>
+                  )}
                 </span>
               </Link>
               <Link
@@ -248,92 +264,208 @@ export default async function CityPage({
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <h2
-            style={{
-              margin: 0,
-              background: 'var(--ink)',
-              color: 'var(--yellow)',
-              fontFamily: 'var(--display)',
-              fontSize: 24,
-              fontWeight: 400,
-              padding: '8px 14px 5px',
-            }}
-          >
-            {t('TOP OF THE CITY')}
-          </h2>
-          <div style={{ flex: 1, height: 5, background: 'var(--ink)' }} />
-        </div>
-
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill,minmax(min(100%,265px),1fr))',
-            gap: 'clamp(14px,2.5vw,20px)',
-          }}
-        >
-          {picks.map((b) => {
-            const cat = rel<Category>(b.category)
-            return (
-              <Link
-                key={b.id}
-                href={routes.business(lang, slug, b.slug)}
-                className={s.card}
+        {soon ? (
+          <ComingSoon lang={lang} city={city} t={t} />
+        ) : (
+          <>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <h2
                 style={{
-                  textDecoration: 'none',
-                  color: 'inherit',
-                  cursor: 'pointer',
+                  margin: 0,
+                  background: 'var(--ink)',
+                  color: 'var(--yellow)',
+                  fontFamily: 'var(--display)',
+                  fontSize: 24,
+                  fontWeight: 400,
+                  padding: '8px 14px 5px',
+                }}
+              >
+                {t('ALL LISTINGS')}
+              </h2>
+              <div style={{ flex: 1, height: 5, background: 'var(--ink)' }} />
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 8,
+                alignItems: 'center',
+                background: 'var(--grad-cream)',
+                border: '4px solid var(--ink)',
+                boxShadow: '6px 6px 0 var(--ink)',
+                padding: '12px 14px',
+              }}
+            >
+              <SearchForm
+                lang={lang}
+                action={routes.city(lang, slug)}
+                hidden={{}}
+                q={q}
+                t={{
+                  placeholder: t('Search this city…'),
+                  search: lang === 'es' ? 'BUSCAR' : 'SEARCH',
+                  reset: t('RESET'),
+                }}
+                resetHref={routes.city(lang, slug)}
+                count={`${list.length} ${list.length === 1 ? t('LISTING') : t('LISTINGS')}`}
+              />
+            </div>
+
+            {list.length ? (
+              <div
+                id="listings"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill,minmax(min(100%,265px),1fr))',
+                  gap: 'clamp(14px,2.5vw,20px)',
+                }}
+              >
+                {list.map((b) => (
+                  <BusinessCard
+                    key={b.id}
+                    lang={lang}
+                    listing={b}
+                    memberBadges={settings.memberBadges !== false}
+                    showRatings={settings.showRatings !== false}
+                    showCityBadge={false}
+                    t={t}
+                  />
+                ))}
+              </div>
+            ) : (
+              <div
+                id="listings"
+                style={{
                   background: 'var(--grad-cream)',
                   border: '4px solid var(--ink)',
                   boxShadow: '7px 7px 0 var(--ink)',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  minWidth: 0,
-                  overflow: 'hidden',
+                  padding: 30,
+                  textAlign: 'center',
+                  fontFamily: 'var(--display)',
+                  fontSize: 24,
                 }}
               >
-                <div
-                  style={{
-                    position: 'relative',
-                    height: 150,
-                    borderBottom: '4px solid var(--ink)',
-                  }}
-                >
-                  <MediaSlot
-                    media={Array.isArray(b.gallery) ? b.gallery[0] : null}
-                    placeholder={b.imageHint ? `${t('Drop: ')}${b.imageHint}` : null}
-                  />
-                </div>
-                <div
-                  style={{
-                    padding: '14px 15px 16px',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 6,
-                  }}
-                >
-                  <div style={{ fontFamily: 'var(--display)', fontSize: 20, lineHeight: 1.03 }}>
-                    {b.name}
-                  </div>
-                  <div
-                    style={{
-                      fontWeight: 800,
-                      fontSize: 11,
-                      letterSpacing: '1.5px',
-                      color: 'var(--magenta)',
-                    }}
-                  >
-                    {cat?.label}
-                  </div>
-                  <p style={{ margin: 0, fontSize: 14, fontWeight: 600, lineHeight: 1.45 }}>
-                    {b.tag}
-                  </p>
-                </div>
-              </Link>
-            )
-          })}
-        </div>
+                {t('NOTHING MATCHED THAT SEARCH.')}
+              </div>
+            )}
+          </>
+        )}
       </main>
     </PageShell>
+  )
+}
+
+/**
+ * A city we have not researched yet.
+ *
+ * Gated on the listing count rather than the slug, so it disappears by itself
+ * the moment the first listing for that city is published. Little Havana is
+ * the only one today.
+ */
+function ComingSoon({
+  lang,
+  city,
+  t,
+}: {
+  lang: Lang
+  city: City
+  t: (s: string) => string
+}) {
+  const mascot = rel<Media>(city.solo)
+  return (
+    <section
+      data-stack
+      style={{
+        background: 'var(--grad-cream)',
+        border: '4px solid var(--ink)',
+        boxShadow: '8px 8px 0 var(--ink)',
+        display: 'grid',
+        gridTemplateColumns: '0.8fr 1fr',
+        alignItems: 'stretch',
+        overflow: 'hidden',
+      }}
+    >
+      <div
+        style={{
+          background: castBg(city),
+          borderRight: '4px solid var(--ink)',
+          minHeight: 240,
+          display: 'flex',
+          alignItems: 'flex-end',
+          justifyContent: 'center',
+          overflow: 'hidden',
+        }}
+      >
+        {mascot?.url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={mascot.url}
+            alt=""
+            style={{
+              maxWidth: '100%',
+              maxHeight: 300,
+              width: 'auto',
+              objectFit: 'contain',
+              objectPosition: 'bottom',
+              display: 'block',
+            }}
+          />
+        ) : null}
+      </div>
+      <div
+        style={{
+          padding: 'clamp(18px,4vw,32px)',
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          gap: 12,
+        }}
+      >
+        <div
+          style={{
+            alignSelf: 'flex-start',
+            background: 'var(--ink)',
+            color: 'var(--yellow)',
+            fontWeight: 800,
+            fontSize: 11,
+            letterSpacing: '2px',
+            padding: '6px 10px',
+          }}
+        >
+          {city.name}
+        </div>
+        <div
+          style={{
+            fontFamily: 'var(--display)',
+            fontSize: 'clamp(34px,8vw,60px)',
+            lineHeight: 0.95,
+            textWrap: 'balance',
+          }}
+        >
+          {t('COMING SOON')}
+        </div>
+        <p style={{ margin: 0, fontWeight: 600, fontSize: 16, lineHeight: 1.5, maxWidth: '46ch' }}>
+          {t("We're still walking these blocks. Know a spot that belongs here?")}
+        </p>
+        <Link
+          href={routes.listYourSpot(lang)}
+          style={{
+            textDecoration: 'none',
+            alignSelf: 'flex-start',
+            cursor: 'pointer',
+            fontFamily: 'var(--display)',
+            fontSize: 17,
+            padding: '13px 18px 10px',
+            border: '4px solid var(--ink)',
+            color: 'var(--ink)',
+            background: 'var(--yellow)',
+            boxShadow: '4px 4px 0 var(--ink)',
+          }}
+        >
+          {t('LIST YOUR SPOT')}
+        </Link>
+      </div>
+    </section>
   )
 }

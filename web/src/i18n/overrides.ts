@@ -13,7 +13,6 @@
  */
 export const ES_OVERRIDES: Record<string, string> = {
   // --- City page ---------------------------------------------------------
-  'ALL LISTINGS IN': 'TODO LO QUE HAY EN',
   'NOTHING MATCHED THAT SEARCH.': 'NO HAY NADA CON ESA BÚSQUEDA.',
   'Search this city…': 'Busca en esta ciudad…',
   'Search a business or a dish…': 'Busca un negocio o un plato…',
