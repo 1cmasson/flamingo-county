@@ -19,7 +19,7 @@ create-first-user screen handles it instead.
 | Command | What it does |
 | --- | --- |
 | `pnpm seed` | Import `../fc-data.js`. Upserts on slug — re-running changes nothing. |
-| `pnpm verify` | 43 assertions over what the seed wrote. Exits non-zero on failure. |
+| `pnpm verify` | Assertions over what the seed wrote, including the trimmed taxonomy. Exits non-zero on failure. |
 | `pnpm seed:inspect` | Dump what the sandbox reads out of `fc-data.js`. Writes nothing. |
 | `pnpm generate:types` | Regenerate `src/payload-types.ts` after a schema change. |
 | `pnpm payload migrate:create <name>` | New migration. Do this before deploying a schema change. |
@@ -29,7 +29,7 @@ create-first-user screen handles it instead.
 | Collection | N | From |
 | --- | --- | --- |
 | `cities` | 3 | `CITIES` |
-| `categories` | 5 | `CATS` minus the `all` chip |
+| `categories` | 2 | `CATS`, minus the `all` chip and minus the three verticals with no listings — see *The taxonomy is narrower than the design source* |
 | `event-kinds` | 7 | `EKINDS` minus the `all` chip |
 | `listings` | 14 | `BIZ` + `DETAIL` |
 | `stories` | 3 | `STORIES` (33 blocks) |
@@ -51,8 +51,8 @@ Globals: `site-settings` (the old per-page `data-props`), `about-page` and
 generated from the array index, plus the 20 events, 6 weekly events, 3
 spotlights and 3 stories written around them. **None of it is imported.**
 
-What the seed still takes from `fc-data.js`: the three cities, both taxonomies,
-the photography, and the site copy. Those describe real places and real words.
+What the seed still takes from `fc-data.js`: the cities, both taxonomies, the
+photography, and the site copy. Those describe real places and real words.
 
 `SEED_MOCK_CONTENT=1` puts the fiction back — seed and verify both read it, and
 the full assertion suite runs again. Nothing is lost by leaving it off:
@@ -69,7 +69,7 @@ records how solid each one is:
 
 **What this empties.** The events board, the stories index and the home
 spotlight row have no content, and Little Havana has no listings — there is no
-research for it yet. Every one of those renders its empty state rather than
+research for it yet, so its city page renders COMING SOON. Every one of those renders its empty state rather than
 breaking. That is the honest picture: the site now shows exactly what is known
 about real businesses and nothing else.
 
@@ -95,8 +95,9 @@ assertions in `pnpm verify`, because each is a way the import could quietly lie:
   `detail.hoursConfidence` and the disagreements in `detail.hoursConflicts`.
 
 Coverage is partial and uneven on purpose: Miami Lakes and Hialeah only,
-restaurants and bars only. Little Havana and the `clean` / `contract` / `halls`
-categories have no research behind them yet.
+restaurants and bars only. Little Havana has no research behind it yet, and the
+`clean` / `contract` / `halls` categories no longer exist — the site says only
+what it has.
 
 ## Deploying to Railway
 
@@ -134,6 +135,25 @@ container rather than reading it:
 - **Media and the database both have to sit under the mount.** Getting one right
   loses the other half of the content.
 
+### The taxonomy is narrower than the design source
+
+`fc-data.js` carries five categories, written for a directory that would cover
+trades and event venues. Two of them have listings, so two of them ship:
+`food` → **RESTAURANTS** and `night` → **BARS**. `night` is relabelled because
+its two listings are a taproom and a liquor lounge, not night clubs.
+
+`CAT_KEEP` and `CAT_RELABEL` in `src/seed/index.ts` hold the divergence.
+Editing `fc-data.js` instead would have been reverted by the next Claude Design
+re-pull.
+
+The seed only upserts, so `pruneCategories` deletes rows that fall out of
+`CAT_KEEP` — without it a database seeded before the trim keeps offering
+CONTRACTORS, HOME CLEANING and BANQUET HALLS in the List Your Spot dropdown,
+which is entirely DB-driven. It **refuses** rather than orphans: a category
+still referenced by a `listing` or a submitted `listing-request` throws, on the
+grounds that the trim is then wrong. Check `listing-requests` on a deployed
+database before re-seeding it.
+
 ### Sourced listings lead the grids
 
 `getListings` returns `ready`, then `needs_owner_confirmation`, then
@@ -142,10 +162,11 @@ preserved inside each tier. The tiering is applied in `lib/data.ts` rather than
 in the query, because Payload would sort `publicationStatus` alphabetically and
 put `needs_owner_confirmation` ahead of `ready`.
 
-This matters most on the city pages, which show only three picks each
-(`City.dc.html:127` does the same). Hialeah and Miami Lakes now lead with
-researched businesses; Little Havana still shows fc-data records, because no
-research covers it yet.
+The city pages no longer show three picks (`City.dc.html:127` did): they are
+the browse surface and show everything in the city, with a search box. A city
+with **zero** listings renders a COMING SOON panel instead — gated on the count
+rather than the slug, so it clears itself when the first listing lands. Little
+Havana is the only one today.
 
 The **home spotlight row is not affected** — those three are curated one-per-city
 records in the `spotlights` collection, not the head of the grid.
@@ -173,6 +194,13 @@ city heroes, mascots, the founder shot — is imported.
 
 **`going` counts are seed integers**, not a live tally. Saved/going state is
 `localStorage`-only and has no server side until there are accounts.
+
+**Spanish that `fc-data.js` never said lives in `src/i18n/overrides.ts`.**
+`dictionary.generated.ts` is rewritten from the design source by
+`pnpm gen:dictionary`, so a hand-edit there does not survive. `translator()`
+merges the overrides over the generated map. Same contract either way: the key
+is the English string, and a miss returns the key — so an English literal
+changed in a `.tsx` without a matching entry ships English to Spanish readers.
 
 **Untranslated fields hold English in the ES locale, not blank.** The seed's
 `es()` mirrors the old `T()` — dictionary miss returns the English string — so a
@@ -242,7 +270,20 @@ Persisting a *detected* language would make it win on every later request and
 the device setting would never be consulted again. `src/proxy.ts` only reads.
 
 **Search is a plain GET form.** No client component: the page already reads its
-filters from `searchParams`, so the browser can serialise the fields itself.
+filters from `searchParams`, so the browser can serialise the fields itself. It
+is the only query UI left — the category chips on Home and the city/kind chips
+on Events are gone, since 11 listings across two categories is not enough to
+filter. `?city=` on Home survives: it is not a chip, it drives the per-city hero
+art and the city-scoped spotlight row, and shared links carry it. Nothing on the
+site links to it any more.
+
+**The ticker runs on the listings collection.** It was one hardcoded sentence
+claiming 412 local spots and a banquet-hall vertical. Each item is now a link to
+a real business. The `tick` keyframe translates `-50%`, so the run is duplicated
+exactly and the copy is `aria-hidden` with `tabIndex={-1}`; the duration is
+computed from the item count rather than pinned; and the marquee pauses on
+`:focus-within` and `:active`, plus `:hover` behind `@media (hover: hover)` so a
+tap cannot freeze it for good.
 
 **`<image-slot>` became `<MediaSlot>`** — real image when the CMS has one, and
 otherwise the element's exact empty state, which is what the live site shows
@@ -250,16 +291,35 @@ today.
 
 ### Rendering is dynamic, on purpose
 
-Every route builds as `ƒ` rather than `○`. The nav lives in the layout and needs
-to know the current section, which it gets from a header stamped by the proxy —
-and reading a request header makes the segment dynamic.
+Every public route builds as `ƒ` rather than `○`, declared once as
+`export const dynamic = 'force-dynamic'` on `[lang]/layout.tsx`.
 
-That is the right default for a CMS-backed site: an edit in the admin is live on
-the next request with no rebuild. Data comes from Payload's local API, so there
-is no network hop to pay for. If static rendering is ever wanted, the way back
-is to drop the header and pass `active` per page as the source did
-(`<dc-import name="Nav" active="story">`) — `generateStaticParams` is already in
-place on every dynamic route.
+**It used to be implicit and that was a trap.** The nav read a request header
+for its active section, and reading a header is what made each segment dynamic.
+When the active state moved to the client (see below), four routes with no
+`searchParams` of their own — About, List Your Spot, My Week, the stories index
+— silently went static and `pnpm build` died prerendering `/es/about`.
+
+Static is the wrong answer here anyway. The layout queries Payload on every
+render — the nav's cities and the ticker's listings — and a container build runs
+against an empty database, so prerendering would bake a nav with no city tabs
+and an empty ticker into the HTML until someone rebuilt. And it would look
+correct locally, where the build database is seeded. Same shape as the
+migration-drift trap below: **only a container build reproduces it.**
+
+Dynamic is also the right default for a CMS-backed site: an admin edit is live
+on the next request with no rebuild, and the local API means no network hop.
+
+### The nav's active state is derived on the client
+
+`NavMenus` computes it from `usePathname()`. It cannot be a server-computed
+prop: `Nav` lives in the layout, and App Router does not re-render a layout on
+a navigation that leaves its own segment unchanged, so `/en/lakes` →
+`/en/hialeah` reused the layout and the highlight froze on whichever city was
+loaded first. A hard reload was always correct, which is why it survived review.
+
+That retired `lib/active.ts` and the `x-fc-pathname` header. `proxy.ts` keeps
+its language chain, which is unrelated.
 
 ### Still to do on the frontend
 

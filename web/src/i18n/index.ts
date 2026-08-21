@@ -1,4 +1,12 @@
-import { ES } from './dictionary.generated'
+import { ES as GENERATED } from './dictionary.generated'
+import { ES_OVERRIDES } from './overrides'
+
+/**
+ * The generated dictionary, with the hand-maintained overrides on top. Anything
+ * the site says that `fc-data.js` never said lives in `overrides.ts`, so
+ * `pnpm gen:dictionary` cannot revert it.
+ */
+const ES: Record<string, string> = { ...GENERATED, ...ES_OVERRIDES }
 
 export const LOCALES = ['en', 'es'] as const
 export type Lang = (typeof LOCALES)[number]

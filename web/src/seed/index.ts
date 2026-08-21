@@ -110,6 +110,60 @@ function withIds(rows: Dict[] | undefined, enRows: Dict[] | undefined): Dict[] {
 }
 
 /** Media is keyed on filename rather than slug — it has no slug field. */
+/**
+ * The taxonomy diverges from `fc-data.js` on purpose.
+ *
+ * The design source carries five categories written for a directory that would
+ * cover trades and event venues. What exists is restaurants and bars, in two
+ * cities — `research-listings.ts` maps the whole research corpus onto `food`
+ * and `night` and nothing else. Advertising CONTRACTORS, HOME CLEANING and
+ * BANQUET HALLS in the List Your Spot dropdown promised work we cannot take.
+ *
+ * Kept here rather than edited into `fc-data.js`, which is the Claude Design
+ * source: a re-pull would put the five back. `night` is relabelled too — its
+ * two listings are a taproom and a liquor lounge, not night clubs.
+ */
+const CAT_KEEP = ['food', 'night']
+const CAT_RELABEL: Record<string, { en: string; es: string }> = {
+  food: { en: 'RESTAURANTS', es: 'RESTAURANTES' },
+  night: { en: 'BARS', es: 'BARES' },
+}
+
+/**
+ * Drop taxonomy rows that are no longer in `CAT_KEEP`.
+ *
+ * The seed only upserts, so without this the retired categories survive in a
+ * database that has already been seeded once — which is every deployed one —
+ * and keep showing up in the List Your Spot dropdown.
+ *
+ * Refuses rather than orphans: a category still referenced by a listing or by
+ * a submitted listing request is a signal that the trim is wrong, not
+ * something to delete around.
+ */
+async function pruneCategories(payload: Payload): Promise<void> {
+  const { docs } = await payload.find({
+    collection: 'categories',
+    where: { slug: { not_in: CAT_KEEP } },
+    limit: 100,
+    depth: 0,
+  })
+  for (const doc of docs) {
+    for (const collection of ['listings', 'listing-requests'] as const) {
+      const used = await payload.count({
+        collection,
+        where: { category: { equals: doc.id } },
+      })
+      if (used.totalDocs) {
+        throw new Error(
+          `refusing to prune category "${(doc as any).slug}": ${used.totalDocs} ${collection} still reference it`,
+        )
+      }
+    }
+    await payload.delete({ collection: 'categories', id: doc.id })
+    console.log(`  - pruned category ${(doc as any).slug}`)
+  }
+}
+
 async function upsertMedia(
   payload: Payload,
   relPath: string,
@@ -279,16 +333,18 @@ async function seed() {
   // `all` is the leading entry of both source arrays and is a filter-chip
   // affordance, not a taxonomy row. Dropped on purpose: 6 -> 5, 8 -> 7.
   console.log('categories…')
-  for (const [i, c] of base.CATS.filter((c: any) => c.key !== 'all').entries()) {
+  for (const [i, c] of base.CATS.filter((c: any) => CAT_KEEP.includes(c.key)).entries()) {
+    const relabel = CAT_RELABEL[c.key]
     const doc = await upsert(
       payload,
       'categories',
       c.key,
-      { label: en(c.label), order: i },
-      { label: es(c.label) },
+      { label: relabel?.en ?? en(c.label), order: i },
+      { label: relabel?.es ?? es(c.label) },
     )
     id.categories[c.key] = doc.id
   }
+  await pruneCategories(payload)
 
   console.log('event kinds…')
   for (const [i, k] of base.EKINDS.filter((k: any) => k.key !== 'all').entries()) {
@@ -620,7 +676,7 @@ async function seedAboutPage(payload: Payload, photo: any) {
     h1a: 'BUILT BY ONE',
     h1b: 'OF US.',
     intro:
-      'Flamingo County is a directory for three cities that already know each other. Every listing is a business somebody on these streets vouched for — bars, bakeries, roofers, cleaners, banquet halls. I write the story pages myself, hunt down the city events nobody posts, and send one email on Fridays.',
+      'Flamingo County is a directory for neighborhoods that already know each other. Every listing is a restaurant or a bar somebody on these streets vouched for. I write the story pages myself, hunt down the city events nobody posts, and send one email on Fridays.',
     photoHint: 'Photo: Carlos, Hialeah/Miami Lakes',
     founderKicker: 'THE PERSON BEHIND THE PAGES',
     founderP1:
@@ -630,7 +686,7 @@ async function seedAboutPage(payload: Payload, photo: any) {
     founderSig: '— Carlos Masson',
     founderTag: 'SOFTWARE DEVELOPER · HIALEAH RAISED · MIAMI LAKES NOW',
     howH: 'HOW IT WORKS',
-    ctaH: 'OWN A SPOT IN ONE OF THE THREE?',
+    ctaH: 'OWN A SPOT AROUND HERE?',
     ctaP: 'Your city mascot on the card.',
     ctaBtn: 'LIST YOUR BUSINESS',
     reachH: 'REACH ME',
@@ -642,7 +698,7 @@ async function seedAboutPage(payload: Payload, photo: any) {
     h1a: 'HECHO POR UNO',
     h1b: 'DE LOS NUESTROS.',
     intro:
-      'Flamingo County es un directorio pa’ tres ciudades que ya se conocen. Cada ficha es un negocio que alguien de estas calles respalda — bares, panaderías, techadores, limpieza, salones de fiesta. Las historias las escribo yo mismo, cazo los eventos que nadie publica y mando un solo correo los viernes.',
+      'Flamingo County es un directorio pa’ los barrios que ya se conocen. Cada ficha es un restaurante o un bar que alguien de estas calles respalda. Las historias las escribo yo mismo, cazo los eventos que nadie publica y mando un solo correo los viernes.',
     photoHint: 'Foto: Carlos, Hialeah/Miami Lakes',
     founderKicker: 'LA PERSONA DETRÁS DE LAS PÁGINAS',
     founderP1:
@@ -652,7 +708,7 @@ async function seedAboutPage(payload: Payload, photo: any) {
     founderSig: '— Carlos Masson',
     founderTag: 'DESARROLLADOR DE SOFTWARE · CRIADO EN HIALEAH · AHORA EN MIAMI LAKES',
     howH: 'CÓMO FUNCIONA',
-    ctaH: '¿TIENES NEGOCIO EN UNA DE LAS TRES?',
+    ctaH: '¿TIENES UN NEGOCIO POR AQUÍ?',
     ctaP: 'La mascota de tu ciudad en la ficha.',
     ctaBtn: T('LIST YOUR BUSINESS'),
     reachH: 'ESCRÍBEME',
@@ -762,6 +818,9 @@ async function seedListYourSpotPage(payload: Payload) {
     },
   ]
 
+  // Trade copy, and it stays trade copy: the business page only renders it for
+  // the trade categories, which nothing is filed under today. Rewriting it into
+  // hospitality claims would be inventing facts about businesses nobody asked.
   const services = [
     'Estimates on request',
     'Licensed & insured',

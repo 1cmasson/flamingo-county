@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { isLang, translator, type Lang } from '../../../../../i18n'
-import { routes, withQuery } from '../../../../../lib/routes'
+import { routes } from '../../../../../lib/routes'
 import {
   getCity,
   getListing,
@@ -114,7 +114,14 @@ export default async function BusinessPage({
   const hasVisit = Boolean(d.address || d.phone || d.site || hours.length || hoursUnconfirmed)
   // Services are page copy shared by every non-food listing, not per-business
   // data — the source hardcoded the same four for all of them.
-  const services = category?.slug !== 'food' ? (lys.services ?? []) : []
+  // "Estimates on request · Licensed & insured · Warranty on the work" is
+  // trade copy. The source gated it on "not a restaurant", which was fine when
+  // the taxonomy had contractors and cleaners in it — but the taxonomy is
+  // restaurants and bars now, and that gate printed contractor language on a
+  // taproom. Gated on the trade categories by name instead, so it renders
+  // nowhere today and comes back correctly if those categories return.
+  const TRADE_CATEGORIES = ['contract', 'clean']
+  const services = TRADE_CATEGORIES.includes(category?.slug ?? '') ? (lys.services ?? []) : []
 
   return (
     <PageShell>
@@ -129,7 +136,7 @@ export default async function BusinessPage({
         }}
       >
         <Link
-          href={withQuery(routes.home(lang), { city: citySlug })}
+          href={routes.city(lang, citySlug)}
           className={s.chip}
           style={{
             textDecoration: 'none',

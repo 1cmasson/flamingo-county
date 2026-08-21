@@ -22,12 +22,15 @@ export function BusinessCard({
   listing,
   memberBadges = true,
   showRatings = true,
+  showCityBadge = true,
   t,
 }: {
   lang: Lang
   listing: Listing
   memberBadges?: boolean
   showRatings?: boolean
+  /** Off on a city page, where every card is in the same city anyway. */
+  showCityBadge?: boolean
   t: (s: string) => string
 }) {
   const city = rel<City>(listing.city)
@@ -74,18 +77,20 @@ export function BusinessCard({
             pointerEvents: 'none',
           }}
         >
-          <div
-            style={{
-              background: 'var(--ink)',
-              color: 'var(--cyan)',
-              fontWeight: 800,
-              fontSize: 10,
-              letterSpacing: '1.4px',
-              padding: '5px 8px',
-            }}
-          >
-            {city?.name}
-          </div>
+          {showCityBadge ? (
+            <div
+              style={{
+                background: 'var(--ink)',
+                color: 'var(--cyan)',
+                fontWeight: 800,
+                fontSize: 10,
+                letterSpacing: '1.4px',
+                padding: '5px 8px',
+              }}
+            >
+              {city?.name}
+            </div>
+          ) : null}
           {listing.member && memberBadges ? (
             <div
               style={{

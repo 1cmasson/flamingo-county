@@ -1,3 +1,4 @@
+import Image from 'next/image'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { isLang, translator, type Lang } from '../../../../i18n'
@@ -8,6 +9,20 @@ import { ListingRequestForm } from '../../../../components/ListingRequestForm'
 
 /** Perk icons ship as static SVGs; the CMS stores which one, by name. */
 const ICON = (name?: string | null) => `/assets/icons/${name ?? 'map-pin'}.svg`
+
+/**
+ * The robot's width and the gutter reserved for it in the copy beside it. One
+ * value, because they were two hand-duplicated clamps that had to stay equal —
+ * and the old floor of 84px is what left the card looking half-empty on a
+ * phone, where 13vw is only ~54px and the floor is what actually applies.
+ */
+const ROBOT_W = 'clamp(130px,22vw,190px)'
+/**
+ * And the room the card gives it. The card's height is driven by two short
+ * lines of display type, which on a wide viewport is shorter than the robot —
+ * so without this the bust is either tiny or beheaded by the card's top edge.
+ */
+const ROBOT_ROOM = 'clamp(200px,24vw,250px)'
 
 export async function generateMetadata({
   params,
@@ -171,6 +186,7 @@ export default async function ListYourSpotPage({
             gap: 'clamp(14px,3vw,22px)',
             alignItems: 'center',
             position: 'relative',
+            minHeight: ROBOT_ROOM,
           }}
         >
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -202,7 +218,7 @@ export default async function ListYourSpotPage({
           <p
             style={{
               margin: 0,
-              paddingRight: 'clamp(84px,13vw,132px)',
+              paddingRight: ROBOT_W,
               color: 'var(--cream)',
               fontWeight: 600,
               fontSize: 15,
@@ -214,16 +230,24 @@ export default async function ListYourSpotPage({
               'Our AI receptionist answers your phone in English or Spanish, takes reservations and texts you the details. Tell us in the form below if you want in.',
             )}
           </p>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <Image
             src="/assets/robot-receptionist-bust-mirrored.png"
             alt=""
+            width={911}
+            height={1362}
+            sizes="190px"
             style={{
               position: 'absolute',
               right: 'clamp(8px,2vw,16px)',
               bottom: 0,
-              width: 'clamp(84px,13vw,132px)',
+              width: ROBOT_W,
               height: 'auto',
+              // Never taller than the card. `object-fit` keeps the aspect
+              // ratio when the cap bites, so a short card shrinks the bust
+              // rather than clipping its head off at the top border.
+              maxHeight: '100%',
+              objectFit: 'contain',
+              objectPosition: 'bottom right',
               display: 'block',
               pointerEvents: 'none',
             }}

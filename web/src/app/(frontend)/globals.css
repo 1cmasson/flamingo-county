@@ -32,6 +32,12 @@
   box-sizing: border-box;
 }
 
+/* The nav and its ticker are both sticky, so an anchor jump — #listings on a
+   city page — otherwise lands underneath them. */
+html {
+  scroll-padding-top: 96px;
+}
+
 body {
   margin: 0;
   background: var(--pink);
@@ -124,6 +130,39 @@ textarea {
   }
   to {
     transform: translateX(-50%);
+  }
+}
+
+/*
+ * The ticker's items are links now, so the marquee has to stop long enough to
+ * hit one. `:active` is the only one of these that a touch device gets.
+ */
+.ticker {
+  overflow: hidden;
+}
+.ticker-run {
+  animation-name: tick;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+.ticker:focus-within .ticker-run,
+.ticker:active .ticker-run {
+  animation-play-state: paused;
+}
+/* Same rule the rest of the site follows: an unqualified :hover sticks after a
+   tap on a touch device, which would freeze the marquee for good rather than
+   while the finger is down. :active is the touch affordance. */
+@media (hover: hover) {
+  .ticker:hover .ticker-run {
+    animation-play-state: paused;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker-run {
+    animation: none;
+  }
+  .ticker {
+    overflow-x: auto;
   }
 }
 /* `bob` from the source is omitted: nothing in any page or script referenced it. */

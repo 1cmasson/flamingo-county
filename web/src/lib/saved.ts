@@ -65,6 +65,13 @@ function write(key: string, next: string[]) {
 export function useSaved() {
   const store = useSyncExternalStore(subscribe, read, () => EMPTY)
   const [mounted, setMounted] = useState(false)
+  // `react-hooks/set-state-in-effect` is right in general, and this is the
+  // exception it cannot see: the flag exists precisely to make the first client
+  // render match the server's, so the cascading second render is the point, not
+  // an accident. Removing it would need `ready` to come from the store itself,
+  // which is a hydration change worth making deliberately rather than to
+  // silence a lint rule.
+  // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), [])
 
   const toggle = useCallback((key: string, id: string) => {

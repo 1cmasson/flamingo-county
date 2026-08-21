@@ -3,9 +3,9 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { isLang, translator, type Lang } from '../../../../i18n'
 import { routes } from '../../../../lib/routes'
-import { getAboutPage, getCities, getSiteSettings, rel } from '../../../../lib/data'
+import { getAboutPage, getCities, getListings, getSiteSettings, rel } from '../../../../lib/data'
 import { castBg } from '../../../../lib/castBg'
-import type { Media } from '../../../../payload-types'
+import type { City, Media } from '../../../../payload-types'
 import { PageShell } from '../../../../components/PageShell'
 import s from '../../../../components/chrome.module.css'
 
@@ -35,11 +35,18 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
   // All of this used to be inline L(en, es) pairs inside About.dc.html, in
   // neither fc-data.js nor the dictionary — the one body of copy nobody could
   // edit without opening a component.
-  const [about, cities, settings] = await Promise.all([
+  const [about, cities, settings, listings] = await Promise.all([
     getAboutPage(lang),
     getCities(lang),
     getSiteSettings(lang),
+    getListings(lang),
   ])
+
+  // A city with nothing published gets a COMING SOON ribbon rather than a card
+  // that leads somewhere empty. Same zero-listing test the city page uses.
+  const covered = new Set(
+    listings.map((b) => rel<City>(b.city)?.slug).filter(Boolean) as string[],
+  )
 
   const portrait = rel<Media>(about.photo)
   const backdrop = rel<Media>(cities.find((c) => c.slug === 'hialeah')?.photo)
@@ -123,6 +130,12 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
           <div
             style={{
               width: '100%',
+              // The founder grid is `250px 1fr` and `data-stack` collapses it to
+              // one column at 900px, which let a frame designed at 250px go
+              // full-bleed — a ~430px-tall portrait dominating a phone screen.
+              // Capped so it keeps its intended size when it stacks.
+              maxWidth: 260,
+              margin: '0 auto',
               aspectRatio: '3/4',
               border: '4px solid var(--ink)',
               backgroundColor: 'var(--pink)',
@@ -134,9 +147,7 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
               backgroundPosition: 'center, center 45%',
               backgroundSize: 'cover, cover',
               backgroundRepeat: 'no-repeat',
-              display: 'flex',
-              alignItems: 'flex-end',
-              justifyContent: 'center',
+              position: 'relative',
               overflow: 'hidden',
             }}
           >
@@ -146,9 +157,19 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
                 src={portrait.url}
                 alt={portrait.alt ?? ''}
                 style={{
-                  maxWidth: '100%',
-                  maxHeight: '100%',
-                  width: 'auto',
+                  // Pinned to the frame's edges rather than sized in
+                  // percentages. The frame's height comes only from
+                  // `aspect-ratio`, which WebKit does not resolve percentages
+                  // against reliably — `max-height: 100%` degraded to `none`
+                  // and rendered the 1696x2528 portrait ~40px taller than its
+                  // frame, cropped at the top by the overflow above, and
+                  // `height: 100%` still overshot by the border width.
+                  // `inset: 0` needs no resolution at all, and `contain` keeps
+                  // the aspect ratio inside it.
+                  position: 'absolute',
+                  inset: 0,
+                  width: '100%',
+                  height: '100%',
                   objectFit: 'contain',
                   objectPosition: 'bottom',
                   display: 'block',
@@ -197,7 +218,7 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
           </div>
         </section>
 
-        {/* --- The three cities --- */}
+        {/* --- The cities --- */}
         <div
           style={{
             display: 'grid',
@@ -207,6 +228,7 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
         >
           {cities.map((c) => {
             const mascot = rel<Media>(c.solo)
+            const soon = !covered.has(c.slug)
             return (
               <Link
                 key={c.id}
@@ -226,6 +248,7 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
               >
                 <div
                   style={{
+                    position: 'relative',
                     background: castBg(c),
                     borderBottom: '4px solid var(--ink)',
                     height: 220,
@@ -235,6 +258,23 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
                     overflow: 'hidden',
                   }}
                 >
+                  {soon ? (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: 12,
+                        left: 12,
+                        background: 'var(--ink)',
+                        color: 'var(--yellow)',
+                        fontWeight: 800,
+                        fontSize: 10,
+                        letterSpacing: '1.6px',
+                        padding: '5px 9px',
+                      }}
+                    >
+                      {t('COMING SOON')}
+                    </div>
+                  ) : null}
                   {mascot?.url ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img

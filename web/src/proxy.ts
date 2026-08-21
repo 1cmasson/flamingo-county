@@ -2,8 +2,6 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { DEFAULT_LANG, detectLang, isLang } from './i18n'
 
 export const LANG_COOKIE = 'fc.lang'
-/** Lets the layout know which page is rendering, for the nav's active state. */
-export const PATH_HEADER = 'x-fc-pathname'
 
 /**
  * Next 16 renamed the middleware file convention to `proxy`.
@@ -26,13 +24,7 @@ export function proxy(req: NextRequest) {
   const { pathname, searchParams } = req.nextUrl
 
   const first = pathname.split('/')[1]
-  if (isLang(first)) {
-    // Server components cannot see the current path, and the nav lives in the
-    // layout, so pass it down as a request header for the active-state logic.
-    const headers = new Headers(req.headers)
-    headers.set(PATH_HEADER, pathname)
-    return NextResponse.next({ request: { headers } })
-  }
+  if (isLang(first)) return NextResponse.next()
 
   const cookie = req.cookies.get(LANG_COOKIE)?.value
   const fromQuery = searchParams.get('lang')

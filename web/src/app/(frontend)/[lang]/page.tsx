@@ -1,9 +1,8 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { isLang, translator, type Lang } from '../../../i18n'
-import { routes, withQuery } from '../../../lib/routes'
+import { routes } from '../../../lib/routes'
 import {
-  getCategories,
   getCities,
   getListings,
   getSiteSettings,
@@ -18,7 +17,7 @@ import { MediaSlot } from '../../../components/MediaSlot'
 import { SearchForm } from '../../../components/SearchForm'
 import s from '../../../components/chrome.module.css'
 
-type Search = { city?: string; cat?: string; q?: string }
+type Search = { city?: string; q?: string }
 
 export default async function HomePage({
   params,
@@ -32,16 +31,17 @@ export default async function HomePage({
   const sp = await searchParams
   const t = translator(lang as Lang)
 
+  // `?city=` survives the removal of the filter chips: it is what the per-city
+  // hero and the city-scoped spotlight row key off, and shared links in the
+  // wild carry it. Nothing on the site links to it any more.
   const cityKey = sp.city ?? ''
-  const cat = sp.cat && sp.cat !== 'all' ? sp.cat : ''
   const q = sp.q ?? ''
 
-  const [cities, categories, settings, allSpots, list] = await Promise.all([
+  const [cities, settings, allSpots, list] = await Promise.all([
     getCities(lang),
-    getCategories(lang),
     getSiteSettings(lang),
     getSpotlights(lang),
-    getListings(lang, { city: cityKey || undefined, category: cat || undefined, q: q || undefined }),
+    getListings(lang, { city: cityKey || undefined, q: q || undefined }),
   ])
 
   const city = cities.find((c) => c.slug === cityKey) ?? null
@@ -63,8 +63,6 @@ export default async function HomePage({
   const heroFrameBg = heroPhoto?.url
     ? `linear-gradient(rgba(22,224,242,0.18), rgba(22,224,242,0.18)), url("${heroPhoto.url}") ${heroPos}/cover no-repeat`
     : (city?.castBg ?? settings.heroCastBg ?? '#00feff')
-
-  const chips = [{ slug: '', label: t('EVERYTHING') }, ...categories.map((c) => ({ slug: c.slug, label: c.label ?? c.slug }))]
 
   return (
     <PageShell>
@@ -104,7 +102,7 @@ export default async function HomePage({
                   padding: '6px 10px',
                 }}
               >
-                {t('EVERY BUSINESS. THREE CITIES. ONE LISTING.')}
+                {t('EVERY SPOT THE LOCALS VOUCH FOR.')}
               </div>
               <h1
                 style={{
@@ -116,9 +114,9 @@ export default async function HomePage({
                   textWrap: 'balance',
                 }}
               >
-                {t('EAT, HIRE & CELEBRATE')}
+                {t('EAT, DRINK & KNOW')}
                 <br />
-                {t('WITH THE LOCALS.')}
+                {t('YOUR NEIGHBORS.')}
               </h1>
               <p
                 style={{
@@ -131,7 +129,7 @@ export default async function HomePage({
                 }}
               >
                 {t(
-                  'Bars, restaurants, contractors, home cleaning and banquet halls — vouched for by the neighborhoods that use them. Pick a city up top to meet its crew.',
+                  'Restaurants and bars, vouched for by the neighborhoods that eat and drink in them. Pick a city up top to meet its crew.',
                 )}
               </p>
             </div>
@@ -218,7 +216,7 @@ export default async function HomePage({
                     letterSpacing: '1.6px',
                   }}
                 >
-                  {city ? t('{city} ONLY').replace('{city}', city.name ?? '') : t('ALL THREE CITIES')}
+                  {city ? t('{city} ONLY').replace('{city}', city.name ?? '') : t('EVERY CITY')}
                 </div>
               </div>
               <div
@@ -302,7 +300,7 @@ export default async function HomePage({
           </div>
         </div>
 
-        {/* --- Filters + grid --- */}
+        {/* --- Search + grid --- */}
         <div
           style={{
             maxWidth: 1280,
@@ -322,52 +320,13 @@ export default async function HomePage({
               padding: '12px 14px',
             }}
           >
-            <div style={{ fontFamily: 'var(--display)', fontSize: 16, marginRight: 6 }}>
-              {t('FILTER:')}
-            </div>
-            {chips.map((c) => {
-              const on = (c.slug || '') === cat
-              return (
-                <Link
-                  key={c.slug || 'all'}
-                  href={withQuery(routes.home(lang), {
-                    city: cityKey,
-                    cat: c.slug || undefined,
-                    q,
-                  })}
-                  className={s.chipLift}
-                  style={{
-                    textDecoration: 'none',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flex: '0 0 auto',
-                    whiteSpace: 'nowrap',
-                    cursor: 'pointer',
-                    fontWeight: 800,
-                    fontSize: 13,
-                    letterSpacing: '0.6px',
-                    padding: '9px 13px',
-                    border: '3px solid var(--ink)',
-                    borderRadius: 999,
-                    background: on
-                      ? 'var(--grad-pink)'
-                      : 'linear-gradient(160deg,#FFFFFF 0%,#FFF7EA 100%)',
-                    color: on ? 'var(--cream)' : 'var(--ink)',
-                  }}
-                >
-                  {c.label}
-                </Link>
-              )
-            })}
-
             <SearchForm
               lang={lang}
               action={routes.home(lang)}
-              hidden={{ city: cityKey, cat }}
+              hidden={{ city: cityKey }}
               q={q}
               t={{
-                placeholder: t('Search a business, dish or trade…'),
+                placeholder: t('Search a business or a dish…'),
                 search: lang === 'es' ? 'BUSCAR' : 'SEARCH',
                 reset: t('RESET'),
               }}
@@ -409,7 +368,7 @@ export default async function HomePage({
                 fontSize: 24,
               }}
             >
-              {t('NOTHING HERE YET — TRY ANOTHER FILTER.')}
+              {q ? t('NOTHING MATCHED THAT SEARCH.') : t('NOTHING HERE YET.')}
             </div>
           )}
 
@@ -437,7 +396,7 @@ export default async function HomePage({
                   lineHeight: 1,
                 }}
               >
-                {t('OWN A SPOT IN ONE OF THE THREE?')}
+                {t('OWN A SPOT AROUND HERE?')}
               </div>
               <p
                 style={{

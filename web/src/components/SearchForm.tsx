@@ -11,8 +11,8 @@ import s from './chrome.module.css'
  * query string, and the page is a server component that already reads its
  * filters from `searchParams`. Enter-to-submit comes free.
  *
- * The active category and city ride along as hidden inputs so searching does
- * not silently drop the filters already applied.
+ * `hidden` rides along as hidden inputs so a search does not silently drop the
+ * scope it was made in — today that is only `?city=` on the home page.
  */
 export function SearchForm({
   action,
@@ -40,9 +40,6 @@ export function SearchForm({
         gap: 8,
         flexWrap: 'wrap',
         alignItems: 'center',
-        paddingTop: 10,
-        marginTop: 2,
-        borderTop: '3px dotted var(--ink)',
       }}
     >
       {Object.entries(hidden).map(([k, v]) =>

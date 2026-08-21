@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { isLang, translator, type Lang } from '../../../../i18n'
 import { routes, withQuery } from '../../../../lib/routes'
-import { getCities, getEventKinds, getEvents, getWeeklyEvents, rel } from '../../../../lib/data'
+import { getEvents, getWeeklyEvents, rel } from '../../../../lib/data'
 import {
   BUCKET_LABEL,
   buckets,
@@ -19,10 +19,10 @@ import {
 } from '../../../../lib/dates'
 import type { City, Event, EventKind, Listing } from '../../../../payload-types'
 import { PageShell } from '../../../../components/PageShell'
-import { EventCard, eventVenue } from '../../../../components/EventCard'
+import { EventCard } from '../../../../components/EventCard'
 import s from '../../../../components/chrome.module.css'
 
-type Search = { city?: string; kind?: string; view?: string; month?: string }
+type Search = { view?: string; month?: string }
 
 export async function generateMetadata({
   params,
@@ -33,7 +33,7 @@ export async function generateMetadata({
   if (!isLang(lang)) return {}
   const t = translator(lang)
   return {
-    title: `${t('THIS WEEK IN THE')} ${t('THREE CITIES.')}`,
+    title: `${t('THIS WEEK')} ${t('AROUND HERE.')}`,
     description: t(
       'Every domino table, live band, watch party and city day worth leaving the house for. Members post theirs — the city ones we hunt down ourselves.',
     ),
@@ -56,38 +56,21 @@ export default async function EventsPage({
   const sp = await searchParams
   const t = translator(lang as Lang)
 
-  const cityKey = sp.city ?? ''
-  const kindKey = sp.kind ?? ''
   const calendar = sp.view === 'cal'
 
-  const [cities, kinds, all, weekly] = await Promise.all([
-    getCities(lang),
-    getEventKinds(lang),
-    getEvents(lang),
-    getWeeklyEvents(lang),
-  ])
+  const [all, weekly] = await Promise.all([getEvents(lang), getWeeklyEvents(lang)])
 
   const today = todayISO()
 
-  const cityOf = (ev: Event) => eventVenue(ev).city?.slug ?? ''
-  const shown = all.filter((ev) => {
-    if (cityKey && cityOf(ev) !== cityKey) return false
-    if (kindKey && rel<EventKind>(ev.kind)?.slug !== kindKey) return false
-    return true
-  })
-
   // Past events drop off, which is what the source's first bucket starting at
   // its frozen "today" did. It makes the count time-varying, correctly.
-  const upcoming = shown.filter((ev) => dateOnly(ev.date) >= today)
+  const upcoming = all.filter((ev) => dateOnly(ev.date) >= today)
   const stars = upcoming.filter((ev) => ev.star)
 
+  // LIST/CALENDAR is a view mode, not a filter — it stayed when the city and
+  // kind chips came off.
   const evHref = (over: Partial<Search>) =>
-    withQuery(routes.events(lang), {
-      city: cityKey || undefined,
-      kind: kindKey || undefined,
-      view: calendar ? 'cal' : undefined,
-      ...over,
-    })
+    withQuery(routes.events(lang), { view: calendar ? 'cal' : undefined, ...over })
 
   const grouped = buckets(today)
     .map((bk) => {
@@ -154,7 +137,7 @@ export default async function EventsPage({
                   letterSpacing: '2px',
                 }}
               >
-                {t('THE THREE WE WOULD CANCEL PLANS FOR')}
+                {t("THE ONES WE'D CANCEL PLANS FOR")}
               </div>
             </div>
             <div
@@ -209,9 +192,9 @@ export default async function EventsPage({
                 textWrap: 'balance',
               }}
             >
-              {t('THIS WEEK IN THE')}
+              {t('THIS WEEK')}
               <br />
-              <span style={{ color: 'var(--cyan)' }}>{t('THREE CITIES.')}</span>
+              <span style={{ color: 'var(--cyan)' }}>{t('AROUND HERE.')}</span>
             </h1>
             <p
               style={{
@@ -254,61 +237,8 @@ export default async function EventsPage({
           </div>
         </header>
 
-        {/* --- Filters --- */}
-        <div
-          style={{
-            background: 'var(--grad-cream)',
-            border: '4px solid var(--ink)',
-            boxShadow: '6px 6px 0 var(--ink)',
-            padding: '12px 14px',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: 10,
-          }}
-        >
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
-            <div style={{ fontFamily: 'var(--display)', fontSize: 15, marginRight: 2 }}>
-              {t('CITY:')}
-            </div>
-            <Chip href={evHref({ city: undefined })} on={!cityKey} label={t('ALL CITIES')} />
-            {cities.map((c) => (
-              <Chip
-                key={c.id}
-                href={evHref({ city: c.slug })}
-                on={cityKey === c.slug}
-                label={t(c.name ?? c.slug)}
-              />
-            ))}
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: 8,
-              alignItems: 'center',
-              paddingTop: 10,
-              borderTop: '3px dotted var(--ink)',
-            }}
-          >
-            <div style={{ fontFamily: 'var(--display)', fontSize: 15, marginRight: 2 }}>
-              {t('KIND:')}
-            </div>
-            <Chip href={evHref({ kind: undefined })} on={!kindKey} label={t('ALL EVENTS')} />
-            {kinds.map((k) => (
-              <Chip
-                key={k.id}
-                href={evHref({ kind: k.slug })}
-                on={kindKey === k.slug}
-                label={k.label ?? k.slug}
-                bg={kindKey === k.slug ? undefined : k.bg}
-                fg={kindKey === k.slug ? undefined : k.ink}
-              />
-            ))}
-          </div>
-        </div>
-
         {calendar ? (
-          <CalendarView lang={lang} events={upcoming} today={today} month={sp.month} evHref={evHref} t={t} />
+          <CalendarView lang={lang} events={upcoming} today={today} month={sp.month} evHref={evHref} />
         ) : grouped.length ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(18px,3vw,28px)' }}>
             {grouped.map((bk) => (
@@ -421,7 +351,7 @@ export default async function EventsPage({
               fontSize: 24,
             }}
           >
-            {t('NOTHING HERE YET — TRY ANOTHER FILTER.')}
+            {t('NOTHING ON THE BOARD YET.')}
           </div>
         )}
 
@@ -556,46 +486,6 @@ function ViewTab({ href, on, label }: { href: string; on: boolean; label: string
   )
 }
 
-function Chip({
-  href,
-  on,
-  label,
-  bg,
-  fg,
-}: {
-  href: string
-  on: boolean
-  label: string
-  bg?: string | null
-  fg?: string | null
-}) {
-  return (
-    <Link
-      href={href}
-      className={s.chipLift}
-      style={{
-        textDecoration: 'none',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        flex: '0 0 auto',
-        whiteSpace: 'nowrap',
-        cursor: 'pointer',
-        fontWeight: 800,
-        fontSize: 12,
-        letterSpacing: '0.6px',
-        padding: '9px 13px',
-        border: '3px solid var(--ink)',
-        borderRadius: 999,
-        background: on ? 'var(--yellow)' : (bg ?? 'linear-gradient(160deg,#FFFFFF 0%,#FFF7EA 100%)'),
-        color: on ? 'var(--ink)' : (fg ?? 'var(--ink)'),
-      }}
-    >
-      {label}
-    </Link>
-  )
-}
-
 /**
  * The month grid.
  *
@@ -609,14 +499,12 @@ function CalendarView({
   today,
   month,
   evHref,
-  t,
 }: {
   lang: Lang
   events: Event[]
   today: string
   month?: string
   evHref: (over: Partial<Search>) => string
-  t: (s: string) => string
 }) {
   const isos = events.map((e) => dateOnly(e.date)).sort()
   const min = isos[0] ?? today
