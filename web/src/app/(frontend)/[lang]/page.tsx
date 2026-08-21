@@ -368,7 +368,7 @@ export default async function HomePage({
                 fontSize: 24,
               }}
             >
-              {t('NOTHING MATCHED THAT SEARCH.')}
+              {q ? t('NOTHING MATCHED THAT SEARCH.') : t('NOTHING HERE YET.')}
             </div>
           )}
 

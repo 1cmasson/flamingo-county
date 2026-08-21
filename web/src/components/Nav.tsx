@@ -250,10 +250,11 @@ function Ticker({
   return (
     <div
       className="ticker"
+      // `overflow` lives in the stylesheet, not here: the reduced-motion rule
+      // swaps it for a scroll container, and an inline style would win.
       style={{
         background: 'var(--yellow)',
         borderTop: '3px solid var(--ink)',
-        overflow: 'hidden',
         whiteSpace: 'nowrap',
       }}
     >

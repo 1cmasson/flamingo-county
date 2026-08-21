@@ -70,6 +70,26 @@ export function generateStaticParams() {
   return LOCALES.map((lang) => ({ lang }))
 }
 
+/**
+ * Every public route renders per request.
+ *
+ * This used to be implicit: the nav read a request header for its active
+ * section, and reading a header makes the segment dynamic. That header is gone
+ * now — the active state is derived from the pathname on the client — and with
+ * it went the only thing keeping About, List Your Spot, My Week and the stories
+ * index off the static path. They immediately tried to prerender, and `/es/about`
+ * failed the build outright.
+
+ * Static is the wrong answer here regardless: this layout queries Payload on
+ * every render (the nav's cities, the ticker's listings), and a container build
+ * runs against an empty database. Prerendering would bake a nav with no city
+ * tabs and an empty ticker into the HTML until the next rebuild — and it would
+ * look correct locally, where the build database is seeded. Declaring it on the
+ * layout covers the whole subtree, including the four routes that carry their
+ * own `force-dynamic` for the same reason.
+ */
+export const dynamic = 'force-dynamic'
+
 export default async function LangLayout({
   children,
   params,
