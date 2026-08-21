@@ -29,7 +29,7 @@ async function main() {
   /* counts */
   const want: Record<string, number> = {
     cities: 3,
-    categories: 5,
+    categories: 2,
     'event-kinds': 7,
     // 11 researched imports; +14 fc-data mocks only when they are seeded.
     listings: SEED_MOCKS ? 25 : 11,
@@ -47,6 +47,24 @@ async function main() {
   for (const c of ['categories', 'event-kinds'] as const) {
     const r = await payload.find({ collection: c, where: { slug: { equals: 'all' } }, limit: 1 })
     check(`${c} has no "all" row`, r.docs.length === 0)
+  }
+
+  /* the taxonomy is trimmed to what has listings behind it, and relabelled */
+  {
+    const cats = await payload.find({ collection: 'categories', limit: 50, sort: 'order' })
+    const slugs = cats.docs.map((d: any) => d.slug).sort()
+    check(
+      'categories are food + night only',
+      slugs.join(',') === 'food,night',
+      `got ${slugs.join(',') || '(none)'}`,
+    )
+    const labels = Object.fromEntries(cats.docs.map((d: any) => [d.slug, d.label]))
+    check('food is labelled RESTAURANTS', labels.food === 'RESTAURANTS', `got ${labels.food}`)
+    check('night is labelled BARS', labels.night === 'BARS', `got ${labels.night}`)
+    const es = await payload.find({ collection: 'categories', limit: 50, locale: 'es' })
+    const esLabels = Object.fromEntries(es.docs.map((d: any) => [d.slug, d.label]))
+    check('food ES is RESTAURANTES', esLabels.food === 'RESTAURANTES', `got ${esLabels.food}`)
+    check('night ES is BARES', esLabels.night === 'BARES', `got ${esLabels.night}`)
   }
 
   /* --- the researched imports ------------------------------------------- */

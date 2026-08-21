@@ -33,7 +33,7 @@ export async function generateMetadata({
   if (!isLang(lang)) return {}
   const t = translator(lang)
   return {
-    title: `${t('THIS WEEK IN THE')} ${t('THREE CITIES.')}`,
+    title: `${t('THIS WEEK')} ${t('AROUND HERE.')}`,
     description: t(
       'Every domino table, live band, watch party and city day worth leaving the house for. Members post theirs — the city ones we hunt down ourselves.',
     ),
@@ -137,7 +137,7 @@ export default async function EventsPage({
                   letterSpacing: '2px',
                 }}
               >
-                {t('THE THREE WE WOULD CANCEL PLANS FOR')}
+                {t("THE ONES WE'D CANCEL PLANS FOR")}
               </div>
             </div>
             <div
@@ -192,9 +192,9 @@ export default async function EventsPage({
                 textWrap: 'balance',
               }}
             >
-              {t('THIS WEEK IN THE')}
+              {t('THIS WEEK')}
               <br />
-              <span style={{ color: 'var(--cyan)' }}>{t('THREE CITIES.')}</span>
+              <span style={{ color: 'var(--cyan)' }}>{t('AROUND HERE.')}</span>
             </h1>
             <p
               style={{

@@ -2,7 +2,7 @@ import React from 'react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { Luckiest_Guy, Archivo } from 'next/font/google'
-import { isLang, LOCALES } from '../../../i18n'
+import { DEFAULT_LANG, isLang, LOCALES, translator } from '../../../i18n'
 import { Nav } from '../../../components/Nav'
 import { Footer } from '../../../components/Footer'
 import '../globals.css'
@@ -27,24 +27,36 @@ const archivo = Archivo({
 // The source's font link also requested Archivo Black, but no font-family
 // declaration in any of the twelve pages ever used it. Not loaded here.
 
-export const metadata: Metadata = {
-  metadataBase: new URL('https://flamingocounty.com'),
-  title: {
-    default: 'Flamingo County',
-    template: '%s · Flamingo County',
-  },
-  description:
-    'A business and events directory for Hialeah, Miami Lakes and Little Havana.',
-  icons: {
-    icon: [
-      { url: '/uploads/favicon.ico', sizes: 'any' },
-      { url: '/uploads/flamingo-city-favicon-16.png', type: 'image/png', sizes: '16x16' },
-      { url: '/uploads/flamingo-city-favicon-32.png', type: 'image/png', sizes: '32x32' },
-      { url: '/uploads/flamingo-city-favicon-48.png', type: 'image/png', sizes: '48x48' },
-      { url: '/uploads/flamingo-city-favicon-512.png', type: 'image/png', sizes: '512x512' },
-    ],
-    apple: [{ url: '/uploads/flamingo-city-favicon-180.png', sizes: '180x180' }],
-  },
+/**
+ * The description is per-language, so this is `generateMetadata` rather than a
+ * static `metadata` export — a Spanish visitor was being served the English
+ * sentence in the head.
+ */
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>
+}): Promise<Metadata> {
+  const { lang } = await params
+  const t = translator(isLang(lang) ? lang : DEFAULT_LANG)
+  return {
+    metadataBase: new URL('https://flamingocounty.com'),
+    title: {
+      default: 'Flamingo County',
+      template: '%s · Flamingo County',
+    },
+    description: t('A directory of the restaurants and bars the locals actually vouch for.'),
+    icons: {
+      icon: [
+        { url: '/uploads/favicon.ico', sizes: 'any' },
+        { url: '/uploads/flamingo-city-favicon-16.png', type: 'image/png', sizes: '16x16' },
+        { url: '/uploads/flamingo-city-favicon-32.png', type: 'image/png', sizes: '32x32' },
+        { url: '/uploads/flamingo-city-favicon-48.png', type: 'image/png', sizes: '48x48' },
+        { url: '/uploads/flamingo-city-favicon-512.png', type: 'image/png', sizes: '512x512' },
+      ],
+      apple: [{ url: '/uploads/flamingo-city-favicon-180.png', sizes: '180x180' }],
+    },
+  }
 }
 
 /**
