@@ -98,7 +98,7 @@ input,button,select,textarea{font-family:inherit}
   <dc-import name="Footer" hint-size="100%,300px"></dc-import>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;price&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:20,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:5,&quot;max&quot;:99,&quot;unit&quot;:&quot;$/mo&quot;,&quot;section&quot;:&quot;Membership&quot;},&quot;showSpotlight&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Listing page&quot;},&quot;showRatings&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Listing page&quot;},&quot;memberBadges&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Listing page&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{&quot;showSpotlight&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Listing page&quot;},&quot;showRatings&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Listing page&quot;},&quot;memberBadges&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Listing page&quot;}}">
 class Component extends DCLogic {
   state = {  vw: typeof window !== 'undefined' ? window.innerWidth : 1280 };
   constructor(p) { super(p); this.adopt(); }
@@ -119,7 +119,7 @@ class Component extends DCLogic {
     };
     const cityList = this.BIZ.filter(b => b.city === key);
     return {
-      t: this.tAll(), price: this.props.price ?? 20, cityKeyProp: key,
+      t: this.tAll(), cityKeyProp: key,
       cityName: cc.name, citySub: cc.sub, cityBlurb: cc.blurb, cityAccent: cc.accent, castBg: cc.castBg,
       cityHeroBg: cityPhoto
         ? 'linear-gradient(' + rgba(cc.accent, 0.86) + ', ' + rgba(cc.accent, 0.86) + '), url("' + cityPhoto + '") ' + (cc.photoPos || 'center') + '/cover no-repeat'

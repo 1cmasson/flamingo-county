@@ -347,7 +347,7 @@ input,button,select,textarea{font-family:inherit}
   <dc-import name="Footer" hint-size="100%,300px"></dc-import>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;price&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:20,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:5,&quot;max&quot;:99,&quot;unit&quot;:&quot;$/mo&quot;,&quot;section&quot;:&quot;Membership&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{}">
 class Component extends DCLogic {
   state = {  vw: typeof window !== 'undefined' ? window.innerWidth : 1280 };
   constructor(p) { super(p); this.adopt(); }
@@ -433,7 +433,7 @@ class Component extends DCLogic {
     t.thisWeek = ec.wd + ' ' + ec.day; t.seeSpot = T('SEE THE EVENT →');
     return {
       ...this.nlVals(),
-      t: t, price: this.props.price ?? 20,
+      t: t,
       showSpot: true, showNl: true, notEvents: false,
       spots: [{ cityName: ec.cityName, biz: ec.title, kind: ec.venue + ' · ' + ec.kindLabel,
         deal: ec.wd + ' ' + ec.day + ' ' + ec.mon + ' · ' + ec.time + (ec.hasFree ? ' · ' + ec.free : ''),
@@ -441,7 +441,7 @@ class Component extends DCLogic {
       spotCols: 'minmax(0, 1fr)', spotNote: ec.venue + ' · ' + ec.hood + ' · ' + ec.cityName,
       te: {
         kicker: T('WHAT THE CREWS ARE DOING NEXT'), h1a: T('THIS WEEK IN THE'), h1b: T('THREE CITIES.'),
-        p: T('Every domino table, live band, watch party and free city day worth leaving the house for. Members post theirs free — the city ones we hunt down ourselves.'),
+        p: T('Every domino table, live band, watch party and city day worth leaving the house for. Members post theirs — the city ones we hunt down ourselves.'),
         list: T('LIST'), cal: T('CALENDAR'), onBoard: T('ON THE BOARD'), freeIn: T('FREE TO GET IN'),
         heads: T('HEADLINERS'), headsSub: T('THE THREE WE WOULD CANCEL PLANS FOR'),
         weekly: T('EVERY WEEK, LIKE CLOCKWORK'), weeklySub: T('THE REGULARS YOU CAN SET A WATCH BY'),
@@ -450,7 +450,7 @@ class Component extends DCLogic {
         cityL: T('CITY:'), kindL: T('KIND:'), addCal: T('+ CALENDAR'), seeSpot: T('SEE THE EVENT →'),
         tapDay: T('TAP A DAY TO JUMP STRAIGHT TO IT'), today: T('TODAY'),
         postH: T('GOT SOMETHING HAPPENING?'),
-        postP: T('Members post events free — bands, tournaments, openings, watch parties. The good ones go in the Friday email and on the front page.'),
+        postP: T('Members post events — bands, tournaments, openings, watch parties. The good ones go in the Friday email and on the front page.'),
         postBtn: T('POST AN EVENT'), nav: T('EVENTS')
       },
       evStars: stars, hasStars: stars.length > 0, evBuckets: evBuckets,

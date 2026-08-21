@@ -179,7 +179,7 @@ export const ES: Record<string, string> = {
   "Main Street patios, roundabouts, and a town center built for walking. Family businesses that have handled three generations of the same houses. The cows keep it steady.": "Los patios de Main Street, las rotondas y un centro hecho pa' caminar. Negocios de familia que le han dado mantenimiento a tres generaciones de las mismas casas. Las vacas mantienen la calma.",
   "Marinated overnight, black beans, moros": "Adobado desde la noche antes, frijoles negros y moros",
   "Members of the {city} crew get first callback. Mention the listing.": "Los socios de la pandilla de {city} reciben la primera llamada de vuelta. Menciona el directorio.",
-  "Members post events free — bands, tournaments, openings, watch parties. The good ones go in the Friday email and on the front page.": "Los socios publican gratis — bandas, torneos, aperturas, parties pa' ver el juego. Los buenos van en el correo del viernes y en la portada.",
+  "Members post events — bands, tournaments, openings, watch parties. The good ones go in the Friday email and on the front page.": "Los socios publican sus eventos — bandas, torneos, aperturas, parties pa' ver el juego. Los buenos van en el correo del viernes y en la portada.",
   "Miami Lakes Optimist Park": "Parque Optimist de Miami Lakes",
   "Mon – Fri": "Lun – Vie",
   "Mon – Wed": "Lun – Mié",
@@ -312,7 +312,6 @@ export const ES: Record<string, string> = {
   "The rule cost them. They have turned down roughly one job for every three they take, including an eleven-unit rental contract in 2021 that would have doubled the business overnight, because taking it would have meant hiring four people they had not personally trained.": "La regla les costó. Han rechazado como un trabajo por cada tres que aceptan, incluido un contrato de once apartamentos en 2021 que les habría duplicado el negocio de la noche a la mañana, porque aceptarlo significaba contratar a cuatro personas que ellas no habían entrenado.",
   "The second thing was plywood. His brother Néstor painted the sign on the sidewalk out front in one afternoon — a rooster mid-crow, one eye open, in a red nobody has been able to match since. Rigo told him it was temporary. Néstor said fine.": "Lo segundo fue plywood. Su hermano Néstor pintó el letrero en la acera del frente en una tarde — un gallo cantando, un ojo abierto, en un rojo que nadie ha podido igualar desde entonces. Rigo le dijo que era temporal. Néstor le dijo está bien.",
   "The whole herd shows up after church. Kids eat on the patio, Toni argues about the check.": "La manada entera cae después de la iglesia. Los niños comen en el patio y Toni discute la cuenta.",
-  "Then": "Después",
   "Third-generation roofers. Permits pulled, tile matched, no ghosting after the deposit.": "Techadores de tercera generación. Sacan los permisos, igualan la teja y no desaparecen después del depósito.",
   "Three hours, two people. They have not been faster since 2019 and are not trying to be.": "Tres horas, dos personas. No van más rápido desde 2019 y no lo están intentando.",
   "Thu (Live band)": "Jue (banda en vivo)",
@@ -367,4 +366,4 @@ export const ES: Record<string, string> = {
   "← ALL STORIES": "← TODAS LAS HISTORIAS",
 }
 
-export const ES_KEY_COUNT = 358
+export const ES_KEY_COUNT = 357
