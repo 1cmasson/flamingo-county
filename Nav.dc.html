@@ -88,34 +88,12 @@ input,button,select,textarea{font-family:inherit}
           <span>{{ langLabel }}</span>
         </button>
         </div>
-        <div onMouseEnter="{{ evHoverOn }}" onMouseLeave="{{ evHoverOff }}" style="position:relative;flex:0 0 auto;display:flex">
-          <div style="position:absolute;top:calc(100% + 13px);left:50%;transform:translateX(-50%) {{ evTipTf }};transform-origin:50% 0;opacity:{{ evTipOp }};visibility:{{ evTipVis }};transition:opacity 160ms ease,transform 220ms cubic-bezier(.2,1.5,.3,1);pointer-events:none;z-index:120">
-            <div style="position:relative;background:#FF2E88;border:3px solid #0C0F14;border-radius:4px;box-shadow:5px 5px 0 #0C0F14;padding:9px 13px 7px">
-              <div style="position:absolute;inset:0;background-image:radial-gradient(#FFF6E5 1.1px, transparent 1.2px);background-size:7px 7px;opacity:0.35"></div>
-              <div style="position:absolute;top:-12px;left:50%;margin-left:-9px;width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:12px solid #0C0F14"></div>
-              <div style="position:absolute;top:-7px;left:50%;margin-left:-6px;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:8px solid #FF2E88"></div>
-              <div style="position:relative;font-family:'Luckiest Guy', cursive;font-size:14px;letter-spacing:0.5px;white-space:nowrap;color:#FFF6E5">{{ evTip }}</div>
-            </div>
-          </div>
-          <a href="{{ evHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;white-space:nowrap;font-family:'Luckiest Guy', cursive;font-size:15px;padding:9px 16px 7px;border:3px solid #0C0F14;border-radius:3px;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);color:#0C0F14;box-shadow:3px 3px 0 {{ evSh }}" style-hover="background:#FFD400;transform:translate(-1px,-1px);box-shadow:5px 5px 0 #FF2E88">{{ te.nav }}</a>
-        </div>
         <sc-if value="{{ hasSaved }}">
           <a href="{{ myWeekHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;white-space:nowrap;display:flex;align-items:center;gap:8px;font-family:'Luckiest Guy', cursive;font-size:14px;padding:9px 12px 7px;border:3px solid #0C0F14;border-radius:3px;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);color:#0C0F14;box-shadow:3px 3px 0 {{ myWeekSh }};flex:0 0 auto" style-hover="background:#FFD400;transform:translate(-1px,-1px);box-shadow:5px 5px 0 #FF2E88">
             <span>{{ te.myWeek }}</span>
             <span style="display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 5px;background:#0C0F14;color:#FFF6E5;font-size:13px;line-height:1">{{ savedCount }}</span>
           </a>
         </sc-if>
-        <div onMouseEnter="{{ storiesHoverOn }}" onMouseLeave="{{ storiesHoverOff }}" style="position:relative;flex:0 0 auto;display:flex">
-          <div style="position:absolute;top:calc(100% + 13px);left:50%;transform:translateX(-50%) {{ storiesTipTf }};transform-origin:50% 0;opacity:{{ storiesTipOp }};visibility:{{ storiesTipVis }};transition:opacity 160ms ease,transform 220ms cubic-bezier(.2,1.5,.3,1);pointer-events:none;z-index:120">
-            <div style="position:relative;background:#FF2E88;border:3px solid #0C0F14;border-radius:4px;box-shadow:5px 5px 0 #0C0F14;padding:9px 13px 7px">
-              <div style="position:absolute;inset:0;background-image:radial-gradient(#FFF6E5 1.1px, transparent 1.2px);background-size:7px 7px;opacity:0.35"></div>
-              <div style="position:absolute;top:-12px;left:50%;margin-left:-9px;width:0;height:0;border-left:9px solid transparent;border-right:9px solid transparent;border-bottom:12px solid #0C0F14"></div>
-              <div style="position:absolute;top:-7px;left:50%;margin-left:-6px;width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-bottom:8px solid #FF2E88"></div>
-              <div style="position:relative;font-family:'Luckiest Guy', cursive;font-size:14px;letter-spacing:0.5px;white-space:nowrap;color:#FFF6E5">{{ storiesTipText }}</div>
-            </div>
-          </div>
-          <a href="{{ storiesHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;white-space:nowrap;font-family:'Luckiest Guy', cursive;font-size:15px;padding:9px 16px 7px;border:3px solid #0C0F14;border-radius:3px;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);color:#0C0F14;box-shadow:3px 3px 0 {{ storiesSh }}" style-hover="background:#FFD400;transform:translate(-1px,-1px);box-shadow:5px 5px 0 #FF2E88">{{ t.navStories }}</a>
-        </div>
         <a href="{{ aboutHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;font-family:'Luckiest Guy', cursive;font-size:15px;padding:9px 16px 7px;border:3px solid #0C0F14;border-radius:3px;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);color:#0C0F14;box-shadow:3px 3px 0 {{ aboutSh }}" style-hover="background:#FFD400;transform:translate(-1px,-1px);box-shadow:5px 5px 0 #FF2E88">{{ navT.about }}</a>
         <div onMouseEnter="{{ joinHoverOn }}" onMouseLeave="{{ joinHoverOff }}" style="position:relative;flex:0 0 auto;display:flex">
           <div style="position:absolute;top:calc(100% + 13px);right:0;transform:{{ joinTipTf }};transform-origin:85% 0;opacity:{{ joinTipOp }};visibility:{{ joinTipVis }};transition:opacity 160ms ease,transform 220ms cubic-bezier(.2,1.5,.3,1);pointer-events:none;z-index:120">
@@ -162,14 +140,12 @@ input,button,select,textarea{font-family:inherit}
           </div>
           <div style="height:3px;background:#16E0F2"></div>
           <div style="display:flex;flex-direction:column;gap:8px">
-            <a href="{{ evHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;font-family:'Luckiest Guy', cursive;font-size:17px;min-height:48px;padding:12px 16px 9px;border:3px solid #0C0F14;border-radius:3px;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);color:#0C0F14;box-shadow:4px 4px 0 {{ evSh }}">{{ te.nav }}</a>
             <sc-if value="{{ hasSaved }}">
               <a href="{{ myWeekHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;font-family:'Luckiest Guy', cursive;font-size:17px;min-height:48px;padding:12px 16px 9px;border:3px solid #0C0F14;border-radius:3px;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);color:#0C0F14;box-shadow:4px 4px 0 {{ myWeekSh }}">
                 <span>{{ te.myWeek }}</span>
                 <span style="display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;padding:0 6px;background:#0C0F14;color:#FFF6E5;font-size:14px;line-height:1">{{ savedCount }}</span>
               </a>
             </sc-if>
-            <a href="{{ storiesHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;font-family:'Luckiest Guy', cursive;font-size:17px;min-height:48px;padding:12px 16px 9px;border:3px solid #0C0F14;border-radius:3px;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);color:#0C0F14;box-shadow:4px 4px 0 {{ storiesSh }}">{{ t.navStories }}</a>
             <a href="{{ aboutHref }}" style="text-decoration:none;color:#FFF6E5;display:flex;align-items:center;justify-content:center;cursor:pointer;font-family:'Luckiest Guy', cursive;font-size:17px;min-height:48px;padding:12px 16px 9px;border:3px solid #0C0F14;border-radius:3px;background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);color:#0C0F14;box-shadow:4px 4px 0 {{ aboutSh }}">{{ navT.about }}</a>
             <a href="{{ joinHref }}" style="text-decoration:none;color:inherit;display:flex;align-items:center;justify-content:center;flex:0 0 auto;white-space:nowrap;cursor:pointer;font-family:'Luckiest Guy', cursive;font-size:17px;min-height:48px;padding:12px 16px 9px;border:3px solid #0C0F14;border-radius:3px;background:#16E0F2;color:#0C0F14;box-shadow:4px 4px 0 #FFF6E5">{{ t.navList }}</a>
           </div>
@@ -202,7 +178,7 @@ class Component extends DCLogic {
     const sc = this.savedCount();
     return {
       ...this.navVals(active),
-      t: { navListings: T('LISTINGS'), navStories: T('STORIES'), navList: T('LIST YOUR SPOT') },
+      t: { navListings: T('LISTINGS'), navList: T('LIST YOUR SPOT') },
       te: { nav: T('EVENTS'), myWeek: T('MY WEEK') },
       ticker: this.ticker(),
       savedCount: sc, hasSaved: sc > 0,
@@ -223,14 +199,7 @@ class Component extends DCLogic {
       tipTf: st.langHover ? 'translateY(0) scale(1) rotate(-1.5deg)' : 'translateY(-6px) scale(0.82) rotate(-1.5deg)',
       langHoverOn: () => this.hov('langHover'), langHoverOff: () => this.setState({ langHover: false }),
       evTip: T('FREE THINGS TO DO THIS WEEKEND'),
-      evTipOp: st.evHover ? '1' : '0', evTipVis: st.evHover ? 'visible' : 'hidden',
-      evTipTf: st.evHover ? 'translateY(0) scale(1) rotate(-1.4deg)' : 'translateY(-6px) scale(0.82) rotate(-1.4deg)',
-      evHoverOn: () => this.hov('evHover'), evHoverOff: () => this.setState({ evHover: false }),
-      storiesTipText: T('THE LONG READS — NEW ONE EVERY OTHER FRIDAY'),
-      storiesTipOp: st.storiesHover ? '1' : '0', storiesTipVis: st.storiesHover ? 'visible' : 'hidden',
-      storiesTipTf: st.storiesHover ? 'translateY(0) scale(1) rotate(1.4deg)' : 'translateY(-6px) scale(0.82) rotate(1.4deg)',
-      storiesHoverOn: () => this.hov('storiesHover'), storiesHoverOff: () => this.setState({ storiesHover: false }),
-      joinTipText: T('GET YOUR SHOP ON THE MAP — FREE'),
+      joinTipText: T('GET YOUR SHOP ON THE MAP'),
       joinTipOp: st.joinHover ? '1' : '0', joinTipVis: st.joinHover ? 'visible' : 'hidden',
       joinTipTf: st.joinHover ? 'translateY(0) scale(1) rotate(-1.6deg)' : 'translateY(-6px) scale(0.82) rotate(-1.6deg)',
       joinHoverOn: () => this.hov('joinHover'), joinHoverOff: () => this.setState({ joinHover: false }),
@@ -238,8 +207,6 @@ class Component extends DCLogic {
       closeList: () => this.setState({ listOpen: false }),
       listBtnBg: st.listOpen ? '#FFD400' : 'linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%)',
       listBtnSh: st.listOpen ? '#16E0F2' : '#FF2E88',
-      evSh: (active === 'events' || active === 'event') ? '#16E0F2' : '#FF2E88',
-      storiesSh: (active === 'stories' || active === 'story') ? '#16E0F2' : '#FF2E88',
       myWeekSh: active === 'myweek' ? '#16E0F2' : '#FF2E88',
       aboutSh: active === 'about' ? '#16E0F2' : '#FF2E88',
       caretTf: st.listOpen ? 'rotate(180deg)' : 'rotate(0deg)',

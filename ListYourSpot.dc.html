@@ -57,17 +57,11 @@ input,button,select,textarea{font-family:inherit}
   <dc-import name="Nav" active="join" style="position:sticky;top:0;z-index:60" hint-size="100%,150px"></dc-import>
 
   <div style="max-width:1080px;margin:0 auto;padding:clamp(16px,4vw,26px) clamp(12px,3.5vw,22px) 70px;display:flex;flex-direction:column;gap:clamp(18px,3vw,24px)">
-    <div data-stack style="background:linear-gradient(160deg,#7CF0FA 0%,#16E0F2 52%,#04AEBE 100%);border:4px solid #0C0F14;box-shadow:9px 9px 0 #0C0F14;padding:clamp(16px,3.5vw,26px);display:grid;grid-template-columns:1.1fr 0.9fr;gap:18px;align-items:center">
+    <div data-stack style="background:linear-gradient(160deg,#7CF0FA 0%,#16E0F2 52%,#04AEBE 100%);border:4px solid #0C0F14;box-shadow:9px 9px 0 #0C0F14;padding:clamp(16px,3.5vw,26px);display:grid;gap:18px;align-items:center">
       <div style="display:flex;flex-direction:column;gap:12px">
         <div style="align-self:flex-start;background:#0C0F14;color:#FFD400;font-weight:800;font-size:11px;line-height:1.5;letter-spacing:1.6px;padding:6px 10px">{{ t.membership }}</div>
         <h1 style="margin:0;font-family:'Luckiest Guy', cursive;font-size:clamp(30px,7.5vw,54px);line-height:0.92">{{ t.joinH1 }}</h1>
         <p style="margin:0;font-weight:600;font-size:16px;line-height:1.5;max-width:52ch;text-wrap:pretty">{{ t.joinP }}</p>
-      </div>
-      <div style="background:linear-gradient(160deg,#FFFFFA 0%,#FFF6E5 55%,#F4E3C6 100%);border:4px solid #0C0F14;box-shadow:6px 6px 0 #FF2E88;padding:22px;text-align:center">
-        <div style="font-weight:800;font-size:12px;letter-spacing:2px">{{ t.memberListing }}</div>
-        <div style="font-family:'Luckiest Guy', cursive;font-size:clamp(52px,13vw,76px);line-height:0.9;margin:6px 0">${{ price }}</div>
-        <div style="font-weight:800;font-size:13px;letter-spacing:1.5px">{{ t.perMonthNoContract }}</div>
-        <div style="margin-top:14px;background:#FFD400;border:3px solid #0C0F14;font-weight:800;font-size:13px;padding:9px">{{ t.first30 }}</div>
       </div>
     </div>
 
@@ -132,11 +126,10 @@ input,button,select,textarea{font-family:inherit}
             <textarea name="story" rows="4" placeholder="{{ t.phStory }}" style="font-size:15px;font-weight:600;padding:12px;border:3px solid #0C0F14;background:#fff;outline:none;resize:vertical"></textarea>
           </label>
         </div>
-        <button onClick="{{ submitListing }}" style="cursor:pointer;margin-top:18px;font-family:'Luckiest Guy', cursive;font-size:20px;padding:15px 22px 12px;border:4px solid #0C0F14;background:linear-gradient(160deg,#FF63AC 0%,#FF2E88 52%,#DE1468 100%);color:#FFF6E5;box-shadow:5px 5px 0 #0C0F14">{{ t.startFree }}</button>
+        <button onClick="{{ submitListing }}" style="cursor:pointer;margin-top:18px;font-family:'Luckiest Guy', cursive;font-size:20px;padding:15px 22px 12px;border:4px solid #0C0F14;background:linear-gradient(160deg,#FF63AC 0%,#FF2E88 52%,#DE1468 100%);color:#FFF6E5;box-shadow:5px 5px 0 #0C0F14">{{ t.claim }}</button>
         <sc-if value="{{ formError }}">
           <div style="margin-top:12px;background:#0C0F14;color:#FFD400;font-weight:800;font-size:12px;letter-spacing:1.2px;padding:10px 12px">{{ t.formErr }}</div>
         </sc-if>
-        <div style="margin-top:10px;font-weight:600;font-size:12px">{{ t.thenP1 }} ${{ price }}{{ t.thenP2 }}</div>
         </sc-if>
       </div>
     </div>
@@ -145,7 +138,7 @@ input,button,select,textarea{font-family:inherit}
   <dc-import name="Footer" hint-size="100%,300px"></dc-import>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props="{&quot;price&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:20,&quot;tsType&quot;:&quot;number&quot;,&quot;min&quot;:5,&quot;max&quot;:99,&quot;unit&quot;:&quot;$/mo&quot;,&quot;section&quot;:&quot;Membership&quot;}}">
+<script type="text/x-dc" data-dc-script data-props="{}">
 class Component extends DCLogic {
   state = {  vw: typeof window !== 'undefined' ? window.innerWidth : 1280 };
   constructor(p) { super(p); this.adopt(); }
@@ -166,7 +159,7 @@ class Component extends DCLogic {
       : 'We\u2019ll call or write within a couple of days to set up the photos and the interview. The first thirty days are on us.';
     t.formErr = es ? 'FALTA EL NOMBRE DEL NEGOCIO O EL TELÉFONO' : 'BUSINESS NAME AND PHONE ARE REQUIRED';
     return {
-      t: t, price: this.props.price ?? 20,
+      t: t,
       sent: !!this.state.sent, notSent: !this.state.sent, formError: !!this.state.formError,
       submitListing: () => {
         const data = { business: g('business'), owner: g('owner'), city: g('city'),
@@ -177,9 +170,9 @@ class Component extends DCLogic {
       },
       perks: this.tx([
         { t: 'Listed in your own city', d: 'One listing on your city page, plus the main directory everyone lands on.' },
-        { t: 'NFC card + a landing page', d: 'We print your tap-to-open card and build the landing page it opens — menu, hours, directions, all of it.' },
-        { t: 'QR codes, hosted by us', d: 'Menu, promo or contact QR codes we host for you. Change where they point anytime, the sticker stays the same.' },
-        { t: 'A real story page', d: 'We interview you and write it. Menu, services, hours, gallery included.' },
+        { t: 'NFC card + a landing page', d: 'We print your tap-to-open card and build the landing page it opens — hours, directions, all of it.' },
+        { t: 'QR codes, hosted by us', d: 'Promo or contact QR codes we host for you. Change where they point anytime, the sticker stays the same.' },
+        { t: 'A real story page', d: 'We interview you and write it. Services, hours, gallery included.' },
         { t: 'Spotlight rotation', d: 'Restaurants, bars and clubs rotate through the Friday spotlight with your own promo.' },
         { t: 'Your city mascot', d: 'The flamingo, the cow or the rooster on your card. Locals know what it means.' }
       ]).map((p, i) => ({ ...p, ...this.perkIcon(i) })),
