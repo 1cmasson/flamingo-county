@@ -130,6 +130,12 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
           <div
             style={{
               width: '100%',
+              // The founder grid is `250px 1fr` and `data-stack` collapses it to
+              // one column at 900px, which let a frame designed at 250px go
+              // full-bleed — a ~430px-tall portrait dominating a phone screen.
+              // Capped so it keeps its intended size when it stacks.
+              maxWidth: 260,
+              margin: '0 auto',
               aspectRatio: '3/4',
               border: '4px solid var(--ink)',
               backgroundColor: 'var(--pink)',
@@ -141,9 +147,7 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
               backgroundPosition: 'center, center 45%',
               backgroundSize: 'cover, cover',
               backgroundRepeat: 'no-repeat',
-              display: 'flex',
-              alignItems: 'flex-end',
-              justifyContent: 'center',
+              position: 'relative',
               overflow: 'hidden',
             }}
           >
@@ -153,13 +157,17 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
                 src={portrait.url}
                 alt={portrait.alt ?? ''}
                 style={{
-                  // `height: 100%` rather than `max-height: 100%`: the frame's
-                  // height comes only from `aspect-ratio`, which WebKit does
-                  // not treat as a definite height, so the percentage
-                  // max-height resolved to `none` and the 1696x2528 portrait
-                  // rendered ~40px taller than its frame — cropped at the top
-                  // by the overflow:hidden above. `object-fit: contain` makes
-                  // this a no-op everywhere else.
+                  // Pinned to the frame's edges rather than sized in
+                  // percentages. The frame's height comes only from
+                  // `aspect-ratio`, which WebKit does not resolve percentages
+                  // against reliably — `max-height: 100%` degraded to `none`
+                  // and rendered the 1696x2528 portrait ~40px taller than its
+                  // frame, cropped at the top by the overflow above, and
+                  // `height: 100%` still overshot by the border width.
+                  // `inset: 0` needs no resolution at all, and `contain` keeps
+                  // the aspect ratio inside it.
+                  position: 'absolute',
+                  inset: 0,
                   width: '100%',
                   height: '100%',
                   objectFit: 'contain',
