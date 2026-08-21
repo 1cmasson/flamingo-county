@@ -32,6 +32,12 @@
   box-sizing: border-box;
 }
 
+/* The nav and its ticker are both sticky, so an anchor jump — #listings on a
+   city page — otherwise lands underneath them. */
+html {
+  scroll-padding-top: 96px;
+}
+
 body {
   margin: 0;
   background: var(--pink);

@@ -153,9 +153,15 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
                 src={portrait.url}
                 alt={portrait.alt ?? ''}
                 style={{
-                  maxWidth: '100%',
-                  maxHeight: '100%',
-                  width: 'auto',
+                  // `height: 100%` rather than `max-height: 100%`: the frame's
+                  // height comes only from `aspect-ratio`, which WebKit does
+                  // not treat as a definite height, so the percentage
+                  // max-height resolved to `none` and the 1696x2528 portrait
+                  // rendered ~40px taller than its frame — cropped at the top
+                  // by the overflow:hidden above. `object-fit: contain` makes
+                  // this a no-op everywhere else.
+                  width: '100%',
+                  height: '100%',
                   objectFit: 'contain',
                   objectPosition: 'bottom',
                   display: 'block',
