@@ -28,6 +28,9 @@
       "Research is web-only. No owner has been contacted. Each dossier's 'Ask the owner' section holds the open questions.",
       "search.sunbiz.org, Yelp, Tripadvisor and the Herald sites block automated retrieval. Corporate fields sourced via aggregators are marked with verification: 'aggregator'.",
       "No images are included. Each dossier lists candidate image URLs with provenance and a rights contact; licensing is unresolved and is the site owner's decision."
+    ],
+    "local_edits": [
+      "2026-08-21 — `el-mejor-batido-de-hialeah` was renamed to `s-and-n-vegetables` and its display name set to \"S&N Vegetables\", the corporate and press name, by owner decision. long_description, seo.meta_title and seo.json_ld.name follow; the awning name survives in alternate_names and seo.json_ld.alternateName. THIS DIVERGES FROM THE UPSTREAM DOSSIER, which still reads El Mejor Batido de Hialeah and is still filed at research/hialeah/el-mejor-batido-de-hialeah.md — regenerating this file from the sibling flamingo-city repo will revert the rename. The seed carries the old slug in SLUG_RENAMES and DOSSIER_SLUG (web/src/seed/research-listings.ts)."
     ]
   },
   "listings": [
@@ -1977,9 +1980,9 @@
       "missing_core_count": 3
     },
     {
-      "id": "el-mejor-batido-de-hialeah",
-      "slug": "el-mejor-batido-de-hialeah",
-      "name": "El Mejor Batido de Hialeah",
+      "id": "s-and-n-vegetables",
+      "slug": "s-and-n-vegetables",
+      "name": "S&N Vegetables",
       "legal_entity": "S & N Vegetables, Inc.",
       "city": "hialeah",
       "city_display": "Hialeah",
@@ -2108,7 +2111,7 @@
         "source": "N/A"
       },
       "short_description": "Cash-only Hialeah ventanita pouring batidos since 1982, run by the same family for three generations.",
-      "long_description": "El Mejor Batido de Hialeah is a walk-up window on West 29th Street, trading corporately as S & N Vegetables and pouring fruit batidos, juices and Cuban sandwiches to a mostly to-go crowd. The Alvisa family has run it since 1982, when Salomé Nestor Alvisa and his wife opened a small walk-up window after arriving in Hialeah during the Mariel boatlift with $1,800. Three generations later it is still cash only, still a counter with barely room to stand, and still one of the most quietly beloved stops in the city.",
+      "long_description": "S&N Vegetables is a walk-up window on West 29th Street, pouring fruit batidos, juices and Cuban sandwiches to a mostly to-go crowd. The Alvisa family has run it since 1982, when Salomé Nestor Alvisa and his wife opened a small walk-up window after arriving in Hialeah during the Mariel boatlift with $1,800. Three generations later it is still cash only, still a counter with barely room to stand, and still one of the most quietly beloved stops in the city.",
       "description_sources": [
         "https://burgerbeast.com/best-cuban-food-hialeah/",
         "https://www.theinfatuation.com/miami/reviews/sn-vegetables",
@@ -2153,17 +2156,17 @@
         }
       ],
       "caveats": [
-        "Your list called this 'Mejores Batidos de Hialeah'. The name is singular — El Mejor Batido de Hialeah — and the corporate/press name is S & N Vegetables.",
+        "Published as S&N Vegetables, the corporate and press name, by owner decision on 2026-08-21. The awning name is El Mejor Batido de Hialeah — singular, not the plural 'Mejores Batidos' an earlier list used — and it is retained in alternate_names and in seo.json_ld.alternateName.",
         "This dossier passed independent verification with 21 of 21 claims confirmed, including every number in the founding account."
       ],
       "seo": {
-        "meta_title": "El Mejor Batido de Hialeah | Cuban Batidos & Ventanita Since 1982",
+        "meta_title": "S&N Vegetables | Cuban Batidos & Ventanita Since 1982",
         "meta_description": "Family-run walk-up ventanita on W 29th St, Hialeah. Fruit batidos, fresh juices and pan con bistec since 1982. Cash only.",
         "json_ld": {
           "@context": "https://schema.org",
           "@type": "Restaurant",
-          "name": "El Mejor Batido de Hialeah",
-          "alternateName": "S & N Vegetables",
+          "name": "S&N Vegetables",
+          "alternateName": "El Mejor Batido de Hialeah",
           "address": {
             "@type": "PostalAddress",
             "streetAddress": "360 W 29th St",
@@ -2205,7 +2208,7 @@
       },
       "owners_note": "N/A",
       "alternate_names": [
-        "S & N Vegetables",
+        "El Mejor Batido de Hialeah",
         "S&N Vegetables, Inc."
       ],
       "service_model": "Walk-up ventanita and counter-service sandwich shop. Mostly to-go, very little standing counter space, no table seating.",

@@ -15,7 +15,14 @@ import { getPayload } from 'payload'
 import type { Payload } from 'payload'
 import config from '../payload.config'
 import type { ListYourSpotPage } from '../payload-types'
-import { loadResearch, toListing, CITY, CATEGORY } from './research-listings'
+import {
+  loadResearch,
+  toListing,
+  CITY,
+  CATEGORY,
+  SLUG_RENAMES,
+  LISTING_PHOTO,
+} from './research-listings'
 import {
   loadFCBase,
   makeTranslator,
@@ -164,11 +171,52 @@ async function pruneCategories(payload: Payload): Promise<void> {
   }
 }
 
+/**
+ * Apply `SLUG_RENAMES` before the research loop runs.
+ *
+ * `upsert` keys on slug, so a listing whose slug changed in `listings.json`
+ * would otherwise be *created* rather than renamed — leaving the old row behind
+ * and taking the count from 11 to 12, which `verify` then fails on.
+ *
+ * Renaming in place matters beyond the count: the row keeps its id, so the
+ * story blocks, hours, research sources and locale rows that hang off it stay
+ * attached instead of being rebuilt.
+ *
+ * Refuses when both slugs exist, on the same grounds as `pruneCategories`:
+ * two rows means an earlier run already created the duplicate, and picking one
+ * to keep is a guess. The message names the fix rather than leaving a dead end.
+ */
+async function renameListings(payload: Payload): Promise<void> {
+  for (const [from, to] of Object.entries(SLUG_RENAMES)) {
+    const [oldRow, newRow] = await Promise.all([
+      payload.find({ collection: 'listings', where: { slug: { equals: from } }, limit: 1, depth: 0 }),
+      payload.find({ collection: 'listings', where: { slug: { equals: to } }, limit: 1, depth: 0 }),
+    ])
+    if (!oldRow.docs.length) continue // already renamed, or never seeded
+    if (newRow.docs.length) {
+      throw new Error(
+        `cannot rename listing "${from}" → "${to}": both slugs exist. An earlier seed ran ` +
+          `before the rename was in place and created a duplicate. Delete the orphaned ` +
+          `"${from}" row (admin → Listings, or a delete by slug) and seed again.`,
+      )
+    }
+    await payload.update({
+      collection: 'listings',
+      id: oldRow.docs[0].id,
+      data: { slug: to },
+      locale: 'en',
+      depth: 0,
+    })
+    console.log(`  ~ renamed listing ${from} → ${to}`)
+  }
+}
+
 async function upsertMedia(
   payload: Payload,
   relPath: string,
   altEn: string,
   altEs?: string,
+  credit?: string,
 ): Promise<number | undefined> {
   const abs = path.join(SITE_ROOT, relPath)
   if (!fs.existsSync(abs)) {
@@ -187,7 +235,7 @@ async function upsertMedia(
 
   const doc = await payload.create({
     collection: 'media',
-    data: { alt: altEn },
+    data: { alt: altEn, ...(credit ? { credit } : {}) },
     filePath: abs,
     locale: 'en',
     depth: 0,
@@ -433,6 +481,11 @@ async function seed() {
   }
 
   /* --- Researched listings ------------------------------------------------ */
+  // Renames run first, and deliberately OUTSIDE the try below: that catch turns
+  // a missing research file into a skip, and a duplicate-slug refusal must not
+  // be swallowed by it.
+  await renameListings(payload)
+
   // Additive: these carry their own slugs and never collide with BIZ. Skipped
   // rather than fatal when the sibling research repo is not checked out, so a
   // clone of this repo alone still seeds.
@@ -444,7 +497,15 @@ async function seed() {
         console.log(`  skip ${r.slug}: no mapping for ${r.city}/${r.category}`)
         continue
       }
-      const data = toListing(r, id)
+      // The hero storefront shot, where one has been taken. Merged
+      // conditionally: `upsert` issues a partial update, so omitting the key
+      // leaves whatever an editor uploaded for the listings without one, rather
+      // than clearing it on every seed.
+      const photo = LISTING_PHOTO[r.slug]
+      const mediaId = photo
+        ? await upsertMedia(payload, photo.file, photo.altEn, photo.altEs, photo.credit)
+        : undefined
+      const data = { ...toListing(r, id), ...(mediaId ? { gallery: [mediaId] } : {}) }
       const doc = await upsert(payload, 'listings', r.slug, data)
       id.listings[r.slug] = doc.id
     }

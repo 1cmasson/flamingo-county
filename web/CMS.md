@@ -36,7 +36,7 @@ create-first-user screen handles it instead.
 | `events` | 20 | `EVENTS` |
 | `weekly-events` | 6 | `WEEKLY` |
 | `spotlights` | 3 | `SPOTS` |
-| `media` | 10 | Real photography only |
+| `media` | 20 | Real photography only — city heroes, mascots, the founder shot, and 8 storefronts |
 
 The table above is what `fc-data.js` *contains*. By default only cities,
 categories, event-kinds, media and the globals are actually imported from it —
@@ -98,6 +98,35 @@ Coverage is partial and uneven on purpose: Miami Lakes and Hialeah only,
 restaurants and bars only. Little Havana has no research behind it yet, and the
 `clean` / `contract` / `halls` categories no longer exist — the site says only
 what it has.
+
+### Renaming a listing takes a map, not just an edit
+
+`upsert` keys on **slug**, so changing a slug in `listings.json` alone does not
+rename anything — it creates a second row and orphans the first, taking the
+count from 11 to 12 and failing `pnpm verify`. `SLUG_RENAMES` in
+`src/seed/research-listings.ts` is the record of every such rename, and
+`renameListings` applies it before the research loop.
+
+It renames in place with `payload.update` rather than delete-and-recreate, so
+the row keeps its id and the story blocks, hours, research sources and locale
+rows stay attached. It refuses when **both** slugs exist, on the same grounds as
+`pruneCategories`: that means an earlier seed already made the duplicate, and
+choosing which to keep is a guess. The error names the fix. It runs outside the
+`try` that downgrades a missing research file to a skip, so the refusal cannot
+be swallowed.
+
+One rename so far. `el-mejor-batido-de-hialeah` → `s-and-n-vegetables`: the
+Hialeah ventanita is published under **S&N Vegetables**, its corporate and press
+name, by owner decision. The awning name survives in `alternate_names` and
+`seo.json_ld.alternateName`, and `research.sourceFile` still points at the
+dossier's real filename via `DOSSIER_SLUG` — the upstream repo did not rename
+the file.
+
+**This diverges from upstream.** The dossier in the sibling `flamingo-city` repo
+still says El Mejor Batido de Hialeah, so regenerating `data-import/listings.json`
+reverts the name. `_meta.local_edits` in that file records the divergence for
+whoever regenerates it. No redirect exists for the old URL: nothing links to it
+and the site has not shipped.
 
 ## Deploying to Railway
 
@@ -187,10 +216,35 @@ hours, story and quote were *synthesized at render time from the array index* in
 placeholder data in as authored content. Empty is the honest state; real owner
 detail has to be collected.
 
-**Every photo slot is empty.** `.image-slots.state.json` never existed, so every
-business photo, event image and story cover has always been a labelled
-placeholder. The `hint` fields carry the art direction. Only real photography —
-city heroes, mascots, the founder shot — is imported.
+**Most photo slots are still empty.** `.image-slots.state.json` never existed,
+so every slot began as a labelled placeholder and the `hint` fields carry the
+art direction. Eight of the eleven researched listings now have a real
+storefront shot as `gallery[0]` — the card hero and the business-page hero.
+Everything else is still a placeholder: `the-bend-liquor-lounge`,
+`the-garrison-taproom-billiards` and `trattoria-pampered-chef` have no
+photograph yet, and no event image or story cover does either.
+
+The photos live in `assets/businesses/<slug>.jpg`, tracked, and are keyed by
+**slug** in `LISTING_PHOTO` (`src/seed/research-listings.ts`). Keying on the
+filename would have been wrong: five of the eight arrived named differently from
+the listing they belong to — `trigo-cafe-tapas-wine.jpg` is `trigo-cafe`,
+`morro-castle-restaurant.jpg` is `morro-castle`. `upsertMedia` warn-skips a path
+it cannot find and the research loop sits inside a catch, so a mismatch would
+have produced a green seed with blank slots rather than an error. `pnpm verify`
+now asserts all eight resolve to a populated `gallery[0]`.
+
+`molinas-ranch.jpg` is a Google Street View capture with the watermark burned
+in; its `credit` says so, and it should be replaced when the storefront is
+actually shot.
+
+**Reset `media/` and `content.db` together or not at all.** `upsertMedia`
+dedupes by looking up the *source* file's basename in the `media` table, but
+Payload suffixes a filename when one already exists on disk. Delete the database
+alone and every upload collides with the file left behind, lands as
+`cancun-grill-1.jpg`, misses the dedupe on the next run and is created again —
+20 media rows became 52 across two seeds while this was being written. `rm -rf
+media content.db*` and seed once. Both are gitignored artifacts that `pnpm seed`
+rebuilds.
 
 **`going` counts are seed integers**, not a live tally. Saved/going state is
 `localStorage`-only and has no server side until there are accounts.

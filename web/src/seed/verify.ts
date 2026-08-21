@@ -8,6 +8,7 @@
 import 'dotenv/config'
 import { getPayload } from 'payload'
 import config from '../payload.config'
+import { LISTING_PHOTO, SLUG_RENAMES } from './research-listings'
 
 let failures = 0
 function check(label: string, ok: boolean, detail = '') {
@@ -90,6 +91,44 @@ async function main() {
     'every researched listing cites at least one source',
     sourced.docs.every((d: any) => (d.research?.sources?.length ?? 0) > 0),
   )
+  /* --- the storefront photography ---------------------------------------- */
+  // `upsertMedia` warns and returns undefined when it cannot find a file, and
+  // the research loop sits inside a catch that downgrades a throw to a skip —
+  // so a wrong path produces a green seed and a blank slot. Five of the eight
+  // source files were named differently from the listing they belong to, which
+  // is exactly the mistake this catches.
+  {
+    const slugs = Object.keys(LISTING_PHOTO)
+    const withPhoto = await payload.find({
+      collection: 'listings',
+      where: { slug: { in: slugs } },
+      limit: 100,
+      depth: 1,
+    })
+    const missing = slugs.filter((slug) => {
+      const doc: any = withPhoto.docs.find((d: any) => d.slug === slug)
+      return !doc?.gallery?.[0]?.url
+    })
+    check(
+      `all ${slugs.length} listings with a storefront photo have a hero image`,
+      missing.length === 0,
+      missing.length ? `no gallery[0]: ${missing.join(', ')}` : '',
+    )
+  }
+
+  /* --- slug renames actually renamed, rather than duplicating ------------- */
+  for (const [from, to] of Object.entries(SLUG_RENAMES)) {
+    const stale = await payload.count({ collection: 'listings', where: { slug: { equals: from } } })
+    check(`no listing still uses the pre-rename slug "${from}"`, stale.totalDocs === 0)
+    const renamed = await payload.find({
+      collection: 'listings',
+      where: { slug: { equals: to } },
+      limit: 1,
+      depth: 0,
+    })
+    check(`"${to}" exists exactly once`, renamed.totalDocs === 1, `got ${renamed.totalDocs}`)
+  }
+
   // "N/A" is the research file's gap marker; letting it through as a value is
   // the single most likely way this import quietly lies.
   const na = sourced.docs.filter((d: any) => JSON.stringify(d).includes('"N/A"'))

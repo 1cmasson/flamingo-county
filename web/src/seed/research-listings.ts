@@ -72,6 +72,101 @@ const CITY: Record<string, string> = { 'miami-lakes': 'lakes', hialeah: 'hialeah
 /** research category → the site's taxonomy. Only restaurants and bars exist so far. */
 const CATEGORY: Record<string, string> = { restaurant: 'food', bar: 'night' }
 
+/**
+ * Listings whose slug changed after they were already seeded. old → new.
+ *
+ * `upsert` keys on slug, so a slug edited in `listings.json` alone does not
+ * rename anything — it creates a second row and orphans the first. `seed`
+ * applies this map before the research loop so the rename happens in place and
+ * the row keeps its id, and with it the story, hours and source rows that hang
+ * off it.
+ *
+ * Lives here rather than in `listings.json` for the same reason `CAT_KEEP`
+ * does: that file is a generated copy and a key added to it is lost on the next
+ * regeneration from the sibling research repo.
+ */
+export const SLUG_RENAMES: Record<string, string> = {
+  'el-mejor-batido-de-hialeah': 's-and-n-vegetables',
+}
+
+/**
+ * new slug → the slug the upstream dossier is still filed under.
+ *
+ * `research.sourceFile` is provenance — it tells a reader which dossier a
+ * record came from. A rename here does not rename the file in the other repo,
+ * so without this the field would point at a path that has never existed.
+ */
+const DOSSIER_SLUG: Record<string, string> = {
+  's-and-n-vegetables': 'el-mejor-batido-de-hialeah',
+}
+
+/**
+ * The storefront photography, keyed by listing slug.
+ *
+ * Keyed on the SLUG, never on the filename — five of these eight source files
+ * arrived named differently from the listing they belong to
+ * (`trigo-cafe-tapas-wine.jpg` → `trigo-cafe`), and `upsertMedia` warn-skips a
+ * path it cannot find and returns `undefined`. A map built from basenames would
+ * therefore produce a green seed with blank slots, which is why the files were
+ * renamed to their slug on the way in and why `verify` asserts all eight.
+ *
+ * Three listings have no photo yet — `the-bend-liquor-lounge`,
+ * `the-garrison-taproom-billiards`, `trattoria-pampered-chef` — and keep the
+ * labelled placeholder their `imageHint` describes.
+ *
+ * `alt` is required and localized on the media collection, so both languages
+ * are written here. They describe the frame, not the business: the name is
+ * already in the heading next to the image.
+ */
+export const LISTING_PHOTO: Record<
+  string,
+  { file: string; altEn: string; altEs: string; credit?: string }
+> = {
+  '1910-restaurant-bar': {
+    file: 'assets/businesses/1910-restaurant-bar.jpg',
+    altEn: 'A sidewalk patio at night, lit umbrellas over brick pavers and a bar visible through the arched windows behind.',
+    altEs: 'Una terraza de noche, sombrillas iluminadas sobre adoquines y una barra visible tras los ventanales en arco.',
+  },
+  'dr-limon-ceviche-bar': {
+    file: 'assets/businesses/dr-limon-ceviche-bar.jpg',
+    altEn: 'A tile-roofed storefront in low evening sun, ceiling fans turning over a covered walkway.',
+    altEs: 'Una fachada de tejas bajo el sol del atardecer, con ventiladores de techo sobre un pasillo cubierto.',
+  },
+  'cancun-grill': {
+    file: 'assets/businesses/cancun-grill.jpg',
+    altEn: 'A sage-green facade at sunset, the sign spelled out in neon letters with a sombrero tipped over the A.',
+    altEs: 'Una fachada verde salvia al atardecer, con el letrero en letras de neón y un sombrero ladeado sobre la A.',
+  },
+  'trigo-cafe': {
+    file: 'assets/businesses/trigo-cafe.jpg',
+    altEn: 'A white brick storefront under a banner sign with a wheat-stalk mark, four folding cafe tables on the tiled sidewalk.',
+    altEs: 'Una fachada de ladrillo blanco bajo un letrero de lona con una espiga de trigo y cuatro mesas plegables en la acera.',
+  },
+  'morro-castle': {
+    file: 'assets/businesses/morro-castle.jpg',
+    altEn: 'A low strip-mall storefront under a wide sky, its red and blue roadside sign standing at the edge of the parking lot.',
+    altEs: 'Un local bajo en una plaza comercial bajo un cielo amplio, con su letrero rojo y azul al borde del estacionamiento.',
+  },
+  'polo-norte': {
+    file: 'assets/businesses/polo-norte.jpg',
+    altEn: 'A stone-columned storefront at golden hour, an OPEN sign in the window and diners at tables inside.',
+    altEs: 'Una fachada de columnas de piedra a la hora dorada, con un letrero de OPEN en la ventana y clientes en las mesas.',
+  },
+  'molinas-ranch': {
+    file: 'assets/businesses/molinas-ranch.jpg',
+    altEn: 'A tile-roofed restaurant seen from across the street, its covered walkway behind a clipped hedge and palm trees.',
+    altEs: 'Un restaurante de tejas visto desde la acera de enfrente, con su pasillo cubierto tras un seto recortado y palmeras.',
+    // Burned-in "© 2026 Google" watermark. Recorded so it is obvious in the
+    // admin that this is a stand-in until the storefront is actually shot.
+    credit: 'Google Street View',
+  },
+  's-and-n-vegetables': {
+    file: 'assets/businesses/s-and-n-vegetables.jpg',
+    altEn: 'A blue awning over a walk-up window, lettered PAN CON TODO above a list of sandwiches, with a CASH ONLY sign on the door.',
+    altEs: 'Un toldo azul sobre una ventanita, rotulado PAN CON TODO encima de una lista de bocaditos, con un cartel de CASH ONLY en la puerta.',
+  },
+}
+
 const DAY_SHORT: Record<string, string> = {
   Monday: 'Mon',
   Tuesday: 'Tue',
@@ -192,7 +287,7 @@ export function toListing(r: ResearchListing, ids: Record<string, any>) {
         type: val(ref.type),
       })),
       legalEntity: val(r.legal_entity),
-      sourceFile: `flamingo-city/research/${r.city}/${r.slug}.md`,
+      sourceFile: `flamingo-city/research/${r.city}/${DOSSIER_SLUG[r.slug] ?? r.slug}.md`,
     },
   }
 }
