@@ -126,6 +126,29 @@ textarea {
     transform: translateX(-50%);
   }
 }
+
+/*
+ * The ticker's items are links now, so the marquee has to stop long enough to
+ * hit one. `:active` is the only one of these that a touch device gets.
+ */
+.ticker-run {
+  animation-name: tick;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+.ticker:hover .ticker-run,
+.ticker:focus-within .ticker-run,
+.ticker:active .ticker-run {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker-run {
+    animation: none;
+  }
+  .ticker {
+    overflow-x: auto;
+  }
+}
 /* `bob` from the source is omitted: nothing in any page or script referenced it. */
 @keyframes riseIn {
   from {

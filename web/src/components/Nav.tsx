@@ -1,7 +1,8 @@
 import Link from 'next/link'
 import { translator, type Lang } from '../i18n'
 import { routes } from '../lib/routes'
-import { getCities } from '../lib/data'
+import type { City } from '../payload-types'
+import { getCities, getListings, rel } from '../lib/data'
 import { Tooltip } from './Tooltip'
 import { LangToggle } from './LangToggle'
 import { ListingsMenu, BurgerMenu, type CityTab } from './NavMenus'
@@ -44,7 +45,7 @@ const linkChip = (shadow: string) => ({
  */
 export async function Nav({ lang }: { lang: Lang }) {
   const t = translator(lang)
-  const cities = await getCities(lang)
+  const [cities, listings] = await Promise.all([getCities(lang), getListings(lang)])
 
   const tabs: CityTab[] = [
     { label: t('ALL LISTINGS'), href: routes.home(lang) },
@@ -187,24 +188,68 @@ export async function Nav({ lang }: { lang: Lang }) {
         </div>
       </nav>
 
-      <Ticker text={t(TICKER)} />
+      <Ticker
+        lead={
+          listings.length
+            ? [t('NOW ON THE LISTING'), `${listings.length} ${t('LOCAL SPOTS')}`]
+            : [t('NOW ON THE LISTING'), t('MEMBER SPOTLIGHTS EVERY FRIDAY')]
+        }
+        items={listings
+          .map((b) => {
+            const c = rel<City>(b.city)
+            return c ? { label: b.name ?? b.slug, href: routes.business(lang, c.slug, b.slug) } : null
+          })
+          .filter(Boolean) as { label: string; href: string }[]}
+      />
     </div>
   )
 }
 
-const TICKER =
-  'NOW ON THE LISTING · 412 LOCAL SPOTS · HIALEAH · MIAMI LAKES · LITTLE HAVANA · MEMBER SPOTLIGHTS EVERY FRIDAY · NEW: BANQUET HALLS · '
-
 /**
- * The marquee. The `tick` keyframe translates by -50%, so the text has to be
- * duplicated for the loop to be seamless — the source did the same, joined by
- * a pair of non-breaking spaces.
+ * The marquee.
+ *
+ * It used to be one hardcoded sentence claiming 412 local spots and a banquet
+ * hall vertical, neither of which existed. It runs on the listings collection
+ * now: the count is real, and every name is a link to that business.
+ *
+ * Two rules the `tick` keyframe imposes. It translates by -50%, so the run has
+ * to be duplicated *exactly* or the loop jumps — and the duplicate is a visual
+ * artefact, so it is hidden from assistive tech and taken out of the tab order.
+ * And its duration was tuned to the old string's length, so it is computed from
+ * the item count instead of pinned at 34s.
  */
-function Ticker({ text }: { text: string }) {
-  const gap = '  '
-  const run = text + gap
+function Ticker({
+  lead,
+  items,
+}: {
+  lead: string[]
+  items: { label: string; href: string }[]
+}) {
+  const seconds = Math.max(24, (lead.length + items.length) * 5)
+
+  const run = (dup: boolean) => (
+    <span aria-hidden={dup ? true : undefined}>
+      {lead.map((l) => (
+        <span key={l} style={{ padding: '0 14px' }}>
+          {l}&#160;·
+        </span>
+      ))}
+      {items.map((it) => (
+        <Link
+          key={it.href}
+          href={it.href}
+          tabIndex={dup ? -1 : undefined}
+          style={{ color: 'inherit', textDecoration: 'none', padding: '0 14px' }}
+        >
+          {it.label}&#160;·
+        </Link>
+      ))}
+    </span>
+  )
+
   return (
     <div
+      className="ticker"
       style={{
         background: 'var(--yellow)',
         borderTop: '3px solid var(--ink)',
@@ -213,16 +258,18 @@ function Ticker({ text }: { text: string }) {
       }}
     >
       <div
+        className="ticker-run"
         style={{
           display: 'inline-block',
-          animation: 'tick 34s linear infinite',
+          animationDuration: `${seconds}s`,
           fontWeight: 800,
           fontSize: 13,
           letterSpacing: '1.4px',
           padding: '6px 0',
         }}
       >
-        <span aria-hidden="true">{run + run}</span>
+        {run(false)}
+        {run(true)}
       </div>
     </div>
   )

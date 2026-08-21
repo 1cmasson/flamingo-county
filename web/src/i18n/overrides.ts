@@ -31,6 +31,7 @@ export const ES_OVERRIDES: Record<string, string> = {
   // --- Ticker ------------------------------------------------------------
   'NOW ON THE LISTING': 'AHORA EN EL DIRECTORIO',
   'LOCAL SPOTS': 'NEGOCIOS DE AQUÍ',
+  'MEMBER SPOTLIGHTS EVERY FRIDAY': 'SOCIOS EN CANDELA TODOS LOS VIERNES',
 
   // --- Home hero and CTAs ------------------------------------------------
   'EVERY SPOT THE LOCALS VOUCH FOR.': 'CADA LUGAR QUE LA GENTE DE AQUÍ RESPALDA.',
