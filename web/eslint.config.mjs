@@ -1,16 +1,19 @@
-import { dirname } from 'path'
-import { fileURLToPath } from 'url'
-import { FlatCompat } from '@eslint/eslintrc'
+import nextCoreWebVitals from 'eslint-config-next/core-web-vitals'
+import nextTypeScript from 'eslint-config-next/typescript'
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-})
-
+/*
+ * `eslint-config-next` 16 ships flat configs directly — `./core-web-vitals` and
+ * `./typescript` each export a ready array. This file used to reach them
+ * through `FlatCompat` from `@eslint/eslintrc`, the shape the older Next
+ * scaffold generated, and that never ran here: `@eslint/eslintrc` was not a
+ * dependency, and pnpm's strict node_modules does not hoist it in from
+ * eslint's own tree, so `pnpm lint` failed at import with ERR_MODULE_NOT_FOUND
+ * rather than reporting anything. Spreading the native exports needs no
+ * compatibility layer and no extra dependency.
+ */
 const eslintConfig = [
-  ...compat.extends('next/core-web-vitals', 'next/typescript'),
+  ...nextCoreWebVitals,
+  ...nextTypeScript,
   {
     rules: {
       '@typescript-eslint/ban-ts-comment': 'warn',
@@ -31,7 +34,13 @@ const eslintConfig = [
     },
   },
   {
-    ignores: ['.next/', 'src/payload-types.ts', 'src/payload-generated-schema.ts'],
+    ignores: [
+      '.next/',
+      'src/payload-types.ts',
+      'src/payload-generated-schema.ts',
+      // Local verification output — screenshots and one-off Playwright scripts.
+      'shots/',
+    ],
   },
 ]
 

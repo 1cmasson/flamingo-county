@@ -19,7 +19,7 @@ import {
 } from '../../../../lib/dates'
 import type { City, Event, EventKind, Listing } from '../../../../payload-types'
 import { PageShell } from '../../../../components/PageShell'
-import { EventCard, eventVenue } from '../../../../components/EventCard'
+import { EventCard } from '../../../../components/EventCard'
 import s from '../../../../components/chrome.module.css'
 
 type Search = { view?: string; month?: string }
@@ -238,7 +238,7 @@ export default async function EventsPage({
         </header>
 
         {calendar ? (
-          <CalendarView lang={lang} events={upcoming} today={today} month={sp.month} evHref={evHref} t={t} />
+          <CalendarView lang={lang} events={upcoming} today={today} month={sp.month} evHref={evHref} />
         ) : grouped.length ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 'clamp(18px,3vw,28px)' }}>
             {grouped.map((bk) => (
@@ -499,14 +499,12 @@ function CalendarView({
   today,
   month,
   evHref,
-  t,
 }: {
   lang: Lang
   events: Event[]
   today: string
   month?: string
   evHref: (over: Partial<Search>) => string
-  t: (s: string) => string
 }) {
   const isos = events.map((e) => dateOnly(e.date)).sort()
   const min = isos[0] ?? today

@@ -39,11 +39,15 @@ const tabStyle = (on: boolean, big?: boolean) => ({
  * should do.
  */
 export function ListingsMenu({ label, tabs }: { label: string; tabs: CityTab[] }) {
-  const [open, setOpen] = useState(false)
   const wrap = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
-
-  useEffect(() => setOpen(false), [pathname])
+  // Keyed to the path it was opened at rather than closed by an effect, so a
+  // navigation closes it during the same render instead of cascading a second
+  // one. `react-hooks/set-state-in-effect` flags the effect form.
+  const [openedAt, setOpenedAt] = useState<string | null>(null)
+  const open = openedAt === pathname
+  const setOpen = (v: boolean | ((p: boolean) => boolean)) =>
+    setOpenedAt((prev) => ((typeof v === 'function' ? v(prev === pathname) : v) ? pathname : null))
 
   useEffect(() => {
     if (!open) return
@@ -149,10 +153,12 @@ export function BurgerMenu({
   links: { href: string; label: string; shadow: string; background: string; badge?: React.ReactNode }[]
   citiesLabel: string
 }) {
-  const [open, setOpen] = useState(false)
   const pathname = usePathname()
-
-  useEffect(() => setOpen(false), [pathname])
+  // Same pathname-keyed open state as ListingsMenu above.
+  const [openedAt, setOpenedAt] = useState<string | null>(null)
+  const open = openedAt === pathname
+  const setOpen = (v: boolean | ((p: boolean) => boolean)) =>
+    setOpenedAt((prev) => ((typeof v === 'function' ? v(prev === pathname) : v) ? pathname : null))
 
   useEffect(() => {
     if (!open) return

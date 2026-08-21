@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { isLang, translator, type Lang } from '../../../i18n'
-import { routes, withQuery } from '../../../lib/routes'
+import { routes } from '../../../lib/routes'
 import {
   getCities,
   getListings,
