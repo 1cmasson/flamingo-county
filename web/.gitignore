@@ -54,3 +54,7 @@ content.db
 content.db-shm
 content.db-wal
 migrate-test.db*
+
+# Local verification output — screenshots and one-off Playwright scripts.
+shots/
+*.local.mjs
