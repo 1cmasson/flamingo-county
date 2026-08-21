@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { translator, type Lang } from '../i18n'
 import { routes } from '../lib/routes'
 import { getCities } from '../lib/data'
-import type { ActiveSection } from '../lib/active'
 import { Tooltip } from './Tooltip'
 import { LangToggle } from './LangToggle'
 import { ListingsMenu, BurgerMenu, type CityTab } from './NavMenus'
@@ -39,27 +38,19 @@ const linkChip = (shadow: string) => ({
  * and rendered, but there is no live content for them yet, so they stay out of
  * the nav until there is.
  *
- * `active` marks the current section; only the listings tabs read it now.
+ * The tabs carry no active flag: `NavMenus` derives it from the pathname on the
+ * client, because a layout does not re-render on a navigation within its own
+ * segment and a server-computed flag went stale.
  */
-export async function Nav({
-  lang,
-  active,
-  city,
-}: {
-  lang: Lang
-  active?: ActiveSection
-  city?: string
-}) {
+export async function Nav({ lang }: { lang: Lang }) {
   const t = translator(lang)
   const cities = await getCities(lang)
 
-  const on = (k: string) => k === city || (k === 'all' && active === 'home')
   const tabs: CityTab[] = [
-    { label: t('ALL LISTINGS'), href: routes.home(lang), on: on('all') },
+    { label: t('ALL LISTINGS'), href: routes.home(lang) },
     ...cities.map((c) => ({
       label: t(c.name ?? c.slug),
       href: routes.city(lang, c.slug),
-      on: on(c.slug),
     })),
   ]
 

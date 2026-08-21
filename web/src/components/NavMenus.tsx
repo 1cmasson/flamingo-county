@@ -5,7 +5,15 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import s from './chrome.module.css'
 
-export type CityTab = { label: string; href: string; on: boolean }
+/**
+ * The active tab is derived from the pathname *in the client*, not passed in.
+ *
+ * Nav renders in `[lang]/layout.tsx`, and App Router does not re-render a
+ * layout on a navigation that leaves its segment unchanged — so a server-
+ * computed `on` boolean froze on the first page loaded and the highlight never
+ * moved between cities.
+ */
+export type CityTab = { label: string; href: string }
 
 const tabStyle = (on: boolean, big?: boolean) => ({
   textDecoration: 'none',
@@ -113,7 +121,13 @@ export function ListingsMenu({ label, tabs }: { label: string; tabs: CityTab[] }
         }}
       >
         {tabs.map((t) => (
-          <Link key={t.href} href={t.href} className={s.chip} style={tabStyle(t.on)}>
+          <Link
+            key={t.href}
+            href={t.href}
+            className={s.chip}
+            aria-current={t.href === pathname ? 'page' : undefined}
+            style={tabStyle(t.href === pathname)}
+          >
             {t.label}
           </Link>
         ))}
@@ -240,7 +254,12 @@ export function BurgerMenu({
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
           {tabs.map((t) => (
-            <Link key={t.href} href={t.href} style={tabStyle(t.on, true)}>
+            <Link
+              key={t.href}
+              href={t.href}
+              aria-current={t.href === pathname ? 'page' : undefined}
+              style={tabStyle(t.href === pathname, true)}
+            >
               {t.label}
             </Link>
           ))}

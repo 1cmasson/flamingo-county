@@ -5,7 +5,6 @@ import { Luckiest_Guy, Archivo } from 'next/font/google'
 import { isLang, LOCALES } from '../../../i18n'
 import { Nav } from '../../../components/Nav'
 import { Footer } from '../../../components/Footer'
-import { activeSection } from '../../../lib/active'
 import '../globals.css'
 
 /**
@@ -68,7 +67,6 @@ export default async function LangLayout({
 }) {
   const { lang } = await params
   if (!isLang(lang)) notFound()
-  const { active, city } = await activeSection()
 
   return (
     <html
@@ -81,7 +79,7 @@ export default async function LangLayout({
             footer together, so a short page leaves its slack below the footer
             rather than above it. */}
         <div style={{ minHeight: '100vh' }}>
-          <Nav lang={lang} active={active} city={city} />
+          <Nav lang={lang} />
           {children}
           <Footer lang={lang} />
         </div>
