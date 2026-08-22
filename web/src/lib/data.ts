@@ -3,6 +3,8 @@ import type { Where } from 'payload'
 import config from '../payload.config'
 import type { Lang } from '../i18n'
 import type { City, Listing, Story, Event, WeeklyEvent, Spotlight, Category, EventKind } from '../payload-types'
+import { routes } from './routes'
+import { fold, matches, prepare, squash, type Suggestion } from './search'
 
 /**
  * Data access through Payload's local API — an in-process call, no HTTP, so
@@ -62,7 +64,14 @@ export async function getEventKinds(lang: Lang): Promise<EventKind[]> {
 
 /* ----------------------------------------------------------------- listings */
 
-export type ListingFilter = { city?: string; category?: string; q?: string }
+/**
+ * `q` is deliberately absent: search runs in memory, in `applySearch` below.
+ * Three adapter behaviours make a `where` clause the wrong tool — see the
+ * docblock in ./search. `city` and `category` stay here because they are exact
+ * matches on indexed columns, and `category` is still wired for the filter
+ * chips whenever they come back.
+ */
+export type ListingFilter = { city?: string; category?: string }
 
 export async function getListings(lang: Lang, filter: ListingFilter = {}): Promise<Listing[]> {
   const payload = await db()
@@ -71,16 +80,6 @@ export async function getListings(lang: Lang, filter: ListingFilter = {}): Promi
 
   if (filter.city) and.push({ 'city.slug': { equals: filter.city } })
   if (filter.category) and.push({ 'category.slug': { equals: filter.category } })
-  if (filter.q) {
-    // Mirrors the old client-side search, which matched name, tag and hood.
-    and.push({
-      or: [
-        { name: { like: filter.q } },
-        { tag: { like: filter.q } },
-        { hood: { like: filter.q } },
-      ],
-    })
-  }
   if (and.length) where.and = and
 
   const { docs } = await payload.find({
@@ -96,6 +95,65 @@ export async function getListings(lang: Lang, filter: ListingFilter = {}): Promi
     depth: 2,
   })
   return docs.sort(byResearchThenAuthored)
+}
+
+/**
+ * The grid and the suggestion index, from one fetch and one matcher.
+ *
+ * `listings` must be the *unfiltered* set for the current scope: the dropdown
+ * offers the whole scope no matter what `?q=` currently says, and the filtered
+ * grid is derived from the same array. Building both from one pass is the point
+ * — it is structurally impossible for a suggestion to point at a listing the
+ * grid would not have shown.
+ *
+ * The two come out ordered differently, on purpose. `list` keeps the order
+ * `getListings` gave it — research tier first, then authored — because the grid
+ * is a directory and sourced records should lead it. The dropdown is ranked by
+ * how well each row matches what was typed, so a name hit outranks a cuisine
+ * hit regardless of tier. Searching "cuban" therefore heads the dropdown with
+ * Polo Norte and the grid with 1910; that is the intended behaviour, not drift.
+ *
+ * Suggestions carry only what the dropdown draws and matches on, not `Listing`
+ * itself: at `depth: 2` a listing drags its city, that city's mascot upload and
+ * the whole detail/research group across to the client. All 11 rows as mapped
+ * here are ~3 KB of the document. That headroom is not infinite — past roughly
+ * 150 listings this wants to become a route handler with a debounce instead of
+ * an inlined array, and `getListings`' `limit: 200` is the other wall.
+ */
+export function applySearch(
+  listings: Listing[],
+  lang: Lang,
+  q: string,
+): { list: Listing[]; suggestions: Suggestion[] } {
+  const pairs = listings.map((listing) => {
+    const city = rel<City>(listing.city)
+    const category = rel<Category>(listing.category)
+    const item: Suggestion = {
+      id: String(listing.id),
+      href: city ? routes.business(lang, city.slug, listing.slug) : '#',
+      name: listing.name,
+      // Joined only over the parts that exist: 7 of the 11 listings have no
+      // hood, and interpolating blindly leaves a dangling " · ".
+      meta: [category?.label, listing.hood].filter(Boolean).join(' · '),
+      terms: [
+        category?.label,
+        listing.hood,
+        ...(listing.research?.cuisine ?? []),
+        ...(listing.research?.signatureItems ?? []),
+      ].filter((v): v is string => Boolean(v)),
+      tag: listing.tag ?? '',
+    }
+    return { listing, item }
+  })
+
+  const suggestions = pairs.map((p) => p.item)
+  const folded = fold(q)
+  const squashed = squash(q)
+  if (!squashed) return { list: listings, suggestions }
+
+  const prepared = prepare(suggestions)
+  const list = pairs.filter((_, i) => matches(prepared[i], folded, squashed)).map((p) => p.listing)
+  return { list, suggestions }
 }
 
 /** Sourced records lead the grids; within a tier, authored order is preserved. */

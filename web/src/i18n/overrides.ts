@@ -18,6 +18,10 @@ export const ES_OVERRIDES: Record<string, string> = {
   'Search this city…': 'Busca en esta ciudad…',
   'Search a business or a dish…': 'Busca un negocio o un plato…',
 
+  // --- Search suggestions -------------------------------------------------
+  // The listbox's accessible name. Never rendered visually.
+  Suggestions: 'Sugerencias',
+
   // --- A city with no listings yet ---------------------------------------
   'COMING SOON': 'MUY PRONTO',
   "We're still walking these blocks. Know a spot that belongs here?":

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { isLang, translator, type Lang } from '../../../i18n'
 import { routes } from '../../../lib/routes'
 import {
+  applySearch,
   getCities,
   getListings,
   getSiteSettings,
@@ -37,12 +38,15 @@ export default async function HomePage({
   const cityKey = sp.city ?? ''
   const q = sp.q ?? ''
 
-  const [cities, settings, allSpots, list] = await Promise.all([
+  const [cities, settings, allSpots, all] = await Promise.all([
     getCities(lang),
     getSiteSettings(lang),
     getSpotlights(lang),
-    getListings(lang, { city: cityKey || undefined, q: q || undefined }),
+    // Fetched unfiltered: `?q=` is applied in memory so the grid and the
+    // suggestions dropdown come out of the same array.
+    getListings(lang, { city: cityKey || undefined }),
   ])
+  const { list, suggestions } = applySearch(all, lang, q)
 
   const city = cities.find((c) => c.slug === cityKey) ?? null
   const spots = city
@@ -329,9 +333,11 @@ export default async function HomePage({
                 placeholder: t('Search a business or a dish…'),
                 search: lang === 'es' ? 'BUSCAR' : 'SEARCH',
                 reset: t('RESET'),
+                suggestions: t('Suggestions'),
               }}
               resetHref={routes.home(lang)}
               count={`${list.length} ${list.length === 1 ? t('LISTING') : t('LISTINGS')}`}
+              suggestions={suggestions}
             />
           </div>
 
