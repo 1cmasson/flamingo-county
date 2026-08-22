@@ -103,16 +103,15 @@ const DOSSIER_SLUG: Record<string, string> = {
 /**
  * The storefront photography, keyed by listing slug.
  *
- * Keyed on the SLUG, never on the filename — five of these eight source files
+ * Keyed on the SLUG, never on the filename — seven of these eleven source files
  * arrived named differently from the listing they belong to
- * (`trigo-cafe-tapas-wine.jpg` → `trigo-cafe`), and `upsertMedia` warn-skips a
- * path it cannot find and returns `undefined`. A map built from basenames would
- * therefore produce a green seed with blank slots, which is why the files were
- * renamed to their slug on the way in and why `verify` asserts all eight.
+ * (`trigo-cafe-tapas-wine.jpg` → `trigo-cafe`, `the-bend-lounge.jpg` →
+ * `the-bend-liquor-lounge`), and `upsertMedia` warn-skips a path it cannot find
+ * and returns `undefined`. A map built from basenames would therefore produce a
+ * green seed with blank slots, which is why the files are renamed to their slug
+ * on the way in and why `verify` asserts every entry in this map.
  *
- * Three listings have no photo yet — `the-bend-liquor-lounge`,
- * `the-garrison-taproom-billiards`, `trattoria-pampered-chef` — and keep the
- * labelled placeholder their `imageHint` describes.
+ * All eleven researched listings have a storefront photo now.
  *
  * `alt` is required and localized on the media collection, so both languages
  * are written here. They describe the frame, not the business: the name is
@@ -164,6 +163,24 @@ export const LISTING_PHOTO: Record<
     file: 'assets/businesses/s-and-n-vegetables.jpg',
     altEn: 'A blue awning over a walk-up window, lettered PAN CON TODO above a list of sandwiches, with a CASH ONLY sign on the door.',
     altEs: 'Un toldo azul sobre una ventanita, rotulado PAN CON TODO encima de una lista de bocaditos, con un cartel de CASH ONLY en la puerta.',
+  },
+  'the-bend-liquor-lounge': {
+    file: 'assets/businesses/the-bend-liquor-lounge.jpg',
+    altEn: 'A long cream storefront in late afternoon light, LOUNGE in orange block letters on the parapet and a slatted wood screen over the entry.',
+    altEs: 'Una fachada larga color crema con la luz de la tarde, LOUNGE en letras naranjas sobre el pretil y una celosía de madera en la entrada.',
+  },
+  'the-garrison-taproom-billiards': {
+    file: 'assets/businesses/the-garrison-taproom-billiards.jpg',
+    altEn: 'A columned entry under a script sign reading TAPROOM & BILLIARDS, glass doors set back beneath a second-floor balcony.',
+    altEs: 'Una entrada con columnas bajo un letrero en cursiva que dice TAPROOM & BILLIARDS, con puertas de cristal retranqueadas bajo un balcón.',
+    // Burned-in "© 2026 Google" watermark, same as molinas-ranch. Recorded so
+    // it is obvious in the admin that this is a stand-in until it is shot.
+    credit: 'Google Street View',
+  },
+  'trattoria-pampered-chef': {
+    file: 'assets/businesses/trattoria-pampered-chef.jpg',
+    altEn: 'A tile-roofed storefront at blue hour, the name in lit script above a covered walkway of ceiling fans and warm-lit windows.',
+    altEs: 'Una fachada de tejas a la hora azul, con el nombre en cursiva iluminada sobre un pasillo cubierto de ventiladores y ventanales cálidos.',
   },
 }
 
