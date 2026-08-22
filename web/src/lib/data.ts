@@ -4,7 +4,7 @@ import config from '../payload.config'
 import type { Lang } from '../i18n'
 import type { City, Listing, Story, Event, WeeklyEvent, Spotlight, Category, EventKind } from '../payload-types'
 import { routes } from './routes'
-import { fold, matches, prepare, squash, type Suggestion } from './search'
+import { fold, matches, metaLine, prepare, squash, type Suggestion } from './search'
 
 /**
  * Data access through Payload's local API — an in-process call, no HTTP, so
@@ -132,9 +132,7 @@ export function applySearch(
       id: String(listing.id),
       href: city ? routes.business(lang, city.slug, listing.slug) : '#',
       name: listing.name,
-      // Joined only over the parts that exist: 7 of the 11 listings have no
-      // hood, and interpolating blindly leaves a dangling " · ".
-      meta: [category?.label, listing.hood].filter(Boolean).join(' · '),
+      meta: metaLine(category?.label, listing.hood),
       terms: [
         category?.label,
         listing.hood,

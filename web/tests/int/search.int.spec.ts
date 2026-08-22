@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest'
 import { getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
-import { prepare, rankMatches, fold, squash, type Suggestion } from '@/lib/search'
+import { prepare, rankMatches, fold, metaLine, squash, type Suggestion } from '@/lib/search'
 import { applySearch, getListings } from '@/lib/data'
 
 /**
@@ -66,6 +66,24 @@ describe('fold / squash', () => {
     expect(squash('S&N Vegetables')).toBe('snvegetables')
     expect(squash("Molina's")).toBe('molinas')
     expect(squash('dr limon')).toBe('drlimon')
+  })
+})
+
+describe('metaLine', () => {
+  it('joins both parts when both exist', () => {
+    expect(metaLine('RESTAURANTES', 'Cypress Village')).toBe('RESTAURANTES · Cypress Village')
+  })
+
+  // 7 of the 11 listings have no hood. Interpolating the separator regardless
+  // is what left "RESTAURANTES ·" on every one of their cards.
+  it.each([
+    [['RESTAURANTES', null], 'RESTAURANTES'],
+    [['RESTAURANTES', ''], 'RESTAURANTES'],
+    [['RESTAURANTES', undefined], 'RESTAURANTES'],
+    [[null, 'Cypress Village'], 'Cypress Village'],
+    [[null, null], ''],
+  ])('drops the separator for %j', (parts, want) => {
+    expect(metaLine(...(parts as (string | null | undefined)[]))).toBe(want)
   })
 })
 
@@ -151,9 +169,13 @@ describe('applySearch against the real database', () => {
     expect(payload).toBeDefined()
   })
 
-  it('omits the trailing separator when a listing has no hood', () => {
+  it('omits the trailing separator when a listing has no hood', async () => {
     // 7 of 11 rows have a NULL hood.
-    for (const s of FIXTURES) expect(s.meta.endsWith(' · ')).toBe(false)
+    const all = await getListings('es', {})
+    const { suggestions } = applySearch(all, 'es', '')
+    const dangling = suggestions.filter((s) => s.meta.trim().endsWith('·') || s.meta.trim().startsWith('·'))
+    expect(dangling.map((s) => `${s.name}: ${s.meta}`)).toEqual([])
+    expect(suggestions.some((s) => !s.meta.includes('·'))).toBe(true)
   })
 
   // Bug 4: `tag` is localized, listings_locales holds only `en` rows, and the
