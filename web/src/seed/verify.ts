@@ -94,7 +94,7 @@ async function main() {
   /* --- the storefront photography ---------------------------------------- */
   // `upsertMedia` warns and returns undefined when it cannot find a file, and
   // the research loop sits inside a catch that downgrades a throw to a skip —
-  // so a wrong path produces a green seed and a blank slot. Five of the eight
+  // so a wrong path produces a green seed and a blank slot. Seven of the eleven
   // source files were named differently from the listing they belong to, which
   // is exactly the mistake this catches.
   {
