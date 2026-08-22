@@ -3,7 +3,14 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { isLang, translator, type Lang } from '../../../../i18n'
 import { routes } from '../../../../lib/routes'
-import { getCities, getCity, getListings, getSiteSettings, rel } from '../../../../lib/data'
+import {
+  applySearch,
+  getCities,
+  getCity,
+  getListings,
+  getSiteSettings,
+  rel,
+} from '../../../../lib/data'
 import { castBg } from '../../../../lib/castBg'
 import type { City, Media } from '../../../../payload-types'
 import { PageShell } from '../../../../components/PageShell'
@@ -75,14 +82,17 @@ export default async function CityPage({
   if (!city) notFound()
 
   // The city page is the browse surface now: every listing in the city, not a
-  // curated three. `total` is the unsearched count, so the hero button and the
-  // empty state can tell "no listings yet" apart from "no search results".
-  const [settings, list, everything] = await Promise.all([
+  // curated three. The fetch is unfiltered and `?q=` is applied in memory, so
+  // `total` — the unsearched count that lets the hero button and the empty
+  // state tell "no listings yet" apart from "no search results" — is just the
+  // length of what we already have, rather than the second query this used to
+  // fire alongside the first.
+  const [settings, all] = await Promise.all([
     getSiteSettings(lang),
-    getListings(lang, { city: slug, q: q || undefined }),
-    q ? getListings(lang, { city: slug }) : Promise.resolve(null),
+    getListings(lang, { city: slug }),
   ])
-  const total = everything ? everything.length : list.length
+  const { list, suggestions } = applySearch(all, lang, q)
+  const total = all.length
   const soon = total === 0
 
   const photo = rel<Media>(city.photo)
@@ -306,9 +316,11 @@ export default async function CityPage({
                   placeholder: t('Search this city…'),
                   search: lang === 'es' ? 'BUSCAR' : 'SEARCH',
                   reset: t('RESET'),
+                  suggestions: t('Suggestions'),
                 }}
                 resetHref={routes.city(lang, slug)}
                 count={`${list.length} ${list.length === 1 ? t('LISTING') : t('LISTINGS')}`}
+                suggestions={suggestions}
               />
             </div>
 

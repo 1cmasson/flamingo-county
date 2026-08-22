@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import type { Lang } from '../i18n'
+import type { Suggestion } from '../lib/search'
+import { SearchSuggest } from './SearchSuggest'
 import s from './chrome.module.css'
 
 /**
@@ -11,6 +13,11 @@ import s from './chrome.module.css'
  * query string, and the page is a server component that already reads its
  * filters from `searchParams`. Enter-to-submit comes free.
  *
+ * That is still true. `SearchSuggest` is a client island holding only the input
+ * and a listbox of matching listings; the form around it is untouched, so with
+ * JavaScript off the search still submits and still filters, and pressing Enter
+ * without highlighting a suggestion still runs the ordinary full-text search.
+ *
  * `hidden` rides along as hidden inputs so a search does not silently drop the
  * scope it was made in — today that is only `?city=` on the home page.
  */
@@ -21,14 +28,16 @@ export function SearchForm({
   t,
   resetHref,
   count,
+  suggestions,
 }: {
   lang: Lang
   action: string
   hidden: Record<string, string | undefined>
   q: string
-  t: { placeholder: string; search: string; reset: string }
+  t: { placeholder: string; search: string; reset: string; suggestions: string }
   resetHref: string
   count: string
+  suggestions: Suggestion[]
 }) {
   return (
     <form
@@ -45,22 +54,11 @@ export function SearchForm({
       {Object.entries(hidden).map(([k, v]) =>
         v ? <input key={k} type="hidden" name={k} value={v} /> : null,
       )}
-      <input
-        name="q"
-        defaultValue={q}
+      <SearchSuggest
+        q={q}
         placeholder={t.placeholder}
-        aria-label={t.placeholder}
-        style={{
-          flex: '1 1 240px',
-          minWidth: 0,
-          fontSize: 14,
-          fontWeight: 600,
-          padding: '10px 12px',
-          border: '3px solid var(--ink)',
-          background: 'var(--grad-cream)',
-          color: 'var(--ink)',
-          outline: 'none',
-        }}
+        listboxLabel={t.suggestions}
+        items={suggestions}
       />
       <button
         type="submit"
