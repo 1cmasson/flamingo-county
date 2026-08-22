@@ -72,6 +72,18 @@ export type Suggestion = {
   tag: string
 }
 
+/**
+ * The "RESTAURANTES · Cypress Village" line under a business name.
+ *
+ * Joined over only the parts that exist. 7 of the 11 listings have no `hood`,
+ * and interpolating the separator unconditionally leaves a dangling " · " on
+ * every one of them. Shared by the card and the suggestion row so the two
+ * cannot drift.
+ */
+export function metaLine(...parts: (string | null | undefined)[]): string {
+  return parts.filter(Boolean).join(' · ')
+}
+
 /** A suggestion with its normalised forms precomputed. */
 export type Prepared = {
   item: Suggestion

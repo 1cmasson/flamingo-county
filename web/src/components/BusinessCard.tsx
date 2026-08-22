@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { City, Listing, Category, Media } from '../payload-types'
 import { rel } from '../lib/data'
+import { metaLine } from '../lib/search'
 import { routes } from '../lib/routes'
 import type { Lang } from '../i18n'
 import { MediaSlot } from './MediaSlot'
@@ -147,7 +148,7 @@ export function BusinessCard({
             color: 'var(--magenta)',
           }}
         >
-          {category?.label} · {listing.hood}
+          {metaLine(category?.label, listing.hood)}
         </div>
         <p style={{ margin: 0, fontSize: 14, lineHeight: 1.45, fontWeight: 600, textWrap: 'pretty' }}>
           {listing.tag}
