@@ -6,6 +6,7 @@ import { routes } from '../lib/routes'
 import type { Lang } from '../i18n'
 import { MediaSlot } from './MediaSlot'
 import s from './chrome.module.css'
+import { buildSrcSet } from '../lib/srcset'
 
 /**
  * The business card, used on Home, City and the "also in" rails.
@@ -67,6 +68,9 @@ export function BusinessCard({
         <MediaSlot
           media={hero}
           placeholder={listing.imageHint ? `${t('Drop: ')}${listing.imageHint}` : null}
+          // The grid is `minmax(min(100%,265px),1fr)` inside the 1280 shell, so
+          // a card tops out near 330px and goes full-bleed on a phone.
+          sizes="(max-width: 700px) 100vw, 330px"
         />
         <div
           style={{
@@ -114,6 +118,8 @@ export function BusinessCard({
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={mascot.url}
+            srcSet={buildSrcSet(mascot)}
+            sizes="200px"
             alt=""
             style={{
               position: 'absolute',

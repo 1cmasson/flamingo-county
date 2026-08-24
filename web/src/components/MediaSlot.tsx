@@ -1,4 +1,5 @@
 import type { Media } from '../payload-types'
+import { buildSrcSet } from '../lib/srcset'
 
 /**
  * Replaces `<image-slot>` — a 65 KB custom element built for the Claude Design
@@ -14,6 +15,11 @@ import type { Media } from '../payload-types'
  * wrong: the template contains an "or browse files" sub-line, but it is hidden
  * at runtime whenever the canvas host is absent — which is always, on the
  * deployed site. It is not reproduced here.
+ *
+ * `sizes` is worth passing accurately. It is what decides which `srcSet`
+ * candidate the browser picks, and it must describe the slot's CSS width — not
+ * the image's. Left unset it falls back to `100vw`, which is safe but makes a
+ * 300px card pull the 828w variant on every phone.
  */
 export function MediaSlot({
   media,
@@ -35,6 +41,10 @@ export function MediaSlot({
   const doc = media && typeof media === 'object' ? (media as Media) : null
 
   if (doc?.url) {
+    // Undefined whenever there is only one candidate — a mascot small enough
+    // that Payload generated no variants has nothing to choose between, and an
+    // empty `sizes` on a lone `src` is just noise in the markup.
+    const srcSet = buildSrcSet(doc)
     return (
       // eslint-disable-next-line @next/next/no-img-element
       <img
@@ -42,7 +52,8 @@ export function MediaSlot({
         alt={doc.alt ?? ''}
         width={doc.width ?? undefined}
         height={doc.height ?? undefined}
-        sizes={sizes}
+        srcSet={srcSet}
+        sizes={srcSet ? (sizes ?? '100vw') : undefined}
         loading={priority ? 'eager' : 'lazy'}
         className={className}
         style={{

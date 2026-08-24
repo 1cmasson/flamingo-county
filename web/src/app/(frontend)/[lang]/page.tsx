@@ -17,6 +17,7 @@ import { NewsletterForm } from '../../../components/NewsletterForm'
 import { MediaSlot } from '../../../components/MediaSlot'
 import { SearchForm } from '../../../components/SearchForm'
 import s from '../../../components/chrome.module.css'
+import { buildSrcSet } from '../../../lib/srcset'
 
 type Search = { city?: string; q?: string }
 
@@ -155,6 +156,10 @@ export default async function HomePage({
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={heroCastImg.url}
+                  srcSet={buildSrcSet(heroCastImg)}
+                  // Right-hand column of a `1.15fr 0.85fr` split on the 1280
+                  // shell, so ~520px, and full width once that grid stacks.
+                  sizes="(max-width: 900px) 100vw, 520px"
                   alt={heroCastImg.alt ?? ''}
                   style={{
                     alignSelf: 'flex-end',
@@ -486,6 +491,8 @@ function SpotlightCard({
       >
         <MediaSlot
           media={spot.image}
+          // `minmax(min(100%,250px),1fr)` across the spotlight row.
+          sizes="(max-width: 700px) 100vw, 380px"
           placeholder={
             listing?.imageHint
               ? `${t('Drop the spotlight photo — ')}${listing.imageHint.toLowerCase()}`

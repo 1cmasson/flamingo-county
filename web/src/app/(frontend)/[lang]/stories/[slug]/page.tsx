@@ -8,6 +8,7 @@ import type { City, Listing, Media } from '../../../../../payload-types'
 import { PageShell } from '../../../../../components/PageShell'
 import { StoryBlocks } from '../../../../../components/StoryBlocks'
 import { MediaSlot } from '../../../../../components/MediaSlot'
+import { FULL_WIDTH_SIZES } from '../../../../../lib/srcset'
 import chrome from '../../../../../components/chrome.module.css'
 
 /**
@@ -255,7 +256,12 @@ export default async function StoryPage({
                 animationRange: 'entry 0% cover 26%',
               }}
             >
-              <MediaSlot media={story.cover} placeholder={story.coverHint} priority />
+              <MediaSlot
+                media={story.cover}
+                placeholder={story.coverHint}
+                sizes={FULL_WIDTH_SIZES}
+                priority
+              />
             </div>
           </div>
           <div

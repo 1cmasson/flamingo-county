@@ -8,6 +8,7 @@ import { dateOnly, parseISO, shortMonth, shortWeekday } from '../../../../../lib
 import type { City, EventKind, Media } from '../../../../../payload-types'
 import { PageShell } from '../../../../../components/PageShell'
 import { MediaSlot } from '../../../../../components/MediaSlot'
+import { FULL_WIDTH_SIZES } from '../../../../../lib/srcset'
 import { EventActions } from '../../../../../components/EventActions'
 import { eventActionStrings, eventVenue } from '../../../../../components/EventCard'
 import s from '../../../../../components/chrome.module.css'
@@ -128,6 +129,7 @@ export default async function EventPage({
             <MediaSlot
               media={ev.image}
               placeholder={ev.imageHint ?? t('Photo from the night')}
+              sizes={FULL_WIDTH_SIZES}
               priority
             />
             <div

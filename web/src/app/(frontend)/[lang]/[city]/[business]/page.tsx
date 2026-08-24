@@ -15,6 +15,7 @@ import {
 import type { Category, City, Media } from '../../../../../payload-types'
 import { PageShell } from '../../../../../components/PageShell'
 import { MediaSlot } from '../../../../../components/MediaSlot'
+import { FULL_WIDTH_SIZES } from '../../../../../lib/srcset'
 import s from '../../../../../components/chrome.module.css'
 
 /**
@@ -177,6 +178,7 @@ export default async function BusinessPage({
             <MediaSlot
               media={gallery[0]}
               placeholder={t('Drop the hero shot — dining room, bar, storefront')}
+              sizes={FULL_WIDTH_SIZES}
               priority
             />
             <div
@@ -499,6 +501,8 @@ export default async function BusinessPage({
                   <MediaSlot
                     media={gallery[i + 1]}
                     placeholder={listing.imageHint ? `${t('Drop: ')}${listing.imageHint}` : null}
+                    // Three-up under the main column, so ~250px on a desktop.
+                    sizes="(max-width: 700px) 33vw, 250px"
                   />
                 </div>
               ))}

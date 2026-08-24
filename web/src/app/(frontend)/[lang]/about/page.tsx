@@ -8,6 +8,7 @@ import { castBg } from '../../../../lib/castBg'
 import type { City, Media } from '../../../../payload-types'
 import { PageShell } from '../../../../components/PageShell'
 import s from '../../../../components/chrome.module.css'
+import { buildSrcSet } from '../../../../lib/srcset'
 
 export async function generateMetadata({
   params,
@@ -155,6 +156,8 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={portrait.url}
+                srcSet={buildSrcSet(portrait)}
+                sizes="(max-width: 900px) 100vw, 420px"
                 alt={portrait.alt ?? ''}
                 style={{
                   // Pinned to the frame's edges rather than sized in
@@ -279,6 +282,8 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={mascot.url}
+                      srcSet={buildSrcSet(mascot)}
+                      sizes="260px"
                       alt=""
                       style={{
                         maxHeight: '100%',

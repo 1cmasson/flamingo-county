@@ -162,7 +162,11 @@ function StoryBlock({ block: b }: { block: Block }) {
                 animationRange: 'entry 4% cover 34%',
               }}
             >
-              <MediaSlot media={b.image} placeholder={b.hint} />
+              <MediaSlot
+                media={b.image}
+                placeholder={b.hint}
+                sizes="(max-width: 700px) 100vw, 620px"
+              />
             </div>
           </div>
           {b.caption ? (
@@ -309,7 +313,7 @@ function PairHalf({
             animationRange: range,
           }}
         >
-          <MediaSlot media={media} placeholder={hint} />
+          <MediaSlot media={media} placeholder={hint} sizes="(max-width: 700px) 50vw, 300px" />
         </div>
       </div>
       {caption ? (

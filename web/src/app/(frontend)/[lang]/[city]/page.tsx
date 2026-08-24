@@ -16,6 +16,7 @@ import type { City, Media } from '../../../../payload-types'
 import { PageShell } from '../../../../components/PageShell'
 import { BusinessCard } from '../../../../components/BusinessCard'
 import { SearchForm } from '../../../../components/SearchForm'
+import { buildSrcSet } from '../../../../lib/srcset'
 
 /**
  * Rendered per request, always.
@@ -257,6 +258,10 @@ export default async function CityPage({
                 <img
                   key={m.id ?? i}
                   src={img.url}
+                  srcSet={buildSrcSet(img)}
+                  // Height-constrained to 320px with `width: auto`, so the box
+                  // is roughly 400px across at the cast art's aspect ratio.
+                  sizes="400px"
                   alt={m.name ?? ''}
                   style={{
                     position: 'relative',
@@ -413,6 +418,8 @@ function ComingSoon({
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={mascot.url}
+            srcSet={buildSrcSet(mascot)}
+            sizes="400px"
             alt=""
             style={{
               maxWidth: '100%',
