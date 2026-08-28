@@ -375,6 +375,36 @@ loaded first. A hard reload was always correct, which is why it survived review.
 That retired `lib/active.ts` and the `x-fc-pathname` header. `proxy.ts` keeps
 its language chain, which is unrelated.
 
+### Images are served at the size they are displayed
+
+`lib/srcset.ts` builds a `srcSet` from the variants Payload generated on upload.
+Nothing emitted one until 2026-08-27, so every photo went over the wire at full
+upload size while `thumbnail`, `card` and `hero` sat unused on the volume. The
+Hialeah grid went from 2.30 MB to 0.78 MB at 1280 @1x, and the home page from
+5.43 MB to 2.77 MB.
+
+Two rules it encodes, both learned the hard way:
+
+- **Read the variants, do not name them.** Sharp SKIPS any target wider than the
+  original, so a 1600px storefront has no `hero` and a 353px mascot has none at
+  all. Naming the three sizes emits `undefined 1920w` across most of the library.
+  The original joins the set and the whole thing is deduped by width, because
+  `havana-1920` *is* its own `hero`.
+- **`sizes` describes the slot, not the image.** It is what picks the candidate,
+  so a wrong value silently overfetches — the card grid is `minmax(min(100%,265px),1fr)`
+  inside a 1280 shell and therefore ~330px, not the `100vw` an omitted `sizes`
+  assumes. Check it through `currentSrc` in a real browser; the attribute being
+  present proves nothing about which file the browser actually took.
+
+**Two heavy images this does not solve**, both a different problem:
+
+- `skyline-hero.png` (1.1 MB) is a CSS `background-image`. `srcSet` does not
+  apply — it needs `image-set()` or restructuring into an `<img>`.
+- `flamingo-hialeah.png` (418 KB) and `cow-miami-lakes.png` (609 KB) are 353px
+  and 360px originals, so there is nothing to choose between. They are simply
+  badly encoded for their dimensions and want re-encoding, or a WebP
+  `formatOptions` on the media collection — an asset decision, not a markup one.
+
 ### Still to do on the frontend
 
 All ten routes are ported. Six of them were only ever checked by status code,
