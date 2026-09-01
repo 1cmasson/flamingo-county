@@ -69,8 +69,32 @@ export function list(v: unknown): string[] {
 
 /** research city slug → the site's city slug. */
 const CITY: Record<string, string> = { 'miami-lakes': 'lakes', hialeah: 'hialeah' }
-/** research category → the site's taxonomy. Only restaurants and bars exist so far. */
-const CATEGORY: Record<string, string> = { restaurant: 'food', bar: 'night' }
+/**
+ * research category → the site's taxonomy.
+ *
+ * A key missing here is not an error — `seed` logs `skip <slug>: no mapping`
+ * and carries on with an exit code of 0. So a new research category has to be
+ * added in three places at once or it silently imports nothing: here, in
+ * `CAT_KEEP`, and in `CAT_RELABEL` (both in `seed/index.ts`).
+ */
+const CATEGORY: Record<string, string> = {
+  restaurant: 'food',
+  bar: 'night',
+  nonprofit: 'nonprofit',
+}
+
+/**
+ * Listings written by hand in `data-import/listings.json` with no dossier
+ * behind them.
+ *
+ * `research.sourceFile` is provenance: it names the file a record was generated
+ * from. These two were not generated from anything — they were authored from
+ * press and the organisations' own sites, which are in `references` — so
+ * pointing the field at `research/hialeah/casa-marin.md` would invent a source
+ * document. Empty is the honest value, and `_meta.local_edits` in the JSON
+ * carries the same warning for whoever regenerates that file.
+ */
+const HAND_AUTHORED = new Set(['casa-marin', 'el-club-de-la-amistad'])
 
 /**
  * Listings whose slug changed after they were already seeded. old → new.
@@ -181,6 +205,24 @@ export const LISTING_PHOTO: Record<
     file: 'assets/businesses/trattoria-pampered-chef.jpg',
     altEn: 'A tile-roofed storefront at blue hour, the name in lit script above a covered walkway of ceiling fans and warm-lit windows.',
     altEs: 'Una fachada de tejas a la hora azul, con el nombre en cursiva iluminada sobre un pasillo cubierto de ventiladores y ventanales cálidos.',
+  },
+  // NOT a storefront. A holding card built from the restaurant's own logo on
+  // the flyer's paper colour, because the only photograph available is a
+  // third-party Google Maps contribution with a passer-by and the Maps chrome
+  // in frame. The mark is kept small enough to survive the hero band's centre
+  // crop. Replace the file with the real storefront and drop the credit — the
+  // slug and alt text are what the seed keys on, not the contents.
+  'casa-marin': {
+    file: 'assets/businesses/casa-marin.jpg',
+    altEn: "The Casa Marín logo: a chef's hat between a fork and a knife inside a red circle, on a banner reading CASA MARIN.",
+    altEs: 'El logotipo de Casa Marín: un gorro de chef entre un tenedor y un cuchillo dentro de un círculo rojo, sobre una cinta que dice CASA MARIN.',
+    credit: 'Casa Marín — logo, holding image until the storefront is photographed',
+  },
+  'el-club-de-la-amistad': {
+    file: 'assets/businesses/el-club-de-la-amistad.jpg',
+    altEn: 'Seven volunteers in pink club shirts standing shoulder to shoulder against a slatted wood wall, the club seal in the corner.',
+    altEs: 'Siete voluntarias con camisas rosadas del club, hombro con hombro ante una pared de listones de madera, con el sello del club en la esquina.',
+    credit: 'Club de la Amistad por un Hialeah Mejor',
   },
 }
 
@@ -304,7 +346,9 @@ export function toListing(r: ResearchListing, ids: Record<string, any>) {
         type: val(ref.type),
       })),
       legalEntity: val(r.legal_entity),
-      sourceFile: `flamingo-city/research/${r.city}/${DOSSIER_SLUG[r.slug] ?? r.slug}.md`,
+      sourceFile: HAND_AUTHORED.has(r.slug)
+        ? undefined
+        : `flamingo-city/research/${r.city}/${DOSSIER_SLUG[r.slug] ?? r.slug}.md`,
     },
   }
 }

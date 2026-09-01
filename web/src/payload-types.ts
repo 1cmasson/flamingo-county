@@ -657,7 +657,7 @@ export interface Event {
   title: string;
   date: string;
   /**
-   * Display string as written, e.g. "9PM–1AM". Not parsed.
+   * Display string as written, e.g. "9PM–1AM". Not parsed. Localized because it is not always a clock reading — an event whose time is not settled says so in words ("Por confirmar"), and that has to translate.
    */
   timeLabel?: string | null;
   kind: number | EventKind;

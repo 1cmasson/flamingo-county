@@ -177,7 +177,6 @@ export default async function BusinessPage({
           >
             <MediaSlot
               media={gallery[0]}
-              placeholder={t('Drop the hero shot — dining room, bar, storefront')}
               sizes={FULL_WIDTH_SIZES}
               priority
             />
@@ -481,32 +480,40 @@ export default async function BusinessPage({
               </section>
             ) : null}
 
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,135px),1fr))',
-                gap: 'clamp(10px,2vw,14px)',
-              }}
-            >
-              {[0, 1, 2].map((i) => (
-                <div
-                  key={i}
-                  style={{
-                    position: 'relative',
-                    height: 'clamp(130px,22vw,170px)',
-                    border: '4px solid var(--ink)',
-                    boxShadow: '6px 6px 0 var(--ink)',
-                  }}
-                >
-                  <MediaSlot
-                    media={gallery[i + 1]}
-                    placeholder={listing.imageHint ? `${t('Drop: ')}${listing.imageHint}` : null}
-                    // Three-up under the main column, so ~250px on a desktop.
-                    sizes="(max-width: 700px) 33vw, 250px"
-                  />
-                </div>
-              ))}
-            </div>
+            {/* One tile per photo that exists, and no grid at all when the only
+                photo is the hero. This was a fixed `[0,1,2].map` over
+                `gallery[i+1]`, which drew three bordered, shadowed, dashed
+                boxes on every listing — none of the thirteen has ever had a
+                second photograph, so the strip was a permanent apology for
+                missing pictures. The frame is drawn here rather than in
+                MediaSlot, so it has to be gated here too. */}
+            {gallery.length > 1 ? (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,135px),1fr))',
+                  gap: 'clamp(10px,2vw,14px)',
+                }}
+              >
+                {gallery.slice(1).map((shot, i) => (
+                  <div
+                    key={i}
+                    style={{
+                      position: 'relative',
+                      height: 'clamp(130px,22vw,170px)',
+                      border: '4px solid var(--ink)',
+                      boxShadow: '6px 6px 0 var(--ink)',
+                    }}
+                  >
+                    <MediaSlot
+                      media={shot}
+                      // Three-up under the main column, so ~250px on a desktop.
+                      sizes="(max-width: 700px) 33vw, 250px"
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : null}
           </div>
 
           {/* --- Sidebar --- */}

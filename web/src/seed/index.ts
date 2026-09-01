@@ -130,11 +130,67 @@ function withIds(rows: Dict[] | undefined, enRows: Dict[] | undefined): Dict[] {
  * source: a re-pull would put the five back. `night` is relabelled too — its
  * two listings are a taproom and a liquor lounge, not night clubs.
  */
-const CAT_KEEP = ['food', 'night']
+const CAT_KEEP = ['food', 'night', 'nonprofit']
 const CAT_RELABEL: Record<string, { en: string; es: string }> = {
   food: { en: 'RESTAURANTS', es: 'RESTAURANTES' },
   night: { en: 'BARS', es: 'BARES' },
+  nonprofit: { en: 'NONPROFITS', es: 'ORGANIZACIONES' },
 }
+
+/**
+ * Categories that exist here and nowhere upstream.
+ *
+ * `fc-data.js` was written for a directory of businesses, so its five
+ * categories are all trades and venues — there is no nonprofit anywhere in it.
+ * Club de la Amistad is not a business and does not belong under RESTAURANTS,
+ * so the row is authored here instead, for the same reason `CAT_RELABEL` is: a
+ * key added to `fc-data.js` is reverted by the next Claude Design re-pull.
+ *
+ * Every key here must also be in `CAT_KEEP` — `pruneCategories` deletes rows
+ * outside it, and then throws once a listing references one. The ES label is
+ * `ORGANIZACIONES` rather than the club's own `sin fines de lucro`, which is
+ * accurate but three words too long for a filter chip.
+ */
+const EXTRA_CATS = [{ key: 'nonprofit', label: 'NONPROFITS' }]
+
+/**
+ * Events that are actually happening.
+ *
+ * `base.EVENTS` is 20 invented listings-parties behind `SEED_MOCK_CONTENT`, so
+ * before this there was no way to seed a real one. These are authored here, in
+ * both locales, because the announcements they come from are Spanish and the
+ * EN→ES dictionary the rest of the seed leans on has never seen them.
+ *
+ * `listing` is a slug from `data-import/listings.json`, resolved after the
+ * research loop. `photo` follows `LISTING_PHOTO`'s shape.
+ */
+const REAL_EVENTS = [
+  {
+    slug: 'encuentro-casa-marin',
+    date: '2026-09-06',
+    kind: 'church', // labelled COMMUNITY
+    listing: 'casa-marin',
+    star: true,
+    photo: {
+      file: 'assets/events/encuentro-casa-marin.jpg',
+      altEn: 'Two breaded pork steaks on a plate under a pile of raw onion rings, with a wedge of lime.',
+      altEs: 'Dos bistecs de puerco empanizados en un plato bajo una pila de aros de cebolla cruda, con un gajo de limón.',
+      credit: 'Club de la Amistad por un Hialeah Mejor — event flyer',
+    },
+    en: {
+      title: "We're meeting at Casa Marín",
+      timeLabel: 'Time to be confirmed',
+      freeLabel: 'MEMBERS AND VOLUNTEERS',
+      note: 'Lunch among neighbours, members and volunteers of the Club de la Amistad, at the table of a Palm Avenue restaurant that has always been there.',
+    },
+    es: {
+      title: 'Nos reunimos en Casa Marín',
+      timeLabel: 'Por confirmar',
+      freeLabel: 'SOCIOS Y VOLUNTARIOS',
+      note: 'Un almuerzo entre vecinos, socios y voluntarios del Club de la Amistad, en la mesa de un restaurante de siempre en Palm Avenue.',
+    },
+  },
+]
 
 /**
  * Drop taxonomy rows that are no longer in `CAT_KEEP`.
@@ -381,7 +437,8 @@ async function seed() {
   // `all` is the leading entry of both source arrays and is a filter-chip
   // affordance, not a taxonomy row. Dropped on purpose: 6 -> 5, 8 -> 7.
   console.log('categories…')
-  for (const [i, c] of base.CATS.filter((c: any) => CAT_KEEP.includes(c.key)).entries()) {
+  const cats = [...base.CATS.filter((c: any) => CAT_KEEP.includes(c.key)), ...EXTRA_CATS]
+  for (const [i, c] of cats.entries()) {
     const relabel = CAT_RELABEL[c.key]
     const doc = await upsert(
       payload,
@@ -638,6 +695,60 @@ async function seed() {
         },
       )
     }
+  }
+
+  /* --- Real events -------------------------------------------------------- */
+  // The 20 events above are design fiction and stay behind SEED_MOCK_CONTENT,
+  // which left no route at all for an event that actually happens. These are
+  // authored here for the same reason CAT_RELABEL and LISTING_PHOTO are: there
+  // is no upstream file to put them in, and fc-data.js is re-pulled.
+  //
+  // Runs AFTER the researched-listings loop on purpose — a `listing` venue
+  // needs id.listings to be populated, and a missing id would write an event
+  // with no venue rather than fail.
+  //
+  // Spanish is the source language here, which inverts the listing importer's
+  // English-only rule: these events are announced on Spanish flyers, so both
+  // locales are authored rather than run through the EN→ES dictionary.
+  console.log('real events…')
+  for (const e of REAL_EVENTS) {
+    const mediaId = e.photo
+      ? await upsertMedia(payload, e.photo.file, e.photo.altEn, e.photo.altEs, e.photo.credit)
+      : undefined
+    const listingId = id.listings[e.listing]
+    if (!listingId) {
+      throw new Error(
+        `event "${e.slug}" is at listing "${e.listing}", which was not seeded. ` +
+          `Check that it is in data-import/listings.json and that its city and ` +
+          `category both have a mapping in research-listings.ts.`,
+      )
+    }
+    await upsert(
+      payload,
+      'events',
+      e.slug,
+      {
+        title: e.en.title,
+        // Midday UTC, matching the loop above: a bare calendar date lands on
+        // the previous day once dateOnly() reads it back in America/New_York.
+        date: new Date(`${e.date}T12:00:00.000Z`).toISOString(),
+        timeLabel: e.en.timeLabel,
+        kind: id.kinds[e.kind],
+        venueType: 'listing',
+        listing: listingId,
+        star: e.star,
+        going: 0,
+        freeLabel: e.en.freeLabel,
+        note: e.en.note,
+        ...(mediaId ? { image: mediaId } : {}),
+      },
+      {
+        title: e.es.title,
+        timeLabel: e.es.timeLabel,
+        freeLabel: e.es.freeLabel,
+        note: e.es.note,
+      },
+    )
   }
 
   /* --- Weekly ------------------------------------------------------------- */

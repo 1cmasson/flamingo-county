@@ -30,12 +30,13 @@ async function main() {
   /* counts */
   const want: Record<string, number> = {
     cities: 3,
-    categories: 2,
+    categories: 3,
     'event-kinds': 7,
-    // 11 researched imports; +14 fc-data mocks only when they are seeded.
-    listings: SEED_MOCKS ? 25 : 11,
+    // 13 researched imports; +14 fc-data mocks only when they are seeded.
+    listings: SEED_MOCKS ? 27 : 13,
     stories: SEED_MOCKS ? 3 : 0,
-    events: SEED_MOCKS ? 20 : 0,
+    // The 20 mocks, plus the one real event that seeds either way.
+    events: SEED_MOCKS ? 21 : 1,
     'weekly-events': SEED_MOCKS ? 6 : 0,
     spotlights: SEED_MOCKS ? 3 : 0,
   }
@@ -55,8 +56,8 @@ async function main() {
     const cats = await payload.find({ collection: 'categories', limit: 50, sort: 'order' })
     const slugs = cats.docs.map((d: any) => d.slug).sort()
     check(
-      'categories are food + night only',
-      slugs.join(',') === 'food,night',
+      'categories are food + night + nonprofit only',
+      slugs.join(',') === 'food,night,nonprofit',
       `got ${slugs.join(',') || '(none)'}`,
     )
     const labels = Object.fromEntries(cats.docs.map((d: any) => [d.slug, d.label]))
@@ -75,7 +76,7 @@ async function main() {
     limit: 100,
     depth: 0,
   })
-  check('11 researched listings imported', sourced.totalDocs === 11, `got ${sourced.totalDocs}`)
+  check('13 researched listings imported', sourced.totalDocs === 13, `got ${sourced.totalDocs}`)
   check(
     'no unsourced listing is present unless mocks were seeded',
     (await payload.count({
@@ -83,9 +84,37 @@ async function main() {
       where: { publicationStatus: { equals: 'unsourced' } },
     })).totalDocs === (SEED_MOCKS ? 14 : 0),
   )
+  /* Listings with no premises to give an address for.
+   *
+   * The check below exists to catch an import that silently dropped its
+   * contact fields, and it held while every listing was a business with a
+   * front door. Club de la Amistad is a volunteer club that walks the city and
+   * reports from phones — it has no office and publishes no number, so an
+   * address here would be an invention rather than a fact.
+   *
+   * Named one by one rather than exempting the whole `nonprofit` category: a
+   * nonprofit with an office should still be held to the rule, and this way
+   * the exemption cannot widen without someone editing this list. The second
+   * check is the price of the first — an exempted listing has to say in
+   * `blockingGaps` why it has nothing, so "no address" stays a recorded fact
+   * and not an empty field nobody noticed. */
+  const NO_PREMISES = new Set(['el-club-de-la-amistad'])
+  const withPremises = sourced.docs.filter((d: any) => !NO_PREMISES.has(d.slug))
   check(
-    'every researched listing has a phone and an address',
-    sourced.docs.every((d: any) => d.detail?.phone && d.detail?.address),
+    'every researched listing with premises has a phone and an address',
+    withPremises.every((d: any) => d.detail?.phone && d.detail?.address),
+    withPremises
+      .filter((d: any) => !(d.detail?.phone && d.detail?.address))
+      .map((d: any) => d.slug)
+      .join(', '),
+  )
+  check(
+    'every listing without premises says so in its blocking gaps',
+    sourced.docs
+      .filter((d: any) => NO_PREMISES.has(d.slug))
+      .every((d: any) =>
+        (d.research?.blockingGaps ?? []).some((g: string) => /address|premises/i.test(g)),
+      ),
   )
   check(
     'every researched listing cites at least one source',

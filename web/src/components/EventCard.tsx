@@ -74,7 +74,6 @@ export function EventCard({
         >
           <MediaSlot
             media={ev.image}
-            placeholder={ev.imageHint ?? t('Photo from the night')}
             sizes="(max-width: 700px) 100vw, 330px"
           />
           <div

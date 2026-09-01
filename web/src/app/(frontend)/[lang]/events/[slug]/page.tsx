@@ -128,7 +128,6 @@ export default async function EventPage({
           >
             <MediaSlot
               media={ev.image}
-              placeholder={ev.imageHint ?? t('Photo from the night')}
               sizes={FULL_WIDTH_SIZES}
               priority
             />
@@ -216,7 +215,18 @@ export default async function EventPage({
                   position: 'absolute',
                   right: 12,
                   bottom: -14,
-                  height: 170,
+                  /**
+                   * Shrinks with the hero so it never reaches the date badge.
+                   *
+                   * Both are anchored to the same right edge, and the hero
+                   * bottoms out at 190px while a fixed 170px mascot did not —
+                   * so under ~800px wide the flamingo's head covered the day
+                   * and month. `40vw - 100px` tracks the hero's own
+                   * `clamp(190px,40vw,320px)` and keeps the mascot's top below
+                   * the badge at every width. Nobody had seen it: the site had
+                   * no events, so this page had nothing to render.
+                   */
+                  height: 'clamp(92px, calc(40vw - 100px), 170px)',
                   width: 'auto',
                   pointerEvents: 'none',
                   filter: 'drop-shadow(3px 3px 0 rgba(12,15,20,0.35))',

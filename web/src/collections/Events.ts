@@ -46,7 +46,11 @@ export const Events: CollectionConfig = {
         {
           name: 'timeLabel',
           type: 'text',
-          admin: { description: 'Display string as written, e.g. "9PM–1AM". Not parsed.' },
+          localized: true,
+          admin: {
+            description:
+              'Display string as written, e.g. "9PM–1AM". Not parsed. Localized because it is not always a clock reading — an event whose time is not settled says so in words ("Por confirmar"), and that has to translate.',
+          },
         },
         { name: 'kind', type: 'relationship', relationTo: 'event-kinds', required: true },
       ],

@@ -29,7 +29,7 @@ create-first-user screen handles it instead.
 | Collection | N | From |
 | --- | --- | --- |
 | `cities` | 3 | `CITIES` |
-| `categories` | 2 | `CATS`, minus the `all` chip and minus the three verticals with no listings — see *The taxonomy is narrower than the design source* |
+| `categories` | 3 | `CATS`, minus the `all` chip and minus the three verticals with no listings, plus `nonprofit` which `CATS` never had — see *The taxonomy is narrower than the design source* |
 | `event-kinds` | 7 | `EKINDS` minus the `all` chip |
 | `listings` | 14 | `BIZ` + `DETAIL` |
 | `stories` | 3 | `STORIES` (33 blocks) |
@@ -58,26 +58,38 @@ photography, and the site copy. Those describe real places and real words.
 the full assertion suite runs again. Nothing is lost by leaving it off:
 `fc-data.js` is still in the repo and still the source of truth for it.
 
-The content that ships is 11 researched listings, and `publicationStatus`
+The content that ships is 13 researched listings, and `publicationStatus`
 records how solid each one is:
 
 | Value | N | What it is |
 | --- | --- | --- |
 | `ready` | 4 | Every published field traces to a source. |
-| `needs_owner_confirmation` | 7 | Publishable, but `research.blockingGaps` names what still has to be asked. |
+| `needs_owner_confirmation` | 9 | Publishable, but `research.blockingGaps` names what still has to be asked. |
 | `unsourced` | 0 | Design placeholders. Only present with `SEED_MOCK_CONTENT=1`. |
 
-**What this empties.** The events board, the stories index and the home
-spotlight row have no content, and Little Havana has no listings — there is no
-research for it yet, so its city page renders COMING SOON. Every one of those renders its empty state rather than
-breaking. That is the honest picture: the site now shows exactly what is known
-about real businesses and nothing else.
+**What this empties.** The stories index and the home spotlight row have no
+content, and Little Havana has no listings — there is no research for it yet, so
+its city page renders COMING SOON. Every one of those renders its empty state
+rather than breaking. That is the honest picture: the site now shows exactly
+what is known about real businesses and nothing else.
+
+The **events board is no longer empty**: one real event ships, seeded from
+`REAL_EVENTS` in `src/seed/index.ts` rather than from `fc-data.js`. See
+*One real event, and what it exposed* below.
 
 The researched 11 come from `data-import/listings.json`, a tracked copy of the
 file generated from the per-business dossiers in the sibling `flamingo-city`
 repo's `research/<city>/`. The importer is `src/seed/research-listings.ts`; it
 prefers the in-repo copy and falls back to the sibling checkout, so a deploy
-that only has this repo still gets all 11. Override with `RESEARCH_JSON`.
+that only has this repo still gets all 13. Override with `RESEARCH_JSON`.
+
+**Two of the 13 have no dossier.** `casa-marin` and `el-club-de-la-amistad` were
+written by hand into `data-import/listings.json` from press and the
+organisations' own sites. Regenerating that file from the sibling repo therefore
+**drops them** — `_meta.local_edits` says so. `HAND_AUTHORED` in
+`research-listings.ts` keeps `research.sourceFile` empty for the two rather than
+pointing it at a dossier that has never existed, which is the same rule as
+`"N/A"` is not a value: an invented provenance pointer is worse than none.
 
 Keeping the copy tracked matters: `flamingo-city` is a different git repo and
 does not exist on Railway, and the importer skips silently when it finds
@@ -171,9 +183,22 @@ trades and event venues. Two of them have listings, so two of them ship:
 `food` → **RESTAURANTS** and `night` → **BARS**. `night` is relabelled because
 its two listings are a taproom and a liquor lounge, not night clubs.
 
-`CAT_KEEP` and `CAT_RELABEL` in `src/seed/index.ts` hold the divergence.
-Editing `fc-data.js` instead would have been reverted by the next Claude Design
-re-pull.
+A third category, `nonprofit` → **NONPROFITS** / **ORGANIZACIONES**, exists here
+and nowhere upstream. `fc-data.js` was written for a directory of businesses and
+has no nonprofit in it at all, and Club de la Amistad — a volunteer club with no
+premises — does not belong under RESTAURANTS.
+
+`CAT_KEEP`, `CAT_RELABEL` and `EXTRA_CATS` in `src/seed/index.ts` hold the
+divergence. Editing `fc-data.js` instead would have been reverted by the next
+Claude Design re-pull. A category added to `EXTRA_CATS` **must** also go in
+`CAT_KEEP`, or `pruneCategories` deletes the row on the same run that creates
+it — and then throws on the next one, once a listing references it. The third
+place is `CATEGORY` in `research-listings.ts`: a research category with no
+mapping there is *skipped with an exit code of 0*, so a listing silently fails
+to import.
+
+The ES label is `ORGANIZACIONES`, not the club's own *sin fines de lucro*, which
+is accurate but three words too long for a filter chip.
 
 The seed only upserts, so `pruneCategories` deletes rows that fall out of
 `CAT_KEEP` — without it a database seeded before the trim keeps offering
@@ -182,6 +207,45 @@ which is entirely DB-driven. It **refuses** rather than orphans: a category
 still referenced by a `listing` or a submitted `listing-request` throws, on the
 grounds that the trim is then wrong. Check `listing-requests` on a deployed
 database before re-seeding it.
+
+### One real event, and what it exposed
+
+`base.EVENTS` is 20 invented listings-parties behind `SEED_MOCK_CONTENT`, and
+the whole events block was inside that gate — so there was no route at all for
+an event that actually happens. `REAL_EVENTS` in `src/seed/index.ts` is that
+route, and runs ungated. One record so far: **Nos reunimos en Casa Marín**,
+Sunday 6 September 2026, the Club de la Amistad's members-and-volunteers lunch
+at Casa Marín.
+
+It runs **after** the researched-listings loop, because `venueType: 'listing'`
+needs `id.listings` populated. It throws when the venue slug did not seed,
+rather than writing an event with no venue.
+
+Spanish is the source language for these, which inverts the listing importer's
+English-only rule. The flyer is Spanish; `title`, `note`, `timeLabel` and
+`freeLabel` are authored in both locales rather than run through the EN→ES
+dictionary, which has never seen them.
+
+Three things only a real event could surface, all fixed:
+
+- **`timeLabel` was not localized.** It held clock readings ('9PM–1AM') where
+  the language does not matter. An event whose time is not settled says so in
+  words — *Por confirmar* — which does. Migration
+  `20260901_204154_localize_event_time_label` moves the column into
+  `events_locales`. It moves rather than copies, which is safe only because no
+  deployed database has ever held an event.
+- **`t('← ALL EVENTS')` had no Spanish.** The generated dictionary carries bare
+  `ALL EVENTS` and the arrowed `← ALL LISTINGS`, but never the arrowed events
+  variant — and the key is the whole English literal, arrow included. The event
+  page's back link was shipping English to Spanish readers. Fixed in
+  `i18n/overrides.ts`.
+- **The mascot covered the date badge below ~800px.** Both are anchored to the
+  hero's right edge, and the hero bottoms out at 190px while a fixed 170px
+  mascot did not. Its height now tracks the hero's own clamp.
+
+Dates are written as **midday UTC** (`T12:00:00.000Z`), matching the mock loop.
+A bare calendar date lands on the previous day once `dateOnly()` reads it back
+in `America/New_York`.
 
 ### Sourced listings lead the grids
 
@@ -202,8 +266,10 @@ records in the `spotlights` collection, not the head of the grid.
 
 ### Hours print only when they are trustworthy
 
-7 of the 11 researched listings have hours below `high` confidence, two of them
-with three sources that flatly disagree. The Business page renders a schedule
+8 of the 13 researched listings have hours below `high` confidence, two of them
+with three sources that flatly disagree, and `casa-marin` publishes none at all —
+its only source is a page whose About copy is still the site template's, and a
+schedule on a page nobody edited is not an owned channel. The Business page renders a schedule
 only at `high` confidence, or when `hoursConfidence` is empty — empty means
 authored design content, not a failed verification. Anything less shows
 "Hours vary by source — call to confirm." next to the phone number.
@@ -216,13 +282,18 @@ hours, story and quote were *synthesized at render time from the array index* in
 placeholder data in as authored content. Empty is the honest state; real owner
 detail has to be collected.
 
-**Most photo slots are still empty.** `.image-slots.state.json` never existed,
-so every slot began as a labelled placeholder and the `hint` fields carry the
-art direction. Eight of the eleven researched listings now have a real
-storefront shot as `gallery[0]` — the card hero and the business-page hero.
-Everything else is still a placeholder: `the-bend-liquor-lounge`,
-`the-garrison-taproom-billiards` and `trattoria-pampered-chef` have no
-photograph yet, and no event image or story cover does either.
+**Empty photo slots render nothing.** `MediaSlot` used to reproduce the Claude
+Design canvas element's empty state — a dashed box with a photo icon and the
+`imageHint` printed in it — because at the time every slot was empty. All 13
+listings have a `gallery[0]` now, and the only empty slots left were the two
+spare tiles in the business page's gallery strip, which was a fixed
+`[0,1,2].map` over `gallery[i+1]`: three dashed boxes on every listing,
+apologising for photographs nobody had promised. The strip now renders one tile
+per photo that exists and does not render at all when the hero is the only one.
+
+`imageHint` is still a field on `listings` and `events`. It is art direction for
+whoever fills the slot and it still shows in the admin — it is simply no longer
+printed at the reader.
 
 The photos live in `assets/businesses/<slug>.jpg`, tracked, and are keyed by
 **slug** in `LISTING_PHOTO` (`src/seed/research-listings.ts`). Keying on the
@@ -282,9 +353,9 @@ the array as replaced and rebuilds it instead of translating in place.
 
 ## The frontend
 
-Ported so far: the chrome (nav, footer), **Home**, **City**, **Business** and
-**Story**. Still on the list: Events, Event, Stories index, My Week,
-List Your Spot, About.
+Ported so far: the chrome (nav, footer), **Home**, **City**, **Business**,
+**Story**, **Events**, **Event**, **Stories index**, **My Week**,
+**List Your Spot** and **About**.
 
 ### How to check a port is faithful
 

@@ -164,7 +164,6 @@ function StoryBlock({ block: b }: { block: Block }) {
             >
               <MediaSlot
                 media={b.image}
-                placeholder={b.hint}
                 sizes="(max-width: 700px) 100vw, 620px"
               />
             </div>
@@ -201,7 +200,6 @@ function StoryBlock({ block: b }: { block: Block }) {
         >
           <PairHalf
             media={b.a?.image}
-            hint={b.a?.hint}
             caption={b.a?.caption}
             shadow="var(--pink)"
             clip="clipIn 1s ease-out both"
@@ -210,7 +208,6 @@ function StoryBlock({ block: b }: { block: Block }) {
           {/* The second frame is nudged down so the pair reads as hand-placed. */}
           <PairHalf
             media={b.b?.image}
-            hint={b.b?.hint}
             caption={b.b?.caption}
             shadow="var(--cyan)"
             clip="clipIn 1.2s ease-out both"
@@ -277,7 +274,6 @@ function StoryBlock({ block: b }: { block: Block }) {
 
 function PairHalf({
   media,
-  hint,
   caption,
   shadow,
   clip,
@@ -285,7 +281,6 @@ function PairHalf({
   offsetTop,
 }: {
   media?: any
-  hint?: string | null
   caption?: string | null
   shadow: string
   clip: string
@@ -313,7 +308,7 @@ function PairHalf({
             animationRange: range,
           }}
         >
-          <MediaSlot media={media} placeholder={hint} sizes="(max-width: 700px) 50vw, 300px" />
+          <MediaSlot media={media} sizes="(max-width: 700px) 50vw, 300px" />
         </div>
       </div>
       {caption ? (

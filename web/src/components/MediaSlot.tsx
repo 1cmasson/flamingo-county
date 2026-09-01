@@ -6,15 +6,20 @@ import { buildSrcSet } from '../lib/srcset'
  * canvas (drag/drop, reframing, Unsplash attribution), none of which belongs in
  * a Payload-backed site.
  *
- * It renders the real image when the CMS has one, and otherwise reproduces the
- * element's empty state exactly, because that empty state is what the live site
- * shows today: the `.image-slots.state.json` sidecar was never created, so every
- * business photo, event image and story picture is a labelled placeholder.
+ * An empty slot renders NOTHING. It used to reproduce the canvas element's
+ * empty state — a dashed box with a photo icon and the `imageHint` printed
+ * inside it — because that is what the deployed site showed at the time, every
+ * slot being empty. That has inverted: every listing has a hero now, and the
+ * only empty slots left were the two spare tiles in the business page's gallery
+ * strip, where three dashed boxes on all eleven pages advertised the absence of
+ * photos nobody had promised. Art direction is for the admin, not the reader.
  *
- * One detail worth stating, since reading image-slot.js alone would get it
- * wrong: the template contains an "or browse files" sub-line, but it is hidden
- * at runtime whenever the canvas host is absent — which is always, on the
- * deployed site. It is not reproduced here.
+ * `imageHint` is still a field on `listings` and `events` — it tells whoever
+ * fills the slot what to shoot. It is simply no longer rendered.
+ *
+ * Callers own the frame. A slot with no media collapses to nothing inside it,
+ * so a caller that draws its own border must not render that border when it
+ * has no photo to put in it.
  *
  * `sizes` is worth passing accurately. It is what decides which `srcSet`
  * candidate the browser picks, and it must describe the slot's CSS width — not
@@ -23,7 +28,6 @@ import { buildSrcSet } from '../lib/srcset'
  */
 export function MediaSlot({
   media,
-  placeholder,
   fit = 'cover',
   className,
   style,
@@ -31,7 +35,6 @@ export function MediaSlot({
   priority,
 }: {
   media?: Media | number | string | null
-  placeholder?: string | null
   fit?: 'cover' | 'contain'
   className?: string
   style?: React.CSSProperties
@@ -69,73 +72,5 @@ export function MediaSlot({
     )
   }
 
-  return (
-    <div
-      className={className}
-      // Decorative: the caption is art direction for whoever fills the slot,
-      // not information a reader of the page needs.
-      aria-hidden="true"
-      style={{
-        position: 'absolute',
-        inset: 0,
-        overflow: 'hidden',
-        background: 'rgba(127,127,127,.08)',
-        font: '13px/1.3 system-ui, -apple-system, sans-serif',
-        color: 'var(--ink)',
-        ...style,
-      }}
-    >
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          gap: 6,
-          textAlign: 'center',
-          padding: 12,
-          boxSizing: 'border-box',
-        }}
-      >
-        <svg
-          width="28"
-          height="28"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.6"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          style={{ opacity: 0.45 }}
-        >
-          <rect x="3" y="3" width="18" height="18" rx="2" />
-          <circle cx="8.5" cy="8.5" r="1.5" />
-          <path d="m21 15-5-5L5 21" />
-        </svg>
-        {placeholder ? (
-          <div
-            style={{
-              maxWidth: '90%',
-              fontWeight: 500,
-              letterSpacing: '.01em',
-              opacity: 0.75,
-            }}
-          >
-            {placeholder}
-          </div>
-        ) : null}
-      </div>
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          pointerEvents: 'none',
-          border: '1.5px dashed currentColor',
-          opacity: 0.35,
-        }}
-      />
-    </div>
-  )
+  return null
 }

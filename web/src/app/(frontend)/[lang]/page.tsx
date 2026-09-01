@@ -493,11 +493,6 @@ function SpotlightCard({
           media={spot.image}
           // `minmax(min(100%,250px),1fr)` across the spotlight row.
           sizes="(max-width: 700px) 100vw, 380px"
-          placeholder={
-            listing?.imageHint
-              ? `${t('Drop the spotlight photo — ')}${listing.imageHint.toLowerCase()}`
-              : null
-          }
         />
         <div
           style={{
