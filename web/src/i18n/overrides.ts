@@ -37,7 +37,6 @@ export const ES_OVERRIDES: Record<string, string> = {
   'NOTHING ON THE BOARD YET.': 'TODAVÍA NO HAY NADA EN LA PIZARRA.',
   'THIS WEEK': 'ESTA SEMANA',
   'AROUND HERE.': 'POR AQUÍ.',
-  "THE ONES WE'D CANCEL PLANS FOR": 'POR LOS QUE CANCELAMOS TODO',
 
   // --- Ticker ------------------------------------------------------------
   'NOW ON THE LISTING': 'AHORA EN EL DIRECTORIO',

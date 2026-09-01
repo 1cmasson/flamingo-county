@@ -670,7 +670,7 @@ export interface Event {
   hood?: string | null;
   city?: (number | null) | City;
   /**
-   * Eligible for the "on deck" spotlight.
+   * Currently drives nothing. It marked an event as eligible for the HEADLINERS strip at the top of the events board; that strip has been removed, so no page reads this. Kept because the flag is a genuine editorial judgement and the source data carries it — not because anything is wired to it.
    */
   star?: boolean | null;
   /**

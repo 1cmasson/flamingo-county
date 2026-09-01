@@ -247,6 +247,16 @@ Dates are written as **midday UTC** (`T12:00:00.000Z`), matching the mock loop.
 A bare calendar date lands on the previous day once `dateOnly()` reads it back
 in `America/New_York`.
 
+**The board has no HEADLINERS strip.** It was a tall 4:3 card above the
+masthead, filled from `upcoming.filter(ev => ev.star)` — LO GRANDE in Spanish,
+*the ones we'd cancel plans for*. Removed by owner decision. The board now opens
+on its masthead and goes straight into the date buckets.
+
+Two things that leaves behind, both kept on purpose rather than deleted:
+`events.star` no longer has a reader anywhere (its admin description says so),
+and `EventCard`'s `feature` prop has no caller — it is the only code that knows
+how the tall card was built, and it costs nothing while nobody passes it.
+
 ### Sourced listings lead the grids
 
 `getListings` returns `ready`, then `needs_owner_confirmation`, then
@@ -487,8 +497,10 @@ fixed; the four below are the remainder.
 - **Sections that were never ported.** The **Event** page is missing its whole
   right-hand column — *when & where*, *going with the crew* and *post an event*
   (`Event.dc.html:85` wraps them in a `1.5fr 0.9fr` `data-stack` grid). The
-  **events board** is missing the **ON DECK** spotlight hero and its own
-  *post an event* card. **Stories** is missing the cyan *your story goes here*
+  **events board** is missing its own *post an event* card. (It is also missing
+  the design's **ON DECK** spotlight hero — but that is now deliberate: the
+  board's HEADLINERS strip was removed by owner decision, so do not add a
+  second headline treatment back. See *One real event, and what it exposed*.) **Stories** is missing the cyan *your story goes here*
   card in the third shelf slot. **My Week**'s hero is missing its **SAVED** and
   **GOING** counters.
 

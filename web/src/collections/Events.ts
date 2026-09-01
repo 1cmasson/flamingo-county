@@ -89,7 +89,11 @@ export const Events: CollectionConfig = {
       name: 'star',
       type: 'checkbox',
       defaultValue: false,
-      admin: { position: 'sidebar', description: 'Eligible for the "on deck" spotlight.' },
+      admin: {
+        position: 'sidebar',
+        description:
+          'Currently drives nothing. It marked an event as eligible for the HEADLINERS strip at the top of the events board; that strip has been removed, so no page reads this. Kept because the flag is a genuine editorial judgement and the source data carries it — not because anything is wired to it.',
+      },
     },
     {
       name: 'going',

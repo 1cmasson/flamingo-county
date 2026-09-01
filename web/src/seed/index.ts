@@ -170,7 +170,6 @@ const REAL_EVENTS = [
     date: '2026-09-06',
     kind: 'church', // labelled COMMUNITY
     listing: 'casa-marin',
-    star: true,
     photo: {
       file: 'assets/events/encuentro-casa-marin.jpg',
       altEn: 'Two breaded pork steaks on a plate under a pile of raw onion rings, with a wedge of lime.',
@@ -736,7 +735,6 @@ async function seed() {
         kind: id.kinds[e.kind],
         venueType: 'listing',
         listing: listingId,
-        star: e.star,
         going: 0,
         freeLabel: e.en.freeLabel,
         note: e.en.note,

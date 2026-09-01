@@ -33,6 +33,11 @@ export function eventActionStrings(t: (s: string) => string) {
  * The event card, shared by the events board's on-deck strip, the event page's
  * same-day rail and My Week.
  *
+ * `feature` HAS NO CALLER. It was the variant the board's HEADLINERS strip
+ * used, and that strip is gone. Left in place rather than deleted: it is the
+ * only code that knows how the tall card was built, and it costs nothing while
+ * nobody passes the prop.
+ *
  * `feature` is the taller variant used for starred events on the board — a 4:3
  * photo, the mascot leaning in and a rotated date flag.
  */
