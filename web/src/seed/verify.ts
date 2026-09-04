@@ -8,7 +8,8 @@
 import 'dotenv/config'
 import { getPayload } from 'payload'
 import config from '../payload.config'
-import { LISTING_PHOTO, SLUG_RENAMES } from './research-listings'
+import { LISTING_PHOTO, LISTING_LOGO, SLUG_RENAMES } from './research-listings'
+import { REAL_EVENTS } from './real-events'
 
 let failures = 0
 function check(label: string, ok: boolean, detail = '') {
@@ -143,6 +144,70 @@ async function main() {
       missing.length === 0,
       missing.length ? `no gallery[0]: ${missing.join(', ')}` : '',
     )
+  }
+
+  /* --- the venue marks ---------------------------------------------------- */
+  // Same trap as the photos above, and worse hidden: `logo` is merged
+  // conditionally, so a moved or renamed file writes no key at all and leaves
+  // whatever was there. The event page then draws no venue mark and says
+  // nothing about it — the only symptom is a corner of a photograph that is
+  // emptier than it should be.
+  {
+    const slugs = Object.keys(LISTING_LOGO)
+    const withLogo = await payload.find({
+      collection: 'listings',
+      where: { slug: { in: slugs } },
+      limit: 100,
+      depth: 1,
+    })
+    const missing = slugs.filter((slug) => {
+      const doc: any = withLogo.docs.find((d: any) => d.slug === slug)
+      return !doc?.logo?.url
+    })
+    check(
+      `all ${slugs.length} listings with a logo have it on the listing`,
+      missing.length === 0,
+      missing.length ? `no logo: ${missing.join(', ')}` : '',
+    )
+  }
+
+  /* --- the events that carry a clock -------------------------------------- */
+  // `startTime` is merged conditionally, so a typo in the key writes nothing
+  // and says nothing: the page still prints `timeLabel` and looks right, while
+  // the .ics quietly reverts to an all-day banner. Nobody would find that
+  // without opening the downloaded file.
+  //
+  // The pair cannot be checked for agreement — '9:00 AM' and '09:00' are the
+  // same instant said twice, in two notations, and only a human knows that.
+  // What is checkable is that an event claiming an hour actually has both
+  // halves, in both languages.
+  for (const e of REAL_EVENTS) {
+    if (!e.startTime) continue
+    for (const locale of ['en', 'es'] as const) {
+      const { docs } = await payload.find({
+        collection: 'events',
+        where: { slug: { equals: e.slug } },
+        locale,
+        limit: 1,
+        depth: 0,
+      })
+      const doc: any = docs[0]
+      // `check` prints its third argument whether it passed or not, so the
+      // detail is only built for the failing case — the existing photo check
+      // does the same.
+      const started = doc?.startTime === e.startTime
+      check(
+        `"${e.slug}" has a start time the calendar can read (${locale})`,
+        started,
+        started ? '' : `expected ${e.startTime}, got ${doc?.startTime ?? 'nothing'}`,
+      )
+      const labelled = Boolean(doc?.timeLabel)
+      check(
+        `"${e.slug}" still prints a time to the reader (${locale})`,
+        labelled,
+        labelled ? '' : 'timeLabel is empty, so the page shows an hour nowhere',
+      )
+    }
   }
 
   /* --- slug renames actually renamed, rather than duplicating ------------- */

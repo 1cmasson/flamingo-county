@@ -226,6 +226,36 @@ export const LISTING_PHOTO: Record<
   },
 }
 
+/**
+ * A venue's own mark, background removed, for drawing over a photograph.
+ *
+ * Separate from `LISTING_PHOTO` because it is a different kind of image and
+ * has a different job: the photo answers "what does this place look like",
+ * the logo answers "whose place is this" when the photograph on screen is of
+ * somebody else — an event hero, for instance, which shows the people at the
+ * event and nothing that names the room they are in.
+ *
+ * `casa-marin-logo.png` is the same artwork as `casa-marin.jpg`, with the
+ * flyer's paper colour flood-filled away from the outside only. Filling from
+ * the border rather than by colour keeps the cream *inside* the roundel, which
+ * is the logo's own disc — knocking that out too would drop the white "el chef
+ * marin" script onto whatever photograph happens to be behind it.
+ *
+ * Optional, and expected to stay mostly empty: most listings will have a
+ * storefront photograph and no need of this.
+ */
+export const LISTING_LOGO: Record<
+  string,
+  { file: string; altEn: string; altEs: string; credit?: string }
+> = {
+  'casa-marin': {
+    file: 'assets/businesses/casa-marin-logo.png',
+    altEn: "The Casa Marín logo: a chef's hat between a fork and a knife inside a red roundel, on a banner reading CASA MARIN.",
+    altEs: 'El logotipo de Casa Marín: un gorro de chef entre un tenedor y un cuchillo dentro de un círculo rojo, sobre una cinta que dice CASA MARIN.',
+    credit: 'Casa Marín',
+  },
+}
+
 const DAY_SHORT: Record<string, string> = {
   Monday: 'Mon',
   Tuesday: 'Tue',

@@ -22,7 +22,9 @@ import {
   CATEGORY,
   SLUG_RENAMES,
   LISTING_PHOTO,
+  LISTING_LOGO,
 } from './research-listings'
+import { REAL_EVENTS } from './real-events'
 import {
   loadFCBase,
   makeTranslator,
@@ -153,43 +155,6 @@ const CAT_RELABEL: Record<string, { en: string; es: string }> = {
  */
 const EXTRA_CATS = [{ key: 'nonprofit', label: 'NONPROFITS' }]
 
-/**
- * Events that are actually happening.
- *
- * `base.EVENTS` is 20 invented listings-parties behind `SEED_MOCK_CONTENT`, so
- * before this there was no way to seed a real one. These are authored here, in
- * both locales, because the announcements they come from are Spanish and the
- * EN→ES dictionary the rest of the seed leans on has never seen them.
- *
- * `listing` is a slug from `data-import/listings.json`, resolved after the
- * research loop. `photo` follows `LISTING_PHOTO`'s shape.
- */
-const REAL_EVENTS = [
-  {
-    slug: 'encuentro-casa-marin',
-    date: '2026-09-06',
-    kind: 'church', // labelled COMMUNITY
-    listing: 'casa-marin',
-    photo: {
-      file: 'assets/events/encuentro-casa-marin.jpg',
-      altEn: 'Two breaded pork steaks on a plate under a pile of raw onion rings, with a wedge of lime.',
-      altEs: 'Dos bistecs de puerco empanizados en un plato bajo una pila de aros de cebolla cruda, con un gajo de limón.',
-      credit: 'Club de la Amistad por un Hialeah Mejor — event flyer',
-    },
-    en: {
-      title: "We're meeting at Casa Marín",
-      timeLabel: 'Time to be confirmed',
-      freeLabel: 'MEMBERS AND VOLUNTEERS',
-      note: 'Lunch among neighbours, members and volunteers of the Club de la Amistad, at the table of a Palm Avenue restaurant that has always been there.',
-    },
-    es: {
-      title: 'Nos reunimos en Casa Marín',
-      timeLabel: 'Por confirmar',
-      freeLabel: 'SOCIOS Y VOLUNTARIOS',
-      note: 'Un almuerzo entre vecinos, socios y voluntarios del Club de la Amistad, en la mesa de un restaurante de siempre en Palm Avenue.',
-    },
-  },
-]
 
 /**
  * Drop taxonomy rows that are no longer in `CAT_KEEP`.
@@ -561,7 +526,18 @@ async function seed() {
       const mediaId = photo
         ? await upsertMedia(payload, photo.file, photo.altEn, photo.altEs, photo.credit)
         : undefined
-      const data = { ...toListing(r, id), ...(mediaId ? { gallery: [mediaId] } : {}) }
+      // The venue's mark on transparency, for pages that draw it over a
+      // photograph of something else. Merged on the same terms as the photo:
+      // absent means "leave whatever is there", not "clear it".
+      const logo = LISTING_LOGO[r.slug]
+      const logoId = logo
+        ? await upsertMedia(payload, logo.file, logo.altEn, logo.altEs, logo.credit)
+        : undefined
+      const data = {
+        ...toListing(r, id),
+        ...(mediaId ? { gallery: [mediaId] } : {}),
+        ...(logoId ? { logo: logoId } : {}),
+      }
       const doc = await upsert(payload, 'listings', r.slug, data)
       id.listings[r.slug] = doc.id
     }
@@ -738,6 +714,7 @@ async function seed() {
         going: 0,
         freeLabel: e.en.freeLabel,
         note: e.en.note,
+        ...(e.startTime ? { startTime: e.startTime } : {}),
         ...(mediaId ? { image: mediaId } : {}),
       },
       {

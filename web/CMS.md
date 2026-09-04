@@ -214,8 +214,13 @@ database before re-seeding it.
 the whole events block was inside that gate — so there was no route at all for
 an event that actually happens. `REAL_EVENTS` in `src/seed/index.ts` is that
 route, and runs ungated. One record so far: **Nos reunimos en Casa Marín**,
-Sunday 6 September 2026, the Club de la Amistad's members-and-volunteers lunch
-at Casa Marín.
+Sunday 6 September 2026 at 9:00 AM, the Club de la Amistad's
+members-and-volunteers breakfast at Casa Marín.
+
+Its existence is also why EVENTS is a nav tab. `Nav.tsx` kept EVENTS and
+STORIES out on the stated grounds that neither section had live content;
+events does now, so it is in the bar and in the burger panel. STORIES stays
+out — nothing is seeded into it.
 
 It runs **after** the researched-listings loop, because `venueType: 'listing'`
 needs `id.listings` populated. It throws when the venue slug did not seed,
@@ -230,7 +235,9 @@ Three things only a real event could surface, all fixed:
 
 - **`timeLabel` was not localized.** It held clock readings ('9PM–1AM') where
   the language does not matter. An event whose time is not settled says so in
-  words — *Por confirmar* — which does. Migration
+  words — this one read *Por confirmar* until the hour was fixed — which does.
+  No seeded row says that today; the reason the field is localized stands
+  anyway, and `startTime` below is why the clock no longer lives in it alone. Migration
   `20260901_204154_localize_event_time_label` moves the column into
   `events_locales`. It moves rather than copies, which is safe only because no
   deployed database has ever held an event.
@@ -317,6 +324,56 @@ now asserts all eight resolve to a populated `gallery[0]`.
 `molinas-ranch.jpg` is a Google Street View capture with the watermark burned
 in; its `credit` says so, and it should be replaced when the storefront is
 actually shot.
+
+### The calendar file carries a real hour
+
+`events.startTime` (and optional `endTime`) is `HH:mm` on a 24-hour dial in
+Miami time, and it exists because `timeLabel` could never do the job. That
+field is display copy — `9PM–1AM`, `6AM–NOON`, `Por confirmar` — so the ICS
+route had nothing to parse and emitted `VALUE=DATE` for everything. An all-day
+banner is the right shape for an unsettled hour and the wrong one for a 9am
+breakfast somebody is trying to get to.
+
+Two fields, not one parsed field: the label has to stay free to say something
+that is not a clock reading. **Nothing checks that they agree** — `9:00 AM` and
+`09:00` are the same instant said twice, and they change together or not at
+all. Leave both empty and the entry goes back to all-day.
+
+`lib/dates.ts` `utcStamp()` writes the instant in UTC rather than
+`TZID=America/New_York`, which would oblige the file to carry a VTIMEZONE
+block; floating local time would be worse still, since it means "9am wherever
+you are". It resolves the zone offset twice so a time near a DST change lands
+on the right side of it — `tests/int/dates.int.spec.ts` pins both sides of
+8 March 2026.
+
+Two lines the file was missing, both about a saved entry actually updating:
+`DTSTAMP` is REQUIRED by RFC 5545 and strict parsers reject a VEVENT without
+one, and `SEQUENCE` (minutes since 2020, from `updatedAt`) is what makes a
+calendar accept a re-import as a revision instead of discarding it. The UID is
+deliberately stable, so without a rising SEQUENCE anyone holding the old
+all-day version would never have seen the 9am one.
+
+### A listing can also carry its mark
+
+`listings.logo` is a second, optional upload: the business's own logo **on
+transparency**, keyed by slug in `LISTING_LOGO` alongside `LISTING_PHOTO`. It is
+not a hero and nothing renders it as one — `gallery[0]` is still the storefront
+everywhere a listing shows its own picture.
+
+It exists for the one place a listing appears on top of a photograph of
+something else. The event page's hero is the event's own photo, and the club's
+lunch is a picture of the club: seven volunteers against a wood wall, with
+nothing in frame that says Casa Marín. The mark goes in the corner and answers
+where.
+
+`casa-marin-logo.png` is the same artwork as the listing's holding card with the
+paper colour flood-filled away **from the border inwards**, not by colour. The
+cream inside the roundel is the logo's own disc, and knocking it out too would
+drop the white *el chef marin* script straight onto the photograph behind it.
+
+Leave the field empty unless there is artwork with the background genuinely
+removed. A logo still sitting on its white card reads as a mistake once it is
+over a photo, which is exactly what the first attempt at this looked like.
 
 **Reset `media/` and `content.db` together or not at all.** `upsertMedia`
 dedupes by looking up the *source* file's basename in the `media` table, but
