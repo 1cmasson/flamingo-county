@@ -28,10 +28,15 @@ export const ES_OVERRIDES: Record<string, string> = {
     'Todavía estamos caminando estas cuadras. ¿Conoces un lugar que deba estar aquí?',
 
   // --- Events board ------------------------------------------------------
+  // The generated dictionary has bare 'ALL EVENTS' and the arrowed
+  // '← ALL LISTINGS', but never the arrowed events variant — the key is the
+  // whole English literal, arrow included, so the event page's back link was
+  // shipping English to Spanish readers. Invisible until now: no event had
+  // ever been seeded, so the page it sits on had nothing to render.
+  '← ALL EVENTS': '← TODOS LOS EVENTOS',
   'NOTHING ON THE BOARD YET.': 'TODAVÍA NO HAY NADA EN LA PIZARRA.',
   'THIS WEEK': 'ESTA SEMANA',
   'AROUND HERE.': 'POR AQUÍ.',
-  "THE ONES WE'D CANCEL PLANS FOR": 'POR LOS QUE CANCELAMOS TODO',
 
   // --- Ticker ------------------------------------------------------------
   'NOW ON THE LISTING': 'AHORA EN EL DIRECTORIO',

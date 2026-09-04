@@ -72,6 +72,22 @@ export default async function EventPage({
   const city = cityRef ? await getCity(lang, cityRef.slug) : null
   const mascot = city ? rel<Media>(city.solo) : null
 
+  /**
+   * The venue's own mark, drawn straight onto the event's photograph.
+   *
+   * An event photograph shows what happens; it does not always show where. The
+   * club's lunch is a picture of the club, and nothing in it says Casa Marín —
+   * so the venue's mark goes on top of it.
+   *
+   * `logo`, never `gallery[0]`. The storefront photo is a rectangle with its
+   * own background, and a photo of one place pasted into the corner of a photo
+   * of another reads as a mistake; `logo` is the mark on transparency, and the
+   * field's admin description says so. A venue with no logo — which is nearly
+   * all of them — renders nothing here and the badges sit where they always
+   * did. `getEvent` reads at depth 3, so it arrives populated.
+   */
+  const venueMark = listing ? rel<Media>(listing.logo) : null
+
   const iso = dateOnly(ev.date)
   const day = parseISO(iso).getUTCDate()
 
@@ -128,7 +144,6 @@ export default async function EventPage({
           >
             <MediaSlot
               media={ev.image}
-              placeholder={ev.imageHint ?? t('Photo from the night')}
               sizes={FULL_WIDTH_SIZES}
               priority
             />
@@ -144,6 +159,31 @@ export default async function EventPage({
                 pointerEvents: 'none',
               }}
             >
+              {venueMark?.url ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={venueMark.url}
+                  alt=""
+                  style={{
+                    /**
+                     * Width only — the mark keeps its own proportions, and no
+                     * frame is drawn around it. It is sized against the hero's
+                     * `clamp(190px,40vw,320px)` so the column under it clears
+                     * the bottom edge: at the 190px floor the mark is 70px wide
+                     * and the three badges below come to ~160px from `top:16`.
+                     */
+                    width: 'clamp(70px,15vw,116px)',
+                    height: 'auto',
+                    display: 'block',
+                    /**
+                     * The photograph behind it is whatever the event supplied.
+                     * The same ink shadow the date flag and the mascot carry
+                     * keeps the mark off a light one.
+                     */
+                    filter: 'drop-shadow(3px 3px 0 rgba(12,15,20,0.35))',
+                  }}
+                />
+              ) : null}
               <div
                 style={{
                   background: 'var(--ink)',
@@ -216,7 +256,18 @@ export default async function EventPage({
                   position: 'absolute',
                   right: 12,
                   bottom: -14,
-                  height: 170,
+                  /**
+                   * Shrinks with the hero so it never reaches the date badge.
+                   *
+                   * Both are anchored to the same right edge, and the hero
+                   * bottoms out at 190px while a fixed 170px mascot did not —
+                   * so under ~800px wide the flamingo's head covered the day
+                   * and month. `40vw - 100px` tracks the hero's own
+                   * `clamp(190px,40vw,320px)` and keeps the mascot's top below
+                   * the badge at every width. Nobody had seen it: the site had
+                   * no events, so this page had nothing to render.
+                   */
+                  height: 'clamp(92px, calc(40vw - 100px), 170px)',
                   width: 'auto',
                   pointerEvents: 'none',
                   filter: 'drop-shadow(3px 3px 0 rgba(12,15,20,0.35))',

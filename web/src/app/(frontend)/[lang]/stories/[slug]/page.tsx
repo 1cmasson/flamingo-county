@@ -258,7 +258,6 @@ export default async function StoryPage({
             >
               <MediaSlot
                 media={story.cover}
-                placeholder={story.coverHint}
                 sizes={FULL_WIDTH_SIZES}
                 priority
               />

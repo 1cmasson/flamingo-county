@@ -4,10 +4,11 @@
     "schema_version": "1.0.0",
     "generated": "2026-08-18",
     "source_of_truth": "research/<city>/<slug>.md — each listing below traces to one dossier file",
-    "listing_count": 11,
+    "listing_count": 13,
     "categories_present": [
       "restaurant",
-      "bar"
+      "bar",
+      "nonprofit"
     ],
     "cities": [
       "miami-lakes",
@@ -30,7 +31,8 @@
       "No images are included. Each dossier lists candidate image URLs with provenance and a rights contact; licensing is unresolved and is the site owner's decision."
     ],
     "local_edits": [
-      "2026-08-21 — `el-mejor-batido-de-hialeah` was renamed to `s-and-n-vegetables` and its display name set to \"S&N Vegetables\", the corporate and press name, by owner decision. long_description, seo.meta_title and seo.json_ld.name follow; the awning name survives in alternate_names and seo.json_ld.alternateName. THIS DIVERGES FROM THE UPSTREAM DOSSIER, which still reads El Mejor Batido de Hialeah and is still filed at research/hialeah/el-mejor-batido-de-hialeah.md — regenerating this file from the sibling flamingo-city repo will revert the rename. The seed carries the old slug in SLUG_RENAMES and DOSSIER_SLUG (web/src/seed/research-listings.ts)."
+      "2026-08-21 — `el-mejor-batido-de-hialeah` was renamed to `s-and-n-vegetables` and its display name set to \"S&N Vegetables\", the corporate and press name, by owner decision. long_description, seo.meta_title and seo.json_ld.name follow; the awning name survives in alternate_names and seo.json_ld.alternateName. THIS DIVERGES FROM THE UPSTREAM DOSSIER, which still reads El Mejor Batido de Hialeah and is still filed at research/hialeah/el-mejor-batido-de-hialeah.md — regenerating this file from the sibling flamingo-city repo will revert the rename. The seed carries the old slug in SLUG_RENAMES and DOSSIER_SLUG (web/src/seed/research-listings.ts).",
+      "2026-09-01 — `casa-marin` and `el-club-de-la-amistad` were HAND-AUTHORED here, not generated from a flamingo-city dossier. There is no research/hialeah/casa-marin.md and no research/hialeah/el-club-de-la-amistad.md upstream, so regenerating this file from the sibling repo will DROP BOTH RECORDS. Their sources are in `references`; the seed carries their slugs in HAND_AUTHORED (web/src/seed/research-listings.ts) so that `research.sourceFile` is left empty rather than pointing at a dossier that does not exist. `el-club-de-la-amistad` is also the first listing in the `nonprofit` category, which is authored in web/src/seed/index.ts rather than in fc-data.js."
     ]
   },
   "listings": [
@@ -3056,6 +3058,420 @@
         "contact.email"
       ],
       "missing_core_count": 2
+    },
+    {
+      "id": "casa-marin-restaurant",
+      "slug": "casa-marin",
+      "name": "Casa Marín Restaurant",
+      "legal_entity": "N/A",
+      "city": "hialeah",
+      "city_display": "Hialeah",
+      "category": "restaurant",
+      "schema_type": "Restaurant",
+      "publication_status": "needs_owner_confirmation",
+      "blocking_gaps": [
+        "Hours are unconfirmed. The only schedule published anywhere is on casamarinrestaurant.com, whose About copy is unedited site-template boilerplate describing meze and meyhanes — a page nobody has edited is not a reliable owned channel for its own opening times. Ask the restaurant directly.",
+        "That schedule reads Monday–Saturday, which would make the restaurant closed on Sunday. The Club de la Amistad event flyer puts a gathering here on Sunday 6 September 2026. Confirm whether Sunday is a closed day, a private-booking day, or the published hours are simply stale.",
+        "No Florida corporate record has been checked for this address.",
+        "No verbatim quote from Diosdado Marín is on file. El Vocero publishes him in Spanish; the wording here would be a translation, so none is published on the listing."
+      ],
+      "cuisine": [
+        "Cuban",
+        "Spanish"
+      ],
+      "established": "1999",
+      "opened": {
+        "value": "1999-06-21",
+        "label": "Opened June 21, 1999",
+        "source": "https://elvoceronews.com/casa-marin-25-years-of-tasty-food-and-service-in-hialeah/",
+        "note": "Opening date as given in El Vocero's 25th-anniversary feature, published 2024. No corporate filing has been located for this address, so nothing contradicts or corroborates it."
+      },
+      "location": {
+        "street": "4195 Palm Ave",
+        "locality": "Hialeah",
+        "region": "FL",
+        "postal_code": "33012",
+        "country": "US",
+        "district": "Palm Ave",
+        "verification": "confirmed",
+        "verification_note": "4195 Palm Ave agrees across the restaurant's own site, its Google Maps listing (the storefront photo shows the 4195 unit number over the door), and the Club de la Amistad event flyer.",
+        "city_label_conflicts": "N/A",
+        "cross_street": "N/A"
+      },
+      "contact": {
+        "phone": "+1-305-824-0023",
+        "phone_display": "(305) 824-0023",
+        "email": "N/A",
+        "website": "https://www.casamarinrestaurant.com/",
+        "phone_note": "N/A",
+        "website_note": "The site's About section is unmodified template copy — it describes shared meze plates and traditional meyhanes, which is not this restaurant. Address and phone are used from it; nothing descriptive is.",
+        "website_status": "N/A",
+        "email_note": "N/A"
+      },
+      "social": {
+        "instagram": "N/A",
+        "instagram_handle": "N/A",
+        "instagram_followers": "N/A",
+        "facebook": "N/A",
+        "facebook_note": "N/A",
+        "instagram_note": "N/A"
+      },
+      "hours": {
+        "source_type": "N/A",
+        "source": "N/A",
+        "schedule": [],
+        "conflicts": [
+          {
+            "source": "https://www.casamarinrestaurant.com/",
+            "detail": "Monday to Saturday, 6:00 AM – 9:00 PM. Not published — see blocking_gaps. The page carrying it is unedited template boilerplate, and Mon–Sat contradicts a Sunday event at this address."
+          }
+        ],
+        "confidence": "none",
+        "happy_hour": "N/A",
+        "confidence_note": "No schedule is published. The single source found is on a page whose prose was never edited off the template, and it conflicts with a known Sunday booking.",
+        "closed_days": []
+      },
+      "price": {
+        "band": "N/A",
+        "band_source": "N/A",
+        "anchors": [],
+        "anchors_source": "N/A",
+        "note": "N/A",
+        "band_note": "Not published by the business. Delivery-platform menu prices exist but a marked-up aggregator menu is not a price band."
+      },
+      "owners": [
+        {
+          "name": "Diosdado Marín",
+          "role": "Chef and owner",
+          "source": "https://elvoceronews.com/casa-marin-25-years-of-tasty-food-and-service-in-hialeah/",
+          "note": "Arrived from Cuba in 1990. Holds a degree in sport; learned to cook working in restaurants after emigrating."
+        }
+      ],
+      "corporate_record": {
+        "entity_name": "N/A",
+        "document_number": "N/A",
+        "entity_type": "N/A",
+        "filing_date": "N/A",
+        "filing_date_is_not_an_opening_date": "N/A",
+        "status": "not_checked",
+        "principal_address": "N/A",
+        "source": "N/A",
+        "verification": "N/A",
+        "note": "Not researched. This listing was hand-authored from press and the restaurant's own contact details rather than generated from a dossier, so the Sunbiz check that every other record here carries has not been done.",
+        "effective_date": "N/A",
+        "document_number_note": "N/A",
+        "historical_records": [],
+        "beverage_licensee": "N/A",
+        "beverage_license_source": "N/A"
+      },
+      "capacity": {
+        "total_guests": "55",
+        "private_room_guests": "N/A",
+        "source": "https://elvoceronews.com/casa-marin-25-years-of-tasty-food-and-service-in-hialeah/"
+      },
+      "short_description": "Cuban and Spanish cooking on Palm Avenue, from the same chef-owner since 1999.",
+      "long_description": "Diosdado Marín came from Cuba in 1990 with a degree in sport and no kitchen behind him, learned the trade working in other people's restaurants, and opened Casa Marín on Palm Avenue on 21 June 1999. Twenty-five years later he is still the chef. The room seats fifty-five between the tables and the counter, and there is a ventanita for cafecito and takeout. The menu is Cuban with a Spanish side to it — roast pork with moros and yuca, pan con bistec, the Cuban sandwich, and caldo gallego, fabada and a Catalan-style chicken fricassee alongside them. The house dish is la cosita de Marín: chicken breast marinated, layered with ham and cheese, wrapped in bacon, rolled, baked and then fried.",
+      "description_sources": [
+        "https://elvoceronews.com/casa-marin-25-years-of-tasty-food-and-service-in-hialeah/",
+        "https://www.casamarinrestaurant.com/"
+      ],
+      "signature_items": [
+        "La cosita de Marín",
+        "Lechón asado with moros and yuca",
+        "Pan con bistec",
+        "Cubano"
+      ],
+      "references": [
+        {
+          "title": "Casa Marín: 25 years of tasty food and service in Hialeah",
+          "publisher": "El Vocero News",
+          "url": "https://elvoceronews.com/casa-marin-25-years-of-tasty-food-and-service-in-hialeah/",
+          "type": "press",
+          "independent": true,
+          "note": "Source for the opening date, the owner, the capacity, the ventanita and every dish named in long_description."
+        },
+        {
+          "title": "Official site",
+          "publisher": "Casa Marin Restaurant",
+          "url": "https://www.casamarinrestaurant.com/",
+          "type": "owned",
+          "independent": false,
+          "note": "Used for the address and phone only. The About copy is unedited template text and is not a description of this restaurant."
+        }
+      ],
+      "caveats": [
+        "Do not use anything from the About section of casamarinrestaurant.com. It is unmodified site-template copy about meze, meyhanes and a curated wine list, and describes a Mediterranean restaurant that is not this one.",
+        "El Vocero publishes in Spanish. Any English wording attributed to Diosdado Marín would be a translation, so no direct quote is published on this listing."
+      ],
+      "seo": {
+        "meta_title": "Casa Marín Restaurant | Cuban & Spanish on Palm Ave, Hialeah",
+        "meta_description": "Cuban and Spanish cooking on Palm Avenue in Hialeah, run by chef-owner Diosdado Marín since 1999. Home of la cosita de Marín.",
+        "json_ld": {
+          "@context": "https://schema.org",
+          "@type": "Restaurant",
+          "name": "Casa Marín Restaurant",
+          "address": {
+            "@type": "PostalAddress",
+            "streetAddress": "4195 Palm Ave",
+            "addressLocality": "Hialeah",
+            "addressRegion": "FL",
+            "postalCode": "33012",
+            "addressCountry": "US"
+          },
+          "telephone": "+1-305-824-0023",
+          "url": "https://www.casamarinrestaurant.com/",
+          "servesCuisine": [
+            "Cuban",
+            "Spanish"
+          ],
+          "foundingDate": "1999-06-21",
+          "sameAs": []
+        }
+      },
+      "brand": {
+        "name": "N/A",
+        "brand_founded": "N/A",
+        "brand_entity": "N/A",
+        "relationship": "N/A",
+        "relationship_note": "N/A",
+        "brand_url": "N/A"
+      },
+      "notable_quotes": [],
+      "serves_food": true,
+      "serves_food_note": "N/A",
+      "related_locations": [],
+      "established_note": "21 June 1999, per El Vocero's 25th-anniversary feature. This is an opening date reported in press, not a corporate filing date — no Florida registration has been checked for this address.",
+      "awards": [],
+      "payment": {
+        "cash_only": "N/A",
+        "atm_on_site": "N/A",
+        "source": "N/A"
+      },
+      "owners_note": "N/A",
+      "alternate_names": [
+        "Casa Marin Restaurant",
+        "Casa Marín",
+        "El Chef Marín"
+      ],
+      "service_model": "N/A",
+      "service": {
+        "takeout": true,
+        "delivery": true,
+        "catering": "N/A",
+        "reservations": "N/A",
+        "alcohol": "N/A",
+        "outdoor_seating": "N/A",
+        "parking": "Shared lot in front of the plaza",
+        "source": "https://elvoceronews.com/casa-marin-25-years-of-tasty-food-and-service-in-hialeah/"
+      },
+      "tagline": "El chef Marín",
+      "missing_fields": [
+        "legal_entity",
+        "contact.email",
+        "social.instagram",
+        "hours.schedule",
+        "price.band",
+        "corporate_record.entity_name",
+        "corporate_record.filing_date"
+      ],
+      "missing_core_count": 7
+    },
+    {
+      "id": "club-de-la-amistad-por-un-hialeah-mejor",
+      "slug": "el-club-de-la-amistad",
+      "name": "Club de la Amistad por un Hialeah Mejor",
+      "legal_entity": "N/A",
+      "city": "hialeah",
+      "city_display": "Hialeah",
+      "category": "nonprofit",
+      "schema_type": "NGO",
+      "publication_status": "needs_owner_confirmation",
+      "blocking_gaps": [
+        "No street address. The club has no premises — volunteers work the streets and report from their phones — so there is nothing to list. This is a fact about the organisation, not a missing field to fill.",
+        "No published phone number for the organisation. The site routes contact through a volunteer sign-up form and a personal contact card for Edith Calvo.",
+        "No founding year is published anywhere on the club's own site.",
+        "501(c)(3) status is not stated. The site calls the club 'a volunteer nonprofit'; whether that is a registered exemption or a description has not been checked against Sunbiz or the IRS."
+      ],
+      "cuisine": [],
+      "established": "N/A",
+      "opened": "N/A",
+      "location": {
+        "street": "N/A",
+        "locality": "Hialeah",
+        "region": "FL",
+        "postal_code": "N/A",
+        "country": "US",
+        "district": "N/A",
+        "verification": "confirmed",
+        "verification_note": "City only. The club states it serves Hialeah and operates across the whole city; it publishes no address because it has no premises.",
+        "city_label_conflicts": "N/A",
+        "cross_street": "N/A"
+      },
+      "contact": {
+        "phone": "N/A",
+        "phone_display": "N/A",
+        "email": "N/A",
+        "website": "https://porunhialeahmejor.com/",
+        "phone_note": "N/A",
+        "website_note": "Published in English and Spanish. Volunteer sign-up runs through a form on the home page.",
+        "website_status": "N/A",
+        "email_note": "N/A"
+      },
+      "social": {
+        "instagram": "N/A",
+        "instagram_handle": "N/A",
+        "instagram_followers": "N/A",
+        "facebook": "N/A",
+        "facebook_note": "N/A",
+        "instagram_note": "N/A"
+      },
+      "hours": {
+        "source_type": "N/A",
+        "source": "N/A",
+        "schedule": [],
+        "conflicts": [],
+        "confidence": "none",
+        "happy_hour": "N/A",
+        "confidence_note": "Not applicable. The club has no premises and keeps no opening hours.",
+        "closed_days": []
+      },
+      "price": {
+        "band": "N/A",
+        "band_source": "N/A",
+        "anchors": [],
+        "anchors_source": "N/A",
+        "note": "N/A",
+        "band_note": "Not applicable. Volunteering is free and the club sells nothing."
+      },
+      "owners": [
+        {
+          "name": "Edith Calvo",
+          "role": "Founder & President",
+          "source": "https://porunhialeahmejor.com/about",
+          "note": "Founded the club after years of photographing the same unrepaired crosswalks and tagged signal boxes on her own blocks. Trains every new volunteer personally, keeps the reporting log, and meets monthly with city departments."
+        }
+      ],
+      "corporate_record": {
+        "entity_name": "N/A",
+        "document_number": "N/A",
+        "entity_type": "N/A",
+        "filing_date": "N/A",
+        "filing_date_is_not_an_opening_date": "N/A",
+        "status": "not_checked",
+        "principal_address": "N/A",
+        "source": "N/A",
+        "verification": "N/A",
+        "note": "Not researched. Hand-authored from the club's own site rather than generated from a dossier. Its nonprofit registration, if any, has not been looked up.",
+        "effective_date": "N/A",
+        "document_number_note": "N/A",
+        "historical_records": [],
+        "beverage_licensee": "N/A",
+        "beverage_license_source": "N/A"
+      },
+      "capacity": {
+        "total_guests": "N/A",
+        "private_room_guests": "N/A",
+        "source": "N/A"
+      },
+      "short_description": "Volunteers who walk Hialeah block by block and report what the city needs to fix.",
+      "long_description": "The Club de la Amistad por un Hialeah Mejor is a volunteer organisation that puts friendly eyes on every street of Hialeah and turns what they see into work orders for the city that maintains them. Volunteers walk their own blocks and photograph what needs repair — graffiti on a traffic signal, a cracked sidewalk, a streetlight out — pin the location, file it with the right department, and track each report until it is marked repaired. Training takes a single evening, in English or Spanish, and the reporting is done from a phone on the volunteer's own schedule. Edith Calvo founded the club after years of noticing the same faded crosswalks month after month; she started photographing them, called the city herself, and kept a notebook of what got fixed. That notebook is now a network covering most of the city. The club has no office and no premises: the work is the walking.",
+      "description_sources": [
+        "https://porunhialeahmejor.com/",
+        "https://porunhialeahmejor.com/about"
+      ],
+      "signature_items": [],
+      "references": [
+        {
+          "title": "Club de la Amistad por un Hialeah Mejor",
+          "publisher": "Club de la Amistad por un Hialeah Mejor",
+          "url": "https://porunhialeahmejor.com/",
+          "type": "owned",
+          "independent": false,
+          "note": "Source for the mission, the three-step reporting process and the volunteer terms."
+        },
+        {
+          "title": "About us — a club of neighbors, not inspectors",
+          "publisher": "Club de la Amistad por un Hialeah Mejor",
+          "url": "https://porunhialeahmejor.com/about",
+          "type": "owned",
+          "independent": false,
+          "note": "Source for Edith Calvo's role, the founding account and the quote."
+        }
+      ],
+      "caveats": [
+        "Every source on this listing is the organisation's own site. Nothing here is independently corroborated, which is why it is not marked ready.",
+        "'Nonprofit' is the club's own description of itself ('a volunteer nonprofit serving Hialeah, Florida'). It is not a verified tax status."
+      ],
+      "seo": {
+        "meta_title": "Club de la Amistad por un Hialeah Mejor | Volunteers, Hialeah",
+        "meta_description": "A Hialeah volunteer club that walks the city block by block, photographs what needs repair, and files it with the department that fixes it.",
+        "json_ld": {
+          "@context": "https://schema.org",
+          "@type": "NGO",
+          "name": "Club de la Amistad por un Hialeah Mejor",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Hialeah",
+            "addressRegion": "FL",
+            "addressCountry": "US"
+          },
+          "url": "https://porunhialeahmejor.com/",
+          "areaServed": "Hialeah, FL",
+          "sameAs": []
+        }
+      },
+      "brand": {
+        "name": "N/A",
+        "brand_founded": "N/A",
+        "brand_entity": "N/A",
+        "relationship": "N/A",
+        "relationship_note": "N/A",
+        "brand_url": "N/A"
+      },
+      "notable_quotes": [
+        {
+          "quote": "If we see it first, the city can fix it faster.",
+          "attributed_to": "EDITH CALVO, FOUNDER & PRESIDENT",
+          "source": "https://porunhialeahmejor.com/about"
+        }
+      ],
+      "serves_food": false,
+      "serves_food_note": "Not a food business. Listed as a nonprofit organisation.",
+      "related_locations": [],
+      "established_note": "Not published. The club's own site gives an account of how it started but names no year.",
+      "awards": [],
+      "payment": {
+        "cash_only": "N/A",
+        "atm_on_site": "N/A",
+        "source": "N/A"
+      },
+      "owners_note": "Edith Calvo is published by the organisation itself as its founder and president, on its own about page.",
+      "alternate_names": [
+        "Club de la Amistad",
+        "El Club de la Amistad"
+      ],
+      "service_model": "Volunteer-run. No premises and no paid service.",
+      "service": {
+        "takeout": false,
+        "delivery": false,
+        "catering": false,
+        "reservations": false,
+        "alcohol": "N/A",
+        "outdoor_seating": false,
+        "parking": "N/A",
+        "source": "https://porunhialeahmejor.com/"
+      },
+      "tagline": "for a better Hialeah",
+      "missing_fields": [
+        "legal_entity",
+        "established",
+        "location.street",
+        "contact.phone",
+        "contact.email",
+        "corporate_record.entity_name",
+        "corporate_record.filing_date"
+      ],
+      "missing_core_count": 7
     }
   ]
 }

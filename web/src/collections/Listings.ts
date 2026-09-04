@@ -96,6 +96,15 @@ export const Listings: CollectionConfig = {
       admin: { description: 'Hero first, then the detail-page gallery. Empty for now by design.' },
     },
     {
+      name: 'logo',
+      type: 'upload',
+      relationTo: 'media',
+      admin: {
+        description:
+          'The mark, on transparency, for drawing over somebody else\'s photograph — an event hero shows the people at the event and nothing that names the room. Not a substitute for `gallery[0]`, which is the storefront: nothing uses this as a hero. Leave it empty unless there is artwork with the background actually removed; a logo on a white card looks like a mistake once it is sitting on a photo.',
+      },
+    },
+    {
       // A named `group`, not a `collapsible`: collapsible is presentational and
       // flattens its children to the top level, so `data.detail` would be
       // silently dropped on write.

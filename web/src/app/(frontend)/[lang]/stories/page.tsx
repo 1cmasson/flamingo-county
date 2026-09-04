@@ -163,7 +163,6 @@ export default async function StoriesPage({
             >
               <MediaSlot
                 media={feature.cover}
-                placeholder={feature.coverHint}
                 sizes="(max-width: 900px) 100vw, 640px"
                 priority
               />
@@ -321,7 +320,6 @@ export default async function StoriesPage({
                   >
                     <MediaSlot
                       media={st.cover}
-                      placeholder={st.coverHint}
                       sizes="(max-width: 700px) 100vw, 300px"
                     />
                     <div

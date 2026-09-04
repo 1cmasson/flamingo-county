@@ -8,7 +8,8 @@
 import 'dotenv/config'
 import { getPayload } from 'payload'
 import config from '../payload.config'
-import { LISTING_PHOTO, SLUG_RENAMES } from './research-listings'
+import { LISTING_PHOTO, LISTING_LOGO, SLUG_RENAMES } from './research-listings'
+import { REAL_EVENTS } from './real-events'
 
 let failures = 0
 function check(label: string, ok: boolean, detail = '') {
@@ -30,12 +31,13 @@ async function main() {
   /* counts */
   const want: Record<string, number> = {
     cities: 3,
-    categories: 2,
+    categories: 3,
     'event-kinds': 7,
-    // 11 researched imports; +14 fc-data mocks only when they are seeded.
-    listings: SEED_MOCKS ? 25 : 11,
+    // 13 researched imports; +14 fc-data mocks only when they are seeded.
+    listings: SEED_MOCKS ? 27 : 13,
     stories: SEED_MOCKS ? 3 : 0,
-    events: SEED_MOCKS ? 20 : 0,
+    // The 20 mocks, plus the one real event that seeds either way.
+    events: SEED_MOCKS ? 21 : 1,
     'weekly-events': SEED_MOCKS ? 6 : 0,
     spotlights: SEED_MOCKS ? 3 : 0,
   }
@@ -55,8 +57,8 @@ async function main() {
     const cats = await payload.find({ collection: 'categories', limit: 50, sort: 'order' })
     const slugs = cats.docs.map((d: any) => d.slug).sort()
     check(
-      'categories are food + night only',
-      slugs.join(',') === 'food,night',
+      'categories are food + night + nonprofit only',
+      slugs.join(',') === 'food,night,nonprofit',
       `got ${slugs.join(',') || '(none)'}`,
     )
     const labels = Object.fromEntries(cats.docs.map((d: any) => [d.slug, d.label]))
@@ -75,7 +77,7 @@ async function main() {
     limit: 100,
     depth: 0,
   })
-  check('11 researched listings imported', sourced.totalDocs === 11, `got ${sourced.totalDocs}`)
+  check('13 researched listings imported', sourced.totalDocs === 13, `got ${sourced.totalDocs}`)
   check(
     'no unsourced listing is present unless mocks were seeded',
     (await payload.count({
@@ -83,9 +85,37 @@ async function main() {
       where: { publicationStatus: { equals: 'unsourced' } },
     })).totalDocs === (SEED_MOCKS ? 14 : 0),
   )
+  /* Listings with no premises to give an address for.
+   *
+   * The check below exists to catch an import that silently dropped its
+   * contact fields, and it held while every listing was a business with a
+   * front door. Club de la Amistad is a volunteer club that walks the city and
+   * reports from phones — it has no office and publishes no number, so an
+   * address here would be an invention rather than a fact.
+   *
+   * Named one by one rather than exempting the whole `nonprofit` category: a
+   * nonprofit with an office should still be held to the rule, and this way
+   * the exemption cannot widen without someone editing this list. The second
+   * check is the price of the first — an exempted listing has to say in
+   * `blockingGaps` why it has nothing, so "no address" stays a recorded fact
+   * and not an empty field nobody noticed. */
+  const NO_PREMISES = new Set(['el-club-de-la-amistad'])
+  const withPremises = sourced.docs.filter((d: any) => !NO_PREMISES.has(d.slug))
   check(
-    'every researched listing has a phone and an address',
-    sourced.docs.every((d: any) => d.detail?.phone && d.detail?.address),
+    'every researched listing with premises has a phone and an address',
+    withPremises.every((d: any) => d.detail?.phone && d.detail?.address),
+    withPremises
+      .filter((d: any) => !(d.detail?.phone && d.detail?.address))
+      .map((d: any) => d.slug)
+      .join(', '),
+  )
+  check(
+    'every listing without premises says so in its blocking gaps',
+    sourced.docs
+      .filter((d: any) => NO_PREMISES.has(d.slug))
+      .every((d: any) =>
+        (d.research?.blockingGaps ?? []).some((g: string) => /address|premises/i.test(g)),
+      ),
   )
   check(
     'every researched listing cites at least one source',
@@ -114,6 +144,70 @@ async function main() {
       missing.length === 0,
       missing.length ? `no gallery[0]: ${missing.join(', ')}` : '',
     )
+  }
+
+  /* --- the venue marks ---------------------------------------------------- */
+  // Same trap as the photos above, and worse hidden: `logo` is merged
+  // conditionally, so a moved or renamed file writes no key at all and leaves
+  // whatever was there. The event page then draws no venue mark and says
+  // nothing about it — the only symptom is a corner of a photograph that is
+  // emptier than it should be.
+  {
+    const slugs = Object.keys(LISTING_LOGO)
+    const withLogo = await payload.find({
+      collection: 'listings',
+      where: { slug: { in: slugs } },
+      limit: 100,
+      depth: 1,
+    })
+    const missing = slugs.filter((slug) => {
+      const doc: any = withLogo.docs.find((d: any) => d.slug === slug)
+      return !doc?.logo?.url
+    })
+    check(
+      `all ${slugs.length} listings with a logo have it on the listing`,
+      missing.length === 0,
+      missing.length ? `no logo: ${missing.join(', ')}` : '',
+    )
+  }
+
+  /* --- the events that carry a clock -------------------------------------- */
+  // `startTime` is merged conditionally, so a typo in the key writes nothing
+  // and says nothing: the page still prints `timeLabel` and looks right, while
+  // the .ics quietly reverts to an all-day banner. Nobody would find that
+  // without opening the downloaded file.
+  //
+  // The pair cannot be checked for agreement — '9:00 AM' and '09:00' are the
+  // same instant said twice, in two notations, and only a human knows that.
+  // What is checkable is that an event claiming an hour actually has both
+  // halves, in both languages.
+  for (const e of REAL_EVENTS) {
+    if (!e.startTime) continue
+    for (const locale of ['en', 'es'] as const) {
+      const { docs } = await payload.find({
+        collection: 'events',
+        where: { slug: { equals: e.slug } },
+        locale,
+        limit: 1,
+        depth: 0,
+      })
+      const doc: any = docs[0]
+      // `check` prints its third argument whether it passed or not, so the
+      // detail is only built for the failing case — the existing photo check
+      // does the same.
+      const started = doc?.startTime === e.startTime
+      check(
+        `"${e.slug}" has a start time the calendar can read (${locale})`,
+        started,
+        started ? '' : `expected ${e.startTime}, got ${doc?.startTime ?? 'nothing'}`,
+      )
+      const labelled = Boolean(doc?.timeLabel)
+      check(
+        `"${e.slug}" still prints a time to the reader (${locale})`,
+        labelled,
+        labelled ? '' : 'timeLabel is empty, so the page shows an hour nowhere',
+      )
+    }
   }
 
   /* --- slug renames actually renamed, rather than duplicating ------------- */

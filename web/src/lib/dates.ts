@@ -38,6 +38,49 @@ export function todayISO(now: Date = new Date()): string {
   }).format(now)
 }
 
+/** The zone's offset from UTC, in ms, at a given instant. */
+function offsetMs(at: Date): number {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: SITE_TZ,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  }).formatToParts(at)
+  const p: Record<string, number> = {}
+  for (const { type, value } of parts) if (type !== 'literal') p[type] = Number(value)
+  // `hour` comes back as 24 at midnight under hour12:false in some runtimes.
+  const asUTC = Date.UTC(p.year, p.month - 1, p.day, p.hour % 24, p.minute, p.second)
+  return asUTC - at.getTime()
+}
+
+/**
+ * A Miami wall-clock time as an RFC 5545 UTC stamp — `20260906T130000Z`.
+ *
+ * Written in UTC rather than `TZID=America/New_York` on purpose: a TZID
+ * reference obliges the file to carry a VTIMEZONE block defining that zone,
+ * and a UTC instant needs nothing and is unambiguous everywhere. Floating
+ * local time would be worse than either — it means "9am wherever you happen to
+ * be", so the same file would say a different hour to a reader in Madrid.
+ *
+ * The offset is resolved twice. The first pass reads the zone's offset at the
+ * naive instant; the second re-reads it at the corrected one, which is what
+ * settles a time sitting within an hour of a DST change. September is well
+ * inside EDT, but the two lines are what make this correct in March and
+ * November too.
+ */
+export function utcStamp(iso: string, hhmm: string, addMinutes = 0): string {
+  const [y, m, d] = iso.split('-').map(Number)
+  const [hh, mi] = hhmm.split(':').map(Number)
+  const naive = Date.UTC(y, (m ?? 1) - 1, d ?? 1, hh ?? 0, (mi ?? 0) + addMinutes)
+  let ts = naive - offsetMs(new Date(naive))
+  ts = naive - offsetMs(new Date(ts))
+  return new Date(ts).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+}
+
 /** The date portion of whatever Payload gives back. */
 export function dateOnly(v: string | Date | null | undefined): string {
   if (!v) return ''

@@ -65,7 +65,6 @@ export default async function EventsPage({
   // Past events drop off, which is what the source's first bucket starting at
   // its frozen "today" did. It makes the count time-varying, correctly.
   const upcoming = all.filter((ev) => dateOnly(ev.date) >= today)
-  const stars = upcoming.filter((ev) => ev.star)
 
   // LIST/CALENDAR is a view mode, not a filter — it stayed when the city and
   // kind chips came off.
@@ -101,59 +100,6 @@ export default async function EventsPage({
           gap: 'clamp(18px,3vw,26px)',
         }}
       >
-        {/* --- Headliners --- */}
-        {stars.length ? (
-          <section
-            style={{
-              background: 'var(--ink)',
-              border: '4px solid var(--ink)',
-              boxShadow: '9px 9px 0 var(--cream)',
-              padding: 'clamp(16px,3vw,22px)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 16,
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-              <h2
-                style={{
-                  margin: 0,
-                  background: 'var(--yellow)',
-                  border: '3px solid var(--cream)',
-                  padding: '7px 14px 5px',
-                  fontFamily: 'var(--display)',
-                  fontSize: 22,
-                  fontWeight: 400,
-                  transform: 'rotate(-2deg)',
-                }}
-              >
-                {t('HEADLINERS')}
-              </h2>
-              <div
-                style={{
-                  color: 'var(--cyan)',
-                  fontWeight: 800,
-                  fontSize: 12,
-                  letterSpacing: '2px',
-                }}
-              >
-                {t("THE ONES WE'D CANCEL PLANS FOR")}
-              </div>
-            </div>
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,290px),1fr))',
-                gap: 'clamp(14px,2.5vw,20px)',
-              }}
-            >
-              {stars.map((ev) => (
-                <EventCard key={ev.id} lang={lang} ev={ev} t={t} feature />
-              ))}
-            </div>
-          </section>
-        ) : null}
-
         {/* --- Masthead --- */}
         <header
           data-stack

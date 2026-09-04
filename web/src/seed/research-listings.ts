@@ -69,8 +69,32 @@ export function list(v: unknown): string[] {
 
 /** research city slug → the site's city slug. */
 const CITY: Record<string, string> = { 'miami-lakes': 'lakes', hialeah: 'hialeah' }
-/** research category → the site's taxonomy. Only restaurants and bars exist so far. */
-const CATEGORY: Record<string, string> = { restaurant: 'food', bar: 'night' }
+/**
+ * research category → the site's taxonomy.
+ *
+ * A key missing here is not an error — `seed` logs `skip <slug>: no mapping`
+ * and carries on with an exit code of 0. So a new research category has to be
+ * added in three places at once or it silently imports nothing: here, in
+ * `CAT_KEEP`, and in `CAT_RELABEL` (both in `seed/index.ts`).
+ */
+const CATEGORY: Record<string, string> = {
+  restaurant: 'food',
+  bar: 'night',
+  nonprofit: 'nonprofit',
+}
+
+/**
+ * Listings written by hand in `data-import/listings.json` with no dossier
+ * behind them.
+ *
+ * `research.sourceFile` is provenance: it names the file a record was generated
+ * from. These two were not generated from anything — they were authored from
+ * press and the organisations' own sites, which are in `references` — so
+ * pointing the field at `research/hialeah/casa-marin.md` would invent a source
+ * document. Empty is the honest value, and `_meta.local_edits` in the JSON
+ * carries the same warning for whoever regenerates that file.
+ */
+const HAND_AUTHORED = new Set(['casa-marin', 'el-club-de-la-amistad'])
 
 /**
  * Listings whose slug changed after they were already seeded. old → new.
@@ -181,6 +205,64 @@ export const LISTING_PHOTO: Record<
     file: 'assets/businesses/trattoria-pampered-chef.jpg',
     altEn: 'A tile-roofed storefront at blue hour, the name in lit script above a covered walkway of ceiling fans and warm-lit windows.',
     altEs: 'Una fachada de tejas a la hora azul, con el nombre en cursiva iluminada sobre un pasillo cubierto de ventiladores y ventanales cálidos.',
+  },
+  // Not a photograph of the building, and the credit says so. The restaurant
+  // has never been shot for us: the only picture that exists is a third-party
+  // Google Maps contribution with a passer-by and the Maps chrome in frame,
+  // which is somebody else's copyright and unusable as it stands. So this is a
+  // render built from that picture as reference — the massing, the stepped
+  // parapet, the sign and the two unit numbers are the real building's, the
+  // light and the empty lot are not. It replaces the logo holding card that
+  // stood here, which is still on disk at `casa-marin.jpg` and unreferenced.
+  //
+  // The filename had to change rather than the file: `upsertMedia` keys on
+  // basename and returns the existing document on a match, so overwriting
+  // `casa-marin.jpg` in place would have re-seeded green and gone on serving
+  // the holding card. Same trap `real-events.ts` documents.
+  //
+  // Swap this for a real photograph the moment anyone shoots one, and drop the
+  // credit then — the slug and alt text are what the seed keys on.
+  'casa-marin': {
+    file: 'assets/businesses/casa-marin-storefront.jpg',
+    altEn: 'A long pink stucco storefront in late afternoon sun, CASA MARIN in red script across the stepped parapet above a colonnaded walkway.',
+    altEs: 'Una fachada larga de estuco rosado con el sol de la tarde, CASA MARIN en cursiva roja sobre el pretil escalonado, encima de un pasillo con columnas.',
+    credit: 'Rendering from a Google Maps contributor photo — stand-in until the storefront is shot',
+  },
+  'el-club-de-la-amistad': {
+    file: 'assets/businesses/el-club-de-la-amistad.jpg',
+    altEn: 'Seven volunteers in pink club shirts standing shoulder to shoulder against a slatted wood wall, the club seal in the corner.',
+    altEs: 'Siete voluntarias con camisas rosadas del club, hombro con hombro ante una pared de listones de madera, con el sello del club en la esquina.',
+    credit: 'Club de la Amistad por un Hialeah Mejor',
+  },
+}
+
+/**
+ * A venue's own mark, background removed, for drawing over a photograph.
+ *
+ * Separate from `LISTING_PHOTO` because it is a different kind of image and
+ * has a different job: the photo answers "what does this place look like",
+ * the logo answers "whose place is this" when the photograph on screen is of
+ * somebody else — an event hero, for instance, which shows the people at the
+ * event and nothing that names the room they are in.
+ *
+ * `casa-marin-logo.png` is the same artwork as `casa-marin.jpg`, with the
+ * flyer's paper colour flood-filled away from the outside only. Filling from
+ * the border rather than by colour keeps the cream *inside* the roundel, which
+ * is the logo's own disc — knocking that out too would drop the white "el chef
+ * marin" script onto whatever photograph happens to be behind it.
+ *
+ * Optional, and expected to stay mostly empty: most listings will have a
+ * storefront photograph and no need of this.
+ */
+export const LISTING_LOGO: Record<
+  string,
+  { file: string; altEn: string; altEs: string; credit?: string }
+> = {
+  'casa-marin': {
+    file: 'assets/businesses/casa-marin-logo.png',
+    altEn: "The Casa Marín logo: a chef's hat between a fork and a knife inside a red roundel, on a banner reading CASA MARIN.",
+    altEs: 'El logotipo de Casa Marín: un gorro de chef entre un tenedor y un cuchillo dentro de un círculo rojo, sobre una cinta que dice CASA MARIN.',
+    credit: 'Casa Marín',
   },
 }
 
@@ -304,7 +386,9 @@ export function toListing(r: ResearchListing, ids: Record<string, any>) {
         type: val(ref.type),
       })),
       legalEntity: val(r.legal_entity),
-      sourceFile: `flamingo-city/research/${r.city}/${DOSSIER_SLUG[r.slug] ?? r.slug}.md`,
+      sourceFile: HAND_AUTHORED.has(r.slug)
+        ? undefined
+        : `flamingo-city/research/${r.city}/${DOSSIER_SLUG[r.slug] ?? r.slug}.md`,
     },
   }
 }

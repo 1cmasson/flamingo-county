@@ -67,7 +67,6 @@ export function BusinessCard({
       >
         <MediaSlot
           media={hero}
-          placeholder={listing.imageHint ? `${t('Drop: ')}${listing.imageHint}` : null}
           // The grid is `minmax(min(100%,265px),1fr)` inside the 1280 shell, so
           // a card tops out near 330px and goes full-bleed on a phone.
           sizes="(max-width: 700px) 100vw, 330px"

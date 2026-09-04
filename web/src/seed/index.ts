@@ -22,7 +22,9 @@ import {
   CATEGORY,
   SLUG_RENAMES,
   LISTING_PHOTO,
+  LISTING_LOGO,
 } from './research-listings'
+import { REAL_EVENTS } from './real-events'
 import {
   loadFCBase,
   makeTranslator,
@@ -130,11 +132,29 @@ function withIds(rows: Dict[] | undefined, enRows: Dict[] | undefined): Dict[] {
  * source: a re-pull would put the five back. `night` is relabelled too — its
  * two listings are a taproom and a liquor lounge, not night clubs.
  */
-const CAT_KEEP = ['food', 'night']
+const CAT_KEEP = ['food', 'night', 'nonprofit']
 const CAT_RELABEL: Record<string, { en: string; es: string }> = {
   food: { en: 'RESTAURANTS', es: 'RESTAURANTES' },
   night: { en: 'BARS', es: 'BARES' },
+  nonprofit: { en: 'NONPROFITS', es: 'ORGANIZACIONES' },
 }
+
+/**
+ * Categories that exist here and nowhere upstream.
+ *
+ * `fc-data.js` was written for a directory of businesses, so its five
+ * categories are all trades and venues — there is no nonprofit anywhere in it.
+ * Club de la Amistad is not a business and does not belong under RESTAURANTS,
+ * so the row is authored here instead, for the same reason `CAT_RELABEL` is: a
+ * key added to `fc-data.js` is reverted by the next Claude Design re-pull.
+ *
+ * Every key here must also be in `CAT_KEEP` — `pruneCategories` deletes rows
+ * outside it, and then throws once a listing references one. The ES label is
+ * `ORGANIZACIONES` rather than the club's own `sin fines de lucro`, which is
+ * accurate but three words too long for a filter chip.
+ */
+const EXTRA_CATS = [{ key: 'nonprofit', label: 'NONPROFITS' }]
+
 
 /**
  * Drop taxonomy rows that are no longer in `CAT_KEEP`.
@@ -381,7 +401,8 @@ async function seed() {
   // `all` is the leading entry of both source arrays and is a filter-chip
   // affordance, not a taxonomy row. Dropped on purpose: 6 -> 5, 8 -> 7.
   console.log('categories…')
-  for (const [i, c] of base.CATS.filter((c: any) => CAT_KEEP.includes(c.key)).entries()) {
+  const cats = [...base.CATS.filter((c: any) => CAT_KEEP.includes(c.key)), ...EXTRA_CATS]
+  for (const [i, c] of cats.entries()) {
     const relabel = CAT_RELABEL[c.key]
     const doc = await upsert(
       payload,
@@ -505,7 +526,18 @@ async function seed() {
       const mediaId = photo
         ? await upsertMedia(payload, photo.file, photo.altEn, photo.altEs, photo.credit)
         : undefined
-      const data = { ...toListing(r, id), ...(mediaId ? { gallery: [mediaId] } : {}) }
+      // The venue's mark on transparency, for pages that draw it over a
+      // photograph of something else. Merged on the same terms as the photo:
+      // absent means "leave whatever is there", not "clear it".
+      const logo = LISTING_LOGO[r.slug]
+      const logoId = logo
+        ? await upsertMedia(payload, logo.file, logo.altEn, logo.altEs, logo.credit)
+        : undefined
+      const data = {
+        ...toListing(r, id),
+        ...(mediaId ? { gallery: [mediaId] } : {}),
+        ...(logoId ? { logo: logoId } : {}),
+      }
       const doc = await upsert(payload, 'listings', r.slug, data)
       id.listings[r.slug] = doc.id
     }
@@ -638,6 +670,60 @@ async function seed() {
         },
       )
     }
+  }
+
+  /* --- Real events -------------------------------------------------------- */
+  // The 20 events above are design fiction and stay behind SEED_MOCK_CONTENT,
+  // which left no route at all for an event that actually happens. These are
+  // authored here for the same reason CAT_RELABEL and LISTING_PHOTO are: there
+  // is no upstream file to put them in, and fc-data.js is re-pulled.
+  //
+  // Runs AFTER the researched-listings loop on purpose — a `listing` venue
+  // needs id.listings to be populated, and a missing id would write an event
+  // with no venue rather than fail.
+  //
+  // Spanish is the source language here, which inverts the listing importer's
+  // English-only rule: these events are announced on Spanish flyers, so both
+  // locales are authored rather than run through the EN→ES dictionary.
+  console.log('real events…')
+  for (const e of REAL_EVENTS) {
+    const mediaId = e.photo
+      ? await upsertMedia(payload, e.photo.file, e.photo.altEn, e.photo.altEs, e.photo.credit)
+      : undefined
+    const listingId = id.listings[e.listing]
+    if (!listingId) {
+      throw new Error(
+        `event "${e.slug}" is at listing "${e.listing}", which was not seeded. ` +
+          `Check that it is in data-import/listings.json and that its city and ` +
+          `category both have a mapping in research-listings.ts.`,
+      )
+    }
+    await upsert(
+      payload,
+      'events',
+      e.slug,
+      {
+        title: e.en.title,
+        // Midday UTC, matching the loop above: a bare calendar date lands on
+        // the previous day once dateOnly() reads it back in America/New_York.
+        date: new Date(`${e.date}T12:00:00.000Z`).toISOString(),
+        timeLabel: e.en.timeLabel,
+        kind: id.kinds[e.kind],
+        venueType: 'listing',
+        listing: listingId,
+        going: 0,
+        freeLabel: e.en.freeLabel,
+        note: e.en.note,
+        ...(e.startTime ? { startTime: e.startTime } : {}),
+        ...(mediaId ? { image: mediaId } : {}),
+      },
+      {
+        title: e.es.title,
+        timeLabel: e.es.timeLabel,
+        freeLabel: e.es.freeLabel,
+        note: e.es.note,
+      },
+    )
   }
 
   /* --- Weekly ------------------------------------------------------------- */
