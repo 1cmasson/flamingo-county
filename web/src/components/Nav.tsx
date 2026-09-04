@@ -35,9 +35,13 @@ const linkChip = (shadow: string) => ({
  * listings dropdown, the burger panel and the language toggle. The hover
  * tooltips that each needed their own state flag are CSS now.
  *
- * EVENTS and STORIES are deliberately absent — both sections are still routed
- * and rendered, but there is no live content for them yet, so they stay out of
- * the nav until there is.
+ * STORIES is deliberately absent — the section is routed and rendered, but
+ * nothing is seeded into it, so it stays out of the nav until something is.
+ *
+ * EVENTS sat under the same rule and no longer does: the board has a real
+ * record on it (`REAL_EVENTS`, see CMS.md), which was the stated condition, so
+ * it is a tab. Its chip goes before MY WEEK because My Week is a list of what
+ * you saved off that board — the board has to be reachable first.
  *
  * The tabs carry no active flag: `NavMenus` derives it from the pathname on the
  * client, because a layout does not re-render on a navigation within its own
@@ -66,6 +70,7 @@ export async function Nav({ lang }: { lang: Lang }) {
       }}
     >
       <nav
+        data-navrow="1"
         style={{
           position: 'relative',
           maxWidth: 1280,
@@ -79,6 +84,7 @@ export async function Nav({ lang }: { lang: Lang }) {
       >
         <Link
           href={routes.home(lang)}
+          data-navlogo="1"
           style={{
             textDecoration: 'none',
             color: 'inherit',
@@ -101,7 +107,14 @@ export async function Nav({ lang }: { lang: Lang }) {
             }}
           />
           <div style={{ lineHeight: 1 }}>
+            {/*
+              * Both hooks are read by one media query in globals.css. The
+              * lockup is `flex: 0 0 auto` and so is the burger group, so on a
+              * narrow phone neither could give and the burger button was
+              * pushed off the right edge — see the query for the measurement.
+              */}
             <div
+              data-navword="1"
               style={{
                 fontFamily: 'var(--display)',
                 fontSize: 'clamp(18px,4.6vw,24px)',
@@ -113,6 +126,7 @@ export async function Nav({ lang }: { lang: Lang }) {
               FLAMINGO COUNTY
             </div>
             <div
+              data-navsub="1"
               style={{
                 fontFamily: 'var(--body)',
                 fontWeight: 800,
@@ -140,6 +154,10 @@ export async function Nav({ lang }: { lang: Lang }) {
           <Tooltip text={lang === 'es' ? 'READ IT IN ENGLISH!' : '¡LÉELO EN ESPAÑOL!'} rotate={-1.5}>
             <LangToggle lang={lang} />
           </Tooltip>
+
+          <Link href={routes.events(lang)} className={s.chip} style={linkChip('var(--pink)')}>
+            {t('EVENTS')}
+          </Link>
 
           <MyWeekLink href={routes.myWeek(lang)} label={t('MY WEEK')} />
 
@@ -171,6 +189,12 @@ export async function Nav({ lang }: { lang: Lang }) {
             citiesLabel={t('CITIES')}
             tabs={tabs}
             links={[
+              {
+                href: routes.events(lang),
+                label: t('EVENTS'),
+                shadow: 'var(--pink)',
+                background: 'var(--grad-cream)',
+              },
               {
                 href: routes.about(lang),
                 label: aboutLabel(lang),

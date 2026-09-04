@@ -100,7 +100,28 @@ textarea {
   display: none;
 }
 
-@media (max-width: 1020px) {
+/*
+ * 1120, not the 1020 this was ported with, because the bar gained a tab.
+ *
+ * The desktop row is `nowrap` and every item in it is `flex: 0 0 auto`, so it
+ * has no way to fail gracefully — it overflows the document and the page
+ * scrolls sideways. Measured in Spanish, whose labels are the long ones, with
+ * MY WEEK present: the row wants 1086px of viewport and was appearing at
+ * 1021, so it hung 42px off the right. English wants exactly 1021, which is
+ * why this looked correct until it was opened in the other language.
+ *
+ * MY WEEK is the part that makes it conditional and easy to miss: it renders
+ * from localStorage, so it is absent for anyone who has never saved an event
+ * — including every fresh browser a screenshot gets taken in. The bar fits at
+ * 1024 until a visitor saves something, and then it does not.
+ *
+ * The extra 34px over the measured 1086 is for that saved count: the badge is
+ * a number, and it is one character wide today.
+ *
+ * The burger is a complete equivalent, EVENTS included, so handing 1021–1120
+ * to it costs nothing.
+ */
+@media (max-width: 1120px) {
   [data-navdesk] {
     display: none !important;
   }
@@ -109,6 +130,56 @@ textarea {
   }
   [data-navpanel] {
     display: flex !important;
+  }
+}
+
+/*
+ * The wordmark folds, and drops its URL line, once the bar runs out of room.
+ *
+ * Measured at 375px: the row has 351px of content box, and both of the things
+ * in it refuse to shrink — the logo lockup is `flex: 0 0 auto` and so is the
+ * language toggle and burger beside it. 261 + 10 + 133 = 404, so the burger
+ * button sat 41px off the right edge and the whole document scrolled
+ * sideways. It reads as an events-board bug because that page is long enough
+ * to notice the sideways scroll; it was on every page.
+ *
+ * The row stops overflowing at about 428px, and 460 is that with headroom
+ * rather than the 3px the arithmetic leaves. What actually costs the width is
+ * the URL line: it is a fixed 10px with 2.4px of tracking, so it never shrinks
+ * with the viewport, and at 211px it is wider than the 159px wordmark sitting
+ * above it. Dropping it takes the lockup from 261px to 209px, which is enough
+ * on a 375px phone and keeps the wordmark rather than reducing the brand to
+ * its mark. It is a measurement, not a device width.
+ *
+ * 209 is still too wide at 320px, and releasing `white-space` alone would not
+ * have helped: the lockup is `flex: 0 0 auto`, so it sizes to max-content and
+ * a wrap that is permitted never happens. Letting it shrink is what makes
+ * "FLAMINGO COUNTY" fold onto two lines down there.
+ *
+ * The two gaps come down to 8px for the sake of one pixel, which is not a
+ * joke: with them at 10px the lockup wants 209px and the row has 208px, so a
+ * 375px phone folded the wordmark over a rounding error. 8px buys three
+ * pixels of slack and the wordmark stays on one line where there is any room
+ * for it to. Genuinely narrow screens still fold, which is the point.
+ *
+ * `!important` throughout because these properties are all inline on the
+ * elements, which is how everything in Nav.tsx is styled.
+ */
+@media (max-width: 460px) {
+  [data-navrow] {
+    gap: 8px !important;
+  }
+  [data-navlogo] {
+    flex: 0 1 auto !important;
+    min-width: 0 !important;
+    white-space: normal !important;
+    gap: 8px !important;
+  }
+  [data-navword] {
+    white-space: normal !important;
+  }
+  [data-navsub] {
+    display: none !important;
   }
 }
 
