@@ -206,17 +206,27 @@ export const LISTING_PHOTO: Record<
     altEn: 'A tile-roofed storefront at blue hour, the name in lit script above a covered walkway of ceiling fans and warm-lit windows.',
     altEs: 'Una fachada de tejas a la hora azul, con el nombre en cursiva iluminada sobre un pasillo cubierto de ventiladores y ventanales cálidos.',
   },
-  // NOT a storefront. A holding card built from the restaurant's own logo on
-  // the flyer's paper colour, because the only photograph available is a
-  // third-party Google Maps contribution with a passer-by and the Maps chrome
-  // in frame. The mark is kept small enough to survive the hero band's centre
-  // crop. Replace the file with the real storefront and drop the credit — the
-  // slug and alt text are what the seed keys on, not the contents.
+  // Not a photograph of the building, and the credit says so. The restaurant
+  // has never been shot for us: the only picture that exists is a third-party
+  // Google Maps contribution with a passer-by and the Maps chrome in frame,
+  // which is somebody else's copyright and unusable as it stands. So this is a
+  // render built from that picture as reference — the massing, the stepped
+  // parapet, the sign and the two unit numbers are the real building's, the
+  // light and the empty lot are not. It replaces the logo holding card that
+  // stood here, which is still on disk at `casa-marin.jpg` and unreferenced.
+  //
+  // The filename had to change rather than the file: `upsertMedia` keys on
+  // basename and returns the existing document on a match, so overwriting
+  // `casa-marin.jpg` in place would have re-seeded green and gone on serving
+  // the holding card. Same trap `real-events.ts` documents.
+  //
+  // Swap this for a real photograph the moment anyone shoots one, and drop the
+  // credit then — the slug and alt text are what the seed keys on.
   'casa-marin': {
-    file: 'assets/businesses/casa-marin.jpg',
-    altEn: "The Casa Marín logo: a chef's hat between a fork and a knife inside a red circle, on a banner reading CASA MARIN.",
-    altEs: 'El logotipo de Casa Marín: un gorro de chef entre un tenedor y un cuchillo dentro de un círculo rojo, sobre una cinta que dice CASA MARIN.',
-    credit: 'Casa Marín — logo, holding image until the storefront is photographed',
+    file: 'assets/businesses/casa-marin-storefront.jpg',
+    altEn: 'A long pink stucco storefront in late afternoon sun, CASA MARIN in red script across the stepped parapet above a colonnaded walkway.',
+    altEs: 'Una fachada larga de estuco rosado con el sol de la tarde, CASA MARIN en cursiva roja sobre el pretil escalonado, encima de un pasillo con columnas.',
+    credit: 'Rendering from a Google Maps contributor photo — stand-in until the storefront is shot',
   },
   'el-club-de-la-amistad': {
     file: 'assets/businesses/el-club-de-la-amistad.jpg',
