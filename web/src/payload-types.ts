@@ -416,6 +416,10 @@ export interface Listing {
    */
   gallery?: (number | Media)[] | null;
   /**
+   * The mark, on transparency, for drawing over somebody else's photograph — an event hero shows the people at the event and nothing that names the room. Not a substitute for `gallery[0]`, which is the storefront: nothing uses this as a hero. Leave it empty unless there is artwork with the background actually removed; a logo on a white card looks like a mistake once it is sitting on a photo.
+   */
+  logo?: (number | null) | Media;
+  /**
    * Only el-gallo has authored detail. Everything else is intentionally blank — the old site faked these values from the array index.
    */
   detail?: {
@@ -657,7 +661,7 @@ export interface Event {
   title: string;
   date: string;
   /**
-   * Display string as written, e.g. "9PM–1AM". Not parsed. Localized because it is not always a clock reading — an event whose time is not settled says so in words ("Por confirmar"), and that has to translate.
+   * Display string as written, e.g. "9PM–1AM". Not parsed — `startTime` is the clock the calendar file reads. Localized because it is not always a clock reading: an event whose time is not settled says so in words ("Por confirmar"), and that has to translate.
    */
   timeLabel?: string | null;
   kind: number | EventKind;
@@ -669,6 +673,14 @@ export interface Event {
   place?: string | null;
   hood?: string | null;
   city?: (number | null) | City;
+  /**
+   * 24-hour HH:mm in Miami time, e.g. 09:00. Drives the .ics file only; the page prints timeLabel.
+   */
+  startTime?: string | null;
+  /**
+   * Optional, same format. Left empty the calendar entry runs an hour from startTime — a length for the calendar to draw, not a published finishing time.
+   */
+  endTime?: string | null;
   /**
    * Currently drives nothing. It marked an event as eligible for the HEADLINERS strip at the top of the events board; that strip has been removed, so no page reads this. Kept because the flag is a genuine editorial judgement and the source data carries it — not because anything is wired to it.
    */
@@ -1049,6 +1061,7 @@ export interface ListingsSelect<T extends boolean = true> {
   member?: T;
   imageHint?: T;
   gallery?: T;
+  logo?: T;
   detail?:
     | T
     | {
@@ -1211,6 +1224,8 @@ export interface EventsSelect<T extends boolean = true> {
   place?: T;
   hood?: T;
   city?: T;
+  startTime?: T;
+  endTime?: T;
   star?: T;
   going?: T;
   freeLabel?: T;
