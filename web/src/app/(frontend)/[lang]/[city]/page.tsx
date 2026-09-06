@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { isLang, translator, type Lang } from '../../../../i18n'
 import { routes } from '../../../../lib/routes'
@@ -7,6 +7,7 @@ import {
   applySearch,
   getCities,
   getCity,
+  getCityByAlias,
   getListings,
   getSiteSettings,
   rel,
@@ -79,8 +80,18 @@ export default async function CityPage({
   // A city page only exists for a city we have, so anything else is a 404
   // rather than an empty page — this route sits at /[lang]/[city] and would
   // otherwise match every unrecognised path.
+  //
+  // Before giving up, try the slug the name would produce: the cities publish
+  // as `havana` and `lakes` but the site prints "Little Havana" and "Miami
+  // Lakes", so /en/little-havana is a reasonable guess that used to 404. 308
+  // rather than 307 — the short slug is the canonical URL and that is not
+  // going to change, so caches and search engines may keep the mapping.
   const city = await getCity(lang, slug)
-  if (!city) notFound()
+  if (!city) {
+    const aliased = await getCityByAlias(lang, slug)
+    if (aliased) permanentRedirect(routes.city(lang, aliased.slug))
+    notFound()
+  }
 
   // The city page is the browse surface now: every listing in the city, not a
   // curated three. The fetch is unfiltered and `?q=` is applied in memory, so

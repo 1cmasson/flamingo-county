@@ -1,7 +1,7 @@
 import { getPayload } from 'payload'
 import type { Where } from 'payload'
 import config from '../payload.config'
-import type { Lang } from '../i18n'
+import { translator, type Lang } from '../i18n'
 import type { City, Listing, Story, Event, WeeklyEvent, Spotlight, Category, EventKind } from '../payload-types'
 import { routes } from './routes'
 import { fold, matches, metaLine, prepare, squash, type Suggestion } from './search'
@@ -38,6 +38,49 @@ export async function getCity(lang: Lang, slug: string): Promise<City | null> {
     depth: 1,
   })
   return docs[0] ?? null
+}
+
+/**
+ * The slug a visitor would guess from the name on the page, e.g. `little-havana`
+ * from "LITTLE HAVANA". Built on `fold` so an accented name still lands on an
+ * ASCII slug — "La Pequeña Habana" gives `la-pequena-habana`, not `la-peque-a-`.
+ */
+function nameSlug(name: string): string {
+  return fold(name)
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+/**
+ * A city whose *name* slugifies to `slug`, for URLs people type rather than
+ * click. The three cities are published under short slugs — `havana`, `lakes`,
+ * `hialeah` — while the site prints their full names everywhere, so guessing
+ * `/en/little-havana` or `/en/miami-lakes` from the footer's city list used to
+ * dead-end on a 404. Deriving the alias from `name` rather than hardcoding a
+ * map means a fourth city gets the same courtesy the day it is published.
+ *
+ * Both names count, because `name` is not a localized field but the copy on the
+ * page is: the Spanish footer prints "La Pequeña Habana" out of the dictionary
+ * while the record still says "LITTLE HAVANA", so a Spanish visitor guesses
+ * `/es/la-pequena-habana` and an English one guesses `/es/little-havana`. Both
+ * resolve.
+ *
+ * Only ever consulted after an exact `getCity` miss, so a real slug never pays
+ * for this and a city can never be shadowed by another's alias.
+ */
+export async function getCityByAlias(lang: Lang, slug: string): Promise<City | null> {
+  const wanted = nameSlug(slug)
+  if (!wanted) return null
+  const t = translator(lang)
+  const cities = await getCities(lang)
+  return (
+    cities.find(
+      (c) =>
+        c.name &&
+        c.slug !== slug &&
+        (nameSlug(c.name) === wanted || nameSlug(t(c.name)) === wanted),
+    ) ?? null
+  )
 }
 
 export async function getCategories(lang: Lang): Promise<Category[]> {

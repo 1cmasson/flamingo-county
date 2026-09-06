@@ -1,10 +1,11 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { isLang, translator, type Lang } from '../../../../../i18n'
 import { routes } from '../../../../../lib/routes'
 import {
   getCity,
+  getCityByAlias,
   getListing,
   getListings,
   getListYourSpotPage,
@@ -82,7 +83,19 @@ export default async function BusinessPage({
   const listingCity = rel<City>(listing.city)
   // The city must match the path, or /en/hialeah/el-gallo would render a
   // Little Havana business under a Hialeah URL.
-  if (!listingCity || listingCity.slug !== citySlug) notFound()
+  if (!listingCity) notFound()
+  if (listingCity.slug !== citySlug) {
+    // Unless the path names this same city the long way. The city route sends
+    // /en/little-havana to /en/havana, so a listing under the guessed spelling
+    // has to land in the same place rather than 404ing one level deeper than
+    // its own parent. `getCityByAlias` excludes exact-slug matches, so a real
+    // mismatch — /en/hialeah/el-gallo — still finds nothing and still 404s.
+    const aliased = await getCityByAlias(lang, citySlug)
+    if (aliased && aliased.slug === listingCity.slug) {
+      permanentRedirect(routes.business(lang, listingCity.slug, business))
+    }
+    notFound()
+  }
 
   const [city, settings, lys, story] = await Promise.all([
     getCity(lang, citySlug),
