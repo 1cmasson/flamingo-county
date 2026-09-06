@@ -38,9 +38,17 @@ html {
   scroll-padding-top: 96px;
 }
 
+/* The visible page background is PageShell's `position: fixed` dot-gradient
+   div, which every route renders, so this colour never shows inside the
+   viewport. Where it does show is the canvas — the strip iOS paints when a
+   swipe rubber-bands past the end of the document — and there the source's
+   `--pink` read as a flat sheet of #FF2E88 with no dots below the black
+   footer, which looked like the page had run out early. `--ink` is the colour
+   of both ends of the document (the sticky nav's background and the
+   footer's), so the overscroll strip now reads as either one continuing. */
 body {
   margin: 0;
-  background: var(--pink);
+  background: var(--ink);
   -webkit-text-size-adjust: 100%;
   font-family: var(--body);
 }
