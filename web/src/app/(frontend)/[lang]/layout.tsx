@@ -107,14 +107,15 @@ export default async function LangLayout({
       className={`${luckiest.variable} ${archivo.variable}`}
     >
       <body>
-        {/* The source's outer div: a min-height over nav, content and footer
-            together, so a short page leaves its slack below the footer rather
-            than above it. `svh` rather than `vh`, which on iOS resolves to the
-            large viewport and leaves the page taller than the screen while the
-            toolbars are showing. */}
-        <div style={{ minHeight: '100svh' }}>
+        {/* Flex column over nav, content and footer, so a short page's slack
+            is absorbed by the content area and the footer stays flush with
+            the bottom of the screen instead of leaving a gap below it. `svh`
+            rather than `vh`, which on iOS resolves to the large viewport and
+            leaves the page taller than the screen while the toolbars are
+            showing. */}
+        <div style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column' }}>
           <Nav lang={lang} />
-          {children}
+          <div style={{ flex: 1 }}>{children}</div>
           <Footer lang={lang} />
         </div>
       </body>
