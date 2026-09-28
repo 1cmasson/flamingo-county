@@ -3,6 +3,7 @@ import * as migration_20260820_215710_remove_pricing from './20260820_215710_rem
 import * as migration_20260901_204154_localize_event_time_label from './20260901_204154_localize_event_time_label';
 import * as migration_20260903_220604_add_listing_logo from './20260903_220604_add_listing_logo';
 import * as migration_20260903_221953_add_event_start_end_time from './20260903_221953_add_event_start_end_time';
+import * as migration_20260928_164435_add_members from './20260928_164435_add_members';
 
 export const migrations = [
   {
@@ -28,6 +29,11 @@ export const migrations = [
   {
     up: migration_20260903_221953_add_event_start_end_time.up,
     down: migration_20260903_221953_add_event_start_end_time.down,
-    name: '20260903_221953_add_event_start_end_time'
+    name: '20260903_221953_add_event_start_end_time',
+  },
+  {
+    up: migration_20260928_164435_add_members.up,
+    down: migration_20260928_164435_add_members.down,
+    name: '20260928_164435_add_members'
   },
 ];

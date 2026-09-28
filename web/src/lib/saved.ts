@@ -1,17 +1,26 @@
 'use client'
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
+import { union, type Lists } from './savedLists'
 
 /**
  * Saved and "going" events, kept in localStorage under the same keys the static
  * site used (`fc.saved`, `fc.going`) so an existing visitor's picks survive the
- * move. There is no server side to this until there are accounts.
+ * move.
  *
  * A subscribable store rather than per-component reads, so the nav badge, the
  * event page and My Week all move together — including across browser tabs.
+ *
+ * For a signed-in member, localStorage stays what the UI reads and the account
+ * is kept in step behind it (see *Sync* below and MEMBERS.md). Signed out,
+ * nothing here talks to the server.
  */
 const KEY_SAVED = 'fc.saved'
 const KEY_GOING = 'fc.going'
+/** Set once this device's picks have been merged into the account. */
+const KEY_SYNCED = 'fc.synced'
+/** A local change the account has not acknowledged yet — survives a reload. */
+const KEY_DIRTY = 'fc.dirty'
 
 type Store = { saved: string[]; going: string[] }
 
@@ -51,6 +60,128 @@ function subscribe(cb: () => void) {
 
 function write(key: string, next: string[]) {
   localStorage.setItem(key, JSON.stringify(next))
+  cacheRaw = ''
+  emit()
+  if (syncLang) {
+    localStorage.setItem(KEY_DIRTY, '1')
+    schedulePush()
+  }
+}
+
+function adopt(lists: Lists) {
+  localStorage.setItem(KEY_SAVED, JSON.stringify(lists.saved))
+  localStorage.setItem(KEY_GOING, JSON.stringify(lists.going))
+  cacheRaw = ''
+  emit()
+}
+
+/* --------------------------------------------------------------------- Sync */
+
+/*
+ * Three cases when a signed-in page loads:
+ *
+ *   first sign-in on this device  → union device + account, store it on both.
+ *                                   Nothing saved before signing in is lost.
+ *   an unsent local change        → push local; it is the newer copy.
+ *   otherwise                     → the account copy replaces local.
+ *
+ * Union happens once per device, never again: after that, unioning would bring
+ * back an event removed on another phone. Signing out clears all of it
+ * (forgetDevice), so the next sign-in starts from a clean union.
+ *
+ * Every toggle writes localStorage first — the UI never waits on the network —
+ * then pushes the whole list, debounced. A failed push leaves KEY_DIRTY set and
+ * is retried on the next toggle, on `online`, or on the next page load.
+ */
+let syncLang: string | null = null
+let pushTimer: ReturnType<typeof setTimeout> | undefined
+
+async function api(method: 'GET' | 'PUT', body?: Lists): Promise<Lists | null> {
+  const res = await fetch('/api/me/saved', {
+    method,
+    headers: body ? { 'Content-Type': 'application/json' } : undefined,
+    body: body ? JSON.stringify({ ...body, lang: syncLang }) : undefined,
+    cache: 'no-store',
+  })
+  // The session has gone (expired, or signed out in another tab). Stop
+  // syncing and keep what is on the device.
+  if (res.status === 401) {
+    syncLang = null
+    return null
+  }
+  if (!res.ok) throw new Error(`sync ${method} ${res.status}`)
+  return res.json()
+}
+
+async function push() {
+  const sent = read()
+  const sentRaw = cacheRaw
+  try {
+    const stored = await api('PUT', sent)
+    // Only adopt the server's cleaned copy if nothing was tapped meanwhile;
+    // otherwise the newer tap has its own push queued. read() refreshes
+    // cacheRaw from storage, which is what makes the comparison meaningful.
+    read()
+    if (stored && cacheRaw === sentRaw) {
+      localStorage.removeItem(KEY_DIRTY)
+      adopt(stored)
+    }
+  } catch {
+    // Stays dirty; retried later.
+  }
+}
+
+function schedulePush() {
+  clearTimeout(pushTimer)
+  pushTimer = setTimeout(push, 400)
+}
+
+export async function startSync(lang: string) {
+  if (syncLang) return
+  syncLang = lang
+  window.addEventListener('online', () => {
+    if (syncLang && localStorage.getItem(KEY_DIRTY)) void push()
+  })
+  // A tap while a request below is in flight has already written localStorage
+  // and queued its own push. Adopting the response would overwrite it, so
+  // adopt only if the device copy is unchanged since the request went out.
+  const snapshot = () => (read(), cacheRaw)
+  try {
+    if (localStorage.getItem(KEY_SYNCED) !== '1') {
+      const account = await api('GET')
+      if (!account) return
+      const local = read()
+      const before = snapshot()
+      const merged = { saved: union(local.saved, account.saved), going: union(local.going, account.going) }
+      const stored = await api('PUT', merged)
+      if (!stored) return
+      localStorage.setItem(KEY_SYNCED, '1')
+      if (snapshot() === before) {
+        localStorage.removeItem(KEY_DIRTY)
+        adopt(stored)
+      } else {
+        // Tapped mid-merge. The queued push sends whatever is local when it
+        // fires, so fold the account's picks in first or it would drop them.
+        const now = read()
+        adopt({ saved: union(now.saved, stored.saved), going: union(now.going, stored.going) })
+      }
+    } else if (localStorage.getItem(KEY_DIRTY)) {
+      await push()
+    } else {
+      const before = snapshot()
+      const account = await api('GET')
+      if (account && snapshot() === before) adopt(account)
+    }
+  } catch {
+    // Offline or a server error: the device copy stands until the next load.
+  }
+}
+
+/** On sign-out: this device keeps nothing of the account. */
+export function forgetDevice() {
+  syncLang = null
+  clearTimeout(pushTimer)
+  for (const k of [KEY_SAVED, KEY_GOING, KEY_SYNCED, KEY_DIRTY]) localStorage.removeItem(k)
   cacheRaw = ''
   emit()
 }

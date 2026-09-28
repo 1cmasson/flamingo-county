@@ -12,6 +12,9 @@
  * without a matching entry here silently ships English to Spanish readers.
  */
 export const ES_OVERRIDES: Record<string, string> = {
+  // --- Footer ------------------------------------------------------------
+  PRIVACY: 'PRIVACIDAD',
+
   // --- City page ---------------------------------------------------------
   'NOTHING MATCHED THAT SEARCH.': 'NO HAY NADA CON ESA BÚSQUEDA.',
   'NOTHING HERE YET.': 'TODAVÍA NO HAY NADA AQUÍ.',

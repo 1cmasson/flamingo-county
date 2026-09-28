@@ -17,5 +17,6 @@ mkdir -p "$DATA_DIR/media"
 chown -R nextjs:nodejs "$DATA_DIR"
 
 # Migrate before serving. A failed migration must stop the boot rather than
-# leave a server running against a schema that does not match the code.
-exec su-exec nextjs:nodejs sh -c 'pnpm payload migrate && exec node server.js'
+# leave a server running against a schema that does not match the code. Two
+# databases: Payload's content.db, then Better Auth's auth.db (MEMBERS.md).
+exec su-exec nextjs:nodejs sh -c 'pnpm payload migrate && pnpm auth:migrate && exec node server.js'

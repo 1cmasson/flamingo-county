@@ -35,6 +35,11 @@ WORKDIR /app/web
 # database URL arrive as runtime env vars.
 ENV PAYLOAD_SECRET=build-only-not-a-real-secret
 ENV DATABASE_URL=file:/tmp/build.db
+# Same for member auth (src/lib/auth.ts): the layout imports it, and Better
+# Auth refuses to start in production without a secret. Nothing reads auth.db
+# during the build — every route is dynamic.
+ENV BETTER_AUTH_SECRET=build-only-not-a-real-secret
+ENV AUTH_DATABASE_URL=file:/tmp/build-auth.db
 ENV NEXT_TELEMETRY_DISABLED=1
 # `generateStaticParams` runs during the build and queries Payload, so the build
 # database needs a schema or the build dies on "no such table: cities". The
