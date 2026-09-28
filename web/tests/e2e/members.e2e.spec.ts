@@ -152,6 +152,26 @@ test.describe('Signed out', () => {
   })
 })
 
+test.describe('www', () => {
+  // Sign-in refuses www's origin, so www must never reach a page at all.
+  test('www is sent to the bare domain, path and query kept', async ({ page }) => {
+    const res = await page.request.get(`${BASE}/en/my-week?x=1`, {
+      headers: { 'x-forwarded-host': 'www.flamingocounty.com' },
+      maxRedirects: 0,
+    })
+    expect(res.status()).toBe(308)
+    expect(res.headers().location).toBe('https://flamingocounty.com/en/my-week?x=1')
+  })
+
+  test('the bare domain is left alone', async ({ page }) => {
+    const res = await page.request.get(`${BASE}/en/my-week`, {
+      headers: { 'x-forwarded-host': 'flamingocounty.com' },
+      maxRedirects: 0,
+    })
+    expect(res.status()).toBe(200)
+  })
+})
+
 test.describe('Back from sign-in', () => {
   let member: Awaited<ReturnType<typeof createMember>>
 

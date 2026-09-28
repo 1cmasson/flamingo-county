@@ -20,7 +20,25 @@ export const LANG_COOKIE = 'fc.lang'
  * request and the device setting would be ignored permanently. So this handler
  * only ever *reads* the cookie — the toggle is what writes it.
  */
+/**
+ * Sign-in only trusts the one origin in BETTER_AUTH_URL, and its state cookie
+ * lives on the host that started it. A visitor browsing www.flamingocounty.com
+ * was refused outright ("Invalid origin"), so www is sent to the bare domain
+ * before anything else happens — permanently, and with the path and query kept.
+ */
+const WWW = 'www.flamingocounty.com'
+const CANONICAL = 'flamingocounty.com'
+
 export function proxy(req: NextRequest) {
+  const host = (req.headers.get('x-forwarded-host') ?? req.headers.get('host') ?? '').split(':')[0]
+  if (host === WWW) {
+    const url = req.nextUrl.clone()
+    url.protocol = 'https:'
+    url.host = CANONICAL
+    url.port = ''
+    return NextResponse.redirect(url, 308)
+  }
+
   const { pathname, searchParams } = req.nextUrl
 
   const first = pathname.split('/')[1]

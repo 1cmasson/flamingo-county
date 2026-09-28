@@ -38,6 +38,17 @@ export function createAuth<P extends BetterAuthPlugin[] = []>(extraPlugins: P = 
       // a copied auth.db does not hand them over.
       encryptOAuthTokens: true,
     },
+    advanced: {
+      ipAddress: {
+        // Used for rate limiting and the sessions' recorded IP. The default,
+        // x-forwarded-for, arrives here as "client, cloudflare" and Better
+        // Auth rightly refuses to pick one — which left every visitor in a
+        // single shared rate-limit bucket. Cloudflare sits in front of the
+        // site and sends the visitor alone in cf-connecting-ip; x-real-ip
+        // covers a request that reaches Railway's own domain directly.
+        ipAddressHeaders: ['cf-connecting-ip', 'x-real-ip'],
+      },
+    },
     session: {
       // Every page reads the session (the saved badge syncs site-wide), so
       // cache it in a signed cookie rather than hit auth.db per request.
