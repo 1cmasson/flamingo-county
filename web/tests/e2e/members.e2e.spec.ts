@@ -114,19 +114,74 @@ test.describe('Members', () => {
 })
 
 test.describe('Signed out', () => {
-  test('saving stays on the device and never calls the sync API', async ({ page }) => {
-    const calls: string[] = []
-    page.on('request', (r) => {
-      if (r.url().includes('/api/me/')) calls.push(r.url())
+  test('My Week shows only the sign-in panel', async ({ page }) => {
+    await page.goto(MY_WEEK)
+    await expect(page.getByRole('button', { name: /SIGN IN WITH GOOGLE/ })).toBeVisible()
+    await expect(page.getByText('NOTHING SAVED YET.')).toHaveCount(0)
+  })
+
+  test('saving, going and the calendar each start sign-in and carry the tap through', async ({
+    page,
+  }) => {
+    // Stop at Better Auth's sign-in call: the request body shows where Google
+    // would send the visitor back, which is what carries the tap.
+    const callbacks: string[] = []
+    await page.route('**/api/auth/sign-in/social', async (route) => {
+      callbacks.push(JSON.parse(route.request().postData() ?? '{}').callbackURL)
+      await route.abort()
     })
     await page.goto(`${BASE}/en/events/${A}`)
-    await page.getByRole('button', { name: /MY WEEK/ }).first().click()
-    await expect.poll(() => deviceSaved(page)).toEqual([A])
 
-    await page.goto(MY_WEEK)
-    await expect(listed(page, A)).toBeVisible()
-    await expect(page.getByRole('button', { name: /SIGN IN WITH GOOGLE/ })).toBeVisible()
-    expect(calls).toEqual([])
+    await page.getByRole('button', { name: '+ MY WEEK' }).first().click()
+    await page.getByRole('button', { name: /GOING/ }).first().click()
+    await page.getByRole('link', { name: '+ CALENDAR' }).first().click()
+
+    await expect.poll(() => callbacks.length).toBe(3)
+    expect(callbacks).toEqual([
+      `/en/events/${A}?fc_do=save&fc_e=${A}`,
+      `/en/events/${A}?fc_do=going&fc_e=${A}`,
+      `/en/events/${A}?fc_do=ics&fc_e=${A}`,
+    ])
+    expect(await deviceSaved(page)).toBeNull()
+  })
+
+  test('the calendar file itself refuses a signed-out request', async ({ page }) => {
+    const res = await page.request.get(`${BASE}/en/events/${A}/ics`, { maxRedirects: 0 })
+    expect([303, 307]).toContain(res.status())
+    expect(res.headers().location).toContain(`/en/events/${A}`)
+  })
+})
+
+test.describe('Back from sign-in', () => {
+  let member: Awaited<ReturnType<typeof createMember>>
+
+  test.beforeEach(async ({ context }, info) => {
+    member = await createMember(`e2e-back-${info.testId}-${Date.now()}@example.com`)
+    await context.addCookies(member.cookies)
+  })
+
+  test.afterEach(async () => {
+    await removeMember(member.id)
+  })
+
+  test('a save tapped before sign-in is finished, and the URL cleaned', async ({ page }) => {
+    await page.goto(`${BASE}/en/events/${A}?fc_do=save&fc_e=${A}`)
+    await expect.poll(async () => (await memberLists(member.id))?.saved).toEqual([A])
+    await expect(page).toHaveURL(`${BASE}/en/events/${A}`)
+    await expect(page.getByRole('button', { name: 'IN MY WEEK' }).first()).toBeVisible()
+  })
+
+  test('a going tap is finished too, and never toggled off', async ({ page }) => {
+    await setMemberLists(member.id, [], [A])
+    await page.goto(`${BASE}/en/events/${A}?fc_do=going&fc_e=${A}`)
+    await expect(page).toHaveURL(`${BASE}/en/events/${A}`)
+    await expect.poll(async () => (await memberLists(member.id))?.going).toEqual([A])
+  })
+
+  test('a calendar tap downloads the file', async ({ page }) => {
+    const download = page.waitForEvent('download')
+    await page.goto(`${BASE}/en/events/${A}?fc_do=ics&fc_e=${A}`)
+    expect((await download).suggestedFilename()).toBe(`${A}.ics`)
   })
 })
 
@@ -138,8 +193,26 @@ test.describe('Inside Instagram', () => {
 
   test('My Week offers "open in Safari" instead of the Google button', async ({ page }) => {
     await page.goto(MY_WEEK)
-    await expect(page.getByText('OPEN THIS IN Safari TO SIGN IN.')).toBeVisible()
-    await expect(page.getByRole('button', { name: 'COPY LINK' })).toBeVisible()
+    // Scoped to the page: the gate's (closed) dialog carries the same copy.
+    const main = page.locator('main')
+    await expect(main.getByText('OPEN THIS IN Safari TO SIGN IN.')).toBeVisible()
+    await expect(main.getByRole('button', { name: 'COPY LINK' })).toBeVisible()
     await expect(page.getByRole('button', { name: /SIGN IN WITH GOOGLE/ })).toHaveCount(0)
+  })
+
+  test('an event button opens the same prompt instead of going to Google', async ({ page }) => {
+    let signInCalled = false
+    await page.route('**/api/auth/sign-in/social', async (route) => {
+      signInCalled = true
+      await route.abort()
+    })
+    await page.goto(`${BASE}/en/events/${A}`)
+    await page.getByRole('button', { name: '+ MY WEEK' }).first().click()
+
+    const dialog = page.getByRole('dialog')
+    await expect(dialog.getByText('OPEN THIS IN Safari TO SIGN IN.')).toBeVisible()
+    await dialog.getByRole('button', { name: 'CLOSE' }).click()
+    await expect(dialog).toBeHidden()
+    expect(signInCalled).toBe(false)
   })
 })

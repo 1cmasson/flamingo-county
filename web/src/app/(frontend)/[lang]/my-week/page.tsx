@@ -12,6 +12,7 @@ import { MyWeekList, type SavedEvent } from '../../../../components/MyWeekList'
 import { MyWeekAccount } from '../../../../components/MyWeekAccount'
 import { auth } from '../../../../lib/auth'
 import { detectWebview } from '../../../../lib/webview'
+import { webviewCopy } from '../../../../lib/memberCopy'
 
 export const metadata: Metadata = {
   // Saved events are per-visitor, so there is nothing here for a crawler.
@@ -123,25 +124,28 @@ export default async function MyWeekPage({ params }: { params: Promise<{ lang: s
                 ? 'Todo lo que guardaste de la pizarra de eventos, en orden de fecha. Guardado en tu cuenta — te sigue a todos tus dispositivos.'
                 : 'Everything you saved from the events board, in date order. Saved to your account — it follows you to every device.'
               : es
-                ? 'Todo lo que guardaste de la pizarra de eventos, en orden de fecha. Guardado en este dispositivo — una cuenta de socio lo guarda en todos.'
-                : 'Everything you saved from the events board, in date order. Saved on this device — a member account keeps it everywhere.'}
+                ? 'Los eventos que guardes aparecen aquí, en orden de fecha, con el lugar y el archivo de calendario.'
+                : 'The events you save land here in date order, with the venue and a calendar file.'}
           </p>
         </header>
 
-        <MyWeekList
-          lang={lang}
-          events={events}
-          t={{
-            emptyH: es ? 'TODAVÍA NO HAY NADA GUARDADO.' : 'NOTHING SAVED YET.',
-            emptyP: es
-              ? 'Dale a + MI SEMANA en cualquier evento y aparece aquí con la fecha, el lugar y el archivo de calendario.'
-              : 'Hit + MY WEEK on any event and it lands here with the date, the venue and a calendar file.',
-            browse: es ? 'VER LOS EVENTOS →' : 'BROWSE THE EVENTS →',
-            saved: t('IN MY WEEK'),
-            going: t('GOING'),
-            addCal: t('+ CALENDAR'),
-          }}
-        />
+        {/* Signed out there is no week to show — only the sign-in panel below. */}
+        {user && (
+          <MyWeekList
+            lang={lang}
+            events={events}
+            t={{
+              emptyH: es ? 'TODAVÍA NO HAY NADA GUARDADO.' : 'NOTHING SAVED YET.',
+              emptyP: es
+                ? 'Dale a + MI SEMANA en cualquier evento y aparece aquí con la fecha, el lugar y el archivo de calendario.'
+                : 'Hit + MY WEEK on any event and it lands here with the date, the venue and a calendar file.',
+              browse: es ? 'VER LOS EVENTOS →' : 'BROWSE THE EVENTS →',
+              saved: t('IN MY WEEK'),
+              going: t('GOING'),
+              addCal: t('+ CALENDAR'),
+            }}
+          />
+        )}
 
         <MyWeekAccount
           user={user}
@@ -152,21 +156,12 @@ export default async function MyWeekPage({ params }: { params: Promise<{ lang: s
           t={
             es
               ? {
+                  ...webviewCopy(lang as Lang),
                   pitchH: 'LLÉVATELO A TODOS LADOS.',
                   pitchP:
-                    'Entra con Google y tu semana te sigue: al teléfono, a la computadora, a donde sea. Lo que ya guardaste aquí se queda.',
+                    'Para guardar eventos, decir que vas y añadirlos a tu calendario, entra con Google. Tu semana te sigue: al teléfono, a la computadora, a donde sea.',
                   google: 'INICIAR SESIÓN CON GOOGLE',
                   signInFailed: 'No se pudo abrir Google. Inténtalo de nuevo.',
-                  webviewH: 'ÁBRELO EN {browser} PARA ENTRAR.',
-                  webviewP:
-                    'Google no deja iniciar sesión dentro del navegador de {app}. Abre esta página en {browser} y entra desde ahí.',
-                  webviewPUnknown:
-                    'Google no deja iniciar sesión dentro del navegador de esta app. Abre esta página en {browser} y entra desde ahí.',
-                  openChrome: 'ABRIR EN CHROME',
-                  copyLink: 'COPIAR ENLACE',
-                  copied: '¡COPIADO!',
-                  hintIos: 'O toca ⋯ o el ícono de compartir y elige «Abrir en Safari».',
-                  hintAndroid: 'O toca ⋮ y elige «Abrir en Chrome».',
                   signedInAs: 'HOLA,',
                   synced: 'Tu semana está sincronizada en todos tus dispositivos.',
                   signOut: 'CERRAR SESIÓN',
@@ -181,21 +176,12 @@ export default async function MyWeekPage({ params }: { params: Promise<{ lang: s
                   privacy: 'Cómo tratamos tus datos →',
                 }
               : {
+                  ...webviewCopy(lang as Lang),
                   pitchH: 'TAKE IT EVERYWHERE.',
                   pitchP:
-                    'Sign in with Google and your week follows you — to your phone, your laptop, anywhere. Anything you already saved here comes with you.',
+                    'To save events, say you’re going and add them to your calendar, sign in with Google. Your week follows you — to your phone, your laptop, anywhere.',
                   google: 'SIGN IN WITH GOOGLE',
                   signInFailed: 'Couldn’t reach Google. Try again.',
-                  webviewH: 'OPEN THIS IN {browser} TO SIGN IN.',
-                  webviewP:
-                    'Google doesn’t allow signing in inside {app}’s browser. Open this page in {browser} and sign in there.',
-                  webviewPUnknown:
-                    'Google doesn’t allow signing in inside this app’s browser. Open this page in {browser} and sign in there.',
-                  openChrome: 'OPEN IN CHROME',
-                  copyLink: 'COPY LINK',
-                  copied: 'COPIED!',
-                  hintIos: 'Or tap ⋯ or the share icon and choose “Open in Safari”.',
-                  hintAndroid: 'Or tap ⋮ and choose “Open in Chrome”.',
                   signedInAs: 'HI,',
                   synced: 'Your week is synced across your devices.',
                   signOut: 'SIGN OUT',

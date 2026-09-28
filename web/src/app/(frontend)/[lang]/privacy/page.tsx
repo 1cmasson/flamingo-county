@@ -29,15 +29,15 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
       {
         h: 'Browsing without an account',
         p: [
-          'You can use the whole site without signing in or giving us anything.',
-          'Events you save to My Week, events you mark as going, and your language choice are kept in your own browser (local storage, plus a language cookie if you use the EN/ES switch). They stay on your device and are not sent to us.',
+          'You can browse the whole site — every listing, event and story — without signing in or giving us anything.',
+          'Your language choice is kept in your own browser, in a cookie set only if you use the EN/ES switch. It stays on your device.',
           'Like any website, our hosting and network providers — Railway, which runs the site, and Cloudflare, which sits in front of it — handle technical information such as your IP address and browser type in order to deliver pages and protect the site from abuse. We do not use analytics, advertising or social-media tracking scripts.',
         ],
       },
       {
         h: 'Signing in with Google',
         p: [
-          'Signing in is optional and only offered on My Week. It lets your saved week follow you between devices. When you sign in, Google shares with us only the basics you approve on its screen:',
+          'Saving events to My Week, saying you’re going, and downloading calendar files need you to sign in with Google — that’s what lets your week follow you between devices. When you sign in, Google shares with us only the basics you approve on its screen:',
           { list: ['your name', 'your email address', 'your profile photo link', 'an ID that identifies your Google account to us'] },
           'We then store, for your account:',
           {
@@ -47,6 +47,7 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
               'the sign-in tokens Google issues, kept encrypted. We never use them to read or change anything in your Google account',
             ],
           },
+          'While you’re signed in, your browser also keeps a copy of your saved week so the buttons respond instantly. Signing out clears it.',
           'We don’t access your contacts, Gmail, Drive or anything else in your Google account. Our use of information received from Google follows the Google API Services User Data Policy, including its Limited Use requirements.',
         ],
       },
@@ -120,15 +121,15 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
       {
         h: 'Si navegas sin cuenta',
         p: [
-          'Puedes usar todo el sitio sin iniciar sesión y sin darnos ningún dato.',
-          'Los eventos que guardas en Mi Semana, los que marcas como que vas, y tu idioma se guardan en tu propio navegador (almacenamiento local, y una cookie de idioma si usas el botón EN/ES). Se quedan en tu dispositivo y no nos llegan.',
+          'Puedes recorrer todo el sitio — cada negocio, evento e historia — sin iniciar sesión y sin darnos ningún dato.',
+          'Tu idioma se guarda en tu propio navegador, en una cookie que solo se crea si usas el botón EN/ES. Se queda en tu dispositivo.',
           'Como cualquier sitio web, nuestros proveedores de alojamiento y red — Railway, que hace funcionar el sitio, y Cloudflare, que está delante — manejan información técnica como tu dirección IP y tu tipo de navegador para entregar las páginas y proteger el sitio contra abusos. No usamos scripts de analítica, publicidad ni rastreo de redes sociales.',
         ],
       },
       {
         h: 'Si inicias sesión con Google',
         p: [
-          'Iniciar sesión es opcional y solo se ofrece en Mi Semana. Sirve para que tu semana guardada te siga de un dispositivo a otro. Al iniciar sesión, Google solo nos comparte lo básico que apruebas en su pantalla:',
+          'Para guardar eventos en Mi Semana, decir que vas y descargar archivos de calendario hay que entrar con Google — así tu semana te sigue de un dispositivo a otro. Al iniciar sesión, Google solo nos comparte lo básico que apruebas en su pantalla:',
           { list: ['tu nombre', 'tu correo electrónico', 'el enlace a tu foto de perfil', 'un identificador de tu cuenta de Google'] },
           'Luego guardamos, para tu cuenta:',
           {
@@ -138,6 +139,7 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
               'los tokens de inicio de sesión que emite Google, guardados cifrados. Nunca los usamos para leer ni cambiar nada en tu cuenta de Google',
             ],
           },
+          'Mientras tengas la sesión abierta, tu navegador también guarda una copia de tu semana para que los botones respondan al instante. Al cerrar sesión se borra.',
           'No accedemos a tus contactos, Gmail, Drive ni a nada más de tu cuenta de Google. El uso que hacemos de la información recibida de Google cumple con la Política de Datos de Usuario de los Servicios de API de Google, incluidos sus requisitos de Uso Limitado.',
         ],
       },
