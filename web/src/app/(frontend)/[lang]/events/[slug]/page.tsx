@@ -140,6 +140,11 @@ export default async function EventPage({
               height: 'clamp(190px,40vw,320px)',
               borderBottom: '4px solid var(--ink)',
               overflow: 'hidden',
+              // Most events have no photo. Without one, the frame is the
+              // kind's colour — the same fallback as the board's cards — so
+              // the badges and mascot sit on something instead of an empty
+              // bordered strip.
+              background: rel<Media>(ev.image)?.url ? 'var(--ink)' : (kind?.bg ?? 'var(--grad-pink)'),
             }}
           >
             <MediaSlot
