@@ -250,6 +250,23 @@ Three things only a real event could surface, all fixed:
   hero's right edge, and the hero bottoms out at 190px while a fixed 170px
   mascot did not. Its height now tracks the hero's own clamp.
 
+**Publishing a new event on production.** Merging is not enough: the container
+only runs migrations on boot, so a new `REAL_EVENTS` entry never reaches the
+deployed database by itself. Once the deploy has finished, run the events-only
+seed in the container, as the same user the server runs as:
+
+```sh
+railway ssh -- su-exec nextjs:nodejs sh -c 'cd /app/web && SEED_ONLY=real-events pnpm seed'
+```
+
+It looks up cities, event kinds and listings from the database as it stands and
+writes only the events and their photos, so edits made in `/admin` survive.
+The full `pnpm seed` would re-write every listing from the repo.
+
+An event can also be at a venue the directory doesn't list: give `place`
+(`{ en, es }`), `hood` and `city` instead of `listing`, as the gala at Sapphire
+does.
+
 Dates are written as **midday UTC** (`T12:00:00.000Z`), matching the mock loop.
 A bare calendar date lands on the previous day once `dateOnly()` reads it back
 in `America/New_York`.
