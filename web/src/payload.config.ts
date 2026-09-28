@@ -17,6 +17,7 @@ import { Stories } from './collections/Stories'
 import { Spotlights } from './collections/Spotlights'
 import { Subscribers } from './collections/Subscribers'
 import { ListingRequests } from './collections/ListingRequests'
+import { Members } from './collections/Members'
 
 import { SiteSettings } from './globals/SiteSettings'
 import { AboutPage } from './globals/AboutPage'
@@ -45,6 +46,7 @@ export default buildConfig({
     Spotlights,
     Subscribers,
     ListingRequests,
+    Members,
   ],
   globals: [SiteSettings, AboutPage, ListYourSpotPage],
 

@@ -153,6 +153,14 @@ written. `railway.json` at the repo root points at `web/Dockerfile`.
 | `DATABASE_URL` | `file:/data/content.db` |
 | `MEDIA_DIR` | `/data/media` |
 | `PAYLOAD_SECRET` | a fresh random string |
+| `AUTH_DATABASE_URL` | `file:/data/auth.db` — member sign-in, see MEMBERS.md |
+| `BETTER_AUTH_SECRET` | a fresh random string, different from `PAYLOAD_SECRET` |
+| `BETTER_AUTH_URL` | `https://flamingocounty.com` |
+| `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | the Google Cloud OAuth client |
+
+**Two databases now live on the volume**: `content.db` (Payload) and `auth.db`
+(member identity). Back up both; `auth.db` holds personal data and, unlike the
+content, cannot be re-seeded.
 
 After the first deploy, run `pnpm seed` once from Railway's shell.
 

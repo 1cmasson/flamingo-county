@@ -79,6 +79,7 @@ export interface Config {
     spotlights: Spotlight;
     subscribers: Subscriber;
     'listing-requests': ListingRequest;
+    members: Member;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -98,6 +99,7 @@ export interface Config {
     spotlights: SpotlightsSelect<false> | SpotlightsSelect<true>;
     subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
     'listing-requests': ListingRequestsSelect<false> | ListingRequestsSelect<true>;
+    members: MembersSelect<false> | MembersSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -794,6 +796,49 @@ export interface ListingRequest {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "members".
+ */
+export interface Member {
+  id: number;
+  /**
+   * Better Auth user id. Do not edit.
+   */
+  authId: string;
+  email?: string | null;
+  name?: string | null;
+  /**
+   * The language they last synced from.
+   */
+  lang?: ('en' | 'es') | null;
+  /**
+   * Event slugs in their My Week.
+   */
+  saved?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Event slugs they marked as going.
+   */
+  going?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -863,6 +908,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'listing-requests';
         value: number | ListingRequest;
+      } | null)
+    | ({
+        relationTo: 'members';
+        value: number | Member;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1288,6 +1337,20 @@ export interface ListingRequestsSelect<T extends boolean = true> {
   category?: T;
   story?: T;
   lang?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "members_select".
+ */
+export interface MembersSelect<T extends boolean = true> {
+  authId?: T;
+  email?: T;
+  name?: T;
+  lang?: T;
+  saved?: T;
+  going?: T;
   updatedAt?: T;
   createdAt?: T;
 }

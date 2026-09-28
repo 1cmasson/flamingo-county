@@ -25,6 +25,7 @@ export const routes = {
   myWeek: (lang: Lang) => `/${lang}/my-week`,
   listYourSpot: (lang: Lang) => `/${lang}/list-your-spot`,
   about: (lang: Lang) => `/${lang}/about`,
+  privacy: (lang: Lang) => `/${lang}/privacy`,
 } as const
 
 /** Append query params, skipping empties — filters keep living in the query. */
