@@ -1,10 +1,13 @@
 import React from 'react'
 import type { Metadata } from 'next'
+import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import { Luckiest_Guy, Archivo } from 'next/font/google'
 import { DEFAULT_LANG, isLang, LOCALES, translator } from '../../../i18n'
 import { Nav } from '../../../components/Nav'
 import { Footer } from '../../../components/Footer'
+import { MemberSync } from '../../../components/MemberSync'
+import { auth } from '../../../lib/auth'
 import '../globals.css'
 
 /**
@@ -100,6 +103,11 @@ export default async function LangLayout({
   const { lang } = await params
   if (!isLang(lang)) notFound()
 
+  // Read here, not only on My Week: a save on any event page has to reach the
+  // account. The session sits in a signed cookie cache (src/lib/auth.ts), so
+  // this is not a database read per page.
+  const session = await auth.api.getSession({ headers: await headers() })
+
   return (
     <html
       lang={lang}
@@ -118,6 +126,7 @@ export default async function LangLayout({
           <div style={{ flex: 1 }}>{children}</div>
           <Footer lang={lang} />
         </div>
+        {session && <MemberSync lang={lang} />}
       </body>
     </html>
   )

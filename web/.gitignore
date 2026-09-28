@@ -55,6 +55,11 @@ content.db-shm
 content.db-wal
 migrate-test.db*
 
+# Better Auth's member identity (src/lib/auth.ts) — its own file, same volume
+auth.db
+auth.db-shm
+auth.db-wal
+
 # Local verification output — screenshots and one-off Playwright scripts.
 shots/
 *.local.mjs
