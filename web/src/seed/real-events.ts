@@ -11,7 +11,9 @@
  * EN→ES dictionary the rest of the seed leans on has never seen them.
  *
  * `listing` is a slug from `data-import/listings.json`, resolved after the
- * research loop. `photo` follows `LISTING_PHOTO`'s shape.
+ * research loop. An event at a venue the directory doesn't list gives `place`
+ * (both locales), `hood` and `city` instead, the same shape as the mock
+ * events' place branch. `photo` follows `LISTING_PHOTO`'s shape.
  */
 export const REAL_EVENTS = [
   {
@@ -64,6 +66,51 @@ export const REAL_EVENTS = [
       timeLabel: '9:00 AM',
       freeLabel: 'SOCIOS Y VOLUNTARIOS',
       note: 'Un desayuno entre vecinos, socios y voluntarios del Club de la Amistad, en la mesa de un restaurante de siempre en Palm Avenue.',
+    },
+  },
+  {
+    slug: 'gala-de-la-amistad-2026',
+    date: '2026-10-06',
+    kind: 'church', // labelled COMMUNITY
+    /**
+     * Sapphire is a rented event hall, not a business in the directory, so
+     * this is the place branch rather than a listing. `hood` is the street, as
+     * the mock place events give it.
+     */
+    place: { en: 'Sapphire', es: 'Sapphire' },
+    hood: 'W 16th Ave',
+    city: 'hialeah',
+    /**
+     * Made for the site from the printed invitation: the card's wording and
+     * the club's seal, typeset over generated ribbon-and-border artwork. The
+     * text sits inside the middle 1200×570, which is what survives both the
+     * board card's 4:3 crop and the event page's short band.
+     */
+    photo: {
+      file: 'assets/events/gala-amistad-2026.jpg',
+      altEn: 'Invitation artwork with navy and gold ribbons: Gala de la Amistad y Reconocimiento, Tuesday October 6, 2026, 5 to 10 p.m., Sapphire, 4410 West 16th Ave., Suite 40, Hialeah.',
+      altEs: 'Arte de la invitación con cintas azul marino y doradas: Gala de la Amistad y Reconocimiento, martes 6 de octubre de 2026, de 5:00 a 10:00 p.m., Sapphire, 4410 West 16th Ave., Suite 40, Hialeah.',
+      credit: 'Club de la Amistad por un Hialeah Mejor',
+    },
+    // Same pairing rule as above: the clock and the label say one thing.
+    startTime: '17:00',
+    endTime: '22:00',
+    /**
+     * Spanish in both locales on purpose — the gala is announced in Spanish
+     * only, so it reads as the invitation prints it. Only the two short
+     * labels follow the English page.
+     */
+    en: {
+      title: 'Gala de la Amistad y Reconocimiento',
+      timeLabel: '5:00 PM – 10:00 PM',
+      freeLabel: 'BY INVITATION',
+      note: 'Una velada de amistad y reconocimiento del Club de la Amistad por un Hialeah Mejor. Invitado especial: el Honorable Alcalde de la Ciudad de Hialeah, Bryan Calvo. 4410 West 16th Ave., Suite 40, Hialeah, Florida 33012.',
+    },
+    es: {
+      title: 'Gala de la Amistad y Reconocimiento',
+      timeLabel: '5:00 PM – 10:00 PM',
+      freeLabel: 'POR INVITACIÓN',
+      note: 'Una velada de amistad y reconocimiento del Club de la Amistad por un Hialeah Mejor. Invitado especial: el Honorable Alcalde de la Ciudad de Hialeah, Bryan Calvo. 4410 West 16th Ave., Suite 40, Hialeah, Florida 33012.',
     },
   },
 ]
