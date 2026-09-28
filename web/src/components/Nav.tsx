@@ -6,7 +6,7 @@ import { getCities, getListings, rel } from '../lib/data'
 import { Tooltip } from './Tooltip'
 import { LangToggle } from './LangToggle'
 import { ListingsMenu, BurgerMenu, type CityTab } from './NavMenus'
-import { MyWeekLink } from './MyWeekLink'
+import { MyWeekCount, MyWeekLink } from './MyWeekLink'
 import s from './chrome.module.css'
 
 /** "ABOUT" is special-cased in the source rather than living in the dictionary. */
@@ -194,6 +194,13 @@ export async function Nav({ lang }: { lang: Lang }) {
                 label: t('EVENTS'),
                 shadow: 'var(--pink)',
                 background: 'var(--grad-cream)',
+              },
+              {
+                href: routes.myWeek(lang),
+                label: t('MY WEEK'),
+                shadow: 'var(--cyan)',
+                background: 'var(--grad-cream)',
+                badge: <MyWeekCount big />,
               },
               {
                 href: routes.about(lang),

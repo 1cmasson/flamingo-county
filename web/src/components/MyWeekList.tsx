@@ -244,6 +244,7 @@ export function MyWeekList({
                       onClick={() => toggleSaved(e.slug)}
                       className={s.chipLift}
                       style={{
+                        flex: '1 1 100%',
                         cursor: 'pointer',
                         fontWeight: 800,
                         fontSize: 11,
@@ -262,9 +263,10 @@ export function MyWeekList({
                       download={`${e.slug}.ics`}
                       className={s.chipLift}
                       style={{
-                        marginLeft: 'auto',
+                        flex: '1 1 100%',
                         display: 'inline-flex',
                         alignItems: 'center',
+                        justifyContent: 'center',
                         fontWeight: 800,
                         fontSize: 11,
                         letterSpacing: '1.2px',

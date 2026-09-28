@@ -8,13 +8,25 @@ const btn = {
   fontWeight: 800,
   fontSize: 11,
   letterSpacing: '1.2px',
-  minHeight: 44,
-  padding: '8px 11px',
+  lineHeight: 1.15,
+  height: 44,
+  padding: '0 8px',
   border: '3px solid var(--ink)',
+  // Equal halves, fixed height: a longer label wraps to two lines inside the
+  // button instead of widening it.
+  flex: '1 1 0',
+  minWidth: 0,
+  textAlign: 'center',
 } as const
 
 /**
  * The going / save / add-to-calendar row at the foot of an event card.
+ *
+ * Two fixed lines: GOING and + MY WEEK split the first, + CALENDAR takes the
+ * whole second. Both toggles change their label when tapped ("YOU'RE GOING ·
+ * 13", "IN MY WEEK"), and when the row wrapped on text width that pushed
+ * + CALENDAR down a line mid-tap on phones. Nothing here depends on label
+ * length any more.
  *
  * Only this strip is a client component — the card around it stays on the
  * server, so no event's copy ends up in the JS bundle.
@@ -82,9 +94,10 @@ export function EventActions({
         download={`${slug}.ics`}
         className={s.chipLift}
         style={{
-          marginLeft: 'auto',
+          flex: '1 1 100%',
           display: 'inline-flex',
           alignItems: 'center',
+          justifyContent: 'center',
           fontWeight: 800,
           fontSize: 11,
           letterSpacing: '1.2px',

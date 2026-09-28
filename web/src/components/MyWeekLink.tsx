@@ -5,28 +5,45 @@ import { useSaved } from '../lib/saved'
 import s from './chrome.module.css'
 
 /**
- * The "MY WEEK" nav item with its saved-count badge. The source hid this
- * entirely when nothing was saved, and that behaviour is preserved — but the
- * count lives in localStorage, so the server cannot know it. This renders
- * nothing until after hydration rather than guessing, which keeps the server
- * markup and the first client paint identical.
+ * The saved-event count shown next to MY WEEK, in the desktop bar and the
+ * burger menu. The count lives in localStorage, so the server cannot know it:
+ * this renders nothing until after hydration rather than guessing, which keeps
+ * the server markup and the first client paint identical.
  */
-export function MyWeekLink({
-  href,
-  label,
-  big,
-}: {
-  href: string
-  label: string
-  big?: boolean
-}) {
+export function MyWeekCount({ big }: { big?: boolean }) {
   const { ready, saved } = useSaved()
   if (!ready || saved.length === 0) return null
 
   return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minWidth: big ? 24 : 22,
+        height: big ? 24 : 22,
+        padding: big ? '0 6px' : '0 5px',
+        background: 'var(--ink)',
+        color: 'var(--cream)',
+        fontSize: big ? 14 : 13,
+        lineHeight: 1,
+      }}
+    >
+      {saved.length}
+    </span>
+  )
+}
+
+/**
+ * The "MY WEEK" nav item. The source hid it until something was saved, which
+ * meant nobody could find the page before using it — so it is always here now,
+ * and only the count badge waits for a save.
+ */
+export function MyWeekLink({ href, label }: { href: string; label: string }) {
+  return (
     <Link
       href={href}
-      className={big ? undefined : s.chip}
+      className={s.chip}
       style={{
         textDecoration: 'none',
         display: 'flex',
@@ -35,36 +52,19 @@ export function MyWeekLink({
         flex: '0 0 auto',
         whiteSpace: 'nowrap',
         cursor: 'pointer',
-        gap: big ? 9 : 8,
+        gap: 8,
         fontFamily: 'var(--display)',
-        fontSize: big ? 17 : 14,
-        ...(big
-          ? { minHeight: 48, padding: '12px 16px 9px' }
-          : { padding: '9px 12px 7px' }),
+        fontSize: 14,
+        padding: '9px 12px 7px',
         border: '3px solid var(--ink)',
         borderRadius: 3,
         background: 'var(--grad-cream)',
         color: 'var(--ink)',
-        boxShadow: `${big ? 4 : 3}px ${big ? 4 : 3}px 0 var(--cyan)`,
+        boxShadow: '3px 3px 0 var(--cyan)',
       }}
     >
       <span>{label}</span>
-      <span
-        style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minWidth: big ? 24 : 22,
-          height: big ? 24 : 22,
-          padding: big ? '0 6px' : '0 5px',
-          background: 'var(--ink)',
-          color: 'var(--cream)',
-          fontSize: big ? 14 : 13,
-          lineHeight: 1,
-        }}
-      >
-        {saved.length}
-      </span>
+      <MyWeekCount />
     </Link>
   )
 }
