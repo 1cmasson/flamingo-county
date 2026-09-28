@@ -48,6 +48,13 @@ import {
  */
 const SEED_MOCKS = process.env.SEED_MOCK_CONTENT === '1'
 
+/**
+ * `SEED_ONLY=real-events` writes just REAL_EVENTS (and their photos) into a
+ * database that is already seeded — the way to publish a new event on
+ * production without re-running everything else. See `seed()`.
+ */
+const SEED_ONLY = process.env.SEED_ONLY
+
 const base: FCBase = loadFCBase()
 const T = makeTranslator(base)
 
@@ -272,11 +279,93 @@ async function upsertMedia(
   return doc.id as number
 }
 
+/**
+ * Upsert REAL_EVENTS and their photos. `id` must already map the cities,
+ * event kinds and listings they point at — the full seed builds that as it
+ * goes; `SEED_ONLY=real-events` reads it from the database instead.
+ */
+async function seedRealEvents(payload: Payload, id: Dict): Promise<void> {
+  console.log('real events…')
+  for (const e of REAL_EVENTS) {
+    const mediaId = e.photo
+      ? await upsertMedia(payload, e.photo.file, e.photo.altEn, e.photo.altEs, e.photo.credit)
+      : undefined
+    // Venue is a branch here too, as in the mock loop: a listed business, or
+    // a named place for a venue the directory doesn't carry (a rented hall).
+    const listingId = e.listing ? id.listings[e.listing] : undefined
+    if (e.listing && !listingId) {
+      throw new Error(
+        `event "${e.slug}" is at listing "${e.listing}", which was not seeded. ` +
+          `Check that it is in data-import/listings.json and that its city and ` +
+          `category both have a mapping in research-listings.ts.`,
+      )
+    }
+    if (!e.listing && !(e.place && e.city && id.cities[e.city])) {
+      throw new Error(
+        `event "${e.slug}" has no listing, so it needs a place and a seeded city ` +
+          `("${e.city ?? ''}" is not one).`,
+      )
+    }
+    await upsert(
+      payload,
+      'events',
+      e.slug,
+      {
+        title: e.en.title,
+        // Midday UTC, matching the mock events: a bare calendar date lands on
+        // the previous day once dateOnly() reads it back in America/New_York.
+        date: new Date(`${e.date}T12:00:00.000Z`).toISOString(),
+        timeLabel: e.en.timeLabel,
+        kind: id.kinds[e.kind],
+        venueType: listingId ? 'listing' : 'place',
+        listing: listingId,
+        place: listingId ? undefined : e.place?.en,
+        hood: listingId ? undefined : e.hood,
+        city: listingId ? undefined : id.cities[e.city!],
+        going: 0,
+        freeLabel: e.en.freeLabel,
+        note: e.en.note,
+        ...(e.startTime ? { startTime: e.startTime } : {}),
+        ...(e.endTime ? { endTime: e.endTime } : {}),
+        ...(mediaId ? { image: mediaId } : {}),
+      },
+      {
+        title: e.es.title,
+        timeLabel: e.es.timeLabel,
+        place: listingId ? undefined : e.place?.es,
+        freeLabel: e.es.freeLabel,
+        note: e.es.note,
+      },
+    )
+  }
+}
+
 /* -------------------------------------------------------------------- seeds */
 
 async function seed() {
   const payload = await getPayload({ config })
   const id: Dict = { cities: {}, categories: {}, kinds: {}, listings: {} }
+
+  /* --- Real events only --------------------------------------------------- */
+  // For adding an event to a deployed database. The full seed re-writes every
+  // listing, city and category from the repo, which would undo edits made in
+  // /admin; this resolves what the events point at from the database as it
+  // stands and writes only the events and their photos.
+  if (SEED_ONLY === 'real-events') {
+    const lookups = [
+      ['cities', 'cities'],
+      ['kinds', 'event-kinds'],
+      ['listings', 'listings'],
+    ] as const
+    for (const [key, collection] of lookups) {
+      const { docs } = await payload.find({ collection, pagination: false, depth: 0 })
+      for (const d of docs) id[key][d.slug as string] = d.id
+    }
+    await seedRealEvents(payload, id)
+    console.log(`\nreal events only: ${REAL_EVENTS.length} upserted, nothing else written.`)
+    process.exit(0)
+  }
+  if (SEED_ONLY) throw new Error(`SEED_ONLY="${SEED_ONLY}" is not a mode; the only one is "real-events".`)
 
   /* --- Admin user --------------------------------------------------------- */
   // So a fresh clone is `pnpm seed` and nothing else. Skipped if any user
@@ -685,59 +774,7 @@ async function seed() {
   // Spanish is the source language here, which inverts the listing importer's
   // English-only rule: these events are announced on Spanish flyers, so both
   // locales are authored rather than run through the EN→ES dictionary.
-  console.log('real events…')
-  for (const e of REAL_EVENTS) {
-    const mediaId = e.photo
-      ? await upsertMedia(payload, e.photo.file, e.photo.altEn, e.photo.altEs, e.photo.credit)
-      : undefined
-    // Venue is a branch here too, as in the mock loop: a listed business, or
-    // a named place for a venue the directory doesn't carry (a rented hall).
-    const listingId = e.listing ? id.listings[e.listing] : undefined
-    if (e.listing && !listingId) {
-      throw new Error(
-        `event "${e.slug}" is at listing "${e.listing}", which was not seeded. ` +
-          `Check that it is in data-import/listings.json and that its city and ` +
-          `category both have a mapping in research-listings.ts.`,
-      )
-    }
-    if (!e.listing && !(e.place && e.city && id.cities[e.city])) {
-      throw new Error(
-        `event "${e.slug}" has no listing, so it needs a place and a seeded city ` +
-          `("${e.city ?? ''}" is not one).`,
-      )
-    }
-    await upsert(
-      payload,
-      'events',
-      e.slug,
-      {
-        title: e.en.title,
-        // Midday UTC, matching the loop above: a bare calendar date lands on
-        // the previous day once dateOnly() reads it back in America/New_York.
-        date: new Date(`${e.date}T12:00:00.000Z`).toISOString(),
-        timeLabel: e.en.timeLabel,
-        kind: id.kinds[e.kind],
-        venueType: listingId ? 'listing' : 'place',
-        listing: listingId,
-        place: listingId ? undefined : e.place?.en,
-        hood: listingId ? undefined : e.hood,
-        city: listingId ? undefined : id.cities[e.city!],
-        going: 0,
-        freeLabel: e.en.freeLabel,
-        note: e.en.note,
-        ...(e.startTime ? { startTime: e.startTime } : {}),
-        ...(e.endTime ? { endTime: e.endTime } : {}),
-        ...(mediaId ? { image: mediaId } : {}),
-      },
-      {
-        title: e.es.title,
-        timeLabel: e.es.timeLabel,
-        place: listingId ? undefined : e.place?.es,
-        freeLabel: e.es.freeLabel,
-        note: e.es.note,
-      },
-    )
-  }
+  await seedRealEvents(payload, id)
 
   /* --- Weekly ------------------------------------------------------------- */
   if (SEED_MOCKS) {
