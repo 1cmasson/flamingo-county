@@ -36,8 +36,8 @@ async function main() {
     // 13 researched imports; +14 fc-data mocks only when they are seeded.
     listings: SEED_MOCKS ? 27 : 13,
     stories: SEED_MOCKS ? 3 : 0,
-    // The 20 mocks, plus the one real event that seeds either way.
-    events: SEED_MOCKS ? 21 : 1,
+    // The 20 mocks, plus the real events that seed either way.
+    events: (SEED_MOCKS ? 20 : 0) + REAL_EVENTS.length,
     'weekly-events': SEED_MOCKS ? 6 : 0,
     spotlights: SEED_MOCKS ? 3 : 0,
   }

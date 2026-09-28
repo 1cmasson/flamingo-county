@@ -690,12 +690,20 @@ async function seed() {
     const mediaId = e.photo
       ? await upsertMedia(payload, e.photo.file, e.photo.altEn, e.photo.altEs, e.photo.credit)
       : undefined
-    const listingId = id.listings[e.listing]
-    if (!listingId) {
+    // Venue is a branch here too, as in the mock loop: a listed business, or
+    // a named place for a venue the directory doesn't carry (a rented hall).
+    const listingId = e.listing ? id.listings[e.listing] : undefined
+    if (e.listing && !listingId) {
       throw new Error(
         `event "${e.slug}" is at listing "${e.listing}", which was not seeded. ` +
           `Check that it is in data-import/listings.json and that its city and ` +
           `category both have a mapping in research-listings.ts.`,
+      )
+    }
+    if (!e.listing && !(e.place && e.city && id.cities[e.city])) {
+      throw new Error(
+        `event "${e.slug}" has no listing, so it needs a place and a seeded city ` +
+          `("${e.city ?? ''}" is not one).`,
       )
     }
     await upsert(
@@ -709,17 +717,22 @@ async function seed() {
         date: new Date(`${e.date}T12:00:00.000Z`).toISOString(),
         timeLabel: e.en.timeLabel,
         kind: id.kinds[e.kind],
-        venueType: 'listing',
+        venueType: listingId ? 'listing' : 'place',
         listing: listingId,
+        place: listingId ? undefined : e.place?.en,
+        hood: listingId ? undefined : e.hood,
+        city: listingId ? undefined : id.cities[e.city!],
         going: 0,
         freeLabel: e.en.freeLabel,
         note: e.en.note,
         ...(e.startTime ? { startTime: e.startTime } : {}),
+        ...(e.endTime ? { endTime: e.endTime } : {}),
         ...(mediaId ? { image: mediaId } : {}),
       },
       {
         title: e.es.title,
         timeLabel: e.es.timeLabel,
+        place: listingId ? undefined : e.place?.es,
         freeLabel: e.es.freeLabel,
         note: e.es.note,
       },
