@@ -6,8 +6,10 @@ import { Luckiest_Guy, Archivo } from 'next/font/google'
 import { DEFAULT_LANG, isLang, LOCALES, translator } from '../../../i18n'
 import { Nav } from '../../../components/Nav'
 import { Footer } from '../../../components/Footer'
-import { MemberSync } from '../../../components/MemberSync'
+import { MemberProvider } from '../../../components/MemberProvider'
 import { auth } from '../../../lib/auth'
+import { webviewCopy } from '../../../lib/memberCopy'
+import { detectWebview } from '../../../lib/webview'
 import '../globals.css'
 
 /**
@@ -103,10 +105,13 @@ export default async function LangLayout({
   const { lang } = await params
   if (!isLang(lang)) notFound()
 
-  // Read here, not only on My Week: a save on any event page has to reach the
-  // account. The session sits in a signed cookie cache (src/lib/auth.ts), so
-  // this is not a database read per page.
-  const session = await auth.api.getSession({ headers: await headers() })
+  // Read here, not only on My Week: every save, going and calendar button on
+  // the site is gated on it (MEMBERS.md). The session sits in a signed cookie
+  // cache (src/lib/auth.ts), so this is not a database read per page.
+  const h = await headers()
+  const session = await auth.api.getSession({ headers: h })
+  // Only matters signed out — it picks Google vs "open in your browser".
+  const webview = session ? null : detectWebview(h.get('user-agent'))
 
   return (
     <html
@@ -121,12 +126,13 @@ export default async function LangLayout({
             rather than `vh`, which on iOS resolves to the large viewport and
             leaves the page taller than the screen while the toolbars are
             showing. */}
-        <div style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column' }}>
-          <Nav lang={lang} />
-          <div style={{ flex: 1 }}>{children}</div>
-          <Footer lang={lang} />
-        </div>
-        {session && <MemberSync lang={lang} />}
+        <MemberProvider lang={lang} signedIn={Boolean(session)} webview={webview} t={webviewCopy(lang)}>
+          <div style={{ minHeight: '100svh', display: 'flex', flexDirection: 'column' }}>
+            <Nav lang={lang} />
+            <div style={{ flex: 1 }}>{children}</div>
+            <Footer lang={lang} />
+          </div>
+        </MemberProvider>
       </body>
     </html>
   )

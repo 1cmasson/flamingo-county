@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState, useSyncExternalStore } from 'react'
 import { union, type Lists } from './savedLists'
+import { useMember } from './member'
 
 /**
  * Saved and "going" events, kept in localStorage under the same keys the static
@@ -11,9 +12,12 @@ import { union, type Lists } from './savedLists'
  * A subscribable store rather than per-component reads, so the nav badge, the
  * event page and My Week all move together — including across browser tabs.
  *
- * For a signed-in member, localStorage stays what the UI reads and the account
- * is kept in step behind it (see *Sync* below and MEMBERS.md). Signed out,
- * nothing here talks to the server.
+ * Saving and going need an account (MEMBERS.md). For a signed-in member,
+ * localStorage stays what the UI reads — so taps are instant — and the account
+ * is kept in step behind it (see *Sync* below). Signed out, the hook reports
+ * empty lists: nothing shows as saved, and the buttons ask for sign-in instead
+ * (src/lib/member.tsx). Picks left on the device by the old signed-out
+ * behaviour are not deleted; the first sign-in merges them into the account.
  */
 const KEY_SAVED = 'fc.saved'
 const KEY_GOING = 'fc.going'
@@ -177,6 +181,16 @@ export async function startSync(lang: string) {
   }
 }
 
+/**
+ * Adds without toggling — for finishing a tap that was interrupted by the
+ * sign-in round trip, where the event may already be in the merged account
+ * list and a toggle would remove it.
+ */
+export function addTo(kind: 'saved' | 'going', id: string) {
+  const current = read()[kind]
+  if (!current.includes(id)) write(kind === 'saved' ? KEY_SAVED : KEY_GOING, [...current, id])
+}
+
 /** On sign-out: this device keeps nothing of the account. */
 export function forgetDevice() {
   syncLang = null
@@ -205,17 +219,20 @@ export function useSaved() {
   // eslint-disable-next-line react-hooks/set-state-in-effect
   useEffect(() => setMounted(true), [])
 
+  const { signedIn } = useMember()
+
   const toggle = useCallback((key: string, id: string) => {
     const current = read()[key === KEY_SAVED ? 'saved' : 'going']
     write(key, current.includes(id) ? current.filter((x) => x !== id) : [...current, id])
   }, [])
 
+  const on = mounted && signedIn
   return {
     ready: mounted,
-    saved: mounted ? store.saved : EMPTY.saved,
-    going: mounted ? store.going : EMPTY.going,
-    isSaved: (id: string) => mounted && store.saved.includes(id),
-    isGoing: (id: string) => mounted && store.going.includes(id),
+    saved: on ? store.saved : EMPTY.saved,
+    going: on ? store.going : EMPTY.going,
+    isSaved: (id: string) => on && store.saved.includes(id),
+    isGoing: (id: string) => on && store.going.includes(id),
     toggleSaved: (id: string) => toggle(KEY_SAVED, id),
     toggleGoing: (id: string) => toggle(KEY_GOING, id),
   }

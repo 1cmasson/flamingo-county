@@ -1,10 +1,15 @@
 # Member accounts — plan
 
-**Status: built on `1cmasson/member-accounts`, not yet live.** Before launch:
-a Google Cloud OAuth client, a working `hola@flamingocounty.com` mailbox (the
-privacy page's contact — the domain has no MX records yet), and the new Railway
-env vars (see *Deployment*). Everything else below exists in the code, including
-the privacy policy at `/privacy` (`src/app/(frontend)/[lang]/privacy/page.tsx`).
+**Status: live since 2026-09-28** (PR #10). Google OAuth client in the Google
+Cloud project `flamingo-county`, published to production; `hola@flamingocounty.com`
+is a Zoho alias; the Railway env vars are set. The privacy policy is at
+`/privacy` (`src/app/(frontend)/[lang]/privacy/page.tsx`).
+
+**Superseded on 2026-09-28 — saving now needs an account.** The plan below kept
+signed-out visitors on the old on-device behaviour and offered sign-in on My
+Week only. That changed: viewing My Week, + MY WEEK, GOING and + CALENDAR all
+need sign-in. See *Sign-in required* at the end; where it disagrees with the
+sections in between, it wins.
 
 Where it landed:
 
@@ -15,10 +20,12 @@ Where it landed:
 | Its schema, on boot | `src/lib/auth-migrate.ts` (`pnpm auth:migrate`) |
 | Members collection | `src/collections/Members.ts` + migration `20260928_164435_add_members` |
 | Server read/write | `src/lib/members.ts`, `src/app/api/me/saved/route.ts` |
-| Sync | `src/lib/saved.ts` (*Sync* section), started by `src/components/MemberSync.tsx` |
+| Sync | `src/lib/saved.ts` (*Sync* section), started by `src/components/MemberProvider.tsx` |
+| Sign-in gate | `src/lib/member.tsx` (context, pending tap), `src/components/MemberProvider.tsx` |
 | My Week UI | `src/components/MyWeekAccount.tsx` |
 | In-app browser detection | `src/lib/webview.ts` |
-| Tests | `tests/e2e/members.e2e.spec.ts`, `tests/int/webview.int.spec.ts`, `tests/int/savedLists.int.spec.ts` |
+| Open-in-browser prompt | `src/components/WebviewPrompt.tsx`, copy in `src/lib/memberCopy.ts` |
+| Tests | `tests/e2e/members.e2e.spec.ts`, `tests/int/webview.int.spec.ts`, `tests/int/savedLists.int.spec.ts`, `tests/int/member.int.spec.ts` |
 
 Two small departures from the plan below: My Week's copy follows the page's
 existing inline `es ? … : …` pattern rather than `overrides.ts`, and the account
@@ -290,3 +297,35 @@ policy, which are calendar time rather than code time.
 - webview detection: one `tests/int` case per known UA string, plus desktop
   and mobile Safari/Chrome as negatives
 - `PUT` rejects junk and drops unknown slugs (`tests/int`)
+
+---
+
+## Sign-in required (2026-09-28)
+
+Decided after launch: **viewing My Week, saving (+ MY WEEK), going and the
+calendar file all need an account.** Browsing everything else stays open.
+
+- **Signed-out tap → straight to Google, then the tap finishes.** Every gated
+  button calls `requireSignIn(pending, act)` from `useMember()`. Signed in, it
+  runs `act`. Signed out, it starts Google sign-in with the tap in the callback
+  URL — `?fc_do=save|going|ics&fc_e=<slug>` — and `MemberProvider`, back on the
+  same page, waits for the first sync and then finishes it: `addTo()` for save
+  and going (add, never toggle — the merged account list may already hold it),
+  a navigation to the `.ics` route for the calendar. The params are then removed
+  from the URL. In the URL rather than storage so it survives the redirect in
+  any browser and cannot fire on a later visit.
+- **In-app browsers → the same "open in Safari / Chrome" prompt,** now also as a
+  dialog when a gated button is tapped (`WebviewPrompt`, shared with My Week).
+  Those visitors cannot save at all until they open the site in a real browser;
+  that is the accepted cost.
+- **Signed out, `useSaved()` reports empty lists.** Nothing shows as saved, the
+  nav badge is hidden, and the device's old `fc.saved` / `fc.going` (from the
+  pre-account behaviour) are kept untouched so the first sign-in still merges
+  them in.
+- **My Week signed out** shows only the sign-in panel — no list.
+- **The `.ics` route checks the session itself** and sends a signed-out request
+  to the event page, so a shared or bookmarked calendar link is gated too. Its
+  cache header is now `private`.
+- **The going count** is still the seeded number plus one for you; a real tally
+  across members is possible now but not built.
+

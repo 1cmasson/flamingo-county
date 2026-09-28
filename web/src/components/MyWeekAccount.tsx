@@ -4,23 +4,15 @@ import Link from 'next/link'
 import { useState } from 'react'
 import { authClient } from '../lib/authClient'
 import { forgetDevice } from '../lib/saved'
-import { chromeIntent, type Webview } from '../lib/webview'
+import type { Webview } from '../lib/webview'
+import { WebviewPrompt, type WebviewCopy } from './WebviewPrompt'
 import s from './chrome.module.css'
 
-export type AccountCopy = {
+export type AccountCopy = WebviewCopy & {
   pitchH: string
   pitchP: string
   google: string
   signInFailed: string
-  webviewH: string
-  /** `{app}` and `{browser}` are filled in here. */
-  webviewP: string
-  webviewPUnknown: string
-  openChrome: string
-  copyLink: string
-  copied: string
-  hintIos: string
-  hintAndroid: string
   signedInAs: string
   synced: string
   signOut: string
@@ -79,7 +71,7 @@ function button(bg: string, ink: string): React.CSSProperties {
 const row: React.CSSProperties = { display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 4 }
 
 /** Google's mark, as their branding guidelines require on a sign-in button. */
-function GoogleG() {
+export function GoogleG() {
   return (
     <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true" style={{ marginTop: -3 }}>
       <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z" />
@@ -91,7 +83,8 @@ function GoogleG() {
 }
 
 /**
- * The only place on the site that offers sign-in (MEMBERS.md — My Week only).
+ * My Week's account panel. The event buttons (save, going, calendar) also start
+ * sign-in when tapped signed out — see src/components/MemberProvider.tsx.
  *
  * Three faces: the Google button; the "open this in your browser" prompt when
  * the page is inside an app whose browser Google refuses; and, signed in, who
@@ -114,7 +107,6 @@ export function MyWeekAccount({
 }) {
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [copied, setCopied] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [needsReauth, setNeedsReauth] = useState(false)
 
@@ -156,15 +148,6 @@ export function MyWeekAccount({
     }
     forgetDevice()
     window.location.reload()
-  }
-
-  async function copy() {
-    try {
-      await navigator.clipboard.writeText(pageUrl)
-      setCopied(true)
-    } catch {
-      // Some in-app browsers block the clipboard; the hint below still works.
-    }
   }
 
   if (user) {
@@ -245,32 +228,9 @@ export function MyWeekAccount({
   }
 
   if (webview) {
-    const browser = webview.os === 'ios' ? 'Safari' : webview.os === 'android' ? 'Chrome' : ''
-    const p = (webview.app ? t.webviewP : t.webviewPUnknown)
-      .replace('{app}', webview.app)
-      .replace('{browser}', browser || 'Safari / Chrome')
     return (
       <section style={panel} aria-labelledby="account-h">
-        <div id="account-h" style={heading}>
-          {t.webviewH.replace('{browser}', browser || 'Safari / Chrome')}
-        </div>
-        <p style={body}>{p}</p>
-        <div style={row}>
-          {webview.os === 'android' && (
-            <a href={chromeIntent(pageUrl)} className={s.chipPress} style={button('var(--grad-pink)', 'var(--cream)')}>
-              {t.openChrome}
-            </a>
-          )}
-          <button type="button" onClick={copy} className={s.chipPress} style={button('var(--cream)', 'var(--ink)')}>
-            {copied ? t.copied : t.copyLink}
-          </button>
-        </div>
-        {webview.os !== 'other' && (
-          <p style={{ ...body, fontSize: 13 }}>{webview.os === 'ios' ? t.hintIos : t.hintAndroid}</p>
-        )}
-        <span aria-live="polite" style={{ position: 'absolute', width: 1, height: 1, overflow: 'hidden', clip: 'rect(0 0 0 0)' }}>
-          {copied ? t.copied : ''}
-        </span>
+        <WebviewPrompt webview={webview} pageUrl={pageUrl} headingId="account-h" t={t} />
       </section>
     )
   }
