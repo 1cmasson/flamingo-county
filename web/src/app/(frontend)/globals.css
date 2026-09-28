@@ -110,10 +110,9 @@ textarea {
  * 1021, so it hung 42px off the right. English wants exactly 1021, which is
  * why this looked correct until it was opened in the other language.
  *
- * MY WEEK is the part that makes it conditional and easy to miss: it renders
- * from localStorage, so it is absent for anyone who has never saved an event
- * — including every fresh browser a screenshot gets taken in. The bar fits at
- * 1024 until a visitor saves something, and then it does not.
+ * MY WEEK is always in the bar now; only its saved-count badge depends on
+ * localStorage, so a fresh browser (every screenshot) shows the bar without
+ * the badge and a visitor who has saved something sees it ~30px wider.
  *
  * The extra 34px over the measured 1086 is for that saved count: the badge is
  * a number, and it is one character wide today.
@@ -183,13 +182,32 @@ textarea {
   }
 }
 
-/* The events calendar drops day names for dots on narrow screens. */
+/* The events calendar on a phone: a day cell is ~40px wide, so it keeps one
+   banner (wrapped to a few lines instead of ellipsed to nothing), drops the
+   start time, and counts the rest as +N. */
 @media (max-width: 720px) {
-  [data-caltitles] {
+  [data-calday] {
+    min-height: 72px !important;
+    padding: 3px !important;
+  }
+  [data-calbanner] {
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    display: -webkit-box !important;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+    font-size: 8.5px !important;
+    line-height: 1.15 !important;
+    padding: 2px !important;
+    border-left-width: 2px !important;
+  }
+  [data-calbanner]:not([data-calbanner='0']),
+  [data-caltime],
+  [data-calmore] {
     display: none !important;
   }
-  [data-caldots] {
-    display: flex !important;
+  [data-calmoremobile] {
+    display: block !important;
   }
 }
 

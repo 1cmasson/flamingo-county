@@ -179,3 +179,16 @@
     color: var(--ink) !important;
   }
 }
+
+/* The event card's top half is one link; underline its title on hover so the
+   whole block reads as clickable. Ink is re-declared for the global a:hover. */
+@media (hover: hover) {
+  .cardTop:hover {
+    color: var(--ink) !important;
+  }
+  .cardTop:hover [data-cardtitle] {
+    text-decoration: underline;
+    text-decoration-thickness: 3px;
+    text-underline-offset: 3px;
+  }
+}

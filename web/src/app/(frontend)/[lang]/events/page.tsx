@@ -502,9 +502,6 @@ function CalendarView({
         </div>
       </div>
 
-      {/* No `data-caltitles` here: that attribute is the ≤720 switch that swaps
-          per-day event titles for dots, and the source only ever puts it on a
-          day cell. Carrying it on the heading row hid SUN–SAT on mobile too. */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', gap: 6 }}>
         {weekdayHeadings(lang).map((w) => (
           <div
@@ -522,62 +519,81 @@ function CalendarView({
             return (
               <div
                 key={`b${i}`}
-                style={{ minHeight: 78, border: '3px solid rgba(12,15,20,0.22)' }}
+                data-calday
+                style={{ minHeight: 96, border: '3px solid rgba(12,15,20,0.22)' }}
               />
             )
           }
           const items = byDay.get(iso) ?? []
           const isToday = iso === today
+          const more = items.length - 3
+          // The list view anchors every day; +N jumps there to show the rest.
+          const dayHref = `${evHref({ view: undefined })}#day-${iso}`
           return (
             <div
               key={iso}
+              data-calday
               style={{
-                minHeight: 78,
+                position: 'relative',
+                minHeight: 96,
+                minWidth: 0,
                 border: '3px solid var(--ink)',
                 background: isToday ? 'var(--yellow)' : 'var(--grad-cream)',
-                padding: 6,
+                padding: 5,
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 4,
+                gap: 3,
                 opacity: items.length ? 1 : 0.72,
               }}
             >
               <div style={{ fontWeight: 800, fontSize: 12 }}>{parseISO(iso).getUTCDate()}</div>
-              {/* Titles on wide screens, dots on narrow — the 720px rule. */}
-              <div data-caltitles style={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {items.slice(0, 2).map((ev) => (
+              {/* One banner per event, Teams-style. On a phone the cell is
+                  too narrow for more than one, so the rest collapse to +N
+                  (see [data-calbanner] in globals.css). */}
+              {items.map((ev, n) => {
+                const kind = rel<EventKind>(ev.kind)
+                return (
                   <Link
                     key={ev.id}
                     href={routes.event(lang, ev.slug)}
+                    data-calbanner={n}
+                    title={ev.title}
                     style={{
+                      display: n < 3 ? 'block' : 'none',
+                      minWidth: 0,
+                      overflow: 'hidden',
+                      whiteSpace: 'nowrap',
+                      textOverflow: 'ellipsis',
                       fontWeight: 800,
-                      fontSize: 9.5,
-                      lineHeight: 1.2,
-                      letterSpacing: '0.3px',
-                      color: 'var(--magenta)',
+                      fontSize: 10,
+                      lineHeight: 1.25,
+                      letterSpacing: '0.2px',
+                      padding: '2px 4px',
+                      background: kind?.bg ?? 'var(--grad-pink)',
+                      color: kind?.ink ?? 'var(--cream)',
+                      border: '2px solid var(--ink)',
+                      borderLeftWidth: 4,
                     }}
                   >
+                    {ev.startTime ? <span data-caltime>{ev.startTime} </span> : null}
                     {ev.title}
                   </Link>
-                ))}
-                {items.length > 2 ? (
-                  <div style={{ fontWeight: 800, fontSize: 9.5 }}>+{items.length - 2}</div>
-                ) : null}
-              </div>
-              <div data-caldots style={{ display: 'none', gap: 3, flexWrap: 'wrap' }}>
-                {items.map((ev) => (
-                  <span
-                    key={ev.id}
-                    style={{
-                      width: 7,
-                      height: 7,
-                      borderRadius: 999,
-                      background: rel<EventKind>(ev.kind)?.ink ?? 'var(--pink)',
-                      border: '1px solid var(--ink)',
-                    }}
-                  />
-                ))}
-              </div>
+                )
+              })}
+              {more > 0 ? (
+                <Link data-calmore href={dayHref} style={{ fontWeight: 800, fontSize: 10 }}>
+                  +{more}
+                </Link>
+              ) : null}
+              {items.length > 1 ? (
+                <Link
+                  data-calmoremobile
+                  href={dayHref}
+                  style={{ display: 'none', fontWeight: 800, fontSize: 9 }}
+                >
+                  +{items.length - 1}
+                </Link>
+              ) : null}
             </div>
           )
         })}
