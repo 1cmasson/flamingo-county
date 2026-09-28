@@ -148,6 +148,7 @@ export default async function MyWeekPage({ params }: { params: Promise<{ lang: s
           webview={webview}
           pageUrl={pageUrl}
           callbackPath={routes.myWeek(lang as Lang)}
+          privacyHref={routes.privacy(lang as Lang)}
           t={
             es
               ? {
@@ -177,6 +178,7 @@ export default async function MyWeekPage({ params }: { params: Promise<{ lang: s
                   cancel: 'CANCELAR',
                   deleteFailed: 'No se pudo borrar la cuenta. Inténtalo de nuevo.',
                   reauth: 'Por seguridad, vuelve a entrar con Google y luego bórrala.',
+                  privacy: 'Cómo tratamos tus datos →',
                 }
               : {
                   pitchH: 'TAKE IT EVERYWHERE.',
@@ -205,6 +207,7 @@ export default async function MyWeekPage({ params }: { params: Promise<{ lang: s
                   cancel: 'CANCEL',
                   deleteFailed: 'Couldn’t delete the account. Try again.',
                   reauth: 'For your safety, sign in with Google again, then delete.',
+                  privacy: 'How we handle your data →',
                 }
           }
         />

@@ -1,8 +1,10 @@
 # Member accounts — plan
 
 **Status: built on `1cmasson/member-accounts`, not yet live.** Before launch:
-a Google Cloud OAuth client, a privacy policy page, and the new Railway env vars
-(see *Deployment*). Everything else below exists in the code.
+a Google Cloud OAuth client, a working `hola@flamingocounty.com` mailbox (the
+privacy page's contact — the domain has no MX records yet), and the new Railway
+env vars (see *Deployment*). Everything else below exists in the code, including
+the privacy policy at `/privacy` (`src/app/(frontend)/[lang]/privacy/page.tsx`).
 
 Where it landed:
 
@@ -215,8 +217,8 @@ Google Cloud side:
 - Scopes: `openid email profile` only — basic scopes don't require Google's
   verification review.
 - Consent screen needs a privacy policy URL and a homepage URL on the verified
-  domain. **There is no privacy policy page today**; one has to exist before
-  launch.
+  domain: `https://flamingocounty.com/privacy` (redirects by language) and
+  `https://flamingocounty.com`.
 
 ---
 
@@ -246,12 +248,11 @@ Made:
   sign-in, so no email provider is needed. (§5)
 - **Sign-in is offered on My Week only.** No nav link, no post-save nudge. (§5)
 
-Still open:
-
-1. **Library.** Better Auth (recommended above) vs Payload auth + a community
-   Google plugin. Confirm current package names/versions on npm at build time —
-   nothing is pinned in this plan.
-2. **Privacy policy.** Who writes it, and in both languages.
+- **Library → Better Auth.**
+- **Privacy policy → written in code, EN/ES, at `/privacy`**, naming "Flamingo
+  County" as the operator and `hola@flamingocounty.com` as the contact. It
+  describes what the code does, so it changes in the same commit as any new
+  form, cookie, script or provider.
 
 ---
 

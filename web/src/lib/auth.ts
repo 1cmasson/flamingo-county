@@ -32,6 +32,12 @@ export function createAuth<P extends BetterAuthPlugin[] = []>(extraPlugins: P = 
         prompt: 'select_account',
       },
     },
+    account: {
+      // Google's tokens are kept only because Better Auth stores them with the
+      // account link; nothing here calls Google with them. Encrypted at rest so
+      // a copied auth.db does not hand them over.
+      encryptOAuthTokens: true,
+    },
     session: {
       // Every page reads the session (the saved badge syncs site-wide), so
       // cache it in a signed cookie rather than hit auth.db per request.

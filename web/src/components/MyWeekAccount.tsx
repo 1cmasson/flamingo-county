@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
 import { authClient } from '../lib/authClient'
 import { forgetDevice } from '../lib/saved'
@@ -30,6 +31,7 @@ export type AccountCopy = {
   cancel: string
   deleteFailed: string
   reauth: string
+  privacy: string
 }
 
 const panel: React.CSSProperties = {
@@ -100,12 +102,14 @@ export function MyWeekAccount({
   webview,
   pageUrl,
   callbackPath,
+  privacyHref,
   t,
 }: {
   user: { name: string; email: string } | null
   webview: Webview | null
   pageUrl: string
   callbackPath: string
+  privacyHref: string
   t: AccountCopy
 }) {
   const [busy, setBusy] = useState(false)
@@ -283,6 +287,9 @@ export function MyWeekAccount({
           {t.google}
         </button>
       </div>
+      <Link href={privacyHref} style={{ fontSize: 13, fontWeight: 800, color: 'var(--ink)' }}>
+        {t.privacy}
+      </Link>
       {error && (
         <p role="alert" style={body}>
           {error}

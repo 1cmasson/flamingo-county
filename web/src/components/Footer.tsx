@@ -119,6 +119,18 @@ export function Footer({ lang }: { lang: Lang }) {
         >
           {t('ABOUT')}
         </Link>
+        <Link
+          href={routes.privacy(lang)}
+          style={{
+            fontWeight: 800,
+            fontSize: 12,
+            letterSpacing: '1.6px',
+            color: 'var(--cyan)',
+            textDecoration: 'none',
+          }}
+        >
+          {t('PRIVACY')}
+        </Link>
         <div style={{ fontWeight: 600, fontSize: 12, color: 'var(--cyan)', marginLeft: 'auto' }}>
           {t('a local listing, run by locals. © 2026')}
         </div>
