@@ -157,6 +157,8 @@ written. `railway.json` at the repo root points at `web/Dockerfile`.
 | `BETTER_AUTH_SECRET` | a fresh random string, different from `PAYLOAD_SECRET` |
 | `BETTER_AUTH_URL` | `https://flamingocounty.com` |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | the Google Cloud OAuth client |
+| `RESEND_API_KEY` | Resend API key — sends the emailed sign-in codes. Without it, production refuses to send (codes are never logged there) |
+| `AUTH_EMAIL_FROM` | optional; default `Flamingo County <hola@flamingocounty.com>`. The domain must be verified in Resend |
 
 **Two databases now live on the volume**: `content.db` (Payload) and `auth.db`
 (member identity). Back up both; `auth.db` holds personal data and, unlike the

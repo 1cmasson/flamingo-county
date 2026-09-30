@@ -22,6 +22,7 @@ Where it landed:
 | Server read/write | `src/lib/members.ts`, `src/app/api/me/saved/route.ts` |
 | Sync | `src/lib/saved.ts` (*Sync* section), started by `src/components/MemberProvider.tsx` |
 | Sign-in gate | `src/lib/member.tsx` (context, pending tap), `src/components/MemberProvider.tsx` |
+| Emailed-code sign-in | `src/components/EmailCodeSignIn.tsx`, `src/lib/signInEmail.ts` (Resend) |
 | My Week UI | `src/components/MyWeekAccount.tsx` |
 | In-app browser detection | `src/lib/webview.ts` |
 | Open-in-browser prompt | `src/components/WebviewPrompt.tsx`, copy in `src/lib/memberCopy.ts` |
@@ -252,7 +253,8 @@ Google Cloud side:
 Made:
 
 - **In-app browsers → detect and prompt "Open in Safari/Chrome".** No email
-  sign-in, so no email provider is needed. (§5)
+  sign-in, so no email provider is needed. (§5) *Superseded — see* Emailed
+  code sign-in *at the end.*
 - **Sign-in is offered on My Week only.** No nav link, no post-save nudge. (§5)
 
 - **Library → Better Auth.**
@@ -328,4 +330,44 @@ calendar file all need an account.** Browsing everything else stays open.
   cache header is now `private`.
 - **The going count** is still the seeded number plus one for you; a real tally
   across members is possible now but not built.
+
+---
+
+## Emailed code sign-in (2026-09-28)
+
+Added so visitors inside Instagram, Facebook, TikTok and the other in-app
+browsers Google refuses can sign in without leaving the app. Where it
+disagrees with the in-app-browser sections above, this wins.
+
+- **Better Auth's `emailOTP` plugin** (`src/lib/auth.ts`): a 6-digit code,
+  valid 10 minutes, stored hashed in `auth.db`'s existing `verification` table
+  (no new tables — `pnpm auth:migrate` is a no-op). Sign-up is on: a new
+  address gets a new account.
+- **Sent through Resend** (`src/lib/signInEmail.ts`), plain `fetch` to its API,
+  EN/ES by the Referer's `/en` / `/es`. The code is in the subject line so it
+  shows in the phone notification. Without `RESEND_API_KEY` dev logs the code to
+  the server console (the e2e suite relies on nothing else); production throws
+  instead. Better Auth logs a failed send and still answers "sent", so the code
+  screen's *Send it again* is the visitor's way out.
+- **One account per address.** A code signs into whichever user owns that
+  email, so someone who joined with Google gets the same account by typing
+  their Gmail address (covered by e2e). The other way — code first, Google
+  later — links through `accountLinking.trustedProviders: ['google']`; Better
+  Auth's `link-account.mjs` allows it because a code-created user is
+  `emailVerified`. That direction can't be driven in e2e; check it by hand.
+- **Where it shows:** only inside in-app browsers, in place of the Google
+  button — My Week's panel and the gate dialog (`WebviewPrompt`, which now leads
+  with `EmailCodeSignIn` and keeps *Open in Chrome* / *Copy link* underneath).
+  Normal browsers still go straight to Google. A code sign-in happens in place,
+  so the gate reloads with the tap in the URL (`fc_do` / `fc_e`) and
+  `MemberProvider` finishes it exactly as after a Google redirect.
+- **Delete account's re-check** offers a code to the signed-in address (fixed,
+  not typed) as well as Google — someone who joined by code may have no Google
+  account. Inside an in-app browser it offers only the code.
+- **Rate limits** are Better Auth's plugin defaults: 3 requests a minute per IP
+  on send and on sign-in; 3 wrong codes invalidate a code.
+- **Resend setup:** verify `flamingocounty.com` (or a subdomain such as
+  `send.flamingocounty.com`) in Resend and add its DNS records in Cloudflare.
+  Resend's records sit on the `send.` / `resend._domainkey` names, so the root
+  MX and SPF that Zoho uses for `hola@` are untouched.
 
