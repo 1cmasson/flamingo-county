@@ -1,5 +1,5 @@
 import type { Block, CollectionConfig } from 'payload'
-import { slugField, publicRead } from '../fields/shared'
+import { draftVersions, mcpDraftsOnly, publishedRead, slugField } from '../fields/shared'
 
 /**
  * Long-form stories — `STORIES` (3 records, 33 blocks) in fc-data.js.
@@ -109,7 +109,11 @@ const SectionBreak: Block = {
 
 export const Stories: CollectionConfig = {
   slug: 'stories',
-  access: publicRead,
+  // Drafts: saved changes stay off the site until published. Claude can only
+  // save drafts; publishing is the owner's Approve in Telegram. See shared.ts.
+  access: publishedRead,
+  versions: draftVersions,
+  hooks: { beforeOperation: [mcpDraftsOnly] },
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'listing', 'readTime'],

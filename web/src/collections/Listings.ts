@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { slugField, publicRead } from '../fields/shared'
+import { draftVersions, mcpDraftsOnly, publishedRead, slugField } from '../fields/shared'
 
 /**
  * Business listings — `BIZ` (14 records) joined with `DETAIL` in fc-data.js.
@@ -18,7 +18,11 @@ import { slugField, publicRead } from '../fields/shared'
  */
 export const Listings: CollectionConfig = {
   slug: 'listings',
-  access: publicRead,
+  // Drafts: saved changes stay off the site until published. Claude can only
+  // save drafts; publishing is the owner's Approve in Telegram. See shared.ts.
+  access: publishedRead,
+  versions: draftVersions,
+  hooks: { beforeOperation: [mcpDraftsOnly] },
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'city', 'category', 'member'],

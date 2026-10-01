@@ -85,6 +85,9 @@ webhook answers 503 and the brief job skips.
 | `/tasks` | Open tasks. 🤖 marks the ones assigned to Claude. |
 | `/task <text>` | File a task for Claude. Claude Code picks these up. |
 
+Social drafts and site publish requests arrive as messages with buttons:
+Approve / Reject and Publish / Reject.
+
 Only `TELEGRAM_OWNER_CHAT_ID` gets answers. Anyone else is ignored without a
 reply.
 
@@ -141,9 +144,11 @@ a weekly review.
 1. In the admin, open **MCP → API Keys** and create a key. Tick only what it
    should use. For Claude, tick:
    - **find, create and update** on HQ events, tasks and social drafts
-   - **find** on HQ media, social stats and clicks, listings and events
+   - **find, create and update** on events, weekly events, stories,
+     spotlights and listings (drafts only; see *Drafts and publishing*)
+   - **find** on HQ media, social stats and clicks, cities and categories
    - **find and update** on listing requests
-   - all three **tools**
+   - all the **tools**
    Copy the key; it's shown once.
 2. On the Mac, run:
 
@@ -175,57 +180,80 @@ never posted unseen: you get the current version to approve instead.
 | --- | --- |
 | `hqBrief` | The brief as plain text, without moving the scheduled one. |
 | `hqSocialReport` | Every post in the last N days: pillar, language, time, furthest checkpoint per platform, clicks; plus account snapshots and bio clicks. The input to the weekly review. |
+| `hqRequestPublish` / `hqPublishStatus` | Ask you to publish a site draft (you tap Publish in Telegram), and check the answer. |
 | `hqAddDraftMediaFromUrl` | Downloads a public https JPEG, PNG or MP4 into HQ media for a draft. It refuses private and loopback hosts and doesn't follow redirects, so the server can't be pointed at itself. |
 
-## Changing the site: the permission code
+## Drafts and publishing
 
-Claude can't write to the public site (events, weekly events, stories,
-spotlights, listings) without your permission. The server enforces this, not
-the prompt:
+**The rule: drafts are free, going live needs you.** It's the same for the site
+and for social posts.
 
-1. **Claude asks.** `hqRequestWrite` files the exact change, per language.
-   Nothing is written.
-2. **You see it in Telegram:** a field-by-field diff (`old → new`), story
-   blocks flattened to text, with **Approve — send me a code** / **Reject**.
-   ⚠️ lines flag a `slug` change (breaks live links) and any change to a
-   listing's `publicationStatus` (marking it `ready` claims every field is
-   sourced).
-3. **Approve sends you a one-time code**, e.g. `K7QM-4XPA`. It only ever exists
-   in that Telegram message. The database stores an HMAC of it, keyed with
-   the Payload secret and bound to the request, and it never appears in the
-   event log or any tool response.
-4. **You give Claude the code.** `hqApplyWrite(requestId, code)` writes exactly
-   what you approved. It takes no data of its own.
+| | Claude does freely | Needs your tap in Telegram |
+| --- | --- | --- |
+| Social posts | write and edit drafts | **Approve** schedules it in Postiz |
+| Site content (events, weekly events, stories, spotlights, listings) | create and edit drafts | **Publish** makes it live |
 
-The code is refused when:
+**How site drafts work.** These five collections have Payload drafts:
+- Saving a draft never touches the live page. The public site shows only
+  published versions.
+- Every query in `lib/data.ts` filters to `published`, and anyone not logged in
+  reads published documents only, including through REST and GraphQL with
+  `?draft=true`.
+- In the admin you get **Save draft** and **Publish** buttons, and you can
+  publish anything yourself as before.
 
-| Situation | Result |
-| --- | --- |
-| Not approved yet | refused |
-| Wrong code | refused; 5 wrong codes lock the request and ping you |
-| Code older than 4 hours | refused; `/code <id>` sends a fresh one and kills the old |
-| Already used | refused (single use) |
-| The page was edited after the request | refused as stale |
-| A newer request for the same page exists | the older one is replaced and its buttons cleared |
-| The approval message couldn't be delivered | the approval is undone |
-| Telegram is down when Claude asks | nothing is filed |
+**What Claude can and can't do.** Over MCP, Claude can create and update these
+documents, but only as drafts. `mcpDraftsOnly` refuses any MCP write without
+`draft: true`, and pins the status to `draft` even when the data says
+`published` (Payload would otherwise treat that as a publish).
 
-**Why nothing else can write.** The site collections are find-only in the MCP
-config, so no key can get a create or update tool for them however it's
-ticked. `hq-write-requests` isn't in the MCP list at all, so no client can
-approve its own request, and every field on it refuses writes that arrive
-over MCP.
+**Publishing a draft:**
+1. Claude calls `hqRequestPublish`.
+2. Telegram shows what changes against the live page, field by field and per
+   language, with a link to the draft in the admin. ⚠️ lines flag a `slug`
+   change (breaks live links) and a listing's `publicationStatus` change.
+3. **Publish** publishes exactly that draft in both languages. If the draft was
+   edited after the preview, nothing is published and the current version is
+   sent instead. A newer request replaces an older one. Requests expire after
+   3 days.
 
-**What the code does not cover.** It closes the MCP path. A Claude Code
-session on your Mac has other ways in, and those are governed by rules, not
-by this server:
+`hq-publish-requests` isn't exposed over MCP, so no client can approve its own
+request. The tap is your Telegram account behind the webhook's secret.
+
+**The seed won't publish around you.** A seeded update builds on the newest
+version, which could be an unapproved draft, so the seed skips any document
+with a pending draft and says so.
+
+**The migration that turned drafts on** (`20261001_170211_add_site_drafts`)
+rebuilds the five content tables, because SQLite can't loosen a column in
+place. Two bugs in the generated SQL were fixed by hand; keep the fixes if it
+is ever regenerated:
+- **The copy step read a `_status` column the old tables don't have.** It
+  failed outright, which on Railway means a failed boot. It now writes
+  `'published'` for every existing row. The column defaults to `'draft'`,
+  which would have taken every page off the site.
+- **Foreign keys were switched back on after the first table.** Dropping a
+  parent table with them on cascades into its children (hours, story blocks,
+  translations). They now stay off around the whole rebuild.
+
+Checked on a scratch database holding listings with hours and story rows, a
+bilingual story with all four block types, an event, a weekly event and a
+spotlight:
+- row counts identical across all 21 tables
+- every row published
+- no foreign-key violations
+- everything still returned by the site's queries in both languages
+
+**What this doesn't cover.** It governs the MCP path. A Claude Code session on
+your Mac has other ways in, and those are governed by the written rule, not by
+this server:
 - your logged-in Chrome (the admin)
 - `git push` / merging PRs
 - a Railway shell
 - the direct Postiz MCP
 
-Turn on branch protection for `main` on GitHub so a merge needs your review.
-Remove `postiz-flamingo-county` once HQ approvals are live.
+Branch protection on `main`, and removing `postiz-flamingo-county` once HQ is
+live, make those harder.
 
 ## Things that are deliberate
 

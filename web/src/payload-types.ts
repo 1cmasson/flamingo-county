@@ -87,7 +87,7 @@ export interface Config {
     'hq-social-drafts': HqSocialDraft;
     'hq-social-stats': HqSocialStat;
     'hq-clicks': HqClick;
-    'hq-write-requests': HqWriteRequest;
+    'hq-publish-requests': HqPublishRequest;
     'payload-mcp-api-keys': PayloadMcpApiKey;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
@@ -116,7 +116,7 @@ export interface Config {
     'hq-social-drafts': HqSocialDraftsSelect<false> | HqSocialDraftsSelect<true>;
     'hq-social-stats': HqSocialStatsSelect<false> | HqSocialStatsSelect<true>;
     'hq-clicks': HqClicksSelect<false> | HqClicksSelect<true>;
-    'hq-write-requests': HqWriteRequestsSelect<false> | HqWriteRequestsSelect<true>;
+    'hq-publish-requests': HqPublishRequestsSelect<false> | HqPublishRequestsSelect<true>;
     'payload-mcp-api-keys': PayloadMcpApiKeysSelect<false> | PayloadMcpApiKeysSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
@@ -573,6 +573,7 @@ export interface Listing {
   };
   updatedAt: string;
   createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -695,6 +696,7 @@ export interface Story {
   outro?: string | null;
   updatedAt: string;
   createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -752,6 +754,7 @@ export interface Event {
   imageHint?: string | null;
   updatedAt: string;
   createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -776,6 +779,7 @@ export interface WeeklyEvent {
   kind: number | EventKind;
   updatedAt: string;
   createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -801,6 +805,7 @@ export interface Spotlight {
   image?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1068,49 +1073,22 @@ export interface HqClick {
   createdAt: string;
 }
 /**
- * Site changes Claude asked to make. Each needs your approval in Telegram and the code it sends you.
+ * Drafts Claude asked to publish. Each goes live only when you tap Publish in Telegram.
  *
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "hq-write-requests".
+ * via the `definition` "hq-publish-requests".
  */
-export interface HqWriteRequest {
+export interface HqPublishRequest {
   id: number;
-  status:
-    | 'pending'
-    | 'approved'
-    | 'applying'
-    | 'applied'
-    | 'rejected'
-    | 'superseded'
-    | 'expired'
-    | 'locked'
-    | 'stale'
-    | 'failed';
+  status: 'pending' | 'published' | 'rejected' | 'superseded' | 'stale' | 'expired' | 'failed';
   title?: string | null;
   collection: string;
-  operation: 'create' | 'update';
-  targetId?: string | null;
-  targetUpdatedAt?: string | null;
+  targetId: string;
+  draftStamp?: string | null;
   reason?: string | null;
-  /**
-   * Exactly what will be written, per language.
-   */
-  locales:
-    | {
-        [k: string]: unknown;
-      }
-    | unknown[]
-    | string
-    | number
-    | boolean
-    | null;
   preview?: string | null;
-  codeHash?: string | null;
-  codeExpiresAt?: string | null;
-  attempts?: number | null;
   expiresAt?: string | null;
   telegramMessageId?: number | null;
-  appliedDocId?: string | null;
   error?: string | null;
   updatedAt: string;
   createdAt: string;
@@ -1210,30 +1188,70 @@ export interface PayloadMcpApiKey {
      * Allow clients to find listings.
      */
     find?: boolean | null;
+    /**
+     * Allow clients to create listings.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update listings.
+     */
+    update?: boolean | null;
   };
   events?: {
     /**
      * Allow clients to find events.
      */
     find?: boolean | null;
+    /**
+     * Allow clients to create events.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update events.
+     */
+    update?: boolean | null;
   };
   weeklyEvents?: {
     /**
      * Allow clients to find weekly-events.
      */
     find?: boolean | null;
+    /**
+     * Allow clients to create weekly-events.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update weekly-events.
+     */
+    update?: boolean | null;
   };
   stories?: {
     /**
      * Allow clients to find stories.
      */
     find?: boolean | null;
+    /**
+     * Allow clients to create stories.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update stories.
+     */
+    update?: boolean | null;
   };
   spotlights?: {
     /**
      * Allow clients to find spotlights.
      */
     find?: boolean | null;
+    /**
+     * Allow clients to create spotlights.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update spotlights.
+     */
+    update?: boolean | null;
   };
   cities?: {
     /**
@@ -1261,17 +1279,13 @@ export interface PayloadMcpApiKey {
      */
     hqAddDraftMediaFromUrl?: boolean | null;
     /**
-     * Ask the owner for permission to change the public site. Nothing is written: the owner gets the exact field-by-field change in Telegram and, if they approve, a one-time code that only they see. Give the change per language under locales.es / locales.en (non-translated fields can go under either). Only these collections: events, weekly-events, stories, spotlights, listings. Then tell the owner what you asked for and wait for them to give you the code for hqApplyWrite. A newer request for the same document replaces the older one.
+     * Ask the owner to publish the current draft of a site document (events, weekly-events, stories, spotlights, listings). Save the draft first with the create/update tool and draft: true — drafts are never visible on the site. The owner sees exactly what changes against the live page in Telegram and taps Publish or Reject. If you edit the draft again before they tap, they are shown the new version instead. Publishes nothing by itself.
      */
-    hqRequestWrite?: boolean | null;
+    hqRequestPublish?: boolean | null;
     /**
-     * Apply an approved site change with the one-time code the owner gave you. Writes exactly what was approved — it takes no data. Five wrong codes lock the request. Never guess a code: only use one the owner gave you.
+     * Where a publish request stands: pending, published, rejected, superseded, stale (the draft changed and was re-sent), expired or failed.
      */
-    hqApplyWrite?: boolean | null;
-    /**
-     * Where a site change request stands: pending, approved (code valid until…), applied, rejected, superseded, expired, locked, stale or failed.
-     */
-    hqWriteStatus?: boolean | null;
+    hqPublishStatus?: boolean | null;
   };
   updatedAt: string;
   createdAt: string;
@@ -1482,8 +1496,8 @@ export interface PayloadLockedDocument {
         value: number | HqClick;
       } | null)
     | ({
-        relationTo: 'hq-write-requests';
-        value: number | HqWriteRequest;
+        relationTo: 'hq-publish-requests';
+        value: number | HqPublishRequest;
       } | null)
     | ({
         relationTo: 'payload-mcp-api-keys';
@@ -1753,6 +1767,7 @@ export interface ListingsSelect<T extends boolean = true> {
       };
   updatedAt?: T;
   createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1843,6 +1858,7 @@ export interface StoriesSelect<T extends boolean = true> {
   outro?: T;
   updatedAt?: T;
   createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1869,6 +1885,7 @@ export interface EventsSelect<T extends boolean = true> {
   imageHint?: T;
   updatedAt?: T;
   createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1883,6 +1900,7 @@ export interface WeeklyEventsSelect<T extends boolean = true> {
   kind?: T;
   updatedAt?: T;
   createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1898,6 +1916,7 @@ export interface SpotlightsSelect<T extends boolean = true> {
   image?: T;
   updatedAt?: T;
   createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2042,24 +2061,18 @@ export interface HqClicksSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "hq-write-requests_select".
+ * via the `definition` "hq-publish-requests_select".
  */
-export interface HqWriteRequestsSelect<T extends boolean = true> {
+export interface HqPublishRequestsSelect<T extends boolean = true> {
   status?: T;
   title?: T;
   collection?: T;
-  operation?: T;
   targetId?: T;
-  targetUpdatedAt?: T;
+  draftStamp?: T;
   reason?: T;
-  locales?: T;
   preview?: T;
-  codeHash?: T;
-  codeExpiresAt?: T;
-  attempts?: T;
   expiresAt?: T;
   telegramMessageId?: T;
-  appliedDocId?: T;
   error?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -2118,26 +2131,36 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
     | T
     | {
         find?: T;
+        create?: T;
+        update?: T;
       };
   events?:
     | T
     | {
         find?: T;
+        create?: T;
+        update?: T;
       };
   weeklyEvents?:
     | T
     | {
         find?: T;
+        create?: T;
+        update?: T;
       };
   stories?:
     | T
     | {
         find?: T;
+        create?: T;
+        update?: T;
       };
   spotlights?:
     | T
     | {
         find?: T;
+        create?: T;
+        update?: T;
       };
   cities?:
     | T
@@ -2155,9 +2178,8 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         hqBrief?: T;
         hqSocialReport?: T;
         hqAddDraftMediaFromUrl?: T;
-        hqRequestWrite?: T;
-        hqApplyWrite?: T;
-        hqWriteStatus?: T;
+        hqRequestPublish?: T;
+        hqPublishStatus?: T;
       };
   updatedAt?: T;
   createdAt?: T;

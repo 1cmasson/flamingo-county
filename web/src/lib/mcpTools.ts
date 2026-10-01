@@ -8,7 +8,7 @@ import type { HqSocialDraft } from '../payload-types'
 import { buildBrief } from './brief'
 import { miamiTime } from './hq'
 import { isRunningCount, type MetricSummary } from './postiz'
-import { WRITABLE, applyWrite, requestWrite, writeStatus } from './writeRequests'
+import { PUBLISHABLE, publishStatus, requestPublish } from './publishRequests'
 
 /**
  * HQ's own MCP tools, beside the generic per-collection ones the plugin
@@ -234,46 +234,31 @@ export const hqMcpTools: McpTool[] = [
       ),
   },
   {
-    name: 'hqRequestWrite',
+    name: 'hqRequestPublish',
     description:
-      'Ask the owner for permission to change the public site. Nothing is written: the owner gets the exact field-by-field change in Telegram and, if they approve, a one-time code that only they see. Give the change per language under locales.es / locales.en (non-translated fields can go under either). Only these collections: ' +
-      WRITABLE.join(', ') +
-      '. Then tell the owner what you asked for and wait for them to give you the code for hqApplyWrite. A newer request for the same document replaces the older one.',
+      'Ask the owner to publish the current draft of a site document (' +
+      PUBLISHABLE.join(', ') +
+      '). Save the draft first with the create/update tool and draft: true — drafts are never visible on the site. The owner sees exactly what changes against the live page in Telegram and taps Publish or Reject. If you edit the draft again before they tap, they are shown the new version instead. Publishes nothing by itself.',
     parameters: {
-      collection: z.enum(WRITABLE).describe('Which collection'),
-      operation: z.enum(['create', 'update']),
-      id: z.union([z.string(), z.number()]).optional().describe('Document id — required for update'),
-      locales: z
-        .object({ es: z.record(z.unknown()).optional(), en: z.record(z.unknown()).optional() })
-        .describe('The fields to write, per language, e.g. { es: { title: "…" }, en: { title: "…" } }'),
-      reason: z.string().max(500).optional().describe('One line for the owner: why this change'),
+      collection: z.enum(PUBLISHABLE).describe('Which collection'),
+      id: z.union([z.string(), z.number()]).describe('Document id'),
+      reason: z.string().max(500).optional().describe('One line for the owner: what this is'),
     },
     handler: (args: Record<string, unknown>, req: PayloadRequest) =>
       guard(async () =>
         text(
           JSON.stringify({
-            ...(await requestWrite(req.payload, args as never)),
-            next: 'Waiting for the owner to approve in Telegram and give you the code. Do not try any other way to write this change.',
+            ...(await requestPublish(req.payload, args as never)),
+            next: 'Waiting for the owner to tap Publish in Telegram. Check with hqPublishStatus.',
           }),
         ),
       ),
   },
   {
-    name: 'hqApplyWrite',
-    description:
-      'Apply an approved site change with the one-time code the owner gave you. Writes exactly what was approved — it takes no data. Five wrong codes lock the request. Never guess a code: only use one the owner gave you.',
-    parameters: {
-      requestId: z.number().int().positive(),
-      code: z.string().min(4).max(20).describe('The code the owner gave you, e.g. ABCD-EFGH'),
-    },
-    handler: (args: Record<string, unknown>, req: PayloadRequest) =>
-      guard(async () => text(await applyWrite(req, Number(args.requestId), String(args.code)))),
-  },
-  {
-    name: 'hqWriteStatus',
-    description: 'Where a site change request stands: pending, approved (code valid until…), applied, rejected, superseded, expired, locked, stale or failed.',
+    name: 'hqPublishStatus',
+    description: 'Where a publish request stands: pending, published, rejected, superseded, stale (the draft changed and was re-sent), expired or failed.',
     parameters: { requestId: z.number().int().positive() },
     handler: (args: Record<string, unknown>, req: PayloadRequest) =>
-      guard(async () => text(JSON.stringify(await writeStatus(req.payload, Number(args.requestId))))),
+      guard(async () => text(JSON.stringify(await publishStatus(req.payload, Number(args.requestId))))),
   },
 ]
