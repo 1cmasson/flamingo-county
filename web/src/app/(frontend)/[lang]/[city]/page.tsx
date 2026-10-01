@@ -14,6 +14,8 @@ import {
 } from '../../../../lib/data'
 import { castBg } from '../../../../lib/castBg'
 import type { City, Media } from '../../../../payload-types'
+import { JsonLd } from '../../../../components/JsonLd'
+import { breadcrumbJsonLd, itemListJsonLd, titleCase } from '../../../../lib/jsonld'
 import { PageShell } from '../../../../components/PageShell'
 import { BusinessCard } from '../../../../components/BusinessCard'
 import { SearchForm } from '../../../../components/SearchForm'
@@ -121,6 +123,20 @@ export default async function CityPage({
 
   return (
     <PageShell>
+      <JsonLd
+        data={[
+          itemListJsonLd(
+            titleCase(city.name) ?? city.name,
+            all
+              .filter((b) => b.publicationStatus !== 'unsourced')
+              .map((b) => ({ name: b.name, path: routes.business(lang, slug, b.slug) })),
+          ),
+          breadcrumbJsonLd([
+            { name: 'Flamingo County', path: routes.home(lang) },
+            { name: titleCase(city.name) ?? city.name, path: routes.city(lang, slug) },
+          ]),
+        ]}
+      />
       <main
         style={{
           maxWidth: 1280,

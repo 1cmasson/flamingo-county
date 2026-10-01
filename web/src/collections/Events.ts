@@ -1,3 +1,4 @@
+import { indexNowHooks } from '../lib/indexnow'
 import type { CollectionConfig } from 'payload'
 import { slugField, publicRead } from '../fields/shared'
 
@@ -31,6 +32,7 @@ const hhmm = (value: unknown) =>
 export const Events: CollectionConfig = {
   slug: 'events',
   access: publicRead,
+  hooks: indexNowHooks('events'),
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'date', 'kind', 'star'],

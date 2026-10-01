@@ -1,0 +1,29 @@
+{
+  "$comment": "Starter bank. Expand to 100-200 from Search Console queries, People Also Ask and r/Miami. Keep paired EN/ES phrasing where people really use both. intent: best-of | near-me | fact | events | entity",
+  "questions": [
+    { "id": "best-cuban-hialeah", "lang": "en", "intent": "best-of", "q": "What are the best Cuban restaurants in Hialeah?" },
+    { "id": "best-cuban-hialeah-es", "lang": "es", "intent": "best-of", "q": "¿Cuáles son los mejores restaurantes cubanos en Hialeah?" },
+    { "id": "best-cafecito-hialeah", "lang": "en", "intent": "best-of", "q": "Where can I get the best cafecito in Hialeah?" },
+    { "id": "family-owned-hialeah", "lang": "en", "intent": "best-of", "q": "Which family-owned restaurants in Hialeah have been open for decades?" },
+    { "id": "late-night-hialeah", "lang": "en", "intent": "near-me", "q": "Where can I eat late at night in Hialeah?" },
+    { "id": "late-night-hialeah-es", "lang": "es", "intent": "near-me", "q": "¿Dónde comer tarde en la noche en Hialeah?" },
+    { "id": "breakfast-palm-ave", "lang": "en", "intent": "near-me", "q": "Good breakfast spots near Palm Avenue in Hialeah" },
+    { "id": "cheap-eats-hialeah", "lang": "en", "intent": "best-of", "q": "Cheap local eats in Hialeah that locals actually go to" },
+    { "id": "bars-hialeah", "lang": "en", "intent": "best-of", "q": "Best neighborhood bars in Hialeah and Miami Lakes" },
+    { "id": "best-miami-lakes", "lang": "en", "intent": "best-of", "q": "Best local restaurants on Main Street in Miami Lakes" },
+    { "id": "ceviche-miami-lakes", "lang": "en", "intent": "best-of", "q": "Where to get ceviche in Miami Lakes?" },
+    { "id": "little-havana-locals", "lang": "en", "intent": "best-of", "q": "Where do locals eat in Little Havana, away from the tourist spots?" },
+    { "id": "events-hialeah-weekend", "lang": "en", "intent": "events", "q": "What community events are happening in Hialeah this weekend?" },
+    { "id": "events-hialeah-weekend-es", "lang": "es", "intent": "events", "q": "¿Qué eventos comunitarios hay en Hialeah este fin de semana?" },
+    { "id": "things-to-do-hialeah", "lang": "en", "intent": "events", "q": "Things to do in Hialeah this week" },
+    { "id": "fact-hours-morro-castle", "lang": "en", "intent": "fact", "q": "What are the hours at Morro Castle in Hialeah?" },
+    { "id": "fact-cash-only-morro", "lang": "en", "intent": "fact", "q": "Is Morro Castle in Hialeah cash only?" },
+    { "id": "fact-molinas-ranch", "lang": "en", "intent": "fact", "q": "Tell me about Molina's Ranch Restaurant in Hialeah" },
+    { "id": "fact-casa-marin", "lang": "en", "intent": "fact", "q": "What is Casa Marín Restaurant in Hialeah known for?" },
+    { "id": "fact-1910", "lang": "en", "intent": "fact", "q": "What is 1910 Restaurant & Bar in Miami Lakes?" },
+    { "id": "fact-cancun-grill", "lang": "en", "intent": "fact", "q": "When did Cancun Grill open in Miami Lakes?" },
+    { "id": "entity-flamingo-county", "lang": "en", "intent": "entity", "q": "What is Flamingo County (flamingocounty.com)?" },
+    { "id": "directory-hialeah", "lang": "en", "intent": "entity", "q": "Is there a local directory of independent restaurants in Hialeah?" },
+    { "id": "history-hialeah-restaurants", "lang": "en", "intent": "best-of", "q": "What are the oldest restaurants still operating in Hialeah?" }
+  ]
+}

@@ -1,8 +1,10 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 import { preload } from 'react-dom'
 import { isLang, translator, type Lang } from '../../../i18n'
 import { routes } from '../../../lib/routes'
+import { openGraph } from '../../../lib/site'
 import {
   applySearch,
   getCities,
@@ -19,6 +21,23 @@ import { MediaSlot } from '../../../components/MediaSlot'
 import { SearchForm } from '../../../components/SearchForm'
 import s from '../../../components/chrome.module.css'
 import { buildSrcSet } from '../../../lib/srcset'
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ lang: string }>
+}): Promise<Metadata> {
+  const { lang } = await params
+  if (!isLang(lang)) return {}
+  return {
+    // Inherits title and description from the layout; only the URLs are the home page's own.
+    alternates: {
+      canonical: routes.home(lang),
+      languages: { en: routes.home('en'), es: routes.home('es'), 'x-default': routes.home('es') },
+    },
+    openGraph: openGraph(lang, { url: routes.home(lang) }),
+  }
+}
 
 type Search = { city?: string; q?: string }
 
