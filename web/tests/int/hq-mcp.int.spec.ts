@@ -2,7 +2,7 @@
 // Node, not the suite's default jsdom: Payload's upload check runs file-type
 // detection on the Buffer, which fails across jsdom's separate Uint8Array.
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
+import { configToJSONSchema, createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
 import config from '@/payload.config'
 
 import { HQ_INTERNAL, decideDraft, draftFingerprint } from '@/lib/hq'
@@ -117,6 +117,18 @@ describe('MCP against the database', () => {
     })
     return draft
   }
+
+  it('does not make Claude send a status it may not set', async () => {
+    // The MCP tool input schemas are built from this JSON schema.
+    const schema = configToJSONSchema(payload.config, payload.db.defaultIDType)
+    const required = (schema.definitions?.['hq-social-drafts'] as { required?: string[] }).required ?? []
+    expect(required).not.toContain('status')
+    expect(required).toEqual(expect.arrayContaining(['caption', 'platforms', 'scheduledFor']))
+
+    fakeNetwork()
+    const draft = await claudeDraft({})
+    expect(draft.status).toBe('pending')
+  })
 
   it('lets Claude write a draft but never set its status', async () => {
     fakeNetwork()
