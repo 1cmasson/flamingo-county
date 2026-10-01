@@ -97,7 +97,7 @@ export default async function ListYourSpotPage({
                 padding: '6px 10px',
               }}
             >
-              {t('MEMBERSHIP')}
+              {t('PARTNERSHIP')}
             </div>
             <h1
               style={{

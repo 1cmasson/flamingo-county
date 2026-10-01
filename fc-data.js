@@ -190,7 +190,7 @@
       "2-for-1 mojitos, Thursday to Saturday, 7–9pm": "2 por 1 en mojitos, de jueves a sábado, 7–9pm",
       "Rafa books the corner booth and Yoli makes him wear the good guayabera. Live trio starts at nine.": "Rafa reserva el rincón y Yoli lo obliga a ponerse la guayabera buena. El trío arranca a las nueve.",
       "STEAKHOUSE · FAMILY TABLE": "PARRILLADA · MESA DE FAMILIA",
-      "Sunday family platter for four — $68": "Fuente familiar del domingo pa' cuatro — $68",
+      "Sunday family platter for four": "Fuente familiar del domingo pa' cuatro",
       "The whole herd shows up after church. Kids eat on the patio, Toni argues about the check.": "La manada entera cae después de la iglesia. Los niños comen en el patio y Toni discute la cuenta.",
       "CANTINA · LIVE MUSIC": "CANTINA · MÚSICA EN VIVO",
       "Live son cubano Thursdays, no cover before 10pm": "Son cubano en vivo los jueves, sin cover antes de las 10",
@@ -275,7 +275,7 @@
       "the hand-painted sign over the door, close up": "el letrero pintado a mano arriba de la puerta, de cerca",
       "FIG. 2 — Repainted four times. Never redrawn. Rigo traces the same lines with a two-inch brush.": "FIG. 2 — Repintado cuatro veces. Nunca redibujado. Rigo repasa las mismas líneas con una brocha de dos pulgadas.",
       "Every few years the sun eats it and I go up the ladder. Same lines. I am not an artist. I am a tracer.": "Cada par de años el sol se lo come y yo subo la escalera. Las mismas líneas. Yo no soy artista, yo repaso.",
-      "The kitchen has never had a written menu longer than one page. Monday is ropa vieja. Wednesday is oxtail. Friday is whatever the fish guy brought in that morning, and if you ask what that is, the answer is a shrug and a good price. Regulars stopped asking around 1999. Now they just say lo de siempre and sit down.": "La cocina nunca ha tenido un menú escrito de más de una página. El lunes es ropa vieja. El miércoles, rabo encendido. El viernes es lo que trajo el pescadero esa mañana, y si preguntas qué es, la respuesta es un encogimiento de hombros y un buen precio. Los del barrio dejaron de preguntar como en el 99. Ahora dicen lo de siempre y se sientan.",
+      "The kitchen has never had a written menu longer than one page. Monday is ropa vieja. Wednesday is oxtail. Friday is whatever the fish guy brought in that morning, and if you ask what that is, the answer is a shrug and a smile. Regulars stopped asking around 1999. Now they just say lo de siempre and sit down.": "La cocina nunca ha tenido un menú escrito de más de una página. El lunes es ropa vieja. El miércoles, rabo encendido. El viernes es lo que trajo el pescadero esa mañana, y si preguntas qué es, la respuesta es un encogimiento de hombros y una sonrisa. Los del barrio dejaron de preguntar como en el 99. Ahora dicen lo de siempre y se sientan.",
       "ropa vieja plated, overhead": "la ropa vieja emplatada, desde arriba",
       "Monday. Nine hours in the pot, no exceptions.": "Lunes. Nueve horas en la olla, sin excepción.",
       "the kitchen pass at 8pm, tickets up": "la ventanilla de la cocina a las 8pm, con las órdenes colgadas",
@@ -383,25 +383,25 @@
     ],
 
     BIZ: [
-      { id: 'flamingo-room', name: 'The Flamingo Room Supper Club', city: 'hialeah', cat: 'food', hood: 'Palm Ave', rating: 4.8, reviews: 214, price: '$$$', member: true, tag: 'White tablecloths, a house trio, and the best palomilla north of the Miami River.', hint: 'Dining room at night' },
-      { id: 'pan-cubano', name: 'Panadería El Progreso', city: 'hialeah', cat: 'food', hood: 'E 4th Ave', rating: 4.9, reviews: 508, price: '$', member: true, tag: 'Croquetas out of the fryer at 6am and pan cubano still warm at noon.', hint: 'Bakery counter' },
-      { id: 'rivera-roof', name: 'Rivera Roofing & Repairs', city: 'hialeah', cat: 'contract', hood: 'W 12th St', rating: 4.7, reviews: 132, price: '$$', member: false, tag: 'Third-generation roofers. Permits pulled, tile matched, no ghosting after the deposit.', hint: 'Crew on a roof' },
-      { id: 'salon-tropical', name: 'Salón Tropical Banquet Hall', city: 'hialeah', cat: 'halls', hood: 'Okeechobee Rd', rating: 4.6, reviews: 96, price: '$$$', member: true, tag: '400 seats, a real dance floor, and a quinceañera package your tía will approve.', hint: 'Hall set for a party' },
-      { id: 'club-neon', name: 'Neón 305', city: 'hialeah', cat: 'night', hood: 'Hialeah Dr', rating: 4.4, reviews: 187, price: '$$', member: false, tag: 'Reggaetón downstairs, timba upstairs, croquetas at 3am from the window out back.', hint: 'Club dance floor' },
-      { id: 'chophouse', name: 'Main Street Chophouse', city: 'lakes', cat: 'food', hood: 'Town Center', rating: 4.7, reviews: 341, price: '$$$', member: true, tag: 'Dry-aged steaks, a patio under the oaks, and a kids menu that is not an afterthought.', hint: 'Patio dinner table' },
-      { id: 'sparkle', name: 'Lakes Sparkle Home Cleaning', city: 'lakes', cat: 'clean', hood: 'Royal Oaks', rating: 4.9, reviews: 276, price: '$$', member: true, tag: 'Same two-person team every visit. Deep clean, move-outs, and post-party rescues.', hint: 'Spotless kitchen' },
-      { id: 'cool-air', name: 'Miami Lakes Cooling & Air', city: 'lakes', cat: 'contract', hood: 'NW 67th Ave', rating: 4.8, reviews: 203, price: '$$', member: false, tag: 'Same-day A/C repair in August, which is the only month that counts.', hint: 'Technician at work' },
-      { id: 'oak-hall', name: 'The Oaks Banquet & Events', city: 'lakes', cat: 'halls', hood: 'Main St', rating: 4.5, reviews: 74, price: '$$$', member: false, tag: 'Weddings, sweet sixteens and Sunday church luncheons under one very tall ceiling.', hint: 'Wedding reception' },
-      { id: 'el-gallo', name: 'El Gallo Cantina', city: 'havana', cat: 'food', hood: 'SW 8th St', rating: 4.9, reviews: 612, price: '$$', member: true, tag: 'Ropa vieja, a nine-piece band on Thursdays, and mojitos poured with too much rum.', hint: 'Cantina bar' },
-      { id: 'cigar-lounge', name: 'La Corona Cigar Lounge', city: 'havana', cat: 'night', hood: 'Calle Ocho', rating: 4.7, reviews: 158, price: '$$', member: true, tag: 'Rollers up front, rum in the back, dominoes going until the last table gives up.', hint: 'Cigar lounge' },
-      { id: 'domino-cafe', name: 'Ventanita Domino Café', city: 'havana', cat: 'food', hood: 'Máximo Gómez Park', rating: 4.8, reviews: 429, price: '$', member: false, tag: 'A colada, a pastelito, and the loudest political debate on the block. Free with purchase.', hint: 'Ventanita window' },
-      { id: 'havana-hall', name: 'Salón Habana Events', city: 'havana', cat: 'halls', hood: 'SW 12th Ave', rating: 4.4, reviews: 61, price: '$$', member: false, tag: 'Old tile floors, string lights, and a stage that has held every kind of band.', hint: 'Event hall stage' },
-      { id: 'ocho-clean', name: 'Ocho Clean Crew', city: 'havana', cat: 'clean', hood: 'SW 17th Ave', rating: 4.6, reviews: 118, price: '$', member: true, tag: 'Apartment turnovers, post-renovation dust, and windows that finally see the street.', hint: 'Cleaning crew' }
+      { id: 'flamingo-room', name: 'The Flamingo Room Supper Club', city: 'hialeah', cat: 'food', hood: 'Palm Ave', rating: 4.8, reviews: 214, member: true, tag: 'White tablecloths, a house trio, and the best palomilla north of the Miami River.', hint: 'Dining room at night' },
+      { id: 'pan-cubano', name: 'Panadería El Progreso', city: 'hialeah', cat: 'food', hood: 'E 4th Ave', rating: 4.9, reviews: 508, member: true, tag: 'Croquetas out of the fryer at 6am and pan cubano still warm at noon.', hint: 'Bakery counter' },
+      { id: 'rivera-roof', name: 'Rivera Roofing & Repairs', city: 'hialeah', cat: 'contract', hood: 'W 12th St', rating: 4.7, reviews: 132, member: false, tag: 'Third-generation roofers. Permits pulled, tile matched, no ghosting after the deposit.', hint: 'Crew on a roof' },
+      { id: 'salon-tropical', name: 'Salón Tropical Banquet Hall', city: 'hialeah', cat: 'halls', hood: 'Okeechobee Rd', rating: 4.6, reviews: 96, member: true, tag: '400 seats, a real dance floor, and a quinceañera package your tía will approve.', hint: 'Hall set for a party' },
+      { id: 'club-neon', name: 'Neón 305', city: 'hialeah', cat: 'night', hood: 'Hialeah Dr', rating: 4.4, reviews: 187, member: false, tag: 'Reggaetón downstairs, timba upstairs, croquetas at 3am from the window out back.', hint: 'Club dance floor' },
+      { id: 'chophouse', name: 'Main Street Chophouse', city: 'lakes', cat: 'food', hood: 'Town Center', rating: 4.7, reviews: 341, member: true, tag: 'Dry-aged steaks, a patio under the oaks, and a kids menu that is not an afterthought.', hint: 'Patio dinner table' },
+      { id: 'sparkle', name: 'Lakes Sparkle Home Cleaning', city: 'lakes', cat: 'clean', hood: 'Royal Oaks', rating: 4.9, reviews: 276, member: true, tag: 'Same two-person team every visit. Deep clean, move-outs, and post-party rescues.', hint: 'Spotless kitchen' },
+      { id: 'cool-air', name: 'Miami Lakes Cooling & Air', city: 'lakes', cat: 'contract', hood: 'NW 67th Ave', rating: 4.8, reviews: 203, member: false, tag: 'Same-day A/C repair in August, which is the only month that counts.', hint: 'Technician at work' },
+      { id: 'oak-hall', name: 'The Oaks Banquet & Events', city: 'lakes', cat: 'halls', hood: 'Main St', rating: 4.5, reviews: 74, member: false, tag: 'Weddings, sweet sixteens and Sunday church luncheons under one very tall ceiling.', hint: 'Wedding reception' },
+      { id: 'el-gallo', name: 'El Gallo Cantina', city: 'havana', cat: 'food', hood: 'SW 8th St', rating: 4.9, reviews: 612, member: true, tag: 'Ropa vieja, a nine-piece band on Thursdays, and mojitos poured with too much rum.', hint: 'Cantina bar' },
+      { id: 'cigar-lounge', name: 'La Corona Cigar Lounge', city: 'havana', cat: 'night', hood: 'Calle Ocho', rating: 4.7, reviews: 158, member: true, tag: 'Rollers up front, rum in the back, dominoes going until the last table gives up.', hint: 'Cigar lounge' },
+      { id: 'domino-cafe', name: 'Ventanita Domino Café', city: 'havana', cat: 'food', hood: 'Máximo Gómez Park', rating: 4.8, reviews: 429, member: false, tag: 'A colada, a pastelito, and the loudest political debate on the block. Free with purchase.', hint: 'Ventanita window' },
+      { id: 'havana-hall', name: 'Salón Habana Events', city: 'havana', cat: 'halls', hood: 'SW 12th Ave', rating: 4.4, reviews: 61, member: false, tag: 'Old tile floors, string lights, and a stage that has held every kind of band.', hint: 'Event hall stage' },
+      { id: 'ocho-clean', name: 'Ocho Clean Crew', city: 'havana', cat: 'clean', hood: 'SW 17th Ave', rating: 4.6, reviews: 118, member: true, tag: 'Apartment turnovers, post-renovation dust, and windows that finally see the street.', hint: 'Cleaning crew' }
     ],
 
     SPOTS: {
       hialeah: { biz: 'flamingo-room', kind: 'SUPPER CLUB · DATE NIGHT', deal: '2-for-1 mojitos, Thursday to Saturday, 7–9pm', blurb: 'Rafa books the corner booth and Yoli makes him wear the good guayabera. Live trio starts at nine.' },
-      lakes: { biz: 'chophouse', kind: 'STEAKHOUSE · FAMILY TABLE', deal: 'Sunday family platter for four — $68', blurb: 'The whole herd shows up after church. Kids eat on the patio, Toni argues about the check.' },
+      lakes: { biz: 'chophouse', kind: 'STEAKHOUSE · FAMILY TABLE', deal: 'Sunday family platter for four', blurb: 'The whole herd shows up after church. Kids eat on the patio, Toni argues about the check.' },
       havana: { biz: 'el-gallo', kind: 'CANTINA · LIVE MUSIC', deal: 'Live son cubano Thursdays, no cover before 10pm', blurb: 'Rigo brings Blanca and Daysi, orders three ropa viejas, and nobody leaves before last call.' }
     },
 
@@ -416,12 +416,12 @@
         quoteBy: 'RIGO PEÑA, OWNER',
         menuNote: 'KITCHEN OPEN UNTIL 1AM',
         menu: [
-          { name: 'Ropa Vieja', desc: 'Shredded brisket, peppers, white rice, sweet plantains', price: '$21' },
-          { name: 'Lechón Asado', desc: 'Slow-roasted pork shoulder, mojo, yuca con mojo', price: '$23' },
-          { name: 'Croquetas de Jamón (6)', desc: 'Fried to order. Do not ask for the recipe.', price: '$9' },
-          { name: 'Pollo a la Plancha', desc: 'Marinated overnight, black beans, moros', price: '$18' },
-          { name: 'Mojito de la Casa', desc: 'Too much rum. Intentionally.', price: '$12' },
-          { name: 'Flan de la Abuela', desc: 'One size. One answer.', price: '$8' }
+          { name: 'Ropa Vieja', desc: 'Shredded brisket, peppers, white rice, sweet plantains' },
+          { name: 'Lechón Asado', desc: 'Slow-roasted pork shoulder, mojo, yuca con mojo' },
+          { name: 'Croquetas de Jamón (6)', desc: 'Fried to order. Do not ask for the recipe.' },
+          { name: 'Pollo a la Plancha', desc: 'Marinated overnight, black beans, moros' },
+          { name: 'Mojito de la Casa', desc: 'Too much rum. Intentionally.' },
+          { name: 'Flan de la Abuela', desc: 'One size. One answer.' }
         ],
         address: '1412 SW 8th St, Miami, FL 33135',
         phone: '(305) 555-0144',
@@ -448,7 +448,7 @@
           ['img', 'the hand-painted sign over the door, close up', 'FIG. 2 — Repainted four times. Never redrawn. Rigo traces the same lines with a two-inch brush.', '16 / 9'],
           ['q', 'Every few years the sun eats it and I go up the ladder. Same lines. I am not an artist. I am a tracer.', 'RIGO PEÑA, OWNER'],
           ['beat'],
-          ['p', 'The kitchen has never had a written menu longer than one page. Monday is ropa vieja. Wednesday is oxtail. Friday is whatever the fish guy brought in that morning, and if you ask what that is, the answer is a shrug and a good price. Regulars stopped asking around 1999. Now they just say lo de siempre and sit down.'],
+          ['p', 'The kitchen has never had a written menu longer than one page. Monday is ropa vieja. Wednesday is oxtail. Friday is whatever the fish guy brought in that morning, and if you ask what that is, the answer is a shrug and a smile. Regulars stopped asking around 1999. Now they just say lo de siempre and sit down.'],
           ['pair', ['ropa vieja plated, overhead', 'Monday. Nine hours in the pot, no exceptions.'], ['the kitchen pass at 8pm, tickets up', 'Eight tickets deep and nobody is shouting. That took twenty years.']],
           ['note', 'THE ONE-PAGE RULE', 'Rigo has turned down four different consultants who wanted to expand the menu. His argument every time: a long menu means a freezer, and a freezer means Tuesday tastes like Monday.'],
           ['p', 'On Thursdays the tables get pushed against the wall for the band. It is nine pieces. It is loud in a way that the room was not designed for, and that is the point — the trumpet player stands where table six used to be, and the whole place turns into one long conversation about who is dancing badly.'],
@@ -550,7 +550,7 @@
       const c = this.city(b.city);
       const cat = this.CATS.find(x => x.key === b.cat);
       return {
-        id: b.id, name: b.name, tag: b.tag, hood: b.hood, price: b.price, rating: b.rating.toFixed(1),
+        id: b.id, name: b.name, tag: b.tag, hood: b.hood, rating: b.rating.toFixed(1),
         catLabel: cat ? this.T(cat.label) : '', cityName: c.name, accent: c.accent, mascot: c.solo || c.cast[c.lead || 0].src,
         headH: c.head.h, headL: c.head.l, headT: c.head.t,
         slot: 'card-' + b.id, citySlot: 'city-' + b.id, slotHint: this.T('Drop: ') + b.hint,
@@ -582,7 +582,7 @@
       { id: 'rollers-table', d: '2026-08-20', time: '7PM', title: "Rollers' Table: Dominoes & Rum Flight", biz: 'cigar-lounge', kind: 'domino', going: 34 },
       { id: 'progreso-window', d: '2026-08-21', time: '6AM–NOON', title: 'Second Window Grand Opening', biz: 'pan-cubano', kind: 'opening', going: 96, free: 'FREE CAFECITO ALL MORNING', star: true, note: 'Forty years on one window, now there are two. Free colada until the pot runs out, which is usually 9:30.', hint: 'Bakery window at dawn' },
       { id: 'timba-upstairs', d: '2026-08-21', time: '11PM', title: 'Timba Upstairs with DJ Cachito', biz: 'club-neon', kind: 'music', going: 212 },
-      { id: 'fish-fry', d: '2026-08-21', time: '6PM', title: 'Friday Fish Fry for the Parish', biz: 'oak-hall', kind: 'church', going: 58, free: '$12 A PLATE' },
+      { id: 'fish-fry', d: '2026-08-21', time: '6PM', title: 'Friday Fish Fry for the Parish', biz: 'oak-hall', kind: 'church', going: 58, free: 'ALL WELCOME' },
       { id: 'domino-open', d: '2026-08-22', time: '10AM–6PM', title: 'The Calle Ocho Domino Open', place: 'Máximo Gómez Park', hood: 'SW 8th St', city: 'havana', kind: 'domino', going: 214, free: 'FREE TO WATCH', star: true, note: 'Sixty-four tables, one trophy, and a bracket taped to the fence. Bring a hat and somebody who can count.', hint: 'Domino tables under the awning' },
       { id: 'patio-session', d: '2026-08-22', time: '7:30PM', title: 'Patio Session: Trio Under the Oaks', biz: 'chophouse', kind: 'music', going: 71 },
       { id: 'splash-day', d: '2026-08-22', time: '10AM–2PM', title: 'Splash Pad Family Day', place: 'Miami Lakes Optimist Park', hood: 'Main St', city: 'lakes', kind: 'family', going: 145, free: 'FREE · CITY EVENT' },
@@ -603,9 +603,9 @@
     WEEKLY: [
       { dow: 1, time: '8PM', title: 'Fútbol Night on the Big Screen', biz: 'club-neon', kind: 'sports' },
       { dow: 2, time: '7PM', title: 'Domino League Night', biz: 'domino-cafe', kind: 'domino' },
-      { dow: 3, time: '5–9PM', title: 'Kids Eat Free', biz: 'chophouse', kind: 'family' },
+      { dow: 3, time: '5–9PM', title: 'Family Night', biz: 'chophouse', kind: 'family' },
       { dow: 4, time: '9PM', title: 'Son Cubano Live', biz: 'el-gallo', kind: 'music' },
-      { dow: 5, time: '6–8AM', title: '6AM Croqueta Hour, Half Off', biz: 'pan-cubano', kind: 'food' },
+      { dow: 5, time: '6–8AM', title: '6AM Croqueta Hour', biz: 'pan-cubano', kind: 'food' },
       { dow: 0, time: '12:30PM', title: 'Church Luncheon', biz: 'oak-hall', kind: 'church' }
     ],
 
@@ -618,7 +618,7 @@
       "FREE THINGS TO DO THIS WEEKEND": "COSAS GRATIS PA' ESTE FIN DE SEMANA",
       "THIS WEEK IN THE": "ESTA SEMANA EN LAS",
       "THREE CITIES.": "TRES CIUDADES.",
-      "Every domino table, live band, watch party and city day worth leaving the house for. Members post theirs — the city ones we hunt down ourselves.": "Cada mesa de dominó, banda en vivo, party pa' ver el juego y día de la ciudad que vale salir de la casa. Los socios ponen los suyos — los de la ciudad los cazamos nosotros.",
+      "Every domino table, live band, watch party and city day worth leaving the house for. Partners post theirs — the city ones we hunt down ourselves.": "Cada mesa de dominó, banda en vivo, party pa' ver el juego y día de la ciudad que vale salir de la casa. Los socios ponen los suyos — los de la ciudad los cazamos nosotros.",
       "LIST": "LISTA",
       "CALENDAR": "CALENDARIO",
       "ON THE BOARD": "EN LA PIZARRA",
@@ -661,7 +661,7 @@
       "GRAND OPENINGS": "APERTURAS",
       "NO COVER BEFORE 10": "SIN COVER ANTES DE LAS 10",
       "FREE CAFECITO ALL MORNING": "CAFECITO GRATIS TODA LA MAÑANA",
-      "$12 A PLATE": "$12 EL PLATO",
+      "ALL WELCOME": "TODOS BIENVENIDOS",
       "FREE TO WATCH": "GRATIS PA' MIRAR",
       "FREE · CITY EVENT": "GRATIS · EVENTO DE LA CIUDAD",
       "FREE": "GRATIS",
@@ -698,9 +698,9 @@
       "Domino tables under the awning": "Las mesas de dominó bajo el toldo",
       "Fútbol Night on the Big Screen": "Noche de Fútbol en la Pantalla Grande",
       "Domino League Night": "Noche de Liga de Dominó",
-      "Kids Eat Free": "Los Niños Comen Gratis",
+      "Family Night": "Noche en Familia",
       "Son Cubano Live": "Son Cubano en Vivo",
-      "6AM Croqueta Hour, Half Off": "Hora de la Croqueta a las 6AM, Mitad de Precio",
+      "6AM Croqueta Hour": "Hora de la Croqueta a las 6AM",
       "Church Luncheon": "Almuerzo de la Iglesia"
     },
 

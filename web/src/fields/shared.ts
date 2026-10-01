@@ -23,6 +23,15 @@ export const slugField: Field = {
   },
 }
 
+/**
+ * Refuses a money amount ("$12", "12 dollars", "20 dólares"). The site makes
+ * no price or cost claims, so free-text labels must not smuggle one in.
+ */
+export const noPrice = (value: unknown) =>
+  typeof value !== 'string' ||
+  !/\$\s*\d|\d\s*(usd|dollars?|d[oó]lares?)\b/i.test(value) ||
+  'No prices. Say who gets in, not what it costs.'
+
 /** Public read, authenticated write — the default for every content collection. */
 export const publicRead = { read: () => true }
 

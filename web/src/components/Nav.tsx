@@ -223,7 +223,7 @@ export async function Nav({ lang }: { lang: Lang }) {
         lead={
           listings.length
             ? [t('NOW ON THE LISTING'), `${listings.length} ${t('LOCAL SPOTS')}`]
-            : [t('NOW ON THE LISTING'), t('MEMBER SPOTLIGHTS EVERY FRIDAY')]
+            : [t('NOW ON THE LISTING'), t('PARTNER SPOTLIGHTS EVERY FRIDAY')]
         }
         items={listings
           .map((b) => {

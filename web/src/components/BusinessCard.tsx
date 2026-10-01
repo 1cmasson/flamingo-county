@@ -107,7 +107,7 @@ export function BusinessCard({
                 border: '2px solid var(--ink)',
               }}
             >
-              {t('MEMBER')}
+              {t('PARTNER')}
             </div>
           ) : null}
         </div>

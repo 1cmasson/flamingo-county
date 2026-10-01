@@ -303,7 +303,7 @@ export default async function BusinessPage({
                     padding: '6px 9px',
                   }}
                 >
-                  {t('VERIFIED MEMBER')}
+                  {t('VERIFIED PARTNER')}
                 </div>
               ) : null}
             </div>
