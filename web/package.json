@@ -21,6 +21,7 @@
     "seed": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" tsx src/seed/index.ts",
     "seed:inspect": "cross-env NODE_OPTIONS=--no-deprecation tsx src/seed/inspect.ts",
     "verify": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" tsx src/seed/verify.ts",
+    "aeo:probe": "tsx scripts/aeo/probe.ts",
     "gen:dictionary": "cross-env NODE_OPTIONS=--no-deprecation tsx src/i18n/generate.ts"
   },
   "dependencies": {
