@@ -5,6 +5,7 @@ import { useState } from 'react'
 import { authClient } from '../lib/authClient'
 import { forgetDevice } from '../lib/saved'
 import type { Webview } from '../lib/webview'
+import { EmailCodeSignIn } from './EmailCodeSignIn'
 import { WebviewPrompt, type WebviewCopy } from './WebviewPrompt'
 import s from './chrome.module.css'
 
@@ -23,6 +24,7 @@ export type AccountCopy = WebviewCopy & {
   cancel: string
   deleteFailed: string
   reauth: string
+  reauthCode: string
   privacy: string
 }
 
@@ -86,9 +88,12 @@ export function GoogleG() {
  * My Week's account panel. The event buttons (save, going, calendar) also start
  * sign-in when tapped signed out — see src/components/MemberProvider.tsx.
  *
- * Three faces: the Google button; the "open this in your browser" prompt when
- * the page is inside an app whose browser Google refuses; and, signed in, who
- * you are with sign-out and delete.
+ * Three faces: the Google button; inside an app whose browser Google refuses,
+ * sign-in with an emailed code (or "open this in your browser"); and, signed
+ * in, who you are with sign-out and delete.
+ *
+ * `webview` is passed signed in too: the re-check before deleting can't offer
+ * Google inside those apps either.
  */
 export function MyWeekAccount({
   user,
@@ -167,13 +172,28 @@ export function MyWeekAccount({
             <div id="confirm-h" style={{ ...heading, fontSize: 20 }}>
               {t.confirmH}
             </div>
-            <p style={body}>{needsReauth ? t.reauth : t.confirmP}</p>
+            <p style={body}>{needsReauth ? (webview ? t.reauthCode : t.reauth) : t.confirmP}</p>
+            {needsReauth && (
+              // Whoever signed up with a code may have no Google account at
+              // all, so the code is always offered for the re-check.
+              <EmailCodeSignIn
+                idPrefix="reauth"
+                fixedEmail={user.email}
+                onSignedIn={() => {
+                  setNeedsReauth(false)
+                  setBusy(false)
+                }}
+                t={t}
+              />
+            )}
             <div style={row}>
               {needsReauth ? (
-                <button type="button" onClick={signIn} disabled={busy} className={s.chipPress} style={button('var(--cream)', 'var(--ink)')}>
-                  <GoogleG />
-                  {t.google}
-                </button>
+                !webview && (
+                  <button type="button" onClick={signIn} disabled={busy} className={s.chipPress} style={button('var(--cream)', 'var(--ink)')}>
+                    <GoogleG />
+                    {t.google}
+                  </button>
+                )
               ) : (
                 <button type="button" onClick={deleteAccount} disabled={busy} className={s.chipPress} style={button('var(--ink)', 'var(--cream)')}>
                   {t.confirmDelete}
@@ -230,7 +250,13 @@ export function MyWeekAccount({
   if (webview) {
     return (
       <section style={panel} aria-labelledby="account-h">
-        <WebviewPrompt webview={webview} pageUrl={pageUrl} headingId="account-h" t={t} />
+        <WebviewPrompt
+          webview={webview}
+          pageUrl={pageUrl}
+          headingId="account-h"
+          onSignedIn={() => window.location.assign(callbackPath)}
+          t={t}
+        />
       </section>
     )
   }

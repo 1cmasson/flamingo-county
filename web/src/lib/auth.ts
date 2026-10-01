@@ -1,9 +1,12 @@
 import { betterAuth, type BetterAuthPlugin } from 'better-auth'
 import { nextCookies } from 'better-auth/next-js'
+import { emailOTP } from 'better-auth/plugins'
 import { LibsqlDialect } from '@libsql/kysely-libsql'
+import { langFromReferer, sendSignInCode } from './signInEmail'
 
 /**
- * Member sign-in — Google only, via Better Auth. See MEMBERS.md.
+ * Member sign-in via Better Auth — Google, or a code emailed to you (for the
+ * in-app browsers Google refuses). See MEMBERS.md.
  *
  * This is NOT Payload auth. Payload's `users` collection is the admin login and
  * everyone in it gets the admin panel; members must never land there. Better
@@ -37,6 +40,13 @@ export function createAuth<P extends BetterAuthPlugin[] = []>(extraPlugins: P = 
       // account link; nothing here calls Google with them. Encrypted at rest so
       // a copied auth.db does not hand them over.
       encryptOAuthTokens: true,
+      accountLinking: {
+        // One person, one account, whichever way they sign in. A code proves
+        // the inbox and Google vouches for its addresses, so signing in with
+        // Google after an emailed code (or the other way round) lands in the
+        // same account when the address matches.
+        trustedProviders: ['google'],
+      },
     },
     advanced: {
       ipAddress: {
@@ -65,7 +75,19 @@ export function createAuth<P extends BetterAuthPlugin[] = []>(extraPlugins: P = 
         },
       },
     },
-    plugins: [...extraPlugins, nextCookies()],
+    plugins: [
+      ...extraPlugins,
+      emailOTP({
+        // Long enough to switch from Instagram to the mail app and back.
+        expiresIn: 10 * 60,
+        // Codes are live credentials; auth.db only ever sees their hash.
+        storeOTP: 'hashed',
+        async sendVerificationOTP({ email, otp }, ctx) {
+          await sendSignInCode(email, otp, langFromReferer(ctx?.request?.headers.get('referer')))
+        },
+      }),
+      nextCookies(),
+    ],
   })
 }
 

@@ -2,13 +2,15 @@
 
 import { useState } from 'react'
 import { chromeIntent, type Webview } from '../lib/webview'
+import { EmailCodeSignIn, type EmailCodeCopy } from './EmailCodeSignIn'
 import s from './chrome.module.css'
 
-export type WebviewCopy = {
+export type WebviewCopy = EmailCodeCopy & {
   webviewH: string
   /** `{app}` and `{browser}` are filled in here. */
   webviewP: string
   webviewPUnknown: string
+  orBrowser: string
   openChrome: string
   copyLink: string
   copied: string
@@ -42,10 +44,11 @@ function button(bg: string, ink: string): React.CSSProperties {
 }
 
 /**
- * "Open this in Safari / Chrome to sign in" — what stands in for the Google
- * button inside Instagram, Facebook, TikTok and the rest, where Google refuses
- * to sign anyone in (`disallowed_useragent`). Used by My Week's account panel
- * and by the sign-in gate on the event buttons.
+ * What stands in for the Google button inside Instagram, Facebook, TikTok and
+ * the rest, where Google refuses to sign anyone in (`disallowed_useragent`):
+ * sign in with an emailed code right here, or open the page in Safari / Chrome
+ * and use Google there. Used by My Week's account panel and by the sign-in
+ * gate on the event buttons.
  *
  * `pageUrl` is read at click time when omitted, so the link copied is the page
  * the visitor is actually on.
@@ -54,11 +57,13 @@ export function WebviewPrompt({
   webview,
   pageUrl,
   headingId,
+  onSignedIn,
   t,
 }: {
   webview: Webview
   pageUrl?: string
   headingId: string
+  onSignedIn: () => void
   t: WebviewCopy
 }) {
   const [copied, setCopied] = useState(false)
@@ -85,7 +90,11 @@ export function WebviewPrompt({
         {fill(t.webviewH)}
       </div>
       <p style={body}>{fill(webview.app ? t.webviewP : t.webviewPUnknown)}</p>
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 4 }}>
+      <EmailCodeSignIn idPrefix={headingId} onSignedIn={onSignedIn} t={t} />
+      <p style={{ ...body, marginTop: 6, paddingTop: 12, borderTop: '3px solid var(--ink)', alignSelf: 'stretch' }}>
+        {fill(t.orBrowser)}
+      </p>
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
         {webview.os === 'android' && (
           <a
             href={pageUrl ? chromeIntent(pageUrl) : '#'}
@@ -96,7 +105,7 @@ export function WebviewPrompt({
               }
             }}
             className={s.chipPress}
-            style={button('var(--grad-pink)', 'var(--cream)')}
+            style={button('var(--cream)', 'var(--ink)')}
           >
             {t.openChrome}
           </a>
