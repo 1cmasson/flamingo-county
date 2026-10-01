@@ -63,4 +63,5 @@ auth.db-wal
 # Local verification output — screenshots and one-off Playwright scripts.
 shots/
 *.local.mjs
+/hq-media
 scripts/aeo/results/

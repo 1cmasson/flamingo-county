@@ -1,5 +1,5 @@
 import type { CollectionConfig } from 'payload'
-import { slugField, publicRead } from '../fields/shared'
+import { draftVersions, mcpDraftsOnly, publishedRead, slugField } from '../fields/shared'
 
 /**
  * Recurring weekly events — `WEEKLY` (6 records) in fc-data.js.
@@ -13,7 +13,11 @@ import { slugField, publicRead } from '../fields/shared'
  */
 export const WeeklyEvents: CollectionConfig = {
   slug: 'weekly-events',
-  access: publicRead,
+  // Drafts: saved changes stay off the site until published. Claude can only
+  // save drafts; publishing is the owner's Approve in Telegram. See shared.ts.
+  access: publishedRead,
+  versions: draftVersions,
+  hooks: { beforeOperation: [mcpDraftsOnly] },
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'dow', 'time', 'listing'],
