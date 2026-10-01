@@ -31,21 +31,29 @@ jobs:
         run: |
           docker run -d --name fc-ci -p 3000:3000 \
             -e DATABASE_URL=file:/data/content.db \
+            -e MEDIA_DIR=/data/media \
             -e PAYLOAD_SECRET=ci-only-secret-not-for-prod \
             -e BETTER_AUTH_SECRET=ci-only-secret-not-for-prod \
             -e AUTH_DATABASE_URL=file:/data/auth.db \
             fc-ci
 
-      - name: Wait for the server
+      - name: Wait for the server to accept connections
+        # The DB is still empty at this point (only the schema migration has
+        # run) — checking for a 2xx here would require the homepage to
+        # render against zero content, which isn't the thing being tested.
+        # This only confirms the process came up (curl reports "000" when it
+        # can't connect at all, and a real status code otherwise, even an
+        # error one); the real content check is after seeding, below.
         run: |
           for i in $(seq 1 60); do
-            if curl -sf http://localhost:3000/en > /dev/null; then
-              echo "server is up"
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/en)
+            if [ "$code" != "000" ]; then
+              echo "server is accepting connections (http $code)"
               exit 0
             fi
             sleep 2
           done
-          echo "server never became ready"
+          echo "server never started listening"
           docker logs fc-ci
           exit 1
 
@@ -53,6 +61,7 @@ jobs:
         run: |
           docker exec \
             -e DATABASE_URL=file:/data/content.db \
+            -e MEDIA_DIR=/data/media \
             -e PAYLOAD_SECRET=ci-only-secret-not-for-prod \
             fc-ci pnpm seed
 
@@ -70,12 +79,30 @@ jobs:
           docker logs fc-ci
           exit 1
 
+      - name: Confirm a real media file is actually being served
+        # Catches a MEDIA_DIR mismatch between the seed process and the
+        # server silently — that would make every image 404 and Lighthouse
+        # would score a page with no images as fast, which is worse than no
+        # check at all.
+        run: |
+          media_path=$(curl -s http://localhost:3000/en | grep -oE '/api/media/file/[A-Za-z0-9._-]+\.webp' | head -1)
+          if [ -z "$media_path" ]; then
+            echo "no /api/media/file/*.webp URL found in the homepage HTML"
+            exit 1
+          fi
+          content_type=$(curl -s -o /dev/null -w '%{content_type}' "http://localhost:3000$media_path")
+          echo "$media_path -> $content_type"
+          case "$content_type" in
+            image/webp*) echo "ok" ;;
+            *) echo "expected image/webp, got $content_type"; exit 1 ;;
+          esac
+
       - name: Run Lighthouse CI
         uses: treosh/lighthouse-ci-action@v12
         with:
           urls: |
             http://localhost:3000/en
-            http://localhost:3000/en?city=havana
+            http://localhost:3000/en/havana
           configPath: ./lighthouserc.json
           uploadArtifacts: true
           temporaryPublicStorage: true

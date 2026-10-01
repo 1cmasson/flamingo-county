@@ -51,7 +51,8 @@ const SEED_MOCKS = process.env.SEED_MOCK_CONTENT === '1'
 /**
  * `SEED_ONLY=real-events` writes just REAL_EVENTS (and their photos) into a
  * database that is already seeded — the way to publish a new event on
- * production without re-running everything else. See `seed()`.
+ * production without re-running everything else. `SEED_ONLY=hero-media`
+ * similarly just repoints the home hero's photo/mascot. See `seed()`.
  */
 const SEED_ONLY = process.env.SEED_ONLY
 
@@ -365,7 +366,42 @@ async function seed() {
     console.log(`\nreal events only: ${REAL_EVENTS.length} upserted, nothing else written.`)
     process.exit(0)
   }
-  if (SEED_ONLY) throw new Error(`SEED_ONLY="${SEED_ONLY}" is not a mode; the only one is "real-events".`)
+
+  /* --- Hero media only ----------------------------------------------------- */
+  // For repointing the all-cities hero on an already-deployed database after
+  // its source art changed. `upsertMedia` keys on basename, so the new WebP
+  // uploads as a new `media` doc rather than overwriting the old PNG one —
+  // this patches `site-settings.heroPhoto`/`heroCast` at those two fields only
+  // (Payload's `updateGlobal` is a partial update, same as the full seed's
+  // globals write at the bottom of this function) so admin-edited fields like
+  // `contactEmail` are untouched. It does not delete the orphaned PNG media
+  // docs or files — do that by hand in /admin once nothing references them.
+  if (SEED_ONLY === 'hero-media') {
+    const skylineHero = await upsertMedia(
+      payload,
+      'assets/skyline-hero.webp',
+      'The Miami skyline',
+      'El horizonte de Miami',
+    )
+    const losTres = await upsertMedia(
+      payload,
+      'uploads/los-tres-bust-536a000f.webp',
+      'Rigo, Rafa and Toni',
+    )
+    await payload.updateGlobal({
+      slug: 'site-settings',
+      locale: 'en',
+      data: { heroPhoto: skylineHero, heroCast: losTres },
+    })
+    console.log('\nhero media only: site-settings.heroPhoto/heroCast repointed, nothing else written.')
+    process.exit(0)
+  }
+
+  if (SEED_ONLY) {
+    throw new Error(
+      `SEED_ONLY="${SEED_ONLY}" is not a mode; the only ones are "real-events" and "hero-media".`,
+    )
+  }
 
   /* --- Admin user --------------------------------------------------------- */
   // So a fresh clone is `pnpm seed` and nothing else. Skipped if any user
