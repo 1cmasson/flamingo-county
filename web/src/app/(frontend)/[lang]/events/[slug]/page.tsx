@@ -13,7 +13,7 @@ import { PageShell } from '../../../../../components/PageShell'
 import { MediaSlot } from '../../../../../components/MediaSlot'
 import { FULL_WIDTH_SIZES } from '../../../../../lib/srcset'
 import { EventActions } from '../../../../../components/EventActions'
-import { eventActionStrings, eventVenue } from '../../../../../components/EventCard'
+import { eventActionStrings, eventStatusLabel, eventVenue } from '../../../../../components/EventCard'
 import s from '../../../../../components/chrome.module.css'
 
 /**
@@ -234,6 +234,21 @@ export default async function EventPage({
               >
                 {kind?.label}
               </div>
+              {eventStatusLabel(ev, t) ? (
+                <div
+                  style={{
+                    background: 'var(--ink)',
+                    color: 'var(--cream)',
+                    border: '3px solid var(--ink)',
+                    fontWeight: 800,
+                    fontSize: 11,
+                    letterSpacing: '1.5px',
+                    padding: '6px 9px',
+                  }}
+                >
+                  {eventStatusLabel(ev, t)}
+                </div>
+              ) : null}
               {ev.freeLabel ? (
                 <div
                   style={{
