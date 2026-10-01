@@ -18,8 +18,8 @@ import { WebviewPrompt, type WebviewCopy } from './WebviewPrompt'
 import s from './chrome.module.css'
 
 /**
- * Signed-in state for the whole public site, plus the sign-in gate on saving,
- * going and the calendar file (MEMBERS.md). Rendered once, in the [lang]
+ * Signed-in state for the whole public site, plus the sign-in gate on saving
+ * and going (MEMBERS.md). Rendered once, in the [lang]
  * layout, which has already read the session and the user agent.
  *
  * A signed-out tap goes straight to Google with the tap recorded in the
