@@ -9,6 +9,7 @@ import { buildBrief } from './brief'
 import { miamiTime } from './hq'
 import { isRunningCount, type MetricSummary } from './postiz'
 import { PUBLISHABLE, publishStatus, requestPublish } from './publishRequests'
+import { MESSAGE_LIMIT, esc, sendMessage, telegramConfigured } from './telegram'
 
 /**
  * HQ's own MCP tools, beside the generic per-collection ones the plugin
@@ -190,6 +191,48 @@ export async function addMediaFromUrl(req: PayloadRequest, rawUrl: string, note?
 }
 
 /* ------------------------------------------------------------------------ */
+/* Telegram: results from Claude, to the owner                              */
+/* ------------------------------------------------------------------------ */
+
+/**
+ * A client that loops must not be able to flood the owner's phone. Ten messages in ten minutes
+ * and sixty in a day are far more than a person asks Claude to send, and the limit is
+ * per server process, so a restart clears it: this is a brake on a runaway, not a quota.
+ */
+const SEND_WINDOW_MS = 10 * 60_000
+const SEND_PER_WINDOW = 10
+const SEND_PER_DAY = 60
+let sentAt: number[] = []
+
+/** For tests. */
+export function resetTelegramSendLimit() {
+  sentAt = []
+}
+
+/**
+ * Send one message to the owner's Telegram chat, as HQ's bot. The chat is not a parameter: there
+ * is no way to point this anywhere else. The text is escaped (it is plain text, never markup),
+ * headed "Claude" so it reads differently from HQ's own messages, and refused, not trimmed, when
+ * it will not fit, so nothing is silently cut off.
+ */
+export async function sendToOwnerTelegram(args: { text: string; title?: string }, now: number = Date.now()) {
+  if (!telegramConfigured()) throw new Error("Telegram isn't set up on this server.")
+  sentAt = sentAt.filter((t) => now - t < 86_400_000)
+  if (sentAt.length >= SEND_PER_DAY) throw new Error('Daily limit of 60 messages reached.')
+  if (sentAt.filter((t) => now - t < SEND_WINDOW_MS).length >= SEND_PER_WINDOW)
+    throw new Error('Too many messages in the last 10 minutes. Put it in one message, or wait.')
+
+  const head = `🤖 <b>Claude</b>${args.title ? ` · ${esc(args.title)}` : ''}`
+  const body = `${head}\n\n${esc(args.text)}`
+  if (body.length > MESSAGE_LIMIT)
+    throw new Error(`Too long for one Telegram message once formatted (${body.length} of ${MESSAGE_LIMIT}). Shorten it or split it.`)
+
+  const sent = await sendMessage(body)
+  sentAt.push(now) // only a message that went counts against the limit
+  return { messageId: sent.message_id }
+}
+
+/* ------------------------------------------------------------------------ */
 /* Tool definitions                                                         */
 /* ------------------------------------------------------------------------ */
 
@@ -219,6 +262,20 @@ export const hqMcpTools: McpTool[] = [
     parameters: { days: z.number().int().min(1).max(90).default(28).describe('Window in days (default 28)') },
     handler: (args: Record<string, unknown>, req: PayloadRequest) =>
       guard(async () => text(JSON.stringify(await socialReport(req.payload, Number(args.days ?? 28)), null, 2))),
+  },
+  {
+    name: 'hqSendTelegram',
+    description:
+      "Send a message to the owner's Telegram chat, from HQ's bot (the same chat as the morning brief). Use it to hand over results when the owner asks you to: a summary, what you found, a link. Plain text, up to about 3,500 characters; put any link in the text. It goes only to the owner and cannot be pointed anywhere else. Rate limited (10 per 10 minutes). Do not send secrets or keys, and do not send unprompted.",
+    parameters: {
+      text: z.string().min(1).max(3500).describe('The message, plain text'),
+      title: z.string().max(100).optional().describe('Optional short heading, shown after "Claude"'),
+    },
+    handler: (args: Record<string, unknown>) =>
+      guard(async () => {
+        const sent = await sendToOwnerTelegram({ text: String(args.text), title: args.title as string | undefined })
+        return text(`Sent to the owner's Telegram (message ${sent.messageId}).`)
+      }),
   },
   {
     name: 'hqAddDraftMediaFromUrl',

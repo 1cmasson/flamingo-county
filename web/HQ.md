@@ -181,6 +181,7 @@ never posted unseen: you get the current version to approve instead.
 | `hqBrief` | The brief as plain text, without moving the scheduled one. |
 | `hqSocialReport` | Every post in the last N days: pillar, language, time, furthest checkpoint per platform, clicks; plus account snapshots and bio clicks. The input to the weekly review. |
 | `hqRequestPublish` / `hqPublishStatus` | Ask you to publish a site draft (you tap Publish in Telegram), and check the answer. |
+| `hqSendTelegram` | Sends one plain-text message to your Telegram chat, headed "Claude", when you ask Claude to hand something over. It goes only to you (no chat id parameter), is escaped, refused rather than trimmed when too long, has no buttons, and is limited to 10 per 10 minutes. |
 | `hqAddDraftMediaFromUrl` | Downloads a public https JPEG, PNG or MP4 into HQ media for a draft. It refuses private and loopback hosts and doesn't follow redirects, so the server can't be pointed at itself. |
 
 ## Drafts and publishing

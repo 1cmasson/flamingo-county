@@ -1328,6 +1328,10 @@ export interface PayloadMcpApiKey {
      */
     hqSocialReport?: boolean | null;
     /**
+     * Send a message to the owner's Telegram chat, from HQ's bot (the same chat as the morning brief). Use it to hand over results when the owner asks you to: a summary, what you found, a link. Plain text, up to about 3,500 characters; put any link in the text. It goes only to the owner and cannot be pointed anywhere else. Rate limited (10 per 10 minutes). Do not send secrets or keys, and do not send unprompted.
+     */
+    hqSendTelegram?: boolean | null;
+    /**
      * Download a public https JPEG, PNG or MP4 (up to 50 MB) into HQ media and return its id, for the `media` field of an hq-social-drafts document. The first media id on a draft is the cover shown in Telegram. Instagram and TikTok drafts need at least one.
      */
     hqAddDraftMediaFromUrl?: boolean | null;
@@ -2247,6 +2251,7 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
     | {
         hqBrief?: T;
         hqSocialReport?: T;
+        hqSendTelegram?: T;
         hqAddDraftMediaFromUrl?: T;
         hqRequestPublish?: T;
         hqPublishStatus?: T;
