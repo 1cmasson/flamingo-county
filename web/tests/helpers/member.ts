@@ -31,7 +31,33 @@ export async function createMember(email: string, name = 'Test Member') {
   const t = await helpers()
   const user = await t.saveUser(t.createUser({ email, name, emailVerified: true }))
   const cookies = await t.getCookies({ userId: user.id, domain: 'localhost' })
-  return { id: user.id, cookies }
+  return { id: user.id, email, cookies }
+}
+
+/**
+ * A fresh sign-in code for `email`, standing in for the one the dev server
+ * just logged. Earlier codes for the address are cleared first so the one
+ * returned is the only one that can match.
+ */
+export async function mintSignInCode(email: string): Promise<string> {
+  const ctx = await auth.$context
+  await ctx.internalAdapter.deleteVerificationByIdentifier(`sign-in-otp-${email.toLowerCase()}`)
+  return auth.api.createVerificationOTP({ body: { email, type: 'sign-in' } })
+}
+
+export async function authUserIdByEmail(email: string): Promise<string | null> {
+  const ctx = await auth.$context
+  return (await ctx.internalAdapter.findUserByEmail(email.toLowerCase()))?.user.id ?? null
+}
+
+/** Backdates the member's sessions past Better Auth's one-day "fresh" window. */
+export async function ageSessions(id: string) {
+  const ctx = await auth.$context
+  await ctx.adapter.updateMany({
+    model: 'session',
+    where: [{ field: 'userId', value: id }],
+    update: { createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) },
+  })
 }
 
 export async function removeMember(id: string) {

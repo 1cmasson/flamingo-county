@@ -64,3 +64,4 @@ auth.db-wal
 shots/
 *.local.mjs
 /hq-media
+scripts/aeo/results/
