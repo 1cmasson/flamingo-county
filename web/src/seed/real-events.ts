@@ -21,6 +21,9 @@ export const REAL_EVENTS = [
     date: '2026-09-06',
     kind: 'church', // labelled COMMUNITY
     listing: 'casa-marin',
+    // The club's breakfast, held at Casa Marín: the restaurant hosts, the club
+    // organises. The announcement and photos are the club's.
+    organizer: 'el-club-de-la-amistad',
     /**
      * The volunteers, not the food.
      *
@@ -80,6 +83,9 @@ export const REAL_EVENTS = [
     place: { en: 'Sapphire', es: 'Sapphire' },
     hood: 'W 16th Ave',
     city: 'hialeah',
+    // As printed on the invitation.
+    placeAddress: '4410 West 16th Ave., Suite 40, Hialeah, FL, 33012',
+    organizer: 'el-club-de-la-amistad',
     /**
      * Made for the site from the printed invitation: the card's wording and
      * the club's seal, typeset over generated ribbon-and-border artwork. The

@@ -61,6 +61,15 @@ export const Events: CollectionConfig = {
       ],
     },
     {
+      name: 'endDate',
+      type: 'date',
+      admin: {
+        date: { pickerAppearance: 'dayOnly', displayFormat: 'yyyy-MM-dd' },
+        description:
+          'Only for an event that runs over several days: its last day. Leave empty for a one-day event, including one that runs past midnight (9PM–1AM) — that is worked out from the clock.',
+      },
+    },
+    {
       name: 'venueType',
       type: 'select',
       required: true,
@@ -89,6 +98,66 @@ export const Events: CollectionConfig = {
         { name: 'hood', type: 'text' },
         { name: 'city', type: 'relationship', relationTo: 'cities' },
       ],
+    },
+    {
+      // A listed business already has its address on the listing; a place
+      // does not, and without one the structured data says only "Hialeah, FL".
+      name: 'placeAddress',
+      type: 'text',
+      admin: {
+        condition: (data) => data?.venueType === 'place',
+        description:
+          'Full street address as "street, city, ST, zip", e.g. "4410 West 16th Ave., Suite 40, Hialeah, FL, 33012". Only from the announcement or the venue itself.',
+      },
+    },
+    {
+      /**
+       * Who puts the event on, when that is not the venue: the Club de la
+       * Amistad's gala is at a rented hall. Left empty, the venue's listing
+       * stands in as the organizer, which is right for a business's own night.
+       */
+      type: 'row',
+      fields: [
+        {
+          name: 'organizer',
+          type: 'relationship',
+          relationTo: 'listings',
+          admin: { description: 'The listing that organises it, if it is in the directory.' },
+        },
+        {
+          name: 'organizerName',
+          type: 'text',
+          admin: {
+            description: 'Otherwise its name as announced, e.g. "City of Hialeah".',
+            condition: (data) => !data?.organizer,
+          },
+        },
+        {
+          name: 'organizerUrl',
+          type: 'text',
+          admin: {
+            description: 'Its own website, full URL. Optional.',
+            condition: (data) => !data?.organizer,
+          },
+        },
+      ],
+    },
+    {
+      name: 'eventStatus',
+      type: 'select',
+      required: true,
+      defaultValue: 'scheduled',
+      options: [
+        { label: 'On', value: 'scheduled' },
+        { label: 'Postponed (no new date yet)', value: 'postponed' },
+        { label: 'Rescheduled (date changed)', value: 'rescheduled' },
+        { label: 'Cancelled', value: 'cancelled' },
+      ],
+      admin: {
+        position: 'sidebar',
+        description:
+          'Search and answer engines read this. A cancelled event stays up marked cancelled rather than disappearing, so nobody turns up to it.',
+      },
     },
     {
       /**

@@ -317,6 +317,10 @@ async function seedRealEvents(payload: Payload, id: Dict): Promise<void> {
           `category both have a mapping in research-listings.ts.`,
       )
     }
+    const organizerId = e.organizer ? id.listings[e.organizer] : undefined
+    if (e.organizer && !organizerId) {
+      throw new Error(`event "${e.slug}" is organised by listing "${e.organizer}", which was not seeded.`)
+    }
     if (!e.listing && !(e.place && e.city && id.cities[e.city])) {
       throw new Error(
         `event "${e.slug}" has no listing, so it needs a place and a seeded city ` +
@@ -339,6 +343,9 @@ async function seedRealEvents(payload: Payload, id: Dict): Promise<void> {
         place: listingId ? undefined : e.place?.en,
         hood: listingId ? undefined : e.hood,
         city: listingId ? undefined : id.cities[e.city!],
+        placeAddress: listingId ? undefined : e.placeAddress,
+        organizer: organizerId,
+        eventStatus: 'scheduled',
         going: 0,
         freeLabel: e.en.freeLabel,
         note: e.en.note,

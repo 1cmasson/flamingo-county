@@ -1,5 +1,6 @@
 import type { Lang } from '../i18n'
 import type { Category, City, Event, Listing, Media } from '../payload-types'
+import { eventEndDay } from './dates'
 import { routes } from './routes'
 import { absUrl, SITE_NAME, SITE_URL } from './site'
 
@@ -47,7 +48,9 @@ export function mediaUrl(m: Media | number | string | null | undefined): string 
 export function postalAddress(address: string | null | undefined, cityName?: string | null) {
   const text = address?.trim()
   if (!text) return undefined
-  const m = text.match(/^(.+?),\s*([^,]+),\s*([A-Z]{2}),?\s*(\d{5})(?:-\d{4})?$/)
+  // Greedy street: "4410 West 16th Ave., Suite 40, Hialeah, FL, 33012" keeps
+  // the suite in the street, and the city is the last part before the state.
+  const m = text.match(/^(.+),\s*([^,]+),\s*([A-Z]{2}),?\s*(\d{5})(?:-\d{4})?$/)
   if (m) {
     return clean({
       '@type': 'PostalAddress',
@@ -146,7 +149,9 @@ export function listingJsonLd(lang: Lang, listing: Listing, citySlug: string): O
   const d = listing.detail ?? {}
   const research = listing.research ?? {}
   const gallery = (Array.isArray(listing.gallery) ? listing.gallery : []).map(mediaUrl)
-  const sameAs = [d.site, d.instagram].filter((u): u is string => Boolean(u && /^https?:\/\//.test(u)))
+  // `site` is stored as a bare host ("molinasranch.com"); give it a scheme.
+  const site = d.site && !/^https?:\/\//.test(d.site) ? `https://${d.site}` : d.site
+  const sameAs = [site, d.instagram].filter((u): u is string => Boolean(u && /^https?:\/\//.test(u)))
   return clean({
     '@context': 'https://schema.org',
     '@type': listingType(category),
@@ -191,29 +196,63 @@ export function eventStart(ev: Pick<Event, 'date' | 'startTime'>): string {
   return `${date}T${ev.startTime}:00${miamiOffset(date)}`
 }
 
+const EVENT_STATUS: Record<string, string> = {
+  scheduled: 'https://schema.org/EventScheduled',
+  postponed: 'https://schema.org/EventPostponed',
+  rescheduled: 'https://schema.org/EventRescheduled',
+  cancelled: 'https://schema.org/EventCancelled',
+}
+
+/** A listing as an organizer: its type, its page on this site, its own channels. */
+function listingOrganizer(lang: Lang, listing: Listing): Obj | undefined {
+  const city = rel<City>(listing.city)
+  if (!city) return undefined
+  return clean({
+    '@type': listingType(rel<Category>(listing.category)),
+    name: listing.name,
+    url: absUrl(routes.business(lang, city.slug, listing.slug)),
+  })
+}
+
 export function eventJsonLd(
   lang: Lang,
   ev: Event,
   venue: { listing: Listing | null; city: City | null; name: string },
 ): Obj {
   const date = ev.date.slice(0, 10)
-  const citySlug = venue.city?.slug
+  const endDay = eventEndDay(ev)
+  const cityName = titleCase(venue.city?.name)
   const place = venue.name
     ? clean({
         '@type': 'Place',
         name: venue.name,
         address: venue.listing
-          ? postalAddress(venue.listing.detail?.address, titleCase(venue.city?.name))
-          : venue.city
-            ? clean({
-                '@type': 'PostalAddress',
-                addressLocality: titleCase(venue.city.name),
-                addressRegion: 'FL',
-                addressCountry: 'US',
-              })
-            : undefined,
+          ? postalAddress(venue.listing.detail?.address, cityName)
+          : (postalAddress(ev.placeAddress, cityName) ??
+            (venue.city
+              ? clean({
+                  '@type': 'PostalAddress',
+                  addressLocality: cityName,
+                  addressRegion: 'FL',
+                  addressCountry: 'US',
+                })
+              : undefined)),
       })
     : undefined
+  // Who puts it on: the organizer the event names, else the venue's own
+  // listing (a business's own night). A rented hall is never the organizer.
+  const organizerListing = rel<Listing>(ev.organizer)
+  const organizer = organizerListing
+    ? listingOrganizer(lang, organizerListing)
+    : ev.organizerName
+      ? clean({
+          '@type': 'Organization',
+          name: ev.organizerName,
+          url: ev.organizerUrl && /^https?:\/\//.test(ev.organizerUrl) ? ev.organizerUrl : undefined,
+        })
+      : venue.listing
+        ? listingOrganizer(lang, venue.listing)
+        : undefined
   return clean({
     '@context': 'https://schema.org',
     '@type': 'Event',
@@ -221,19 +260,20 @@ export function eventJsonLd(
     url: absUrl(routes.event(lang, ev.slug)),
     description: ev.note,
     startDate: eventStart(ev),
-    endDate: ev.endTime && ev.startTime ? `${date}T${ev.endTime}:00${miamiOffset(date)}` : undefined,
+    // A finish needs a start to be read against; a date-only multi-day event
+    // ends on its last day.
+    endDate:
+      ev.endTime && ev.startTime
+        ? `${endDay}T${ev.endTime}:00${miamiOffset(endDay)}`
+        : endDay !== date
+          ? endDay
+          : undefined,
+    eventStatus: EVENT_STATUS[ev.eventStatus ?? 'scheduled'],
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
     location: place,
     image: mediaUrl(ev.image),
     inLanguage: lang,
-    organizer:
-      venue.listing && citySlug
-        ? {
-            '@type': 'Organization',
-            name: venue.listing.name,
-            url: absUrl(routes.business(lang, citySlug, venue.listing.slug)),
-          }
-        : undefined,
+    organizer,
   })
 }
 

@@ -12,6 +12,11 @@
  * without a matching entry here silently ships English to Spanish readers.
  */
 export const ES_OVERRIDES: Record<string, string> = {
+  // --- Event status ------------------------------------------------------
+  CANCELLED: 'CANCELADO',
+  POSTPONED: 'APLAZADO',
+  'NEW DATE': 'NUEVA FECHA',
+
   // --- Footer ------------------------------------------------------------
   PRIVACY: 'PRIVACIDAD',
 

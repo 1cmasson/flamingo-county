@@ -9,6 +9,7 @@ import * as migration_20261001_141616_add_hq_social_stats from './20261001_14161
 import * as migration_20261001_152509_add_hq_mcp from './20261001_152509_add_hq_mcp';
 import * as migration_20261001_170211_add_site_drafts from './20261001_170211_add_site_drafts';
 import * as migration_20261001_182504_add_listing_hours_verified from './20261001_182504_add_listing_hours_verified';
+import * as migration_20261001_193056_add_event_facts from './20261001_193056_add_event_facts';
 
 export const migrations = [
   {
@@ -64,6 +65,11 @@ export const migrations = [
   {
     up: migration_20261001_182504_add_listing_hours_verified.up,
     down: migration_20261001_182504_add_listing_hours_verified.down,
-    name: '20261001_182504_add_listing_hours_verified'
+    name: '20261001_182504_add_listing_hours_verified',
+  },
+  {
+    up: migration_20261001_193056_add_event_facts.up,
+    down: migration_20261001_193056_add_event_facts.down,
+    name: '20261001_193056_add_event_facts'
   },
 ];

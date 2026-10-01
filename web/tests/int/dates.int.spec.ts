@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { utcStamp } from '@/lib/dates'
+import { eventEndDay, utcStamp } from '@/lib/dates'
 
 /**
  * The calendar file writes a UTC instant, so every event's hour depends on
@@ -34,5 +34,20 @@ describe('utcStamp', () => {
 
   it('adds minutes for the default one-hour end', () => {
     expect(utcStamp('2026-09-06', '09:00', 60)).toBe('20260906T140000Z')
+  })
+})
+
+describe('eventEndDay', () => {
+  it('is the same day for an evening event', () => {
+    expect(eventEndDay({ date: '2026-10-06T12:00:00.000Z', startTime: '17:00', endTime: '22:00' })).toBe('2026-10-06')
+  })
+  it('is the next day when the clock runs past midnight', () => {
+    expect(eventEndDay({ date: '2026-10-06T12:00:00.000Z', startTime: '21:00', endTime: '01:00' })).toBe('2026-10-07')
+  })
+  it('is the endDate for a multi-day event', () => {
+    expect(eventEndDay({ date: '2026-10-06', endDate: '2026-10-08T12:00:00.000Z' })).toBe('2026-10-08')
+  })
+  it('ignores an endDate that is not after the start', () => {
+    expect(eventEndDay({ date: '2026-10-06', endDate: '2026-10-05' })).toBe('2026-10-06')
   })
 })

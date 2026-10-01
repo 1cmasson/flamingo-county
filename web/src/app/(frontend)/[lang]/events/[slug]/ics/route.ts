@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation'
 import { isLang } from '../../../../../../i18n'
 import { getEvent } from '../../../../../../lib/data'
-import { dateOnly, utcStamp } from '../../../../../../lib/dates'
+import { addDays, dateOnly, eventEndDay, utcStamp } from '../../../../../../lib/dates'
 import { eventVenue } from '../../../../../../components/EventCard'
 
 /** RFC 5545 escaping for text values. */
@@ -55,9 +55,13 @@ export async function GET(
   const ev = await getEvent(lang, slug)
   if (!ev) notFound()
 
-  const { name: venue } = eventVenue(ev)
+  const { name: venue, listing } = eventVenue(ev)
   const iso = dateOnly(ev.date)
   const day = iso.replace(/-/g, '')
+  // The finishing day: a 9PM–1AM night ends tomorrow, and a festival on its
+  // `endDate`. Same day otherwise.
+  const endIso = eventEndDay(ev)
+  const address = listing ? listing.detail?.address : ev.placeAddress
 
   // An hour is the length the calendar draws when the event publishes a start
   // and no finish. It is not a claim that the thing ends then — the page never
@@ -67,10 +71,11 @@ export async function GET(
     ? [
         `DTSTART:${utcStamp(iso, ev.startTime)}`,
         ev.endTime
-          ? `DTEND:${utcStamp(iso, ev.endTime)}`
+          ? `DTEND:${utcStamp(endIso, ev.endTime)}`
           : `DTEND:${utcStamp(iso, ev.startTime, 60)}`,
       ]
-    : [`DTSTART;VALUE=DATE:${day}`, `DTEND;VALUE=DATE:${day}`]
+    : // All-day DTEND is exclusive (RFC 5545 §3.6.1): the day after the last one.
+      [`DTSTART;VALUE=DATE:${day}`, `DTEND;VALUE=DATE:${addDays(endIso, 1).replace(/-/g, '')}`]
 
   const updated = new Date(ev.updatedAt ?? Date.now())
   const stamp = updated.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
@@ -89,7 +94,7 @@ export async function GET(
     `SEQUENCE:${sequence}`,
     ...when,
     `SUMMARY:${esc(ev.title ?? '')}`,
-    `LOCATION:${esc(venue)}`,
+    `LOCATION:${esc([venue, address].filter(Boolean).join(', '))}`,
     `DESCRIPTION:${esc(`${ev.timeLabel ?? ''} · Flamingo County`)}`,
     'END:VEVENT',
     'END:VCALENDAR',
