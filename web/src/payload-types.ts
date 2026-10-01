@@ -87,6 +87,7 @@ export interface Config {
     'hq-social-drafts': HqSocialDraft;
     'hq-social-stats': HqSocialStat;
     'hq-clicks': HqClick;
+    'hq-write-requests': HqWriteRequest;
     'payload-mcp-api-keys': PayloadMcpApiKey;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
@@ -115,6 +116,7 @@ export interface Config {
     'hq-social-drafts': HqSocialDraftsSelect<false> | HqSocialDraftsSelect<true>;
     'hq-social-stats': HqSocialStatsSelect<false> | HqSocialStatsSelect<true>;
     'hq-clicks': HqClicksSelect<false> | HqClicksSelect<true>;
+    'hq-write-requests': HqWriteRequestsSelect<false> | HqWriteRequestsSelect<true>;
     'payload-mcp-api-keys': PayloadMcpApiKeysSelect<false> | PayloadMcpApiKeysSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
@@ -1066,6 +1068,54 @@ export interface HqClick {
   createdAt: string;
 }
 /**
+ * Site changes Claude asked to make. Each needs your approval in Telegram and the code it sends you.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-write-requests".
+ */
+export interface HqWriteRequest {
+  id: number;
+  status:
+    | 'pending'
+    | 'approved'
+    | 'applying'
+    | 'applied'
+    | 'rejected'
+    | 'superseded'
+    | 'expired'
+    | 'locked'
+    | 'stale'
+    | 'failed';
+  title?: string | null;
+  collection: string;
+  operation: 'create' | 'update';
+  targetId?: string | null;
+  targetUpdatedAt?: string | null;
+  reason?: string | null;
+  /**
+   * Exactly what will be written, per language.
+   */
+  locales:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  preview?: string | null;
+  codeHash?: string | null;
+  codeExpiresAt?: string | null;
+  attempts?: number | null;
+  expiresAt?: string | null;
+  telegramMessageId?: number | null;
+  appliedDocId?: string | null;
+  error?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * API keys control which collections, resources, tools, and prompts MCP clients can access
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1210,6 +1260,18 @@ export interface PayloadMcpApiKey {
      * Download a public https JPEG, PNG or MP4 (up to 50 MB) into HQ media and return its id, for the `media` field of an hq-social-drafts document. The first media id on a draft is the cover shown in Telegram. Instagram and TikTok drafts need at least one.
      */
     hqAddDraftMediaFromUrl?: boolean | null;
+    /**
+     * Ask the owner for permission to change the public site. Nothing is written: the owner gets the exact field-by-field change in Telegram and, if they approve, a one-time code that only they see. Give the change per language under locales.es / locales.en (non-translated fields can go under either). Only these collections: events, weekly-events, stories, spotlights, listings. Then tell the owner what you asked for and wait for them to give you the code for hqApplyWrite. A newer request for the same document replaces the older one.
+     */
+    hqRequestWrite?: boolean | null;
+    /**
+     * Apply an approved site change with the one-time code the owner gave you. Writes exactly what was approved — it takes no data. Five wrong codes lock the request. Never guess a code: only use one the owner gave you.
+     */
+    hqApplyWrite?: boolean | null;
+    /**
+     * Where a site change request stands: pending, approved (code valid until…), applied, rejected, superseded, expired, locked, stale or failed.
+     */
+    hqWriteStatus?: boolean | null;
   };
   updatedAt: string;
   createdAt: string;
@@ -1418,6 +1480,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'hq-clicks';
         value: number | HqClick;
+      } | null)
+    | ({
+        relationTo: 'hq-write-requests';
+        value: number | HqWriteRequest;
       } | null)
     | ({
         relationTo: 'payload-mcp-api-keys';
@@ -1976,6 +2042,30 @@ export interface HqClicksSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-write-requests_select".
+ */
+export interface HqWriteRequestsSelect<T extends boolean = true> {
+  status?: T;
+  title?: T;
+  collection?: T;
+  operation?: T;
+  targetId?: T;
+  targetUpdatedAt?: T;
+  reason?: T;
+  locales?: T;
+  preview?: T;
+  codeHash?: T;
+  codeExpiresAt?: T;
+  attempts?: T;
+  expiresAt?: T;
+  telegramMessageId?: T;
+  appliedDocId?: T;
+  error?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-mcp-api-keys_select".
  */
 export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
@@ -2065,6 +2155,9 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         hqBrief?: T;
         hqSocialReport?: T;
         hqAddDraftMediaFromUrl?: T;
+        hqRequestWrite?: T;
+        hqApplyWrite?: T;
+        hqWriteStatus?: T;
       };
   updatedAt?: T;
   createdAt?: T;

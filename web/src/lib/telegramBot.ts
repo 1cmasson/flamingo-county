@@ -3,6 +3,7 @@ import type { Payload } from 'payload'
 import { buildBrief } from './brief'
 import { decideDraft, parseDraftCallback } from './hq'
 import { answerCallback, esc, ownerChatId, resolveButtons, sendMessage } from './telegram'
+import { issueCode, parseWriteCallback, rejectWrite } from './writeRequests'
 
 /** The slice of a Telegram `Update` the bot reads. */
 export type TelegramUpdate = {
@@ -23,6 +24,7 @@ const HELP = [
   '/done &lt;id&gt; — mark one event done',
   '/tasks — open tasks',
   '/task &lt;text&gt; — file a task for Claude',
+  '/code &lt;id&gt; — a fresh code for an approved site change',
 ].join('\n')
 
 /**
@@ -79,7 +81,10 @@ async function tasks(payload: Payload): Promise<string> {
   ].join('\n')
 }
 
-async function command(payload: Payload, text: string): Promise<string> {
+/** A reply, plus how to undo it if it carried a code that could not be delivered. */
+type Reply = string | { text: string; revert?: () => Promise<void> }
+
+async function command(payload: Payload, text: string): Promise<Reply> {
   const [cmd, ...rest] = text.trim().split(/\s+/)
   const arg = rest.join(' ')
   // `/brief@FlamingoHQBot` in a group; the bare command in a DM.
@@ -119,6 +124,11 @@ async function command(payload: Payload, text: string): Promise<string> {
       })
       return `🤖 Filed task #${task.id} for Claude.`
     }
+    case '/code': {
+      const id = Number(arg.replace(/^#/, ''))
+      if (!Number.isInteger(id) || id <= 0) return 'Usage: /code &lt;site change id&gt;'
+      return issueCode(payload, id)
+    }
     default:
       return HELP
   }
@@ -134,6 +144,25 @@ export async function handleUpdate(payload: Payload, update: TelegramUpdate): Pr
 
   const cb = update.callback_query
   if (cb) {
+    const write = parseWriteCallback(cb.data)
+    if (write && cb.message) {
+      await answerCallback(cb.id, write.action === 'approve' ? 'Sending a code…' : 'Rejecting…')
+      if (write.action === 'reject') {
+        await resolveButtons(cb.message.chat.id, cb.message.message_id, await rejectWrite(payload, write.id))
+        return
+      }
+      const issued = await issueCode(payload, write.id)
+      try {
+        await resolveButtons(cb.message.chat.id, cb.message.message_id, issued.text)
+      } catch (err) {
+        // The code never reached the owner: undo the approval rather than
+        // leave it approved behind a code nobody has.
+        await issued.revert?.()
+        throw err
+      }
+      return
+    }
+
     const parsed = parseDraftCallback(cb.data)
     if (!parsed || !cb.message) {
       await answerCallback(cb.id)
@@ -150,6 +179,12 @@ export async function handleUpdate(payload: Payload, update: TelegramUpdate): Pr
   const text = update.message?.text
   if (!text || !update.message) return
   const reply = text.startsWith('/') ? await command(payload, text) : HELP
-  // To the owner's chat by id, never to wherever the update came from.
-  await sendMessage(reply)
+  const body = typeof reply === 'string' ? reply : reply.text
+  try {
+    // To the owner's chat by id, never to wherever the update came from.
+    await sendMessage(body)
+  } catch (err) {
+    if (typeof reply !== 'string') await reply.revert?.()
+    throw err
+  }
 }

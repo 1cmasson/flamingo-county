@@ -8,6 +8,7 @@ import type { HqSocialDraft } from '../payload-types'
 import { buildBrief } from './brief'
 import { miamiTime } from './hq'
 import { isRunningCount, type MetricSummary } from './postiz'
+import { WRITABLE, applyWrite, requestWrite, writeStatus } from './writeRequests'
 
 /**
  * HQ's own MCP tools, beside the generic per-collection ones the plugin
@@ -231,5 +232,48 @@ export const hqMcpTools: McpTool[] = [
       guard(async () =>
         text(JSON.stringify(await addMediaFromUrl(req, String(args.url), args.note as string | undefined))),
       ),
+  },
+  {
+    name: 'hqRequestWrite',
+    description:
+      'Ask the owner for permission to change the public site. Nothing is written: the owner gets the exact field-by-field change in Telegram and, if they approve, a one-time code that only they see. Give the change per language under locales.es / locales.en (non-translated fields can go under either). Only these collections: ' +
+      WRITABLE.join(', ') +
+      '. Then tell the owner what you asked for and wait for them to give you the code for hqApplyWrite. A newer request for the same document replaces the older one.',
+    parameters: {
+      collection: z.enum(WRITABLE).describe('Which collection'),
+      operation: z.enum(['create', 'update']),
+      id: z.union([z.string(), z.number()]).optional().describe('Document id — required for update'),
+      locales: z
+        .object({ es: z.record(z.unknown()).optional(), en: z.record(z.unknown()).optional() })
+        .describe('The fields to write, per language, e.g. { es: { title: "…" }, en: { title: "…" } }'),
+      reason: z.string().max(500).optional().describe('One line for the owner: why this change'),
+    },
+    handler: (args: Record<string, unknown>, req: PayloadRequest) =>
+      guard(async () =>
+        text(
+          JSON.stringify({
+            ...(await requestWrite(req.payload, args as never)),
+            next: 'Waiting for the owner to approve in Telegram and give you the code. Do not try any other way to write this change.',
+          }),
+        ),
+      ),
+  },
+  {
+    name: 'hqApplyWrite',
+    description:
+      'Apply an approved site change with the one-time code the owner gave you. Writes exactly what was approved — it takes no data. Five wrong codes lock the request. Never guess a code: only use one the owner gave you.',
+    parameters: {
+      requestId: z.number().int().positive(),
+      code: z.string().min(4).max(20).describe('The code the owner gave you, e.g. ABCD-EFGH'),
+    },
+    handler: (args: Record<string, unknown>, req: PayloadRequest) =>
+      guard(async () => text(await applyWrite(req, Number(args.requestId), String(args.code)))),
+  },
+  {
+    name: 'hqWriteStatus',
+    description: 'Where a site change request stands: pending, approved (code valid until…), applied, rejected, superseded, expired, locked, stale or failed.',
+    parameters: { requestId: z.number().int().positive() },
+    handler: (args: Record<string, unknown>, req: PayloadRequest) =>
+      guard(async () => text(JSON.stringify(await writeStatus(req.payload, Number(args.requestId))))),
   },
 ]

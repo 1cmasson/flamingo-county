@@ -177,6 +177,56 @@ never posted unseen: you get the current version to approve instead.
 | `hqSocialReport` | Every post in the last N days: pillar, language, time, furthest checkpoint per platform, clicks; plus account snapshots and bio clicks. The input to the weekly review. |
 | `hqAddDraftMediaFromUrl` | Downloads a public https JPEG, PNG or MP4 into HQ media for a draft. It refuses private and loopback hosts and doesn't follow redirects, so the server can't be pointed at itself. |
 
+## Changing the site: the permission code
+
+Claude can't write to the public site (events, weekly events, stories,
+spotlights, listings) without your permission. The server enforces this, not
+the prompt:
+
+1. **Claude asks.** `hqRequestWrite` files the exact change, per language.
+   Nothing is written.
+2. **You see it in Telegram:** a field-by-field diff (`old → new`), story
+   blocks flattened to text, with **Approve — send me a code** / **Reject**.
+   ⚠️ lines flag a `slug` change (breaks live links) and any change to a
+   listing's `publicationStatus` (marking it `ready` claims every field is
+   sourced).
+3. **Approve sends you a one-time code**, e.g. `K7QM-4XPA`. It only ever exists
+   in that Telegram message. The database stores an HMAC of it, keyed with
+   the Payload secret and bound to the request, and it never appears in the
+   event log or any tool response.
+4. **You give Claude the code.** `hqApplyWrite(requestId, code)` writes exactly
+   what you approved. It takes no data of its own.
+
+The code is refused when:
+
+| Situation | Result |
+| --- | --- |
+| Not approved yet | refused |
+| Wrong code | refused; 5 wrong codes lock the request and ping you |
+| Code older than 4 hours | refused; `/code <id>` sends a fresh one and kills the old |
+| Already used | refused (single use) |
+| The page was edited after the request | refused as stale |
+| A newer request for the same page exists | the older one is replaced and its buttons cleared |
+| The approval message couldn't be delivered | the approval is undone |
+| Telegram is down when Claude asks | nothing is filed |
+
+**Why nothing else can write.** The site collections are find-only in the MCP
+config, so no key can get a create or update tool for them however it's
+ticked. `hq-write-requests` isn't in the MCP list at all, so no client can
+approve its own request, and every field on it refuses writes that arrive
+over MCP.
+
+**What the code does not cover.** It closes the MCP path. A Claude Code
+session on your Mac has other ways in, and those are governed by rules, not
+by this server:
+- your logged-in Chrome (the admin)
+- `git push` / merging PRs
+- a Railway shell
+- the direct Postiz MCP
+
+Turn on branch protection for `main` on GitHub so a merge needs your review.
+Remove `postiz-flamingo-county` once HQ approvals are live.
+
 ## Things that are deliberate
 
 - **The brief runs every hour and sends once.** The jobs queue has no timezone
