@@ -26,7 +26,8 @@ import s from './chrome.module.css'
  * callback URL (`?fc_do=save&fc_e=<slug>`). Back on the same page, signed in,
  * this finishes it — after the first sync, so the account's merged list is in
  * place before the tap is added to it. Inside an in-app browser Google
- * refuses, the tap opens the "open this in Safari / Chrome" prompt instead.
+ * refuses, the tap opens a dialog instead: sign in with an emailed code there
+ * (the tap then finishes the same way), or open the page in Safari / Chrome.
  */
 export function MemberProvider({
   lang,
@@ -41,7 +42,8 @@ export function MemberProvider({
   t: WebviewCopy & { close: string }
   children: React.ReactNode
 }) {
-  const [prompting, setPrompting] = useState(false)
+  // The tap that opened the in-app-browser dialog, finished after a code sign-in.
+  const [prompting, setPrompting] = useState<Pending | null>(null)
   const dialog = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
@@ -84,7 +86,7 @@ export function MemberProvider({
   const requireSignIn = useCallback(
     (pending: Pending, act: () => void) => {
       if (signedIn) return act()
-      if (webview) return setPrompting(true)
+      if (webview) return setPrompting(pending)
       const { pathname, search } = window.location
       void authClient.signIn.social({
         provider: 'google',
@@ -108,10 +110,10 @@ export function MemberProvider({
         <dialog
           ref={dialog}
           aria-labelledby="gate-h"
-          onClose={() => setPrompting(false)}
+          onClose={() => setPrompting(null)}
           onClick={(e) => {
             // A tap on the backdrop (the dialog element itself) closes it.
-            if (e.target === e.currentTarget) setPrompting(false)
+            if (e.target === e.currentTarget) setPrompting(null)
           }}
           style={{
             width: 'min(520px, calc(100vw - 32px))',
@@ -131,10 +133,21 @@ export function MemberProvider({
               alignItems: 'flex-start',
             }}
           >
-            <WebviewPrompt webview={webview} headingId="gate-h" t={t} />
+            <WebviewPrompt
+              webview={webview}
+              headingId="gate-h"
+              onSignedIn={() => {
+                // A code sign-in happens in place, so reload with the tap in
+                // the URL — the effect above then syncs and finishes it, the
+                // same as coming back from Google.
+                const { pathname, search } = window.location
+                window.location.assign(prompting ? withPending(pathname, search, prompting) : pathname + search)
+              }}
+              t={t}
+            />
             <button
               type="button"
-              onClick={() => setPrompting(false)}
+              onClick={() => setPrompting(null)}
               className={s.chipPress}
               style={{
                 alignSelf: 'flex-end',

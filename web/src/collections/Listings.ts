@@ -1,3 +1,4 @@
+import { indexNowHooks } from '../lib/indexnow'
 import type { CollectionConfig } from 'payload'
 import { draftVersions, mcpDraftsOnly, publishedRead, slugField } from '../fields/shared'
 
@@ -19,10 +20,10 @@ import { draftVersions, mcpDraftsOnly, publishedRead, slugField } from '../field
 export const Listings: CollectionConfig = {
   slug: 'listings',
   // Drafts: saved changes stay off the site until published. Claude can only
-  // save drafts; publishing is the owner's Approve in Telegram. See shared.ts.
+  // save drafts; publishing is the owner's tap in Telegram. See shared.ts.
   access: publishedRead,
   versions: draftVersions,
-  hooks: { beforeOperation: [mcpDraftsOnly] },
+  hooks: { ...indexNowHooks('listings'), beforeOperation: [mcpDraftsOnly] },
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'city', 'category', 'member'],

@@ -37,7 +37,7 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
       {
         h: 'Signing in with Google',
         p: [
-          'Saving events to My Week, saying you’re going, and downloading calendar files need you to sign in with Google — that’s what lets your week follow you between devices. When you sign in, Google shares with us only the basics you approve on its screen:',
+          'Saving events to My Week, saying you’re going, and downloading calendar files need you to sign in — with Google, or with an emailed code (below). That’s what lets your week follow you between devices. When you sign in with Google, Google shares with us only the basics you approve on its screen:',
           { list: ['your name', 'your email address', 'your profile photo link', 'an ID that identifies your Google account to us'] },
           'We then store, for your account:',
           {
@@ -49,6 +49,14 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
           },
           'While you’re signed in, your browser also keeps a copy of your saved week so the buttons respond instantly. Signing out clears it.',
           'We don’t access your contacts, Gmail, Drive or anything else in your Google account. Our use of information received from Google follows the Google API Services User Data Policy, including its Limited Use requirements.',
+        ],
+      },
+      {
+        h: 'Signing in with an emailed code',
+        p: [
+          'Inside apps like Instagram, Facebook and TikTok, where Google doesn’t allow sign-in, you can sign in with a 6-digit code we email you instead. For that we use your email address — to send the code, and as your account. If it’s the same address you use with Google, it’s the same account.',
+          'The code is sent through Resend, an email delivery service, which handles your address and the message only to deliver it. We keep only a scrambled (hashed) copy of the code, and it stops working after 10 minutes or once used.',
+          'Everything else — your saved week, sessions, and deleting your account — works exactly as described above.',
         ],
       },
       {
@@ -75,7 +83,7 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
         h: 'How we use it — and don’t',
         p: [
           'We use this information only to run the site: to show your saved week, keep you signed in, send the newsletter you asked for, handle listing requests, and keep the site secure.',
-          'We don’t sell your information, rent it, use it for advertising, or share it with anyone except the service providers that run the site for us (Railway and Cloudflare, and Google for sign-in), or when the law requires it.',
+          'We don’t sell your information, rent it, use it for advertising, or share it with anyone except the service providers that run the site for us (Railway and Cloudflare, Google for sign-in, and Resend for sign-in codes), or when the law requires it.',
         ],
       },
       {
@@ -129,7 +137,7 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
       {
         h: 'Si inicias sesión con Google',
         p: [
-          'Para guardar eventos en Mi Semana, decir que vas y descargar archivos de calendario hay que entrar con Google — así tu semana te sigue de un dispositivo a otro. Al iniciar sesión, Google solo nos comparte lo básico que apruebas en su pantalla:',
+          'Para guardar eventos en Mi Semana, decir que vas y descargar archivos de calendario hay que iniciar sesión — con Google o con un código por correo (más abajo). Así tu semana te sigue de un dispositivo a otro. Al iniciar sesión con Google, Google solo nos comparte lo básico que apruebas en su pantalla:',
           { list: ['tu nombre', 'tu correo electrónico', 'el enlace a tu foto de perfil', 'un identificador de tu cuenta de Google'] },
           'Luego guardamos, para tu cuenta:',
           {
@@ -141,6 +149,14 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
           },
           'Mientras tengas la sesión abierta, tu navegador también guarda una copia de tu semana para que los botones respondan al instante. Al cerrar sesión se borra.',
           'No accedemos a tus contactos, Gmail, Drive ni a nada más de tu cuenta de Google. El uso que hacemos de la información recibida de Google cumple con la Política de Datos de Usuario de los Servicios de API de Google, incluidos sus requisitos de Uso Limitado.',
+        ],
+      },
+      {
+        h: 'Si entras con un código por correo',
+        p: [
+          'Dentro de apps como Instagram, Facebook y TikTok, donde Google no deja iniciar sesión, puedes entrar con un código de 6 dígitos que te mandamos por correo. Para eso usamos tu correo electrónico — para enviarte el código y como tu cuenta. Si es el mismo correo que usas con Google, es la misma cuenta.',
+          'El código se envía a través de Resend, un servicio de envío de correo, que maneja tu dirección y el mensaje solo para entregarlo. Solo guardamos una copia cifrada (hash) del código, y deja de funcionar a los 10 minutos o en cuanto se usa.',
+          'Todo lo demás — tu semana guardada, las sesiones y borrar tu cuenta — funciona exactamente como se explica arriba.',
         ],
       },
       {
@@ -167,7 +183,7 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
         h: 'Para qué lo usamos — y para qué no',
         p: [
           'Usamos esta información solo para hacer funcionar el sitio: mostrar tu semana guardada, mantenerte conectado, enviarte el boletín que pediste, atender las solicitudes de listado y mantener el sitio seguro.',
-          'No vendemos tu información, no la alquilamos, no la usamos para publicidad, y no la compartimos con nadie salvo los proveedores que hacen funcionar el sitio (Railway y Cloudflare, y Google para el inicio de sesión), o cuando la ley lo exige.',
+          'No vendemos tu información, no la alquilamos, no la usamos para publicidad, y no la compartimos con nadie salvo los proveedores que hacen funcionar el sitio (Railway y Cloudflare, Google para el inicio de sesión y Resend para los códigos de acceso), o cuando la ley lo exige.',
         ],
       },
       {

@@ -1,3 +1,4 @@
+import { indexNowHooks } from '../lib/indexnow'
 import type { Block, CollectionConfig } from 'payload'
 import { draftVersions, mcpDraftsOnly, publishedRead, slugField } from '../fields/shared'
 
@@ -110,10 +111,10 @@ const SectionBreak: Block = {
 export const Stories: CollectionConfig = {
   slug: 'stories',
   // Drafts: saved changes stay off the site until published. Claude can only
-  // save drafts; publishing is the owner's Approve in Telegram. See shared.ts.
+  // save drafts; publishing is the owner's tap in Telegram. See shared.ts.
   access: publishedRead,
   versions: draftVersions,
-  hooks: { beforeOperation: [mcpDraftsOnly] },
+  hooks: { ...indexNowHooks('stories'), beforeOperation: [mcpDraftsOnly] },
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'listing', 'readTime'],
