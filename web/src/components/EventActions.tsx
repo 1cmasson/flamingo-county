@@ -32,11 +32,10 @@ const btn = {
  * Only this strip is a client component — the card around it stays on the
  * server, so no event's copy ends up in the JS bundle.
  *
- * All three need an account (MEMBERS.md). Signed out, a tap goes to Google
- * and the provider finishes it on the way back (src/components/MemberProvider);
- * signed in, it acts at once. The calendar link keeps a real href so a
- * signed-in tap is an ordinary download — the route itself also refuses a
- * signed-out request, so the gate is not only on this button.
+ * GOING and + MY WEEK need an account (MEMBERS.md). Signed out, a tap goes to
+ * Google and the provider finishes it on the way back
+ * (src/components/MemberProvider); signed in, it acts at once. + CALENDAR is
+ * open to everyone: a plain link to the .ics route, an ordinary download.
  *
  * The going count is still the seeded number plus one when *this* visitor is
  * going, exactly as the source computed it — not yet a tally across members.
@@ -53,7 +52,7 @@ export function EventActions({
   t: { going: string; youreGoing: string; save: string; saved: string; addCal: string }
 }) {
   const { ready, isGoing, isSaved, toggleGoing, toggleSaved } = useSaved()
-  const { signedIn, requireSignIn } = useMember()
+  const { requireSignIn } = useMember()
   const on = ready && isGoing(slug)
   const inWeek = ready && isSaved(slug)
   const total = going + (on ? 1 : 0)
@@ -99,11 +98,6 @@ export function EventActions({
       <a
         href={icsHref}
         download={`${slug}.ics`}
-        onClick={(e) => {
-          if (signedIn) return
-          e.preventDefault()
-          requireSignIn({ kind: 'ics', slug }, () => {})
-        }}
         className={s.chipLift}
         style={{
           flex: '1 1 100%',
