@@ -16,14 +16,14 @@
     ],
     "how_to_use": {
       "publication_status": "Filter on this. 'ready' = every published field traces to a source and no blocking gap remains. 'needs_owner_confirmation' = publishable, but blocking_gaps lists what must be asked before the listing is complete. No listing here is unusable; they differ in how much is still open.",
-      "field_provenance": "Fields carrying real risk (hours, price, owners, founding dates) are objects with a 'source' URL and, where sources disagree, a 'conflicts' array. Do not flatten a conflicts array by picking one silently.",
+      "field_provenance": "Fields carrying real risk (hours, owners, founding dates) are objects with a 'source' URL and, where sources disagree, a 'conflicts' array. Do not flatten a conflicts array by picking one silently.",
       "seo.json_ld": "Spec-valid schema.org object built ONLY from validated fields, ready to emit in a <script type=\"application/ld+json\"> tag. Kept separate from the internal fields because schema.org has no way to express 'this claim is unverified'.",
       "hours_policy": "openingHoursSpecification is present in json_ld ONLY where an owned channel (the business's own site or its own Instagram bio) supplies a single unambiguous schedule. Where sources conflict it is omitted entirely rather than guessed, because wrong hours in structured data surface directly in Google and generate owner complaints.",
       "founding_dates": "corporate_record.filing_date is the date an entity was registered with Florida. It is NEVER an opening date and must never be rendered as 'since ____'. Where an opening or founding year is known it lives in its own 'established' field with its own source. Several businesses have no established year at all; those fields are null by design, not by omission.",
       "privacy": "Officer residential addresses appear in Florida corporate records but are deliberately excluded here. Owner names and titles only.",
       "missing_values": "Any field with the literal string \"N/A\" has no sourced value yet — it is a known gap, not an error. List-typed fields (owners, references, signature_items, cuisine, ...) stay as arrays and are EMPTY rather than \"N/A\", so iterating them is always safe. Each listing carries a 'missing_fields' array naming every gap on that record. seo.json_ld deliberately OMITS unknown fields rather than filling them with \"N/A\" — schema.org output goes to search engines, and a literal \"N/A\" in structured data would publish as real content.",
       "uniform_keys": "Every listing now carries an identical key set, so the site can render one template across all records without existence checks.",
-      "missing_fields": "Lists only the CORE fields that are absent and worth chasing - identity, contact, hours, price, owners, corporate record. Optional blocks that simply do not apply to a given business (capacity, brand, awards, related_locations) are filled with \"N/A\" for template uniformity but are NOT counted here, so the number reflects real work outstanding rather than schema padding."
+      "missing_fields": "Lists only the CORE fields that are absent and worth chasing - identity, contact, hours, owners, corporate record. Optional blocks that simply do not apply to a given business (capacity, brand, awards, related_locations) are filled with \"N/A\" for template uniformity but are NOT counted here, so the number reflects real work outstanding rather than schema padding."
     },
     "known_limitations": [
       "Research is web-only. No owner has been contacted. Each dossier's 'Ask the owner' section holds the open questions.",
@@ -32,7 +32,8 @@
     ],
     "local_edits": [
       "2026-08-21 — `el-mejor-batido-de-hialeah` was renamed to `s-and-n-vegetables` and its display name set to \"S&N Vegetables\", the corporate and press name, by owner decision. long_description, seo.meta_title and seo.json_ld.name follow; the awning name survives in alternate_names and seo.json_ld.alternateName. THIS DIVERGES FROM THE UPSTREAM DOSSIER, which still reads El Mejor Batido de Hialeah and is still filed at research/hialeah/el-mejor-batido-de-hialeah.md — regenerating this file from the sibling flamingo-city repo will revert the rename. The seed carries the old slug in SLUG_RENAMES and DOSSIER_SLUG (web/src/seed/research-listings.ts).",
-      "2026-09-01 — `casa-marin` and `el-club-de-la-amistad` were HAND-AUTHORED here, not generated from a flamingo-city dossier. There is no research/hialeah/casa-marin.md and no research/hialeah/el-club-de-la-amistad.md upstream, so regenerating this file from the sibling repo will DROP BOTH RECORDS. Their sources are in `references`; the seed carries their slugs in HAND_AUTHORED (web/src/seed/research-listings.ts) so that `research.sourceFile` is left empty rather than pointing at a dossier that does not exist. `el-club-de-la-amistad` is also the first listing in the `nonprofit` category, which is authored in web/src/seed/index.ts rather than in fc-data.js."
+      "2026-09-01 — `casa-marin` and `el-club-de-la-amistad` were HAND-AUTHORED here, not generated from a flamingo-city dossier. There is no research/hialeah/casa-marin.md and no research/hialeah/el-club-de-la-amistad.md upstream, so regenerating this file from the sibling repo will DROP BOTH RECORDS. Their sources are in `references`; the seed carries their slugs in HAND_AUTHORED (web/src/seed/research-listings.ts) so that `research.sourceFile` is left empty rather than pointing at a dossier that does not exist. `el-club-de-la-amistad` is also the first listing in the `nonprofit` category, which is authored in web/src/seed/index.ts rather than in fc-data.js.",
+      "2026-10-01 — ALL PRICE DATA REMOVED, by owner decision: the site makes no price or cost claims anywhere, including structured data. Every listing's `price` block (band, band source, menu anchors) is gone, `priceRange` is out of `seo.json_ld`, `price.band` is out of `missing_fields` (with `missing_core_count` adjusted), the-bend-liquor-lounge's price-band blocking gap is dropped, and a trigo-cafe hours conflict no longer mentions prices. The Mariel-boatlift $1,800 in the S&N reference note stays: that is biography, not a price. THIS DIVERGES FROM THE UPSTREAM DOSSIERS, which still carry prices — regenerating this file from the sibling flamingo-city repo will bring them back."
     ]
   },
   "listings": [
@@ -123,35 +124,6 @@
         "happy_hour": "N/A",
         "confidence_note": "N/A",
         "closed_days": []
-      },
-      "price": {
-        "band": "$$$$",
-        "band_source": "https://www.miamiandbeaches.com/l/eat-and-drink/1910-restaurant-and-bar-miami-lakes/62049",
-        "anchors": [
-          {
-            "item": "Grilled octopus, garlic butter sauce",
-            "price": 34
-          },
-          {
-            "item": "New York Prime Angus",
-            "price": 40
-          },
-          {
-            "item": "Iberico Pork Secret",
-            "price": 62
-          },
-          {
-            "item": "1910 Burger",
-            "price": 22
-          },
-          {
-            "item": "Octopus Montadito",
-            "price": 16
-          }
-        ],
-        "anchors_source": "https://miamilaker.com/Business/restaurant-review-1910-restaurante-bar",
-        "note": "N/A",
-        "band_note": "N/A"
       },
       "owners": [
         {
@@ -271,7 +243,6 @@
             "Steakhouse",
             "Seafood"
           ],
-          "priceRange": "$$$$",
           "sameAs": [
             "https://www.instagram.com/1910restaurantbarmiamilakes/"
           ],
@@ -426,19 +397,6 @@
         "confidence_note": "N/A",
         "closed_days": []
       },
-      "price": {
-        "band": "$$",
-        "band_source": "https://restaurantguru.com/Dr-Limon-Miami-Lakes-Miami-Lakes",
-        "anchors": [
-          {
-            "item": "Most ceviches",
-            "price": 19
-          }
-        ],
-        "anchors_source": "https://drlimonmiamilakes.com/menu",
-        "note": "A previously drafted '$10-$45' range was withdrawn on re-check; the menu's actual bounds are $0.60-$95.00, which is not a useful band. Per-person estimate $20-$60.",
-        "band_note": "N/A"
-      },
       "owners": [
         {
           "name": "Rufino Paulino",
@@ -540,7 +498,6 @@
             "Peruvian",
             "Seafood"
           ],
-          "priceRange": "$$",
           "sameAs": [
             "https://www.instagram.com/drlimon_miamilakes/",
             "https://www.facebook.com/DrLimonMiamiLakes/"
@@ -628,8 +585,7 @@
       "publication_status": "needs_owner_confirmation",
       "blocking_gaps": [
         "City label is disputed across sources — filed under Miami Lakes by site-owner decision, but the venue sits in ZIP 33015 on unincorporated county land between Miami Lakes and Hialeah.",
-        "No live website — thebendmiami.com now redirects to Yelp.",
-        "Price band contradicts itself across every source."
+        "No live website — thebendmiami.com now redirects to Yelp."
       ],
       "cuisine": [],
       "established": "N/A",
@@ -730,25 +686,6 @@
         },
         "confidence_note": "N/A",
         "closed_days": []
-      },
-      "price": {
-        "band": "N/A",
-        "band_source": "N/A",
-        "anchors": [
-          {
-            "item": "Specialty cocktails",
-            "price": 11,
-            "as_of": "2025"
-          },
-          {
-            "item": "Beer and shot combo",
-            "price": 10,
-            "as_of": "2025"
-          }
-        ],
-        "anchors_source": "https://www.miaminewtimes.com/food-drink/miami-lakes-favorite-dive-bar-celebrates-10-years-22659013/",
-        "note": "N/A",
-        "band_note": "Do not publish a band. Sources contradict: $11 specialty cocktails and $10 beer-and-shot combos (New Times 2025); $4-$8 drinks (Miami Laker 2015); $7-$8 cocktails (New Times 2015); and The Infatuation lists $$$$, which contradicts every dollar figure and every 'dive bar' description."
       },
       "owners": [
         {
@@ -914,10 +851,9 @@
         "established",
         "contact.email",
         "contact.website",
-        "price.band",
         "signature_items"
       ],
-      "missing_core_count": 5
+      "missing_core_count": 4
     },
     {
       "id": "the-garrison-taproom-billiards",
@@ -1008,30 +944,6 @@
         "confidence_note": "Corroborated by Restaurantji, but not sourced from an owned channel — the business's own site is down. Confirm with the owner.",
         "closed_days": []
       },
-      "price": {
-        "band": "$",
-        "band_source": "https://www.restaurantji.com/fl/miami-lakes/the-garrison-taproom-/",
-        "anchors": [
-          {
-            "item": "Domestic / imported beer",
-            "price_range": "3.50-6.00",
-            "as_of": "2022"
-          },
-          {
-            "item": "Craft beer",
-            "price_range": "6.00-8.00",
-            "as_of": "2022"
-          },
-          {
-            "item": "Chimay Grande Reserve Blue",
-            "price": 19,
-            "as_of": "2022"
-          }
-        ],
-        "anchors_source": "https://miamilaker.com/Business/on-the-menu-at-the-garrison-taproom-billiards-friendship-and-flights-of-craft-beers",
-        "note": "Aggregators disagree: Restaurantji says '$', Restaurant Guru says '$10-$20 per person'.",
-        "band_note": "N/A"
-      },
       "owners": [
         {
           "name": "Alex Perez",
@@ -1114,7 +1026,6 @@
             "addressCountry": "US"
           },
           "telephone": "+1-786-251-3756",
-          "priceRange": "$",
           "sameAs": [
             "https://www.instagram.com/garrisonmiamilakes/",
             "https://www.facebook.com/garrisonmiamilakes/"
@@ -1261,23 +1172,6 @@
         "confidence_note": "N/A",
         "closed_days": []
       },
-      "price": {
-        "band": "$$",
-        "band_source": "https://restaurantguru.com/Cancun-Grill-Miramar",
-        "anchors": [
-          {
-            "item": "Guacamole",
-            "price": 9.5
-          },
-          {
-            "item": "Molcajete de mariscos",
-            "price": 25
-          }
-        ],
-        "anchors_source": "https://www.allmenus.com/fl/miami-lakes/350569-cancun-grill/menu/",
-        "note": "Menu prices carry no date stamp on the aggregator and may be stale. Verify against the owner-published PDF menus.",
-        "band_note": "N/A"
-      },
       "owners": [
         {
           "name": "Martín Cardenas",
@@ -1368,7 +1262,6 @@
           "servesCuisine": [
             "Mexican"
           ],
-          "priceRange": "$$",
           "sameAs": [
             "https://www.instagram.com/cancungrillml/",
             "https://www.facebook.com/CancunGrill/"
@@ -1535,31 +1428,6 @@
           "Monday"
         ]
       },
-      "price": {
-        "band": "$$",
-        "band_source": "https://trattoriapamperedchefs.com/menu/",
-        "anchors": [
-          {
-            "item": "Pasta",
-            "price_range": "20-28"
-          },
-          {
-            "item": "Chicken entrées",
-            "price": 24
-          },
-          {
-            "item": "Steak / lamb / seafood entrées",
-            "price": 35
-          },
-          {
-            "item": "10\" pizza",
-            "price": 18
-          }
-        ],
-        "anchors_source": "https://trattoriapamperedchefs.com/menu/",
-        "note": "N/A",
-        "band_note": "N/A"
-      },
       "owners": [
         {
           "name": "Nashat N. Ghobrial",
@@ -1642,7 +1510,6 @@
           "servesCuisine": [
             "Italian"
           ],
-          "priceRange": "$$",
           "sameAs": [
             "https://www.facebook.com/Trattoria-Pampered-Chef-565138070544791/"
           ],
@@ -1796,35 +1663,6 @@
         "confidence_note": "N/A",
         "closed_days": []
       },
-      "price": {
-        "band": "$",
-        "band_source": "https://morrocastlerestaurant.com/menu/",
-        "anchors": [
-          {
-            "item": "Coffee",
-            "price": 1.25
-          },
-          {
-            "item": "Cuban sandwich (small)",
-            "price": 6.69
-          },
-          {
-            "item": "Cuban sandwich (large)",
-            "price": 9.59
-          },
-          {
-            "item": "Steak with fried eggs",
-            "price": 12.99
-          },
-          {
-            "item": "Breaded chicken with two sides",
-            "price": 15.99
-          }
-        ],
-        "anchors_source": "https://morrocastlerestaurant.com/menu/",
-        "note": "N/A",
-        "band_note": "N/A"
-      },
       "owners": [],
       "corporate_record": {
         "entity_name": "Morro Castle Cafeteria Restaurant Corp.",
@@ -1926,7 +1764,6 @@
           "servesCuisine": [
             "Cuban"
           ],
-          "priceRange": "$",
           "paymentAccepted": "Cash",
           "sameAs": [
             "https://www.instagram.com/morrocastlerestaurant/"
@@ -2062,19 +1899,6 @@
         "confidence_note": "Do not publish a single set. Three sources, three different schedules, no owned channel. Ask the owner.",
         "closed_days": []
       },
-      "price": {
-        "band": "$",
-        "band_source": "https://www.timeout.com/miami/restaurants/s-n-vegetable",
-        "anchors": [
-          {
-            "item": "Fresh fruit juices",
-            "price_range": "under 5"
-          }
-        ],
-        "anchors_source": "https://www.timeout.com/miami/restaurants/s-n-vegetable",
-        "note": "N/A",
-        "band_note": "N/A"
-      },
       "owners": [
         {
           "name": "Salomé Nestor Alvisa",
@@ -2181,7 +2005,6 @@
           "servesCuisine": [
             "Cuban"
           ],
-          "priceRange": "$",
           "paymentAccepted": "Cash",
           "sameAs": [
             "https://www.instagram.com/elmejorbatidodehialeah305/"
@@ -2301,42 +2124,13 @@
           },
           {
             "source": "https://www.roostcafeandbistro.com/trigo-cafe-tapas-wine-33012/",
-            "detail": "A materially longer schedule; this mirror's prices are demonstrably stale, so treat its hours as stale too."
+            "detail": "A materially longer schedule; this mirror is demonstrably out of date, so treat its hours as stale too."
           }
         ],
         "confidence": "none",
         "happy_hour": "N/A",
         "confidence_note": "Do not publish. Confirm with the owner.",
         "closed_days": []
-      },
-      "price": {
-        "band": "$$",
-        "band_source": "https://trigohialeah.com/breakfast",
-        "anchors": [
-          {
-            "item": "Belgian Waffle",
-            "price": 7
-          },
-          {
-            "item": "Hialeah Comfort",
-            "price": 7.5
-          },
-          {
-            "item": "Avocado Toast",
-            "price": 10
-          },
-          {
-            "item": "Chef's Omelet",
-            "price": 13
-          },
-          {
-            "item": "The Jockey",
-            "price": 15
-          }
-        ],
-        "anchors_source": "https://trigohialeah.com/breakfast",
-        "note": "First-party breakfast prices. Dinner runs higher. Third-party mirrors list every overlapping item below the first-party page, so treat mirror prices as stale.",
-        "band_note": "N/A"
       },
       "owners": [
         {
@@ -2438,7 +2232,6 @@
             "Cuban",
             "Spanish"
           ],
-          "priceRange": "$$",
           "sameAs": [
             "https://www.instagram.com/trigocafe/",
             "https://www.facebook.com/trigocafe"
@@ -2585,14 +2378,6 @@
         "closed_days": [
           "Monday"
         ]
-      },
-      "price": {
-        "band": "N/A",
-        "band_source": "N/A",
-        "anchors": [],
-        "anchors_source": "N/A",
-        "note": "N/A",
-        "band_note": "Not published. A '$' reading was withdrawn on re-check — it does not appear at the cited URL, which renders $$$$."
       },
       "owners": [],
       "corporate_record": {
@@ -2766,13 +2551,12 @@
         "established",
         "opened",
         "contact.email",
-        "price.band",
         "owners",
         "corporate_record.entity_name",
         "corporate_record.document_number",
         "corporate_record.filing_date"
       ],
-      "missing_core_count": 9
+      "missing_core_count": 8
     },
     {
       "id": "molinas-ranch-restaurant",
@@ -2861,23 +2645,6 @@
         "happy_hour": "N/A",
         "confidence_note": "N/A",
         "closed_days": []
-      },
-      "price": {
-        "band": "$$",
-        "band_source": "https://www.checkpleasefl.com/restaurants/molinas-ranch/",
-        "anchors": [
-          {
-            "item": "Lunch, per person",
-            "price": 10
-          },
-          {
-            "item": "Dinner, per person incl. tax and gratuity, excl. alcohol",
-            "price": 20
-          }
-        ],
-        "anchors_source": "https://www.checkpleasefl.com/restaurants/molinas-ranch/",
-        "note": "The Infatuation lists $$$$, which contradicts every other source and the sub-$20 dinner figures. Treat $$ as correct.",
-        "band_note": "N/A"
       },
       "owners": [
         {
@@ -2989,7 +2756,6 @@
             "Cuban",
             "Latin American"
           ],
-          "priceRange": "$$",
           "acceptsReservations": "False",
           "sameAs": [
             "https://www.instagram.com/molinasranch/",
@@ -3131,14 +2897,6 @@
         "confidence_note": "No schedule is published. The single source found is on a page whose prose was never edited off the template, and it conflicts with a known Sunday booking.",
         "closed_days": []
       },
-      "price": {
-        "band": "N/A",
-        "band_source": "N/A",
-        "anchors": [],
-        "anchors_source": "N/A",
-        "note": "N/A",
-        "band_note": "Not published by the business. Delivery-platform menu prices exist but a marked-up aggregator menu is not a price band."
-      },
       "owners": [
         {
           "name": "Diosdado Marín",
@@ -3270,11 +3028,10 @@
         "contact.email",
         "social.instagram",
         "hours.schedule",
-        "price.band",
         "corporate_record.entity_name",
         "corporate_record.filing_date"
       ],
-      "missing_core_count": 7
+      "missing_core_count": 6
     },
     {
       "id": "club-de-la-amistad-por-un-hialeah-mejor",
@@ -3334,14 +3091,6 @@
         "happy_hour": "N/A",
         "confidence_note": "Not applicable. The club has no premises and keeps no opening hours.",
         "closed_days": []
-      },
-      "price": {
-        "band": "N/A",
-        "band_source": "N/A",
-        "anchors": [],
-        "anchors_source": "N/A",
-        "note": "N/A",
-        "band_note": "Not applicable. Volunteering is free and the club sells nothing."
       },
       "owners": [
         {

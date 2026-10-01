@@ -1,6 +1,6 @@
 import { indexNowHooks } from '../lib/indexnow'
 import type { CollectionConfig } from 'payload'
-import { draftVersions, hhmm, mcpDraftsOnly, publishedRead, slugField } from '../fields/shared'
+import { draftVersions, hhmm, mcpDraftsOnly, noPrice, publishedRead, slugField } from '../fields/shared'
 
 /**
  * Events — `EVENTS` (20 records) in fc-data.js.
@@ -222,9 +222,12 @@ export const Events: CollectionConfig = {
       name: 'freeLabel',
       type: 'text',
       localized: true,
+      // The site names no prices anywhere — on the page or in structured data.
+      // This label says who gets in, never what it costs.
+      validate: noPrice,
       admin: {
         description:
-          'A price/entry label, not a boolean — e.g. "NO COVER BEFORE 10", "$12 A PLATE", "FREE TO WATCH".',
+          'Who gets in, not what it costs — e.g. "BY INVITATION", "MEMBERS AND VOLUNTEERS", "ALL AGES". No prices: the site doesn\'t publish them.',
       },
     },
     {

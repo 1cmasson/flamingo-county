@@ -12,6 +12,14 @@
  * without a matching entry here silently ships English to Spanish readers.
  */
 export const ES_OVERRIDES: Record<string, string> = {
+  // --- Partners ----------------------------------------------------------
+  // Businesses on the site are partners, not paying members. The design
+  // source says MEMBER/MEMBERSHIP, so the generated dictionary still carries
+  // those keys; nothing renders them any more.
+  PARTNERSHIP: 'ALIANZA',
+  PARTNER: 'SOCIO',
+  'VERIFIED PARTNER': 'SOCIO VERIFICADO',
+
   // --- Event status ------------------------------------------------------
   CANCELLED: 'CANCELADO',
   POSTPONED: 'APLAZADO',
@@ -49,7 +57,7 @@ export const ES_OVERRIDES: Record<string, string> = {
   // --- Ticker ------------------------------------------------------------
   'NOW ON THE LISTING': 'AHORA EN EL DIRECTORIO',
   'LOCAL SPOTS': 'NEGOCIOS DE AQUÍ',
-  'MEMBER SPOTLIGHTS EVERY FRIDAY': 'SOCIOS EN CANDELA TODOS LOS VIERNES',
+  'PARTNER SPOTLIGHTS EVERY FRIDAY': 'SOCIOS EN CANDELA TODOS LOS VIERNES',
 
   // --- Home hero and CTAs ------------------------------------------------
   'EVERY SPOT THE LOCALS VOUCH FOR.': 'CADA LUGAR QUE LA GENTE DE AQUÍ RESPALDA.',

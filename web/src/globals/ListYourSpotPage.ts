@@ -3,7 +3,7 @@ import type { GlobalConfig } from 'payload'
 /**
  * "List your spot" page copy.
  *
- * The 6 membership perks are hardcoded in ListYourSpot.dc.html:176-183 and
+ * The 6 partnership perks are hardcoded in ListYourSpot.dc.html:176-183 and
  * paired with `perkIcon(i)` (fc-data.js:736), which cycles a fixed icon list by
  * array index — so reordering the perks silently reassigns every icon. Here the
  * icon is named on the perk instead.
@@ -20,7 +20,7 @@ export const ListYourSpotPage: GlobalConfig = {
     {
       name: 'perks',
       type: 'array',
-      admin: { description: 'The membership perk chips.' },
+      admin: { description: 'The partnership perk chips.' },
       fields: [
         { name: 't', type: 'text', required: true, localized: true },
         { name: 'd', type: 'textarea', required: true, localized: true },

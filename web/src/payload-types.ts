@@ -452,7 +452,7 @@ export interface Listing {
    */
   publicationStatus: 'ready' | 'needs_owner_confirmation' | 'unsourced';
   /**
-   * Paying member — earns the badge.
+   * Partner — earns the PARTNER badge.
    */
   member?: boolean | null;
   /**
@@ -793,7 +793,7 @@ export interface Event {
    */
   going?: number | null;
   /**
-   * A price/entry label, not a boolean — e.g. "NO COVER BEFORE 10", "$12 A PLATE", "FREE TO WATCH".
+   * Who gets in, not what it costs — e.g. "BY INVITATION", "MEMBERS AND VOLUNTEERS", "ALL AGES". No prices: the site doesn't publish them.
    */
   freeLabel?: string | null;
   /**
@@ -2403,7 +2403,7 @@ export interface AboutPage {
 export interface ListYourSpotPage {
   id: number;
   /**
-   * The membership perk chips.
+   * The partnership perk chips.
    */
   perks?:
     | {

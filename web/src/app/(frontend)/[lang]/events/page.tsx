@@ -35,7 +35,7 @@ export async function generateMetadata({
   return {
     title: `${t('THIS WEEK')} ${t('AROUND HERE.')}`,
     description: t(
-      'Every domino table, live band, watch party and city day worth leaving the house for. Members post theirs — the city ones we hunt down ourselves.',
+      'Every domino table, live band, watch party and city day worth leaving the house for. Partners post theirs — the city ones we hunt down ourselves.',
     ),
     alternates: {
       canonical: routes.events(lang),
@@ -154,7 +154,7 @@ export default async function EventsPage({
               }}
             >
               {t(
-                'Every domino table, live band, watch party and city day worth leaving the house for. Members post theirs — the city ones we hunt down ourselves.',
+                'Every domino table, live band, watch party and city day worth leaving the house for. Partners post theirs — the city ones we hunt down ourselves.',
               )}
             </p>
           </div>

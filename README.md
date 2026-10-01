@@ -162,7 +162,10 @@ back. Rule of thumb:
   `START MY 30 FREE DAYS`, `THE MENU`, …) were deleted and several strings
   rewritten to drop the price. `web/src/i18n/dictionary.generated.ts` is built
   from this map by `pnpm gen:dictionary`, so a re-pull silently puts `$20` and
-  `al mes` back into the Spanish copy.
+  `al mes` back into the Spanish copy. The same hunk also covers the mock data
+  (2026-10-01): no `price` band on `BIZ`, no menu prices, and no dollar figures
+  or discounts in deals and event labels. The site makes no price claims anywhere,
+  and the CMS refuses a money amount in an event's entry label.
 - **The `.dc.html` files carry two PWA edits each** (described under *Homescreen
   install*). A re-pull overwrites both, so re-apply: the 8-line block in the real
   `<head>` of the ten route pages, and the deletion of the `apple-touch-icon` line

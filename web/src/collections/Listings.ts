@@ -93,7 +93,7 @@ export const Listings: CollectionConfig = {
       name: 'member',
       type: 'checkbox',
       defaultValue: false,
-      admin: { position: 'sidebar', description: 'Paying member — earns the badge.' },
+      admin: { position: 'sidebar', description: 'Partner — earns the PARTNER badge.' },
     },
     {
       name: 'lastVerifiedAt',
