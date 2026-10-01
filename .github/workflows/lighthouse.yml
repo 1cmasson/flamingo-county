@@ -17,6 +17,7 @@ on:
       - 'fc-data.js'
       - 'data-import/**'
       - 'lighthouserc.json'
+      - '.github/workflows/lighthouse.yml'
 
 jobs:
   lighthouse:

@@ -10,6 +10,8 @@ on:
       - '**/*.avif'
       - '**/*.gif'
       - '**/*.svg'
+      - '.github/workflows/image-budget.yml'
+      - 'web/scripts/check-image-budget.mjs'
 
 jobs:
   check:
