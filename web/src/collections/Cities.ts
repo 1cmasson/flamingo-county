@@ -1,3 +1,4 @@
+import { indexNowHooks } from '../lib/indexnow'
 import type { CollectionConfig } from 'payload'
 import { slugField, publicRead } from '../fields/shared'
 
@@ -12,6 +13,7 @@ import { slugField, publicRead } from '../fields/shared'
 export const Cities: CollectionConfig = {
   slug: 'cities',
   access: publicRead,
+  hooks: indexNowHooks('cities'),
   admin: {
     useAsTitle: 'name',
     defaultColumns: ['name', 'sub', 'slug'],

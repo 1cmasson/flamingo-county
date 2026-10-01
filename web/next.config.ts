@@ -24,6 +24,11 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // IndexNow ownership file: /<key>.txt has to live at the site root, where a
+  // static file or a [key].txt segment can't be told apart from other .txt files.
+  async rewrites() {
+    return [{ source: '/:key([a-f0-9]{32}).txt', destination: '/indexnow/:key' }]
+  },
   webpack: (webpackConfig) => {
     webpackConfig.resolve.extensionAlias = {
       '.cjs': ['.cts', '.cjs'],

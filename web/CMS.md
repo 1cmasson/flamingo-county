@@ -157,6 +157,7 @@ written. `railway.json` at the repo root points at `web/Dockerfile`.
 | `BETTER_AUTH_SECRET` | a fresh random string, different from `PAYLOAD_SECRET` |
 | `BETTER_AUTH_URL` | `https://flamingocounty.com` |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | the Google Cloud OAuth client |
+| `INDEXNOW_KEY` | 32 hex chars (`openssl rand -hex 16`). Served at `/<key>.txt`; saving a listing, event, story or city then pings Bing's IndexNow. Optional: unset means no pings. Public by design. |
 
 **Two databases now live on the volume**: `content.db` (Payload) and `auth.db`
 (member identity). Back up both; `auth.db` holds personal data and, unlike the
