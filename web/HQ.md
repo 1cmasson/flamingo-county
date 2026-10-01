@@ -88,6 +88,49 @@ webhook answers 503 and the brief job skips.
 Only `TELEGRAM_OWNER_CHAT_ID` gets answers. Anyone else is ignored without a
 reply.
 
+## Measuring the posts
+
+Three sources, all saved in the database so the history outlives Postiz, which
+fetches stats live and keeps none:
+
+- **Post checkpoints.** The hourly `socialStats` job (at :45) saves each
+  published post's Postiz stats 24 hours, 3 days and 7 days after it went out,
+  to `hq-social-stats`. Measuring every post at the same ages is what makes them
+  comparable. Postiz answers `[]` until a post is live and matched, so an empty
+  reply is retried hourly for 48 hours, then skipped. A gap is never stored as
+  zeros.
+- **Account snapshots.** Once a day, in the 6 AM Miami hour before the brief,
+  each account's last seven days are saved. The brief's **Socials** section
+  reads the latest one.
+- **Tracking links.** Bio links and post links go through `/go/...` and are
+  counted in `hq-clicks`. Link previews and crawlers are not counted:
+
+  | Link | Use it for |
+  | --- | --- |
+  | `flamingocounty.com/go/ig` | Instagram bio |
+  | `flamingocounty.com/go/tt` | TikTok bio |
+  | `flamingocounty.com/go/fb/<draft id>` | a link inside Facebook post #id |
+  | `flamingocounty.com/go/qr?to=/es/events` | a flyer or QR code, landing on events |
+
+  The visitor lands on `to` (the home page by default) tagged with
+  `utm_source`, `utm_medium` and `utm_campaign`. `to` must be a path on the
+  site, so the link can't be turned into an open redirect.
+
+Each draft also has a **pillar** (spotlight, event, story, promo) and a
+**language**, so results can be compared by the kind of post. The weekly
+review that turns these numbers into lessons and next week's drafts needs
+Claude to reach this data, which is the MCP step below.
+
+Two things found against the live instance on 2026-10-01:
+- Postiz's `percentageChange` is a placeholder. It was 5 on every Facebook and
+  Instagram metric and 0 on every TikTok one, whatever the data. It is kept in
+  `raw` and never shown. Change over time should come from our own daily
+  snapshots.
+- How the create-post reply names post ids isn't settled: the docs disagree.
+  `postIdsFrom` reads every documented shape. When it finds none, the stats job
+  looks the post up with `GET /posts` by channel and publish time, so the first
+  real approval will show which path it takes.
+
 ## Things that are deliberate
 
 - **The brief runs every hour and sends once.** The jobs queue has no timezone
@@ -128,7 +171,9 @@ reply.
    collections, `listing-requests` and `listings`. Never `members`, `users` or
    subscriber emails. Payload `users` has no roles, so any API key is full
    admin: scope the plugin, not the key.
-3. **Social stats.** Checked against the live instance on 2026-10-01:
+3. **Social stats** — post checkpoints, account snapshots and tracking links
+   are built (see *Measuring the posts*). The endpoints, checked against the
+   live instance on 2026-10-01:
    - `GET /analytics/<channel id>?date=N` returns daily series for each
      platform, and the labels differ by platform. Facebook gives page
      impressions, media views, posts engagement and page followers. Instagram

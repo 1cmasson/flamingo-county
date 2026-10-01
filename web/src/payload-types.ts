@@ -84,6 +84,8 @@ export interface Config {
     'hq-tasks': HqTask;
     'hq-media': HqMedia;
     'hq-social-drafts': HqSocialDraft;
+    'hq-social-stats': HqSocialStat;
+    'hq-clicks': HqClick;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
@@ -109,6 +111,8 @@ export interface Config {
     'hq-tasks': HqTasksSelect<false> | HqTasksSelect<true>;
     'hq-media': HqMediaSelect<false> | HqMediaSelect<true>;
     'hq-social-drafts': HqSocialDraftsSelect<false> | HqSocialDraftsSelect<true>;
+    'hq-social-stats': HqSocialStatsSelect<false> | HqSocialStatsSelect<true>;
+    'hq-clicks': HqClicksSelect<false> | HqClicksSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -139,6 +143,7 @@ export interface Config {
   jobs: {
     tasks: {
       morningBrief: TaskMorningBrief;
+      socialStats: TaskSocialStats;
       inline: {
         input: unknown;
         output: unknown;
@@ -944,7 +949,26 @@ export interface HqSocialDraft {
    * The first file is the cover shown in Telegram.
    */
   media?: (number | HqMedia)[] | null;
+  /**
+   * What kind of post — the stats are compared by this.
+   */
+  pillar?: ('spotlight' | 'event' | 'story' | 'promo' | 'other') | null;
+  language?: ('es' | 'en' | 'both') | null;
   error?: string | null;
+  /**
+   * When Postiz was told to publish. Stats checkpoints count from here.
+   */
+  publishAt?: string | null;
+  /**
+   * One Postiz post per platform, for its stats.
+   */
+  postizPosts?:
+    | {
+        platform: string;
+        postId: string;
+        id?: string | null;
+      }[]
+    | null;
   postizResponse?:
     | {
         [k: string]: unknown;
@@ -955,6 +979,55 @@ export interface HqSocialDraft {
     | boolean
     | null;
   telegramMessageId?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Post and account numbers from Postiz, saved by the hourly stats job.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-social-stats".
+ */
+export interface HqSocialStat {
+  id: number;
+  kind: 'post' | 'channel';
+  platform: 'facebook' | 'instagram' | 'tiktok';
+  checkpoint?: ('24h' | '3d' | '7d') | null;
+  draft?: (number | null) | HqSocialDraft;
+  postizPostId?: string | null;
+  metrics:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  raw?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Clicks on /go/ tracking links. Bots and link previews are not counted.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-clicks".
+ */
+export interface HqClick {
+  id: number;
+  source: string;
+  draft?: (number | null) | HqSocialDraft;
+  to?: string | null;
+  country?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1027,7 +1100,7 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'morningBrief';
+        taskSlug: 'inline' | 'morningBrief' | 'socialStats';
         taskID: string;
         input?:
           | {
@@ -1060,7 +1133,7 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'morningBrief') | null;
+  taskSlug?: ('inline' | 'morningBrief' | 'socialStats') | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -1150,6 +1223,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'hq-social-drafts';
         value: number | HqSocialDraft;
+      } | null)
+    | ({
+        relationTo: 'hq-social-stats';
+        value: number | HqSocialStat;
+      } | null)
+    | ({
+        relationTo: 'hq-clicks';
+        value: number | HqClick;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1648,9 +1729,46 @@ export interface HqSocialDraftsSelect<T extends boolean = true> {
   platforms?: T;
   caption?: T;
   media?: T;
+  pillar?: T;
+  language?: T;
   error?: T;
+  publishAt?: T;
+  postizPosts?:
+    | T
+    | {
+        platform?: T;
+        postId?: T;
+        id?: T;
+      };
   postizResponse?: T;
   telegramMessageId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-social-stats_select".
+ */
+export interface HqSocialStatsSelect<T extends boolean = true> {
+  kind?: T;
+  platform?: T;
+  checkpoint?: T;
+  draft?: T;
+  postizPostId?: T;
+  metrics?: T;
+  raw?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-clicks_select".
+ */
+export interface HqClicksSelect<T extends boolean = true> {
+  source?: T;
+  draft?: T;
+  to?: T;
+  country?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -1946,6 +2064,17 @@ export interface TaskMorningBrief {
   input?: unknown;
   output: {
     sent?: boolean | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskSocialStats".
+ */
+export interface TaskSocialStats {
+  input?: unknown;
+  output: {
+    posts?: number | null;
+    channels?: number | null;
   };
 }
 /**

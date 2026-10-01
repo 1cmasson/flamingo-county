@@ -150,3 +150,130 @@ export async function createPost(body: ReturnType<typeof buildPostBody>): Promis
     body: JSON.stringify(body),
   })
 }
+
+/* ------------------------------------------------------------------------ */
+/* Analytics                                                                 */
+/* ------------------------------------------------------------------------ */
+
+/**
+ * One metric as Postiz returns it: a daily series plus the change over the
+ * window. `total` arrives as a string. Labels differ per platform (checked
+ * against the live instance 2026-10-01): Facebook has "Page followers" and
+ * "Page Impressions", Instagram "Reach", "Likes", "Saves"…, TikTok
+ * "Followers", "Total Likes", "Videos".
+ */
+export type Metric = {
+  label: string
+  data?: { total?: string | number; date?: string }[]
+  percentageChange?: number | null
+}
+
+export type MetricSummary = { latest: number; sum: number }
+
+/**
+ * Collapse each series to the two readings that matter. `latest` is right for
+ * a running count (followers, total likes); `sum` is right for a daily flow
+ * (impressions, reach). Which is which is decided where it is displayed, by
+ * `isRunningCount`, so the stored snapshot keeps both.
+ *
+ * Postiz's own `percentageChange` is deliberately dropped: on the live
+ * instance (2026-10-01) it was 5 for every Facebook and Instagram metric and 0
+ * for every TikTok one, whatever the data — a placeholder, not a measurement.
+ * It stays in the snapshot's `raw`. Real change over time comes from comparing
+ * our own daily snapshots.
+ */
+export function summarizeMetrics(metrics: Metric[] | null | undefined): Record<string, MetricSummary> {
+  const out: Record<string, MetricSummary> = {}
+  for (const m of metrics ?? []) {
+    if (!m?.label) continue
+    const values = (m.data ?? []).map((d) => Number(d.total)).filter((n) => Number.isFinite(n))
+    out[m.label] = {
+      latest: values.length ? values[values.length - 1] : 0,
+      sum: values.reduce((a, b) => a + b, 0),
+    }
+  }
+  return out
+}
+
+/** Followers, following, total likes, video count: things that accumulate. */
+export function isRunningCount(label: string): boolean {
+  return /follow|total|videos/i.test(label)
+}
+
+/** Channel analytics for the last `days` days. The id is the integration id. */
+export function channelAnalytics(integrationId: string, days: number): Promise<Metric[]> {
+  return postiz<Metric[]>(`/analytics/${encodeURIComponent(integrationId)}?date=${days}`)
+}
+
+/**
+ * One published post's analytics. Returns `[]` — not an error — for a post
+ * that is unknown, not yet published, or that Postiz could not match to the
+ * platform's copy (it happens on TikTok until the release id is linked).
+ */
+export function postAnalytics(postId: string, days: number): Promise<Metric[]> {
+  return postiz<Metric[]>(`/analytics/post/${encodeURIComponent(postId)}?date=${days}`)
+}
+
+export type CreatedPost = { platform: Platform; postId: string }
+
+/**
+ * Pull the per-channel post ids out of the create-post reply. The hosted docs
+ * disagree with each other about its shape (an array of `{ postId,
+ * integration }` in one place, a bare message in another), so this reads
+ * every shape seen and returns `[]` rather than guessing. The stats job falls
+ * back to `findPostIds` when it gets nothing.
+ */
+export function postIdsFrom(
+  response: unknown,
+  channels: Partial<Record<Platform, string>>,
+): CreatedPost[] {
+  const byId = new Map(Object.entries(channels).map(([p, id]) => [id, p as Platform]))
+  const items = Array.isArray(response)
+    ? response
+    : Array.isArray((response as { posts?: unknown })?.posts)
+      ? (response as { posts: unknown[] }).posts
+      : []
+  const out: CreatedPost[] = []
+  for (const raw of items) {
+    const item = raw as { postId?: string; id?: string; integration?: string | { id?: string } }
+    const postId = item?.postId ?? item?.id
+    const integration = typeof item?.integration === 'string' ? item.integration : item?.integration?.id
+    const platform = integration ? byId.get(integration) : undefined
+    if (postId && platform) out.push({ platform, postId: String(postId) })
+  }
+  return out
+}
+
+type ListedPost = { id: string; publishDate?: string; integration?: { id?: string } }
+
+/**
+ * Find the ids of posts already scheduled for these channels around `at`, for
+ * a draft whose create reply carried none. Matches on channel and publish
+ * time within ten minutes — one person posting a handful of times a week will
+ * not have two posts on one channel inside that window.
+ */
+export async function findPostIds(
+  channels: Partial<Record<Platform, string>>,
+  platforms: Platform[],
+  at: Date,
+): Promise<CreatedPost[]> {
+  const window = 10 * 60_000
+  const q = new URLSearchParams({
+    startDate: new Date(at.getTime() - window).toISOString(),
+    endDate: new Date(at.getTime() + window).toISOString(),
+  })
+  const res = await postiz<ListedPost[] | { posts?: ListedPost[] }>(`/posts?${q}`)
+  const list = Array.isArray(res) ? res : (res?.posts ?? [])
+  const out: CreatedPost[] = []
+  for (const platform of platforms) {
+    const id = channels[platform]
+    const match = list.find(
+      (p) =>
+        p.integration?.id === id &&
+        p.publishDate &&
+        Math.abs(new Date(p.publishDate).getTime() - at.getTime()) <= window,
+    )
+    if (match) out.push({ platform, postId: match.id })
+  }
+  return out
+}

@@ -78,9 +78,59 @@ export const HqSocialDrafts: CollectionConfig = {
       },
     },
     {
+      type: 'row',
+      fields: [
+        {
+          name: 'pillar',
+          type: 'select',
+          options: [
+            { label: 'Business spotlight', value: 'spotlight' },
+            { label: 'Event', value: 'event' },
+            { label: 'Story', value: 'story' },
+            { label: 'Promo', value: 'promo' },
+            { label: 'Other', value: 'other' },
+          ],
+          admin: { description: 'What kind of post — the stats are compared by this.' },
+        },
+        {
+          name: 'language',
+          type: 'select',
+          options: [
+            { label: 'Español', value: 'es' },
+            { label: 'English', value: 'en' },
+            { label: 'Both', value: 'both' },
+          ],
+        },
+      ],
+    },
+    {
       name: 'error',
       type: 'text',
       admin: { readOnly: true, condition: (data) => Boolean(data?.error) },
+    },
+    {
+      name: 'publishAt',
+      type: 'date',
+      admin: {
+        readOnly: true,
+        position: 'sidebar',
+        date: { pickerAppearance: 'dayAndTime' },
+        description: 'When Postiz was told to publish. Stats checkpoints count from here.',
+      },
+    },
+    {
+      name: 'postizPosts',
+      type: 'array',
+      admin: { readOnly: true, description: 'One Postiz post per platform, for its stats.' },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            { name: 'platform', type: 'text', required: true },
+            { name: 'postId', type: 'text', required: true },
+          ],
+        },
+      ],
     },
     { name: 'postizResponse', type: 'json', admin: { readOnly: true } },
     { name: 'telegramMessageId', type: 'number', admin: { readOnly: true, position: 'sidebar' } },

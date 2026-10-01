@@ -9,6 +9,7 @@ import {
   buildPostBody,
   connectedChannels,
   createPost,
+  postIdsFrom,
   uploadMedia,
   type Platform,
 } from './postiz'
@@ -256,7 +257,15 @@ async function decide(payload: Payload, id: number, action: DraftAction): Promis
     })
     const response = await createPost(body)
 
-    await setDraft(payload, id, { status: 'scheduled', postizResponse: response as never })
+    // Saved for the stats job: when it went out, and which Postiz post is
+    // which platform. An empty `postizPosts` is filled in later by
+    // `findPostIds` if the reply carried no ids.
+    await setDraft(payload, id, {
+      status: 'scheduled',
+      publishAt: body.date,
+      postizPosts: postIdsFrom(response, channels),
+      postizResponse: response as never,
+    })
     const when = body.type === 'now' ? 'now' : miamiTime(body.date)
     await recordEvent(payload, {
       type: 'social.scheduled',

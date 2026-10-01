@@ -22,7 +22,10 @@ import { HqEvents } from './collections/HqEvents'
 import { HqTasks } from './collections/HqTasks'
 import { HqMedia } from './collections/HqMedia'
 import { HqSocialDrafts } from './collections/HqSocialDrafts'
+import { HqSocialStats } from './collections/HqSocialStats'
+import { HqClicks } from './collections/HqClicks'
 import { morningBrief } from './jobs/morningBrief'
+import { socialStats } from './jobs/socialStats'
 
 import { SiteSettings } from './globals/SiteSettings'
 import { AboutPage } from './globals/AboutPage'
@@ -56,6 +59,8 @@ export default buildConfig({
     HqTasks,
     HqMedia,
     HqSocialDrafts,
+    HqSocialStats,
+    HqClicks,
   ],
   globals: [SiteSettings, AboutPage, ListYourSpotPage],
 
@@ -93,7 +98,7 @@ export default buildConfig({
   plugins: [],
 
   /**
-   * The HQ jobs queue — only the morning brief so far (src/jobs).
+   * The HQ jobs queue — the morning brief and the social stats collector (src/jobs).
    *
    * One in-process runner, checking every minute. That is safe here and only
    * here because the service is pinned to a single instance by SQLite on a
@@ -105,7 +110,7 @@ export default buildConfig({
    * admin, and a quiet night would skip the brief.
    */
   jobs: {
-    tasks: [morningBrief],
+    tasks: [morningBrief, socialStats],
     autoRun: [{ cron: '* * * * *', queue: 'hq' }],
     jobsCollectionOverrides: ({ defaultJobsCollection }) => ({
       ...defaultJobsCollection,

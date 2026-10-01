@@ -43,6 +43,10 @@ export function proxy(req: NextRequest) {
 
   const first = pathname.split('/')[1]
   if (isLang(first)) return NextResponse.next()
+  // `/go/...` tracking links (src/app/go) count the click and redirect on
+  // themselves; the landing page they send to comes back through here and gets
+  // its language then. Without this they would be sent to `/es/go/...`, a 404.
+  if (first === 'go') return NextResponse.next()
 
   const cookie = req.cookies.get(LANG_COOKIE)?.value
   const fromQuery = searchParams.get('lang')
