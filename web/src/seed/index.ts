@@ -440,13 +440,13 @@ async function seed() {
   // The all-cities hero, used on the home page when no city filter is applied.
   const skylineHero = await upsertMedia(
     payload,
-    'assets/skyline-hero.png',
+    'assets/skyline-hero.webp',
     'The Miami skyline',
     'El horizonte de Miami',
   )
   const losTres = await upsertMedia(
     payload,
-    'uploads/los-tres-bust-536a000f.png',
+    'uploads/los-tres-bust-536a000f.webp',
     'Rigo, Rafa and Toni',
   )
 

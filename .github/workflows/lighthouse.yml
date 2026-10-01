@@ -1,0 +1,85 @@
+name: Lighthouse CI
+
+# Builds the exact image Railway deploys (web/Dockerfile, repo root as build
+# context — see the comment at the top of that file), seeds it with the same
+# fixture content as local dev, and runs Lighthouse against it. Scores start
+# as warnings, not hard failures: the goal right now is visibility into
+# regressions, not blocking every PR before there's a baseline to tune
+# thresholds against.
+on:
+  pull_request:
+    paths:
+      - 'web/**'
+      - 'assets/**'
+      - 'mascots/**'
+      - 'uploads/**'
+      - 'vendor/**'
+      - 'fc-data.js'
+      - 'data-import/**'
+      - 'lighthouserc.json'
+
+jobs:
+  lighthouse:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build the production image
+        run: docker build -t fc-ci -f web/Dockerfile .
+
+      - name: Start the container
+        run: |
+          docker run -d --name fc-ci -p 3000:3000 \
+            -e DATABASE_URL=file:/data/content.db \
+            -e PAYLOAD_SECRET=ci-only-secret-not-for-prod \
+            -e BETTER_AUTH_SECRET=ci-only-secret-not-for-prod \
+            -e AUTH_DATABASE_URL=file:/data/auth.db \
+            fc-ci
+
+      - name: Wait for the server
+        run: |
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3000/en > /dev/null; then
+              echo "server is up"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "server never became ready"
+          docker logs fc-ci
+          exit 1
+
+      - name: Seed fixture content
+        run: |
+          docker exec \
+            -e DATABASE_URL=file:/data/content.db \
+            -e PAYLOAD_SECRET=ci-only-secret-not-for-prod \
+            fc-ci pnpm seed
+
+      - name: Restart so the running server picks up seeded content
+        run: |
+          docker restart fc-ci
+          for i in $(seq 1 60); do
+            if curl -sf http://localhost:3000/en > /dev/null; then
+              echo "server is back up"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "server never came back"
+          docker logs fc-ci
+          exit 1
+
+      - name: Run Lighthouse CI
+        uses: treosh/lighthouse-ci-action@v12
+        with:
+          urls: |
+            http://localhost:3000/en
+            http://localhost:3000/en?city=havana
+          configPath: ./lighthouserc.json
+          uploadArtifacts: true
+          temporaryPublicStorage: true
+
+      - name: Tear down
+        if: always()
+        run: docker rm -f fc-ci
