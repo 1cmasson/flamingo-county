@@ -361,9 +361,8 @@ export function toListing(r: ResearchListing, ids: Record<string, any>) {
     // The dossier's research date is when these facts were checked against
     // their sources. The hand-authored records weren't generated from a
     // dossier, so they have no such date and stay empty rather than borrow one.
-    ...(HAND_AUTHORED.has(r.slug) || !r._generated
-      ? {}
-      : { lastVerifiedAt: r._generated, verifiedBy: 'Research dossier' }),
+    lastVerifiedAt: HAND_AUTHORED.has(r.slug) ? undefined : (r._generated as string | undefined),
+    verifiedBy: HAND_AUTHORED.has(r.slug) || !r._generated ? undefined : 'Research dossier',
     detail: {
       story: val(r.long_description) ? [{ text: r.long_description }] : [],
       quote: quote ? val(quote.quote) : undefined,
