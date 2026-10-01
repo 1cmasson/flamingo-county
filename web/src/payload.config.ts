@@ -92,6 +92,21 @@ export default buildConfig({
   secret: process.env.PAYLOAD_SECRET || '',
   typescript: {
     outputFile: path.resolve(dirname, 'payload-types.ts'),
+    /**
+     * A social draft's `status` is required in the database and defaults to
+     * `pending`, but it is not Claude's to set: over MCP the field refuses
+     * writes (`humanOnly`). The MCP plugin builds its tool input schemas from
+     * this same JSON schema, so leaving `status` required made every create
+     * over MCP demand a value the server then throws away. Dropping it from the
+     * required list fixes the tool without a schema change or a migration.
+     */
+    schema: [
+      ({ jsonSchema }) => {
+        const drafts = jsonSchema.definitions?.['hq-social-drafts'] as { required?: string[] } | undefined
+        if (Array.isArray(drafts?.required)) drafts.required = drafts.required.filter((f) => f !== 'status')
+        return jsonSchema
+      },
+    ],
   },
   db: sqliteAdapter({
     client: {
