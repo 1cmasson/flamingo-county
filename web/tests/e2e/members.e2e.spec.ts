@@ -145,9 +145,7 @@ test.describe('Signed out', () => {
     await expect(page.getByText('NOTHING SAVED YET.')).toHaveCount(0)
   })
 
-  test('saving, going and the calendar each start sign-in and carry the tap through', async ({
-    page,
-  }) => {
+  test('saving and going each start sign-in and carry the tap through', async ({ page }) => {
     // Stop at Better Auth's sign-in call: the request body shows where Google
     // would send the visitor back, which is what carries the tap.
     const callbacks: string[] = []
@@ -159,21 +157,34 @@ test.describe('Signed out', () => {
 
     await page.getByRole('button', { name: '+ MY WEEK' }).first().click()
     await page.getByRole('button', { name: /GOING/ }).first().click()
-    await page.getByRole('link', { name: '+ CALENDAR' }).first().click()
 
-    await expect.poll(() => callbacks.length).toBe(3)
+    await expect.poll(() => callbacks.length).toBe(2)
     expect(callbacks).toEqual([
       `/en/events/${A}?fc_do=save&fc_e=${A}`,
       `/en/events/${A}?fc_do=going&fc_e=${A}`,
-      `/en/events/${A}?fc_do=ics&fc_e=${A}`,
     ])
     expect(await deviceSaved(page)).toBeNull()
   })
 
-  test('the calendar file itself refuses a signed-out request', async ({ page }) => {
+  test('+ CALENDAR downloads the file with no sign-in', async ({ page }) => {
+    let signIns = 0
+    await page.route('**/api/auth/sign-in/**', async (route) => {
+      signIns++
+      await route.abort()
+    })
+    await page.goto(`${BASE}/en/events/${A}`)
+    const download = page.waitForEvent('download')
+    await page.getByRole('link', { name: '+ CALENDAR' }).first().click()
+    expect((await download).suggestedFilename()).toBe(`${A}.ics`)
+    expect(signIns).toBe(0)
+  })
+
+  test('the calendar file serves a signed-out request, so it can be shared', async ({ page }) => {
     const res = await page.request.get(`${BASE}/en/events/${A}/ics`, { maxRedirects: 0 })
-    expect([303, 307]).toContain(res.status())
-    expect(res.headers().location).toContain(`/en/events/${A}`)
+    expect(res.status()).toBe(200)
+    expect(res.headers()['content-type']).toContain('text/calendar')
+    expect(res.headers()['cache-control']).toContain('public')
+    expect(await res.text()).toContain(`UID:${A}@flamingocounty.com`)
   })
 })
 

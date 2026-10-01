@@ -117,8 +117,8 @@ export default async function LangLayout({
   const { lang } = await params
   if (!isLang(lang)) notFound()
 
-  // Read here, not only on My Week: every save, going and calendar button on
-  // the site is gated on it (MEMBERS.md). The session sits in a signed cookie
+  // Read here, not only on My Week: every save and going button on the site
+  // is gated on it (MEMBERS.md). The session sits in a signed cookie
   // cache (src/lib/auth.ts), so this is not a database read per page.
   const h = await headers()
   const session = await auth.api.getSession({ headers: h })
