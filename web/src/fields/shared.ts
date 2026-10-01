@@ -23,6 +23,18 @@ export const slugField: Field = {
   },
 }
 
+/**
+ * `HH:mm`, or empty. Validated at the edge rather than downstream: a malformed
+ * clock reaching `Date.UTC` produces `NaN`, and an ICS with
+ * `DTSTART:NaNNaNNaN` is a file every calendar client rejects silently. The
+ * listings' structured hours go out as schema.org `opens`/`closes`, which want
+ * the same shape.
+ */
+export const hhmm = (value: unknown) =>
+  !value ||
+  (typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value)) ||
+  'Use 24-hour HH:mm, e.g. 09:00.'
+
 /** Public read, authenticated write — the default for every content collection. */
 export const publicRead = { read: () => true }
 

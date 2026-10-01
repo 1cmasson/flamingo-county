@@ -50,6 +50,43 @@ describe('listingJsonLd', () => {
     expect(ld).not.toHaveProperty('openingHoursSpecification')
     expect(ld).not.toHaveProperty('priceRange')
   })
+  const hours = {
+    openingHours: [
+      { days: ['Monday', 'Tuesday'], opens: '11:30', closes: '22:00' },
+      { days: ['Friday'], opens: '17:00', closes: '02:00' },
+    ],
+  }
+  it('emits structured hours at high confidence, past-midnight closes intact', () => {
+    const ld = listingJsonLd(
+      'en',
+      { ...base, detail: { ...hours, hoursConfidence: 'high' } } as Listing,
+      'hialeah',
+    )
+    expect(ld.openingHoursSpecification).toEqual([
+      {
+        '@type': 'OpeningHoursSpecification',
+        dayOfWeek: ['Monday', 'Tuesday'],
+        opens: '11:30',
+        closes: '22:00',
+      },
+      {
+        '@type': 'OpeningHoursSpecification',
+        dayOfWeek: ['Friday'],
+        opens: '17:00',
+        closes: '02:00',
+      },
+    ])
+  })
+  it('withholds hours below high confidence, or with no confidence recorded', () => {
+    for (const hoursConfidence of ['medium', 'low', 'none', null] as const) {
+      const ld = listingJsonLd(
+        'en',
+        { ...base, detail: { ...hours, hoursConfidence } } as Listing,
+        'hialeah',
+      )
+      expect(ld).not.toHaveProperty('openingHoursSpecification')
+    }
+  })
   it('includes phone and cuisine when present', () => {
     const ld = listingJsonLd(
       'es',

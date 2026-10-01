@@ -305,8 +305,14 @@ export function loadResearch(): ResearchListing[] {
     )
   }
   const doc = JSON.parse(fs.readFileSync(RESEARCH_JSON, 'utf8'))
-  return doc.listings ?? []
+  // The dossiers' research date, carried on each record so `toListing` can
+  // stamp `lastVerifiedAt` without reading the file twice.
+  const generated = val<string>(doc._meta?.generated)
+  return (doc.listings ?? []).map((r: ResearchListing) => ({ ...r, _generated: generated }))
 }
+
+const DAYS = new Set(Object.keys(DAY_SHORT))
+const CLOCK = /^([01]\d|2[0-3]):[0-5]\d$/
 
 /**
  * One research record → the English half of a Payload listing.
@@ -352,6 +358,11 @@ export function toListing(r: ResearchListing, ids: Record<string, any>) {
     tag: val(r.short_description),
     member: false,
     publicationStatus: r.publication_status === 'ready' ? 'ready' : 'needs_owner_confirmation',
+    // The dossier's research date is when these facts were checked against
+    // their sources. The hand-authored records weren't generated from a
+    // dossier, so they have no such date and stay empty rather than borrow one.
+    lastVerifiedAt: HAND_AUTHORED.has(r.slug) ? undefined : (r._generated as string | undefined),
+    verifiedBy: HAND_AUTHORED.has(r.slug) || !r._generated ? undefined : 'Research dossier',
     detail: {
       story: val(r.long_description) ? [{ text: r.long_description }] : [],
       quote: quote ? val(quote.quote) : undefined,
@@ -366,6 +377,16 @@ export function toListing(r: ResearchListing, ids: Record<string, any>) {
         d: dayLabel(s.days ?? []),
         t: `${clock(s.opens)} – ${clock(s.closes)}`,
       })),
+      // The same schedule as data. A row with an unrecognised day or clock is
+      // dropped, not repaired: this field reaches structured data.
+      openingHours: schedule
+        .map((s: any) => ({
+          days: (s.days ?? []).filter((d: string) => DAYS.has(d)),
+          opens: s.opens,
+          closes: s.closes,
+        }))
+        .filter((s: any) => s.days.length && CLOCK.test(s.opens) && CLOCK.test(s.closes)),
+      hoursSource: val(hrs.source),
       hoursConfidence: val(hrs.confidence),
       hoursConflicts: (hrs.conflicts ?? []).map((c: any) => ({
         source: c.source,

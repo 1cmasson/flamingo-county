@@ -10,11 +10,11 @@ import { absUrl, SITE_NAME, SITE_URL } from './site'
  * for it. Nothing here guesses, defaults or infers — a missing phone is an
  * absent `telephone`, never a placeholder. Answer engines repeat what
  * structured data says, so a wrong fact is worse than a missing one. That is
- * also why hours, ratings and price are not emitted yet:
- *   - `detail.hours` is free text, and often below `high` confidence;
+ * also why some fields are gated or absent:
+ *   - hours go out only from `detail.openingHours` and only at
+ *     `hoursConfidence === 'high'`, the same bar the page uses to print them;
  *   - `rating`/`reviews` are authored design values, not collected reviews;
- *   - there is no price field.
- * Phase B adds structured hours and a price range; until then they stay out.
+ *   - there is no price field: the site makes no cost claims.
  */
 
 type Obj = Record<string, unknown>
@@ -123,6 +123,23 @@ function listingType(category: Category | null): string {
   }
 }
 
+/**
+ * `openingHoursSpecification`, or nothing. Below `high` the sources disagree or
+ * are not the business's own, and a wrong schedule in an answer is worse than
+ * none, so the whole block is withheld rather than trimmed.
+ */
+export function openingHoursSpec(detail: Listing['detail']) {
+  if (detail?.hoursConfidence !== 'high') return undefined
+  const rows = (detail.openingHours ?? []).filter((r) => r.days?.length && r.opens && r.closes)
+  if (!rows.length) return undefined
+  return rows.map((r) => ({
+    '@type': 'OpeningHoursSpecification',
+    dayOfWeek: r.days,
+    opens: r.opens,
+    closes: r.closes,
+  }))
+}
+
 export function listingJsonLd(lang: Lang, listing: Listing, citySlug: string): Obj {
   const city = rel<City>(listing.city)
   const category = rel<Category>(listing.category)
@@ -140,6 +157,7 @@ export function listingJsonLd(lang: Lang, listing: Listing, citySlug: string): O
     image: [mediaUrl(listing.logo), ...gallery].filter(Boolean) as string[],
     address: postalAddress(d.address, titleCase(city?.name)),
     telephone: d.phone,
+    openingHoursSpecification: openingHoursSpec(d),
     sameAs,
     servesCuisine:
       listingType(category) === 'Restaurant' || listingType(category) === 'BarOrPub'

@@ -674,8 +674,15 @@ async function seed() {
       const logoId = logo
         ? await upsertMedia(payload, logo.file, logo.altEn, logo.altEs, logo.credit)
         : undefined
+      // A verification date set in the admin is a real check, and newer than
+      // the dossier's. Re-seeding must never roll it back to the import date.
+      const { lastVerifiedAt, verifiedBy, ...listing } = toListing(r, id)
+      const verifiedAlready = (
+        await payload.find({ collection: 'listings', where: { slug: { equals: r.slug } }, limit: 1, depth: 0 })
+      ).docs[0]?.lastVerifiedAt
       const data = {
-        ...toListing(r, id),
+        ...listing,
+        ...(verifiedAlready || !lastVerifiedAt ? {} : { lastVerifiedAt, verifiedBy }),
         ...(mediaId ? { gallery: [mediaId] } : {}),
         ...(logoId ? { logo: logoId } : {}),
       }
