@@ -1,6 +1,6 @@
 import { indexNowHooks } from '../lib/indexnow'
 import type { CollectionConfig } from 'payload'
-import { slugField, publicRead } from '../fields/shared'
+import { draftVersions, mcpDraftsOnly, publishedRead, slugField } from '../fields/shared'
 
 /**
  * `HH:mm`, or empty. Validated at the edge rather than in the ICS route: a
@@ -31,8 +31,11 @@ const hhmm = (value: unknown) =>
  */
 export const Events: CollectionConfig = {
   slug: 'events',
-  access: publicRead,
-  hooks: indexNowHooks('events'),
+  // Drafts: saved changes stay off the site until published. Claude can only
+  // save drafts; publishing is the owner's tap in Telegram. See shared.ts.
+  access: publishedRead,
+  versions: draftVersions,
+  hooks: { ...indexNowHooks('events'), beforeOperation: [mcpDraftsOnly] },
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'date', 'kind', 'star'],

@@ -1,6 +1,6 @@
 import type { CollectionConfig } from 'payload'
-import { staffOnly } from '../fields/shared'
-import { HQ_INTERNAL, recordEvent, sendDraftPreview } from '../lib/hq'
+import { humanOnly, staffOnly } from '../fields/shared'
+import { HQ_INTERNAL, draftFingerprint, recordEvent, sendDraftPreview } from '../lib/hq'
 import { NEEDS_MEDIA, PLATFORMS } from '../lib/postiz'
 import type { HqSocialDraft } from '../payload-types'
 
@@ -30,6 +30,15 @@ export const HqSocialDrafts: CollectionConfig = {
       defaultValue: 'pending',
       required: true,
       index: true,
+      // Claude can write and edit drafts over MCP but never move one: approval
+      // is a human tap in Telegram, and re-sending a failed draft is done here.
+      access: humanOnly,
+      // Also the field's description in the MCP tool schema, where it is listed
+      // as an input but silently dropped.
+      admin: {
+        position: 'sidebar',
+        description: 'Moved by the Approve/Reject tap in Telegram or here. Ignored when written over MCP.',
+      },
       options: [
         { label: 'Pending', value: 'pending' },
         { label: 'Approved', value: 'approved' },
@@ -37,7 +46,6 @@ export const HqSocialDrafts: CollectionConfig = {
         { label: 'Rejected', value: 'rejected' },
         { label: 'Failed', value: 'failed' },
       ],
-      admin: { position: 'sidebar' },
     },
     {
       name: 'scheduledFor',
@@ -105,11 +113,17 @@ export const HqSocialDrafts: CollectionConfig = {
     },
     {
       name: 'error',
+      access: humanOnly,
       type: 'text',
-      admin: { readOnly: true, condition: (data) => Boolean(data?.error) },
+      admin: {
+        readOnly: true,
+        condition: (data) => Boolean(data?.error),
+        description: 'Why the last approval failed. Set by HQ.',
+      },
     },
     {
       name: 'publishAt',
+      access: humanOnly,
       type: 'date',
       admin: {
         readOnly: true,
@@ -120,6 +134,7 @@ export const HqSocialDrafts: CollectionConfig = {
     },
     {
       name: 'postizPosts',
+      access: humanOnly,
       type: 'array',
       admin: { readOnly: true, description: 'One Postiz post per platform, for its stats.' },
       fields: [
@@ -132,8 +147,26 @@ export const HqSocialDrafts: CollectionConfig = {
         },
       ],
     },
-    { name: 'postizResponse', type: 'json', admin: { readOnly: true } },
-    { name: 'telegramMessageId', type: 'number', admin: { readOnly: true, position: 'sidebar' } },
+    {
+      name: 'postizResponse',
+      type: 'json',
+      access: humanOnly,
+      admin: { readOnly: true, description: 'Set by HQ.' },
+    },
+    {
+      name: 'telegramMessageId',
+      type: 'number',
+      access: humanOnly,
+      admin: { readOnly: true, position: 'sidebar', description: 'Set by HQ.' },
+    },
+    {
+      // What the owner was shown. Approve refuses a draft whose content no
+      // longer matches, so an edit after the preview can never be posted unseen.
+      name: 'previewedHash',
+      type: 'text',
+      access: humanOnly,
+      admin: { hidden: true },
+    },
   ],
   hooks: {
     afterChange: [
@@ -142,7 +175,15 @@ export const HqSocialDrafts: CollectionConfig = {
         const draft = doc as HqSocialDraft
         const becamePending =
           draft.status === 'pending' && (operation === 'create' || previousDoc?.status !== 'pending')
-        if (!becamePending) return doc
+        // A pending draft edited after its preview went out — by Claude or in
+        // the admin — is previewed again, so the buttons always sit under the
+        // version they would post.
+        const editedWhilePending =
+          operation === 'update' &&
+          draft.status === 'pending' &&
+          previousDoc?.status === 'pending' &&
+          draftFingerprint(draft) !== draftFingerprint(previousDoc as HqSocialDraft)
+        if (!becamePending && !editedWhilePending) return doc
 
         if (operation === 'create') {
           await recordEvent(

@@ -6,6 +6,8 @@ import * as migration_20260903_221953_add_event_start_end_time from './20260903_
 import * as migration_20260928_164435_add_members from './20260928_164435_add_members';
 import * as migration_20260930_194540_add_hq from './20260930_194540_add_hq';
 import * as migration_20261001_141616_add_hq_social_stats from './20261001_141616_add_hq_social_stats';
+import * as migration_20261001_152509_add_hq_mcp from './20261001_152509_add_hq_mcp';
+import * as migration_20261001_170211_add_site_drafts from './20261001_170211_add_site_drafts';
 
 export const migrations = [
   {
@@ -46,6 +48,16 @@ export const migrations = [
   {
     up: migration_20261001_141616_add_hq_social_stats.up,
     down: migration_20261001_141616_add_hq_social_stats.down,
-    name: '20261001_141616_add_hq_social_stats'
+    name: '20261001_141616_add_hq_social_stats',
+  },
+  {
+    up: migration_20261001_152509_add_hq_mcp.up,
+    down: migration_20261001_152509_add_hq_mcp.down,
+    name: '20261001_152509_add_hq_mcp',
+  },
+  {
+    up: migration_20261001_170211_add_site_drafts.up,
+    down: migration_20261001_170211_add_site_drafts.down,
+    name: '20261001_170211_add_site_drafts'
   },
 ];

@@ -1,4 +1,4 @@
-import type { Field } from 'payload'
+import type { CollectionBeforeOperationHook, Field } from 'payload'
 
 /**
  * Every content type in fc-data.js already carries a stable string id
@@ -37,4 +37,52 @@ export const staffOnly = {
   create: ({ req }: { req: { user?: unknown } }) => Boolean(req.user),
   update: ({ req }: { req: { user?: unknown } }) => Boolean(req.user),
   delete: ({ req }: { req: { user?: unknown } }) => Boolean(req.user),
+}
+
+/**
+ * Field access that refuses writes arriving over MCP (`@payloadcms/plugin-mcp`
+ * sets `req.payloadAPI = 'MCP'`). For the fields that must stay with a human or
+ * with HQ's own bookkeeping — a draft's approval status above all. HQ's own
+ * writes use `overrideAccess`, which skips field access, so they are unaffected.
+ */
+export const notFromMcp = ({ req }: { req: { payloadAPI?: string } }) => req.payloadAPI !== 'MCP'
+export const humanOnly = { create: notFromMcp, update: notFromMcp }
+
+/* ------------------------------------------------------------- drafts */
+
+/**
+ * The site's content collections have drafts: a saved draft is never live,
+ * and only a published version is shown. Two rules make that hold everywhere.
+ *
+ * 1. Anyone not logged in reads published documents only. That covers
+ *    Payload's public REST and GraphQL, including `?draft=true`, because the
+ *    constraint is applied to the versions query too. The frontend uses the
+ *    local API, which skips access control, so lib/data.ts adds
+ *    `PUBLISHED` to every query itself.
+ * 2. Over MCP, a write must be a draft (see `mcpDraftsOnly`). Publishing is
+ *    the owner's Approve tap in Telegram (lib/publishRequests.ts).
+ */
+export const PUBLISHED = { _status: { equals: 'published' } } as const
+
+export const publishedRead = {
+  read: ({ req }: { req: { user?: unknown } }) => (req.user ? true : PUBLISHED),
+}
+
+export const draftVersions = { drafts: true, maxPerDoc: 50 } as const
+
+/**
+ * Refuse any MCP create or update that is not a draft save, and pin the
+ * status to `draft`. Without the pin, `_status: 'published'` in the data
+ * would publish even with `draft: true` — Payload treats that as a publish.
+ */
+export const mcpDraftsOnly: CollectionBeforeOperationHook = ({ args, operation, req }) => {
+  if (req.payloadAPI !== 'MCP' || (operation !== 'create' && operation !== 'update')) return args
+  const write = args as { draft?: boolean; data?: Record<string, unknown> }
+  if (write.draft !== true) {
+    throw new Error(
+      'Over MCP, site content can only be saved as a draft: pass draft: true. Publishing needs the owner’s approval — use hqRequestPublish.',
+    )
+  }
+  if (write.data) write.data._status = 'draft'
+  return args
 }
