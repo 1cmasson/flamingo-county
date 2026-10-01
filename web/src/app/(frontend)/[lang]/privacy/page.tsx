@@ -15,7 +15,7 @@ import { PageShell } from '../../../../components/PageShell'
  * If you add a form, a cookie, an analytics script or a new provider, update
  * this page and bump UPDATED.
  */
-const UPDATED = { en: '28 September 2026', es: '28 de septiembre de 2026' }
+const UPDATED = { en: '1 October 2026', es: '1 de octubre de 2026' }
 const CONTACT = 'hola@flamingocounty.com'
 
 type Section = { h: string; p: (string | { list: string[] })[] }
@@ -37,7 +37,7 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
       {
         h: 'Signing in with Google',
         p: [
-          'Saving events to My Week, saying you’re going, and downloading calendar files need you to sign in — with Google, or with an emailed code (below). That’s what lets your week follow you between devices. When you sign in with Google, Google shares with us only the basics you approve on its screen:',
+          'Saving events to My Week and saying you’re going need you to sign in — with Google, or with an emailed code (below). That’s what lets your week follow you between devices. When you sign in with Google, Google shares with us only the basics you approve on its screen:',
           { list: ['your name', 'your email address', 'your profile photo link', 'an ID that identifies your Google account to us'] },
           'We then store, for your account:',
           {
@@ -137,7 +137,7 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
       {
         h: 'Si inicias sesión con Google',
         p: [
-          'Para guardar eventos en Mi Semana, decir que vas y descargar archivos de calendario hay que iniciar sesión — con Google o con un código por correo (más abajo). Así tu semana te sigue de un dispositivo a otro. Al iniciar sesión con Google, Google solo nos comparte lo básico que apruebas en su pantalla:',
+          'Para guardar eventos en Mi Semana y decir que vas hay que iniciar sesión — con Google o con un código por correo (más abajo). Así tu semana te sigue de un dispositivo a otro. Al iniciar sesión con Google, Google solo nos comparte lo básico que apruebas en su pantalla:',
           { list: ['tu nombre', 'tu correo electrónico', 'el enlace a tu foto de perfil', 'un identificador de tu cuenta de Google'] },
           'Luego guardamos, para tu cuenta:',
           {
