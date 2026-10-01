@@ -54,6 +54,17 @@ function logAiTraffic(req: NextRequest) {
   )
 }
 
+/**
+ * Whether this request carries a Better Auth session cookie. Name only, not
+ * validity — a stale/forged cookie still means "treat as possibly signed
+ * in," which is the safe direction to err in here. Better Auth prefixes it
+ * `__Secure-` over HTTPS (production) and leaves it bare in dev, so this
+ * checks the suffix rather than hardcoding one or the other.
+ */
+function hasSessionCookie(req: NextRequest): boolean {
+  return req.cookies.getAll().some((c) => c.name.endsWith('better-auth.session_token'))
+}
+
 export function proxy(req: NextRequest) {
   logAiTraffic(req)
   const host = (req.headers.get('x-forwarded-host') ?? req.headers.get('host') ?? '').split(':')[0]
@@ -68,7 +79,20 @@ export function proxy(req: NextRequest) {
   const { pathname, searchParams } = req.nextUrl
 
   const first = pathname.split('/')[1]
-  if (isLang(first)) return NextResponse.next()
+  if (isLang(first)) {
+    const res = NextResponse.next()
+    // `[lang]/layout.tsx` is `force-dynamic` because it reads the member's
+    // session on every request (the nav needs signed-in state), and Next's
+    // default Cache-Control for a fully dynamic route is `no-store` — which
+    // also disables back/forward-cache for every visitor, signed in or not.
+    // For the many more requests with no session cookie, nothing
+    // personalized was rendered, so it's safe to drop `no-store` there and
+    // let Chrome bfcache-restore the page on back/forward navigation.
+    if (!hasSessionCookie(req)) {
+      res.headers.set('Cache-Control', 'private, no-cache, must-revalidate')
+    }
+    return res
+  }
   // `/go/...` tracking links (src/app/go) count the click and redirect on
   // themselves; the landing page they send to comes back through here and gets
   // its language then. Without this they would be sent to `/es/go/...`, a 404.
