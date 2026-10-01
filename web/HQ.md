@@ -311,3 +311,41 @@ live, make those harder.
    API.
 6. **Customer-facing agents**, and with them roles, least-privilege tools, evals
    and red-team tests.
+
+## Story pipeline
+
+A produced story (research, script, voice, cut) is made on the owner's Mac in
+content-marketing-system, with its own approval gates. HQ can't read that repo, so a story
+crosses over as one JSON **story pack**, generated from the approved topic by
+`scripts/story_pack.py` and never edited by hand. HQ turns it into drafts:
+
+| In the pack | Becomes | Goes live by |
+| --- | --- | --- |
+| Site story, English and Spanish | a `stories` draft | your **Publish** tap |
+| "Did you know?" posts | `hq-social-drafts`, pillar `story`, pending | your **Approve** tap |
+| A stage waiting on you | an `hq-events` row and an open task, shown in the brief | you deciding |
+
+```sh
+pnpm tsx scripts/import-story-pack.ts path/to/story-pack.json                 # dry run, needs no database
+pnpm tsx scripts/import-story-pack.ts path/to/story-pack.json --apply --limit 2
+```
+
+`--only site,social,stage` imports part of it. `--start 2026-10-06` sets the Miami date of the first
+post (11:30 AM, one every two days). Each pending post sends a Telegram preview as it is created,
+so import a few at a time with `--limit`.
+
+**What an import refuses**, in `src/lib/storyPack.ts`:
+- a script that no longer hashes to the approval recorded when the owner said yes
+- an article block marked as narration that is not, word for word, the approved script line
+- a post that states a year, price or phone number its listed facts don't contain
+- a post that leans on a *Reported* fact without saying who reported it
+- an Instagram or TikTok post with no media
+
+**What it never does:** publish, overwrite, or send anything on its own. A story with the same
+slug, a post with the same caption or a task with the same title is skipped, not replaced, because
+you may have edited it since. The caption rules mirror the Studio gate in the postiz repo
+(`telegram-bridge/src/studio/gate.mjs`) and are kept in step by hand.
+
+**Not built yet:** video. HQ downloads draft media from a public https URL, and a story's videos
+are local files, so they need somewhere to be hosted until they are approved. Until then only text
+posts (Facebook) are imported.

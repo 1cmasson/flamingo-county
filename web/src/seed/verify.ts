@@ -241,6 +241,23 @@ async function main() {
     'contested hours keep their conflicts rather than resolving them',
     (p1910?.detail?.hoursConflicts?.length ?? 0) === 2,
   )
+  // The structured schedule is the display one as data, row for row — it is
+  // what reaches structured data, so it must not drift from what the page says.
+  const hoursDrift = sourced.docs.filter(
+    (d: any) => (d.detail?.openingHours?.length ?? 0) !== (d.detail?.hours?.length ?? 0),
+  )
+  check(
+    'structured hours match the display hours row for row',
+    hoursDrift.length === 0,
+    hoursDrift.length ? `drift: ${hoursDrift.map((d: any) => d.slug).join(', ')}` : '',
+  )
+  // Hand-authored records have no dossier date; borrowing one would claim a check nobody did.
+  check(
+    'no hand-authored listing claims a verification date',
+    sourced.docs.every(
+      (d: any) => !['casa-marin', 'el-club-de-la-amistad'].includes(d.slug) || !d.lastVerifiedAt,
+    ),
+  )
   // The filing date is a registration event; rendering it as a founding year is
   // the specific mistake the source file warns about on every record.
   const filingLeak = sourced.docs.filter((d: any) =>

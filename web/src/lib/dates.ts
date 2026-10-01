@@ -93,10 +93,31 @@ export function parseISO(iso: string): Date {
   return new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1, 12))
 }
 
-function addDays(iso: string, n: number): string {
+export function addDays(iso: string, n: number): string {
   const dt = parseISO(iso)
   dt.setUTCDate(dt.getUTCDate() + n)
   return dt.toISOString().slice(0, 10)
+}
+
+/**
+ * The calendar day an event finishes on, YYYY-MM-DD.
+ *
+ * Its own `endDate` when it runs over several days. Otherwise the day after,
+ * when the clock closes at or before it opens — a 9PM–1AM night ends on the
+ * next date, and writing it on the same date makes the finish come before the
+ * start, which calendars and search engines both reject. Otherwise its own day.
+ */
+export function eventEndDay(ev: {
+  date: string
+  endDate?: string | null
+  startTime?: string | null
+  endTime?: string | null
+}): string {
+  const start = dateOnly(ev.date)
+  const end = dateOnly(ev.endDate)
+  if (end && end > start) return end
+  if (ev.startTime && ev.endTime && ev.endTime <= ev.startTime) return addDays(start, 1)
+  return start
 }
 
 /** 0 = Sunday, matching JS getDay() and the `dow` field on weekly events. */

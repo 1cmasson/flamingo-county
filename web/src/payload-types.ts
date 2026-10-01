@@ -456,6 +456,14 @@ export interface Listing {
    */
   member?: boolean | null;
   /**
+   * The day the facts on this page were last checked against their sources. Set it when you actually check, never as a formality: answer engines read it as a freshness claim. Empty means nobody has.
+   */
+  lastVerifiedAt?: string | null;
+  /**
+   * Who or what did that check, e.g. "Owner, by phone" or "Research dossier".
+   */
+  verifiedBy?: string | null;
+  /**
    * Art direction for the empty photo slot, e.g. "Cantina bar". Shown as the placeholder label until a real photo lands.
    */
   imageHint?: string | null;
@@ -525,6 +533,27 @@ export interface Listing {
           id?: string | null;
         }[]
       | null;
+    /**
+     * The schedule as data, from the same source as `hours`. A closing time earlier than the opening time means past midnight. Only published as structured data when `hoursConfidence` is high — a guessed schedule in Google is worse than none.
+     */
+    openingHours?:
+      | {
+          days: ('Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday')[];
+          /**
+           * 24-hour HH:mm
+           */
+          opens: string;
+          /**
+           * 24-hour HH:mm
+           */
+          closes: string;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * The URL the schedule was read from.
+     */
+    hoursSource?: string | null;
   };
   /**
    * Only populated for imported listings. This is what separates a sourced record from a plausible one — if you edit a field above, add or update the source here too, or the record quietly stops being auditable.
@@ -715,6 +744,10 @@ export interface Event {
    */
   timeLabel?: string | null;
   kind: number | EventKind;
+  /**
+   * Only for an event that runs over several days: its last day. Leave empty for a one-day event, including one that runs past midnight (9PM–1AM) — that is worked out from the clock.
+   */
+  endDate?: string | null;
   venueType: 'listing' | 'place';
   listing?: (number | null) | Listing;
   /**
@@ -723,6 +756,26 @@ export interface Event {
   place?: string | null;
   hood?: string | null;
   city?: (number | null) | City;
+  /**
+   * Full street address as "street, city, ST, zip", e.g. "4410 West 16th Ave., Suite 40, Hialeah, FL, 33012". Only from the announcement or the venue itself.
+   */
+  placeAddress?: string | null;
+  /**
+   * The listing that organises it, if it is in the directory.
+   */
+  organizer?: (number | null) | Listing;
+  /**
+   * Otherwise its name as announced, e.g. "City of Hialeah".
+   */
+  organizerName?: string | null;
+  /**
+   * Its own website, full URL. Optional.
+   */
+  organizerUrl?: string | null;
+  /**
+   * Search and answer engines read this. A cancelled event stays up marked cancelled rather than disappearing, so nobody turns up to it.
+   */
+  eventStatus: 'scheduled' | 'postponed' | 'rescheduled' | 'cancelled';
   /**
    * 24-hour HH:mm in Miami time, e.g. 09:00. Drives the .ics file only; the page prints timeLabel.
    */
@@ -1708,6 +1761,8 @@ export interface ListingsSelect<T extends boolean = true> {
   reviews?: T;
   publicationStatus?: T;
   member?: T;
+  lastVerifiedAt?: T;
+  verifiedBy?: T;
   imageHint?: T;
   gallery?: T;
   logo?: T;
@@ -1744,6 +1799,15 @@ export interface ListingsSelect<T extends boolean = true> {
               detail?: T;
               id?: T;
             };
+        openingHours?:
+          | T
+          | {
+              days?: T;
+              opens?: T;
+              closes?: T;
+              id?: T;
+            };
+        hoursSource?: T;
       };
   research?:
     | T
@@ -1870,11 +1934,17 @@ export interface EventsSelect<T extends boolean = true> {
   date?: T;
   timeLabel?: T;
   kind?: T;
+  endDate?: T;
   venueType?: T;
   listing?: T;
   place?: T;
   hood?: T;
   city?: T;
+  placeAddress?: T;
+  organizer?: T;
+  organizerName?: T;
+  organizerUrl?: T;
+  eventStatus?: T;
   startTime?: T;
   endTime?: T;
   star?: T;

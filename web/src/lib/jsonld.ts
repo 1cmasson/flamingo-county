@@ -1,5 +1,6 @@
 import type { Lang } from '../i18n'
 import type { Category, City, Event, Listing, Media } from '../payload-types'
+import { eventEndDay } from './dates'
 import { routes } from './routes'
 import { absUrl, SITE_NAME, SITE_URL } from './site'
 
@@ -10,11 +11,11 @@ import { absUrl, SITE_NAME, SITE_URL } from './site'
  * for it. Nothing here guesses, defaults or infers — a missing phone is an
  * absent `telephone`, never a placeholder. Answer engines repeat what
  * structured data says, so a wrong fact is worse than a missing one. That is
- * also why hours, ratings and price are not emitted yet:
- *   - `detail.hours` is free text, and often below `high` confidence;
+ * also why some fields are gated or absent:
+ *   - hours go out only from `detail.openingHours` and only at
+ *     `hoursConfidence === 'high'`, the same bar the page uses to print them;
  *   - `rating`/`reviews` are authored design values, not collected reviews;
- *   - there is no price field.
- * Phase B adds structured hours and a price range; until then they stay out.
+ *   - there is no price field: the site makes no cost claims.
  */
 
 type Obj = Record<string, unknown>
@@ -47,7 +48,9 @@ export function mediaUrl(m: Media | number | string | null | undefined): string 
 export function postalAddress(address: string | null | undefined, cityName?: string | null) {
   const text = address?.trim()
   if (!text) return undefined
-  const m = text.match(/^(.+?),\s*([^,]+),\s*([A-Z]{2}),?\s*(\d{5})(?:-\d{4})?$/)
+  // Greedy street: "4410 West 16th Ave., Suite 40, Hialeah, FL, 33012" keeps
+  // the suite in the street, and the city is the last part before the state.
+  const m = text.match(/^(.+),\s*([^,]+),\s*([A-Z]{2}),?\s*(\d{5})(?:-\d{4})?$/)
   if (m) {
     return clean({
       '@type': 'PostalAddress',
@@ -123,13 +126,32 @@ function listingType(category: Category | null): string {
   }
 }
 
+/**
+ * `openingHoursSpecification`, or nothing. Below `high` the sources disagree or
+ * are not the business's own, and a wrong schedule in an answer is worse than
+ * none, so the whole block is withheld rather than trimmed.
+ */
+export function openingHoursSpec(detail: Listing['detail']) {
+  if (detail?.hoursConfidence !== 'high') return undefined
+  const rows = (detail.openingHours ?? []).filter((r) => r.days?.length && r.opens && r.closes)
+  if (!rows.length) return undefined
+  return rows.map((r) => ({
+    '@type': 'OpeningHoursSpecification',
+    dayOfWeek: r.days,
+    opens: r.opens,
+    closes: r.closes,
+  }))
+}
+
 export function listingJsonLd(lang: Lang, listing: Listing, citySlug: string): Obj {
   const city = rel<City>(listing.city)
   const category = rel<Category>(listing.category)
   const d = listing.detail ?? {}
   const research = listing.research ?? {}
   const gallery = (Array.isArray(listing.gallery) ? listing.gallery : []).map(mediaUrl)
-  const sameAs = [d.site, d.instagram].filter((u): u is string => Boolean(u && /^https?:\/\//.test(u)))
+  // `site` is stored as a bare host ("molinasranch.com"); give it a scheme.
+  const site = d.site && !/^https?:\/\//.test(d.site) ? `https://${d.site}` : d.site
+  const sameAs = [site, d.instagram].filter((u): u is string => Boolean(u && /^https?:\/\//.test(u)))
   return clean({
     '@context': 'https://schema.org',
     '@type': listingType(category),
@@ -140,6 +162,7 @@ export function listingJsonLd(lang: Lang, listing: Listing, citySlug: string): O
     image: [mediaUrl(listing.logo), ...gallery].filter(Boolean) as string[],
     address: postalAddress(d.address, titleCase(city?.name)),
     telephone: d.phone,
+    openingHoursSpecification: openingHoursSpec(d),
     sameAs,
     servesCuisine:
       listingType(category) === 'Restaurant' || listingType(category) === 'BarOrPub'
@@ -173,29 +196,63 @@ export function eventStart(ev: Pick<Event, 'date' | 'startTime'>): string {
   return `${date}T${ev.startTime}:00${miamiOffset(date)}`
 }
 
+const EVENT_STATUS: Record<string, string> = {
+  scheduled: 'https://schema.org/EventScheduled',
+  postponed: 'https://schema.org/EventPostponed',
+  rescheduled: 'https://schema.org/EventRescheduled',
+  cancelled: 'https://schema.org/EventCancelled',
+}
+
+/** A listing as an organizer: its type, its page on this site, its own channels. */
+function listingOrganizer(lang: Lang, listing: Listing): Obj | undefined {
+  const city = rel<City>(listing.city)
+  if (!city) return undefined
+  return clean({
+    '@type': listingType(rel<Category>(listing.category)),
+    name: listing.name,
+    url: absUrl(routes.business(lang, city.slug, listing.slug)),
+  })
+}
+
 export function eventJsonLd(
   lang: Lang,
   ev: Event,
   venue: { listing: Listing | null; city: City | null; name: string },
 ): Obj {
   const date = ev.date.slice(0, 10)
-  const citySlug = venue.city?.slug
+  const endDay = eventEndDay(ev)
+  const cityName = titleCase(venue.city?.name)
   const place = venue.name
     ? clean({
         '@type': 'Place',
         name: venue.name,
         address: venue.listing
-          ? postalAddress(venue.listing.detail?.address, titleCase(venue.city?.name))
-          : venue.city
-            ? clean({
-                '@type': 'PostalAddress',
-                addressLocality: titleCase(venue.city.name),
-                addressRegion: 'FL',
-                addressCountry: 'US',
-              })
-            : undefined,
+          ? postalAddress(venue.listing.detail?.address, cityName)
+          : (postalAddress(ev.placeAddress, cityName) ??
+            (venue.city
+              ? clean({
+                  '@type': 'PostalAddress',
+                  addressLocality: cityName,
+                  addressRegion: 'FL',
+                  addressCountry: 'US',
+                })
+              : undefined)),
       })
     : undefined
+  // Who puts it on: the organizer the event names, else the venue's own
+  // listing (a business's own night). A rented hall is never the organizer.
+  const organizerListing = rel<Listing>(ev.organizer)
+  const organizer = organizerListing
+    ? listingOrganizer(lang, organizerListing)
+    : ev.organizerName
+      ? clean({
+          '@type': 'Organization',
+          name: ev.organizerName,
+          url: ev.organizerUrl && /^https?:\/\//.test(ev.organizerUrl) ? ev.organizerUrl : undefined,
+        })
+      : venue.listing
+        ? listingOrganizer(lang, venue.listing)
+        : undefined
   return clean({
     '@context': 'https://schema.org',
     '@type': 'Event',
@@ -203,19 +260,20 @@ export function eventJsonLd(
     url: absUrl(routes.event(lang, ev.slug)),
     description: ev.note,
     startDate: eventStart(ev),
-    endDate: ev.endTime && ev.startTime ? `${date}T${ev.endTime}:00${miamiOffset(date)}` : undefined,
+    // A finish needs a start to be read against; a date-only multi-day event
+    // ends on its last day.
+    endDate:
+      ev.endTime && ev.startTime
+        ? `${endDay}T${ev.endTime}:00${miamiOffset(endDay)}`
+        : endDay !== date
+          ? endDay
+          : undefined,
+    eventStatus: EVENT_STATUS[ev.eventStatus ?? 'scheduled'],
     eventAttendanceMode: 'https://schema.org/OfflineEventAttendanceMode',
     location: place,
     image: mediaUrl(ev.image),
     inLanguage: lang,
-    organizer:
-      venue.listing && citySlug
-        ? {
-            '@type': 'Organization',
-            name: venue.listing.name,
-            url: absUrl(routes.business(lang, citySlug, venue.listing.slug)),
-          }
-        : undefined,
+    organizer,
   })
 }
 

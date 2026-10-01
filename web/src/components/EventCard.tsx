@@ -20,6 +20,26 @@ export function eventVenue(ev: Event) {
   }
 }
 
+/**
+ * The chip for an event that is not simply on, or null. Shown on the card and
+ * the event page so the page says what the structured data says: a cancelled
+ * event stays up, marked, rather than vanishing on the people who saved it.
+ */
+export function eventStatusLabel(ev: Pick<Event, 'eventStatus'>, t: (s: string) => string) {
+  switch (ev.eventStatus) {
+    case 'cancelled':
+      return t('CANCELLED')
+    case 'postponed':
+      return t('POSTPONED')
+    case 'rescheduled':
+      return t('NEW DATE')
+    default:
+      return null
+  }
+}
+
+const statusChip = { background: 'var(--ink)', color: 'var(--cream)', fontWeight: 800 } as const
+
 export function eventActionStrings(t: (s: string) => string) {
   return {
     going: t('GOING'),
@@ -210,6 +230,19 @@ export function EventCard({
           >
             {ev.timeLabel}
           </div>
+          {eventStatusLabel(ev, t) ? (
+            <div
+              style={{
+                ...statusChip,
+                border: '2px solid var(--ink)',
+                fontSize: 10,
+                letterSpacing: '1.3px',
+                padding: '5px 8px',
+              }}
+            >
+              {eventStatusLabel(ev, t)}
+            </div>
+          ) : null}
           {ev.freeLabel ? (
             <div
               style={{

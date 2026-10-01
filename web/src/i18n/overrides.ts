@@ -20,6 +20,11 @@ export const ES_OVERRIDES: Record<string, string> = {
   PARTNER: 'SOCIO',
   'VERIFIED PARTNER': 'SOCIO VERIFICADO',
 
+  // --- Event status ------------------------------------------------------
+  CANCELLED: 'CANCELADO',
+  POSTPONED: 'APLAZADO',
+  'NEW DATE': 'NUEVA FECHA',
+
   // --- Footer ------------------------------------------------------------
   PRIVACY: 'PRIVACIDAD',
 
