@@ -2,9 +2,12 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
 
-import { buildBrief, isBriefHour, sendBrief } from '@/lib/brief'
+import { buildBrief, isBriefHour, metricLine, sendBrief } from '@/lib/brief'
 import { decideDraft, draftCallback, draftPreviewText, parseDraftCallback } from '@/lib/hq'
-import { buildPostBody } from '@/lib/postiz'
+import { buildPostBody, isRunningCount, postIdsFrom, summarizeMetrics } from '@/lib/postiz'
+import { collectChannelStats, collectPostStats, dueCheckpoints } from '@/lib/socialStats'
+import { isBot, parseTrackedLink, safePath } from '@/lib/tracking'
+import { GET as goRoute } from '@/app/go/[...slug]/route'
 import { clip, esc } from '@/lib/telegram'
 import { handleUpdate } from '@/lib/telegramBot'
 import type { HqSocialDraft } from '@/payload-types'
@@ -115,6 +118,95 @@ describe('telegram text', () => {
   })
 })
 
+describe('Postiz analytics', () => {
+  const series = (label: string, totals: (string | number)[], change: number | null = null) => ({
+    label,
+    data: totals.map((total, i) => ({ total, date: `2026-10-0${i + 1}` })),
+    percentageChange: change,
+  })
+
+  it('keeps the latest value and the sum of each series', () => {
+    // Postiz's percentageChange is a placeholder on the live instance; it is not kept.
+    expect(summarizeMetrics([series('Reach', ['100', '250', 'n/a'], 5), series('Followers', [40, 42])])).toEqual({
+      Reach: { latest: 250, sum: 350 },
+      Followers: { latest: 42, sum: 82 },
+    })
+    expect(summarizeMetrics(null)).toEqual({})
+  })
+
+  it('reads running counts at their latest value and flows as a sum', () => {
+    expect(isRunningCount('Page followers')).toBe(true)
+    expect(isRunningCount('Total Likes')).toBe(true)
+    expect(isRunningCount('Reach')).toBe(false)
+    expect(metricLine('Page followers', { latest: 1250, sum: 8000 })).toBe('Page followers 1,250')
+    expect(metricLine('Reach', { latest: 300, sum: 1240 })).toBe('Reach 1,240')
+  })
+
+  it('reads post ids out of every reply shape, and nothing out of an unknown one', () => {
+    const channels = { facebook: 'fb-live', instagram: 'ig-live' }
+    expect(postIdsFrom([{ postId: 'p1', integration: 'fb-live' }], channels)).toEqual([
+      { platform: 'facebook', postId: 'p1' },
+    ])
+    expect(postIdsFrom({ posts: [{ id: 'p2', integration: { id: 'ig-live' } }] }, channels)).toEqual([
+      { platform: 'instagram', postId: 'p2' },
+    ])
+    expect(postIdsFrom([{ postId: 'p3', integration: 'someone-else' }], channels)).toEqual([])
+    expect(postIdsFrom({ message: 'ok' }, channels)).toEqual([])
+  })
+})
+
+describe('stats checkpoints', () => {
+  const publishAt = new Date('2026-10-01T12:00:00Z')
+  const at = (hours: number) => new Date(publishAt.getTime() + hours * 3_600_000)
+
+  it('comes due at 24h, 3d and 7d, and stops retrying 48h later', () => {
+    expect(dueCheckpoints(publishAt, at(23), new Set())).toEqual([])
+    expect(dueCheckpoints(publishAt, at(25), new Set())).toEqual(['24h'])
+    expect(dueCheckpoints(publishAt, at(25), new Set(['24h']))).toEqual([])
+    expect(dueCheckpoints(publishAt, at(71), new Set())).toEqual(['24h'])
+    expect(dueCheckpoints(publishAt, at(80), new Set())).toEqual(['3d'])
+    expect(dueCheckpoints(publishAt, at(170), new Set())).toEqual(['7d'])
+    expect(dueCheckpoints(publishAt, at(217), new Set())).toEqual([])
+  })
+})
+
+describe('tracking links', () => {
+  it('maps platform aliases and tags the landing page', () => {
+    expect(parseTrackedLink(['ig'], null)).toEqual({
+      source: 'instagram',
+      draftId: undefined,
+      location: '/?utm_source=instagram&utm_medium=social&utm_campaign=bio',
+    })
+    expect(parseTrackedLink(['FB', '12'], '/es/events?city=hialeah')).toEqual({
+      source: 'facebook',
+      draftId: 12,
+      location: '/es/events?city=hialeah&utm_source=facebook&utm_medium=social&utm_campaign=draft-12',
+    })
+    expect(parseTrackedLink(['qr'], null)?.location).toContain('utm_medium=offline')
+  })
+
+  it('never redirects off the site', () => {
+    for (const to of ['//evil.com', '/\\evil.com', 'https://evil.com', 'evil.com', '/%2F%2Fevil.com']) {
+      expect(new URL(safePath(to), 'https://flamingocounty.com').host).toBe('flamingocounty.com')
+    }
+  })
+
+  it('rejects malformed links', () => {
+    expect(parseTrackedLink(['ig', 'abc'], null)).toBeNull()
+    expect(parseTrackedLink(['ig', '1', 'extra'], null)).toBeNull()
+    expect(parseTrackedLink(['bad source!'], null)).toBeNull()
+  })
+
+  it('does not count link previews and crawlers', () => {
+    expect(isBot('facebookexternalhit/1.1')).toBe(true)
+    expect(isBot('TelegramBot (like TwitterBot)')).toBe(true)
+    expect(isBot(null)).toBe(true)
+    expect(
+      isBot('Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 Instagram 350.0'),
+    ).toBe(false)
+  })
+})
+
 /* ------------------------------------------------------------------------ */
 /* Against the database                                                      */
 /* ------------------------------------------------------------------------ */
@@ -125,7 +217,10 @@ type Call = { url: string; body: unknown }
  * Stand-in for both APIs. Records every call; Telegram always succeeds, Postiz
  * answers the three endpoints the approval uses.
  */
-function fakeNetwork() {
+function fakeNetwork(
+  opts: { postStats?: Record<string, unknown[]>; listed?: unknown[] } = {},
+) {
+  const { postStats = {}, listed = [] } = opts
   const calls: Call[] = []
   const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const url = String(input)
@@ -142,6 +237,14 @@ function fakeNetwork() {
     }
     if (url.endsWith('/upload')) return Response.json({ id: 'up1', path: 'https://postiz.example/up1.jpg' })
     if (url.endsWith('/posts')) return Response.json([{ postId: 'p1', integration: 'fb-live' }])
+    if (url.includes('/posts?')) return Response.json({ posts: listed })
+    if (url.includes('/analytics/post/')) {
+      const id = url.split('/analytics/post/')[1].split('?')[0]
+      return Response.json(postStats[id] ?? [])
+    }
+    if (url.includes('/analytics/')) {
+      return Response.json([{ label: 'Page followers', data: [{ total: '120' }, { total: '125' }], percentageChange: 4 }])
+    }
     return new Response('not found', { status: 404 })
   })
   vi.stubGlobal('fetch', fetchMock)
@@ -154,7 +257,10 @@ function fakeNetwork() {
 
 describe('HQ against the database', () => {
   let payload: Payload
-  const created: { collection: 'listing-requests' | 'hq-social-drafts' | 'hq-tasks'; id: number }[] = []
+  const created: {
+    collection: 'listing-requests' | 'hq-social-drafts' | 'hq-tasks' | 'hq-social-stats' | 'hq-clicks'
+    id: number
+  }[] = []
 
   beforeAll(async () => {
     payload = await getPayload({ config: await config })
@@ -199,6 +305,13 @@ describe('HQ against the database', () => {
       overrideAccess: true,
     })
     created.push({ collection: 'hq-social-drafts', id: draft.id })
+    // The Telegram preview runs in the background and saves its message id
+    // when done. Payload writes the whole record back on update, so a test
+    // update racing it would be overwritten with the pending draft — wait.
+    await vi.waitFor(async () => {
+      const fresh = await payload.findByID({ collection: 'hq-social-drafts', id: draft.id, overrideAccess: true })
+      expect(fresh.telegramMessageId).toBeTruthy()
+    })
     return draft
   }
 
@@ -275,6 +388,9 @@ describe('HQ against the database', () => {
     const post = net.postiz().find((c) => c.url.endsWith('/posts'))!.body as ReturnType<typeof buildPostBody>
     expect(post.type).toBe('schedule')
     expect(post.posts[0].integration.id).toBe('fb-live')
+    const saved = await payload.findByID({ collection: 'hq-social-drafts', id: draft.id, overrideAccess: true })
+    expect(saved.publishAt).toBe(post.date)
+    expect(saved.postizPosts?.map((p) => [p.platform, p.postId])).toEqual([['facebook', 'p1']])
 
     const again = await decideDraft(payload, draft.id, 'approve')
     expect(again).toContain('already scheduled')
@@ -377,5 +493,113 @@ describe('HQ against the database', () => {
     const net = fakeNetwork()
     expect(await sendBrief(payload)).toBe(false)
     expect(net.calls).toHaveLength(0)
+  })
+
+  /** A draft already approved and published `hoursAgo` ago, as the stats job finds it. */
+  const publishedDraft = async (hoursAgo: number, postizPosts: { platform: string; postId: string }[]) => {
+    fakeNetwork()
+    const draft = await newDraft({})
+    const publishAt = new Date(Date.now() - hoursAgo * 3_600_000).toISOString()
+    await payload.update({
+      collection: 'hq-social-drafts',
+      id: draft.id,
+      data: { status: 'scheduled', publishAt, postizPosts },
+      overrideAccess: true,
+      context: { hqInternal: true },
+    })
+    return { ...draft, publishAt }
+  }
+
+  const statsFor = async (draftId: number) => {
+    const { docs } = await payload.find({
+      collection: 'hq-social-stats',
+      where: { draft: { equals: draftId } },
+      overrideAccess: true,
+    })
+    docs.forEach((d) => created.push({ collection: 'hq-social-stats', id: d.id }))
+    return docs
+  }
+
+  it('takes a post checkpoint once, and waits while Postiz has no numbers yet', async () => {
+    const draft = await publishedDraft(25, [{ platform: 'facebook', postId: 'live-1' }])
+
+    fakeNetwork({ postStats: {} })
+    expect(await collectPostStats(payload)).toBe(0) // not matched yet: retry next hour
+
+    fakeNetwork({ postStats: { 'live-1': [{ label: 'Posts Engagement', data: [{ total: '7' }, { total: '5' }] }] } })
+    await collectPostStats(payload)
+    await collectPostStats(payload) // a second run must not duplicate
+    const rows = await statsFor(draft.id)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ kind: 'post', platform: 'facebook', checkpoint: '24h', postizPostId: 'live-1' })
+    expect(rows[0].metrics).toEqual({ 'Posts Engagement': { latest: 5, sum: 12 } })
+  })
+
+  it('finds the post id in Postiz when the create reply had none', async () => {
+    const draft = await publishedDraft(25, [])
+    fakeNetwork({
+      listed: [{ id: 'found-1', publishDate: draft.publishAt, integration: { id: 'fb-live' } }],
+      postStats: { 'found-1': [{ label: 'Page Impressions', data: [{ total: '40' }] }] },
+    })
+    await collectPostStats(payload)
+    const fresh = await payload.findByID({ collection: 'hq-social-drafts', id: draft.id, overrideAccess: true })
+    expect(fresh.postizPosts?.map((p) => p.postId)).toEqual(['found-1'])
+    expect(await statsFor(draft.id)).toHaveLength(1)
+  })
+
+  it('snapshots each account once a day', async () => {
+    fakeNetwork()
+    const first = await collectChannelStats(payload)
+    expect(first).toBe(2) // facebook and tiktok; instagram is disabled in the fake
+    expect(await collectChannelStats(payload)).toBe(0)
+    const { docs } = await payload.find({
+      collection: 'hq-social-stats',
+      where: { kind: { equals: 'channel' } },
+      overrideAccess: true,
+    })
+    docs.forEach((d) => created.push({ collection: 'hq-social-stats', id: d.id }))
+    expect(docs[0].metrics).toMatchObject({ 'Page followers': { latest: 125 } })
+  })
+
+  const go = (path: string, ua: string | null) => {
+    const url = new URL(path, 'https://flamingocounty.com')
+    const slug = url.pathname.replace(/^\/go\//, '').split('/')
+    return goRoute(new Request(url, { headers: ua ? { 'user-agent': ua } : {} }), {
+      params: Promise.resolve({ slug }),
+    })
+  }
+  const phone = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) Instagram 350.0'
+
+  it('counts a human click on a tracking link and sends them on', async () => {
+    fakeNetwork()
+    const draft = await newDraft({})
+    const res = await go(`/go/fb/${draft.id}?to=/es/events`, phone)
+    expect(res.status).toBe(302)
+    expect(res.headers.get('location')).toBe(
+      `/es/events?utm_source=facebook&utm_medium=social&utm_campaign=draft-${draft.id}`,
+    )
+    const { docs } = await payload.find({
+      collection: 'hq-clicks',
+      where: { draft: { equals: draft.id } },
+      overrideAccess: true,
+    })
+    docs.forEach((d) => created.push({ collection: 'hq-clicks', id: d.id }))
+    expect(docs).toHaveLength(1)
+    expect(docs[0]).toMatchObject({ source: 'facebook', to: '/es/events' })
+  })
+
+  it('does not count a link preview, and never redirects off the site', async () => {
+    const before = await payload.count({ collection: 'hq-clicks', overrideAccess: true })
+    const res = await go('/go/ig?to=//evil.com', 'facebookexternalhit/1.1')
+    expect(res.headers.get('location')).toBe('/?utm_source=instagram&utm_medium=social&utm_campaign=bio')
+    expect((await payload.count({ collection: 'hq-clicks', overrideAccess: true })).totalDocs).toBe(before.totalDocs)
+  })
+
+  it('puts account numbers, post results and clicks in the brief', async () => {
+    const brief = await buildBrief(payload)
+    expect(brief).toContain('<b>Socials</b>')
+    expect(brief).toContain('facebook: Page followers 125')
+    expect(brief).toMatch(/Post #\d+ on facebook at 24h/)
+    expect(brief).toMatch(/Link clicks: facebook \d+/)
   })
 })

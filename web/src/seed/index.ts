@@ -14,6 +14,7 @@ import fs from 'fs'
 import { getPayload } from 'payload'
 import type { Payload } from 'payload'
 import config from '../payload.config'
+import { hasPendingDraft } from '../lib/publishRequests'
 import type { ListYourSpotPage } from '../payload-types'
 import {
   loadResearch,
@@ -87,19 +88,31 @@ async function upsert(
     depth: 0,
   })
 
+  // Content collections have drafts (listings, stories, events, weekly events,
+  // spotlights). Seeded content is published content, so it is written as such;
+  // otherwise a new row would default to `draft` and never appear on the site.
+  const drafts = Boolean(payload.collections[collection as 'listings']?.config.versions?.drafts)
+  const status = drafts ? { _status: 'published' } : {}
+
   let doc
   if (existing.docs.length) {
+    // An update publishes on top of the latest version — including a draft
+    // nobody has approved yet. Skip the row rather than publish that draft.
+    if (drafts && (await hasPendingDraft(payload, collection, existing.docs[0].id))) {
+      console.warn(`  ! ${collection} "${slug}" has an unpublished draft — skipped. Publish or discard it, then seed again.`)
+      return { ...existing.docs[0], [SKIPPED]: true }
+    }
     doc = await payload.update({
       collection,
       id: existing.docs[0].id,
-      data: { ...enData, slug },
+      data: { ...enData, slug, ...status },
       locale: 'en',
       depth: 0,
     })
   } else {
     doc = await payload.create({
       collection,
-      data: { ...enData, slug },
+      data: { ...enData, slug, ...status },
       locale: 'en',
       depth: 0,
     })
@@ -120,6 +133,9 @@ async function upsert(
   }
   return doc
 }
+
+/** Marks a row `upsert` left alone, so a caller's follow-up writes leave it alone too. */
+const SKIPPED = Symbol('skipped')
 
 /** Attach the English rows' ids by position so an ES write updates in place. */
 function withIds(rows: Dict[] | undefined, enRows: Dict[] | undefined): Dict[] {
@@ -721,6 +737,8 @@ async function seed() {
         outro: en(s.outro),
         blocks: s.blocks.map((b: any[]) => toBlock(b, 'en')),
       })
+
+      if (doc[SKIPPED]) continue
 
       // Block STRUCTURE is shared across locales; only the text inside is
       // localized. Payload matches array rows on their generated `id`, so the ES

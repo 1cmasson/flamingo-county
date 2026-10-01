@@ -64,6 +64,7 @@ export type SupportedTimezones =
 export interface Config {
   auth: {
     users: UserAuthOperations;
+    'payload-mcp-api-keys': PayloadMcpApiKeyAuthOperations;
   };
   blocks: {};
   collections: {
@@ -84,6 +85,10 @@ export interface Config {
     'hq-tasks': HqTask;
     'hq-media': HqMedia;
     'hq-social-drafts': HqSocialDraft;
+    'hq-social-stats': HqSocialStat;
+    'hq-clicks': HqClick;
+    'hq-publish-requests': HqPublishRequest;
+    'payload-mcp-api-keys': PayloadMcpApiKey;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
@@ -109,6 +114,10 @@ export interface Config {
     'hq-tasks': HqTasksSelect<false> | HqTasksSelect<true>;
     'hq-media': HqMediaSelect<false> | HqMediaSelect<true>;
     'hq-social-drafts': HqSocialDraftsSelect<false> | HqSocialDraftsSelect<true>;
+    'hq-social-stats': HqSocialStatsSelect<false> | HqSocialStatsSelect<true>;
+    'hq-clicks': HqClicksSelect<false> | HqClicksSelect<true>;
+    'hq-publish-requests': HqPublishRequestsSelect<false> | HqPublishRequestsSelect<true>;
+    'payload-mcp-api-keys': PayloadMcpApiKeysSelect<false> | PayloadMcpApiKeysSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
@@ -135,10 +144,11 @@ export interface Config {
   widgets: {
     collections: CollectionsWidget;
   };
-  user: User;
+  user: User | PayloadMcpApiKey;
   jobs: {
     tasks: {
       morningBrief: TaskMorningBrief;
+      socialStats: TaskSocialStats;
       inline: {
         input: unknown;
         output: unknown;
@@ -148,6 +158,24 @@ export interface Config {
   };
 }
 export interface UserAuthOperations {
+  forgotPassword: {
+    email: string;
+    password: string;
+  };
+  login: {
+    email: string;
+    password: string;
+  };
+  registerFirstUser: {
+    email: string;
+    password: string;
+  };
+  unlock: {
+    email: string;
+    password: string;
+  };
+}
+export interface PayloadMcpApiKeyAuthOperations {
   forgotPassword: {
     email: string;
     password: string;
@@ -545,6 +573,7 @@ export interface Listing {
   };
   updatedAt: string;
   createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -667,6 +696,7 @@ export interface Story {
   outro?: string | null;
   updatedAt: string;
   createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -724,6 +754,7 @@ export interface Event {
   imageHint?: string | null;
   updatedAt: string;
   createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -748,6 +779,7 @@ export interface WeeklyEvent {
   kind: number | EventKind;
   updatedAt: string;
   createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -773,6 +805,7 @@ export interface Spotlight {
   image?: (number | null) | Media;
   updatedAt: string;
   createdAt: string;
+  _status?: ('draft' | 'published') | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -933,6 +966,9 @@ export interface HqMedia {
  */
 export interface HqSocialDraft {
   id: number;
+  /**
+   * Moved by the Approve/Reject tap in Telegram or here. Ignored when written over MCP.
+   */
   status: 'pending' | 'approved' | 'scheduled' | 'rejected' | 'failed';
   /**
    * A time in the past posts as soon as it is approved.
@@ -944,7 +980,32 @@ export interface HqSocialDraft {
    * The first file is the cover shown in Telegram.
    */
   media?: (number | HqMedia)[] | null;
+  /**
+   * What kind of post — the stats are compared by this.
+   */
+  pillar?: ('spotlight' | 'event' | 'story' | 'promo' | 'other') | null;
+  language?: ('es' | 'en' | 'both') | null;
+  /**
+   * Why the last approval failed. Set by HQ.
+   */
   error?: string | null;
+  /**
+   * When Postiz was told to publish. Stats checkpoints count from here.
+   */
+  publishAt?: string | null;
+  /**
+   * One Postiz post per platform, for its stats.
+   */
+  postizPosts?:
+    | {
+        platform: string;
+        postId: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Set by HQ.
+   */
   postizResponse?:
     | {
         [k: string]: unknown;
@@ -954,9 +1015,284 @@ export interface HqSocialDraft {
     | number
     | boolean
     | null;
+  /**
+   * Set by HQ.
+   */
   telegramMessageId?: number | null;
+  previewedHash?: string | null;
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * Post and account numbers from Postiz, saved by the hourly stats job.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-social-stats".
+ */
+export interface HqSocialStat {
+  id: number;
+  kind: 'post' | 'channel';
+  platform: 'facebook' | 'instagram' | 'tiktok';
+  checkpoint?: ('24h' | '3d' | '7d') | null;
+  draft?: (number | null) | HqSocialDraft;
+  postizPostId?: string | null;
+  metrics:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  raw?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Clicks on /go/ tracking links. Bots and link previews are not counted.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-clicks".
+ */
+export interface HqClick {
+  id: number;
+  source: string;
+  draft?: (number | null) | HqSocialDraft;
+  to?: string | null;
+  country?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Drafts Claude asked to publish. Each goes live only when you tap Publish in Telegram.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-publish-requests".
+ */
+export interface HqPublishRequest {
+  id: number;
+  status: 'pending' | 'published' | 'rejected' | 'superseded' | 'stale' | 'expired' | 'failed';
+  title?: string | null;
+  collection: string;
+  targetId: string;
+  draftStamp?: string | null;
+  reason?: string | null;
+  preview?: string | null;
+  expiresAt?: string | null;
+  telegramMessageId?: number | null;
+  error?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * API keys control which collections, resources, tools, and prompts MCP clients can access
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-mcp-api-keys".
+ */
+export interface PayloadMcpApiKey {
+  id: number;
+  /**
+   * The user that the API key is associated with.
+   */
+  user: number | User;
+  /**
+   * A useful label for the API key.
+   */
+  label?: string | null;
+  /**
+   * The purpose of the API key.
+   */
+  description?: string | null;
+  hqEvents?: {
+    /**
+     * Allow clients to find hq-events.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to create hq-events.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update hq-events.
+     */
+    update?: boolean | null;
+  };
+  hqTasks?: {
+    /**
+     * Allow clients to find hq-tasks.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to create hq-tasks.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update hq-tasks.
+     */
+    update?: boolean | null;
+  };
+  hqSocialDrafts?: {
+    /**
+     * Allow clients to find hq-social-drafts.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to create hq-social-drafts.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update hq-social-drafts.
+     */
+    update?: boolean | null;
+  };
+  hqMedia?: {
+    /**
+     * Allow clients to find hq-media.
+     */
+    find?: boolean | null;
+  };
+  hqSocialStats?: {
+    /**
+     * Allow clients to find hq-social-stats.
+     */
+    find?: boolean | null;
+  };
+  hqClicks?: {
+    /**
+     * Allow clients to find hq-clicks.
+     */
+    find?: boolean | null;
+  };
+  listingRequests?: {
+    /**
+     * Allow clients to find listing-requests.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to update listing-requests.
+     */
+    update?: boolean | null;
+  };
+  listings?: {
+    /**
+     * Allow clients to find listings.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to create listings.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update listings.
+     */
+    update?: boolean | null;
+  };
+  events?: {
+    /**
+     * Allow clients to find events.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to create events.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update events.
+     */
+    update?: boolean | null;
+  };
+  weeklyEvents?: {
+    /**
+     * Allow clients to find weekly-events.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to create weekly-events.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update weekly-events.
+     */
+    update?: boolean | null;
+  };
+  stories?: {
+    /**
+     * Allow clients to find stories.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to create stories.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update stories.
+     */
+    update?: boolean | null;
+  };
+  spotlights?: {
+    /**
+     * Allow clients to find spotlights.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to create spotlights.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update spotlights.
+     */
+    update?: boolean | null;
+  };
+  cities?: {
+    /**
+     * Allow clients to find cities.
+     */
+    find?: boolean | null;
+  };
+  categories?: {
+    /**
+     * Allow clients to find categories.
+     */
+    find?: boolean | null;
+  };
+  'payload-mcp-tool'?: {
+    /**
+     * The Flamingo HQ brief right now: what happened since the last scheduled brief, what is waiting on the owner (listing requests, drafts to approve, listings needing owner confirmation), open tasks, social numbers and posts going out in the next 24 hours. Read-only; does not move the scheduled brief.
+     */
+    hqBrief?: boolean | null;
+    /**
+     * Results of every social post published in the last N days: caption, pillar, language, platforms, Miami publish time, the furthest stats checkpoint (24h/3d/7d) per platform, and link clicks; plus each account’s first and last snapshot in the window and bio-link clicks. JSON. Use it for the weekly review. Small samples: compare over weeks, not single posts.
+     */
+    hqSocialReport?: boolean | null;
+    /**
+     * Download a public https JPEG, PNG or MP4 (up to 50 MB) into HQ media and return its id, for the `media` field of an hq-social-drafts document. The first media id on a draft is the cover shown in Telegram. Instagram and TikTok drafts need at least one.
+     */
+    hqAddDraftMediaFromUrl?: boolean | null;
+    /**
+     * Ask the owner to publish the current draft of a site document (events, weekly-events, stories, spotlights, listings). Save the draft first with the create/update tool and draft: true — drafts are never visible on the site. The owner sees exactly what changes against the live page in Telegram and taps Publish or Reject. If you edit the draft again before they tap, they are shown the new version instead. Publishes nothing by itself.
+     */
+    hqRequestPublish?: boolean | null;
+    /**
+     * Where a publish request stands: pending, published, rejected, superseded, stale (the draft changed and was re-sent), expired or failed.
+     */
+    hqPublishStatus?: boolean | null;
+  };
+  updatedAt: string;
+  createdAt: string;
+  enableAPIKey?: boolean | null;
+  apiKey?: string | null;
+  apiKeyIndex?: string | null;
+  collection: 'payload-mcp-api-keys';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1027,7 +1363,7 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'morningBrief';
+        taskSlug: 'inline' | 'morningBrief' | 'socialStats';
         taskID: string;
         input?:
           | {
@@ -1060,7 +1396,7 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'morningBrief') | null;
+  taskSlug?: ('inline' | 'morningBrief' | 'socialStats') | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -1150,12 +1486,33 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'hq-social-drafts';
         value: number | HqSocialDraft;
+      } | null)
+    | ({
+        relationTo: 'hq-social-stats';
+        value: number | HqSocialStat;
+      } | null)
+    | ({
+        relationTo: 'hq-clicks';
+        value: number | HqClick;
+      } | null)
+    | ({
+        relationTo: 'hq-publish-requests';
+        value: number | HqPublishRequest;
+      } | null)
+    | ({
+        relationTo: 'payload-mcp-api-keys';
+        value: number | PayloadMcpApiKey;
       } | null);
   globalSlug?: string | null;
-  user: {
-    relationTo: 'users';
-    value: number | User;
-  };
+  user:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'payload-mcp-api-keys';
+        value: number | PayloadMcpApiKey;
+      };
   updatedAt: string;
   createdAt: string;
 }
@@ -1165,10 +1522,15 @@ export interface PayloadLockedDocument {
  */
 export interface PayloadPreference {
   id: number;
-  user: {
-    relationTo: 'users';
-    value: number | User;
-  };
+  user:
+    | {
+        relationTo: 'users';
+        value: number | User;
+      }
+    | {
+        relationTo: 'payload-mcp-api-keys';
+        value: number | PayloadMcpApiKey;
+      };
   key?: string | null;
   value?:
     | {
@@ -1405,6 +1767,7 @@ export interface ListingsSelect<T extends boolean = true> {
       };
   updatedAt?: T;
   createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1495,6 +1858,7 @@ export interface StoriesSelect<T extends boolean = true> {
   outro?: T;
   updatedAt?: T;
   createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1521,6 +1885,7 @@ export interface EventsSelect<T extends boolean = true> {
   imageHint?: T;
   updatedAt?: T;
   createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1535,6 +1900,7 @@ export interface WeeklyEventsSelect<T extends boolean = true> {
   kind?: T;
   updatedAt?: T;
   createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1550,6 +1916,7 @@ export interface SpotlightsSelect<T extends boolean = true> {
   image?: T;
   updatedAt?: T;
   createdAt?: T;
+  _status?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1648,11 +2015,177 @@ export interface HqSocialDraftsSelect<T extends boolean = true> {
   platforms?: T;
   caption?: T;
   media?: T;
+  pillar?: T;
+  language?: T;
   error?: T;
+  publishAt?: T;
+  postizPosts?:
+    | T
+    | {
+        platform?: T;
+        postId?: T;
+        id?: T;
+      };
   postizResponse?: T;
   telegramMessageId?: T;
+  previewedHash?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-social-stats_select".
+ */
+export interface HqSocialStatsSelect<T extends boolean = true> {
+  kind?: T;
+  platform?: T;
+  checkpoint?: T;
+  draft?: T;
+  postizPostId?: T;
+  metrics?: T;
+  raw?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-clicks_select".
+ */
+export interface HqClicksSelect<T extends boolean = true> {
+  source?: T;
+  draft?: T;
+  to?: T;
+  country?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-publish-requests_select".
+ */
+export interface HqPublishRequestsSelect<T extends boolean = true> {
+  status?: T;
+  title?: T;
+  collection?: T;
+  targetId?: T;
+  draftStamp?: T;
+  reason?: T;
+  preview?: T;
+  expiresAt?: T;
+  telegramMessageId?: T;
+  error?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-mcp-api-keys_select".
+ */
+export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
+  user?: T;
+  label?: T;
+  description?: T;
+  hqEvents?:
+    | T
+    | {
+        find?: T;
+        create?: T;
+        update?: T;
+      };
+  hqTasks?:
+    | T
+    | {
+        find?: T;
+        create?: T;
+        update?: T;
+      };
+  hqSocialDrafts?:
+    | T
+    | {
+        find?: T;
+        create?: T;
+        update?: T;
+      };
+  hqMedia?:
+    | T
+    | {
+        find?: T;
+      };
+  hqSocialStats?:
+    | T
+    | {
+        find?: T;
+      };
+  hqClicks?:
+    | T
+    | {
+        find?: T;
+      };
+  listingRequests?:
+    | T
+    | {
+        find?: T;
+        update?: T;
+      };
+  listings?:
+    | T
+    | {
+        find?: T;
+        create?: T;
+        update?: T;
+      };
+  events?:
+    | T
+    | {
+        find?: T;
+        create?: T;
+        update?: T;
+      };
+  weeklyEvents?:
+    | T
+    | {
+        find?: T;
+        create?: T;
+        update?: T;
+      };
+  stories?:
+    | T
+    | {
+        find?: T;
+        create?: T;
+        update?: T;
+      };
+  spotlights?:
+    | T
+    | {
+        find?: T;
+        create?: T;
+        update?: T;
+      };
+  cities?:
+    | T
+    | {
+        find?: T;
+      };
+  categories?:
+    | T
+    | {
+        find?: T;
+      };
+  'payload-mcp-tool'?:
+    | T
+    | {
+        hqBrief?: T;
+        hqSocialReport?: T;
+        hqAddDraftMediaFromUrl?: T;
+        hqRequestPublish?: T;
+        hqPublishStatus?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  enableAPIKey?: T;
+  apiKey?: T;
+  apiKeyIndex?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1946,6 +2479,17 @@ export interface TaskMorningBrief {
   input?: unknown;
   output: {
     sent?: boolean | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskSocialStats".
+ */
+export interface TaskSocialStats {
+  input?: unknown;
+  output: {
+    posts?: number | null;
+    channels?: number | null;
   };
 }
 /**

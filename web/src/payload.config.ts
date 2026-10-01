@@ -1,4 +1,5 @@
 import { sqliteAdapter } from '@payloadcms/db-sqlite'
+import { mcpPlugin } from '@payloadcms/plugin-mcp'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import path from 'path'
 import { buildConfig } from 'payload'
@@ -22,7 +23,12 @@ import { HqEvents } from './collections/HqEvents'
 import { HqTasks } from './collections/HqTasks'
 import { HqMedia } from './collections/HqMedia'
 import { HqSocialDrafts } from './collections/HqSocialDrafts'
+import { HqSocialStats } from './collections/HqSocialStats'
+import { HqClicks } from './collections/HqClicks'
+import { HqPublishRequests } from './collections/HqPublishRequests'
 import { morningBrief } from './jobs/morningBrief'
+import { socialStats } from './jobs/socialStats'
+import { hqMcpTools } from './lib/mcpTools'
 
 import { SiteSettings } from './globals/SiteSettings'
 import { AboutPage } from './globals/AboutPage'
@@ -56,6 +62,9 @@ export default buildConfig({
     HqTasks,
     HqMedia,
     HqSocialDrafts,
+    HqSocialStats,
+    HqClicks,
+    HqPublishRequests,
   ],
   globals: [SiteSettings, AboutPage, ListYourSpotPage],
 
@@ -90,10 +99,79 @@ export default buildConfig({
     },
   }),
   sharp,
-  plugins: [],
+  plugins: [
+    /**
+     * Claude's way into HQ, at /api/mcp. Two layers decide what a client can
+     * touch: this list (what is possible at all) and the boxes ticked on each
+     * API key under Admin → MCP (what that key may use). Anything missing here
+     * is unreachable whatever a key says — and `users`, `members`,
+     * `subscribers`, `media` and the jobs are deliberately missing: no account
+     * data, no visitor emails, no uploads to the public site.
+     *
+     * Delete is off everywhere. Drafts can be written and edited but their
+     * status cannot be changed over MCP (see `humanOnly` in fields/shared.ts):
+     * nothing reaches a social account without the owner's tap in Telegram.
+     *
+     * The site's content collections take drafts only over MCP — any other
+     * write is refused by `mcpDraftsOnly` on the collection itself — and
+     * publishing is the owner's tap in Telegram (hqRequestPublish,
+     * lib/publishRequests.ts). `hq-publish-requests` must never be added to
+     * this list: a generic update tool on it would let a client approve its
+     * own request.
+     */
+    mcpPlugin({
+      collections: {
+        'hq-events': {
+          enabled: { find: true, create: true, update: true },
+          description: 'HQ event log: everything that happened (intake, social, briefs). Mark status seen/done once handled.',
+        },
+        'hq-tasks': {
+          enabled: { find: true, create: true, update: true },
+          description: 'To-dos. assignee "claude" = filed for Claude (e.g. via /task in Telegram); set status doing/done as you work them.',
+        },
+        'hq-social-drafts': {
+          enabled: { find: true, create: true, update: true },
+          description:
+            'Social posts awaiting the owner’s approval in Telegram. Creating one (or editing a pending one) sends a preview with Approve/Reject. Status cannot be set over MCP. Set pillar and language on every draft.',
+        },
+        'hq-media': {
+          enabled: { find: true },
+          description: 'Draft photos/videos. Add new ones with the hqAddDraftMediaFromUrl tool.',
+        },
+        'hq-social-stats': {
+          enabled: { find: true },
+          description: 'Saved Postiz numbers: kind "post" at 24h/3d/7d checkpoints, kind "channel" daily 7-day snapshots.',
+        },
+        'hq-clicks': { enabled: { find: true }, description: 'Clicks on /go/ tracking links.' },
+        'listing-requests': {
+          enabled: { find: true, update: true },
+          description: '“List your spot” submissions from business owners. Update status as they are handled.',
+        },
+        listings: {
+          enabled: { find: true, create: true, update: true },
+          description:
+            'Directory listings. Only publicationStatus "ready" is fully sourced; "unsourced" detail is design placeholder — never quote it as fact, and never invent owner details. Save with draft: true — drafts are never live; publish with hqRequestPublish.',
+        },
+        events: { enabled: { find: true, create: true, update: true }, description: 'Dated events on the site. Save with draft: true — drafts are never live; publish with hqRequestPublish.' },
+        'weekly-events': { enabled: { find: true, create: true, update: true }, description: 'Recurring weekly events. Save with draft: true — drafts are never live; publish with hqRequestPublish.' },
+        stories: { enabled: { find: true, create: true, update: true }, description: 'Stories. Save with draft: true — drafts are never live; publish with hqRequestPublish.' },
+        spotlights: { enabled: { find: true, create: true, update: true }, description: 'Home-page spotlights. Save with draft: true — drafts are never live; publish with hqRequestPublish.' },
+        cities: { enabled: { find: true } },
+        categories: { enabled: { find: true } },
+      },
+      mcp: {
+        tools: hqMcpTools,
+        serverOptions: {
+          serverInfo: { name: 'Flamingo HQ', version: '1.0.0' },
+          instructions:
+            'Flamingo HQ, the private ops layer of flamingocounty.com (a bilingual Miami-Dade directory: Hialeah, Miami Lakes, Little Havana). Start with hqBrief. Social posts are drafts in hq-social-drafts; the owner approves each one in Telegram and you cannot. Give every draft a pillar and language (the audience is Spanish-first). Use real listings, events and stories only — never invent business details. Site content (events, weekly events, stories, spotlights, listings) has drafts: save freely with draft: true — nothing you save is visible — then call hqRequestPublish; it goes live only when the owner taps Publish in Telegram. Never try to publish any other way.',
+        },
+      },
+    }),
+  ],
 
   /**
-   * The HQ jobs queue — only the morning brief so far (src/jobs).
+   * The HQ jobs queue — the morning brief and the social stats collector (src/jobs).
    *
    * One in-process runner, checking every minute. That is safe here and only
    * here because the service is pinned to a single instance by SQLite on a
@@ -105,7 +183,7 @@ export default buildConfig({
    * admin, and a quiet night would skip the brief.
    */
   jobs: {
-    tasks: [morningBrief],
+    tasks: [morningBrief, socialStats],
     autoRun: [{ cron: '* * * * *', queue: 'hq' }],
     jobsCollectionOverrides: ({ defaultJobsCollection }) => ({
       ...defaultJobsCollection,

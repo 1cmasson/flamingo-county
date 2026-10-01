@@ -3,6 +3,7 @@ import type { Payload } from 'payload'
 import type { HqEvent } from '../payload-types'
 import { SITE_TZ } from './dates'
 import { miamiTime, recordEvent } from './hq'
+import { isRunningCount, type MetricSummary } from './postiz'
 import { esc, sendMessage, telegramConfigured } from './telegram'
 
 /** How far back the first brief looks, before there is a previous one to start from. */
@@ -39,6 +40,86 @@ async function since(payload: Payload, now: Date): Promise<Date> {
   })
   const at = last.docs[0]?.createdAt
   return at ? new Date(at) : new Date(now.getTime() - FIRST_BRIEF_WINDOW_MS)
+}
+
+/**
+ * The two numbers per account worth a line in the brief. Labels are the live
+ * instance's own (checked 2026-10-01); a label that stops existing just drops
+ * out, and an account with none of these falls back to its first two.
+ */
+const HEADLINE: Record<string, string[]> = {
+  facebook: ['Page followers', 'Page Impressions'],
+  instagram: ['Reach', 'Likes'],
+  tiktok: ['Followers', 'Total Likes'],
+}
+
+const n = (v: number) => new Intl.NumberFormat('en-US').format(Math.round(v))
+
+/** "Reach 1,240". A running count reads its latest value, a flow its sum over the window. */
+export function metricLine(label: string, m: MetricSummary): string {
+  return `${label} ${n(isRunningCount(label) ? m.latest : m.sum)}`
+}
+
+function headline(platform: string, metrics: Record<string, MetricSummary>): string {
+  const labels = (HEADLINE[platform] ?? []).filter((l) => metrics[l])
+  const pick = labels.length ? labels : Object.keys(metrics).slice(0, 2)
+  return pick.map((l) => metricLine(l, metrics[l])).join(' · ')
+}
+
+async function socialsSection(payload: Payload, from: Date, now: Date): Promise<string[]> {
+  const [channels, posts, clicks] = await Promise.all([
+    payload.find({
+      collection: 'hq-social-stats',
+      where: {
+        and: [
+          { kind: { equals: 'channel' } },
+          { createdAt: { greater_than: new Date(now.getTime() - 48 * 60 * 60 * 1000).toISOString() } },
+        ],
+      },
+      sort: '-createdAt',
+      limit: 20,
+      depth: 0,
+      overrideAccess: true,
+    }),
+    payload.find({
+      collection: 'hq-social-stats',
+      where: { and: [{ kind: { equals: 'post' } }, { createdAt: { greater_than: from.toISOString() } }] },
+      sort: '-createdAt',
+      limit: 10,
+      depth: 0,
+      overrideAccess: true,
+    }),
+    payload.find({
+      collection: 'hq-clicks',
+      where: { createdAt: { greater_than: from.toISOString() } },
+      limit: 1000,
+      depth: 0,
+      overrideAccess: true,
+    }),
+  ])
+
+  const out: string[] = []
+  const latest = new Map<string, Record<string, MetricSummary>>()
+  for (const c of channels.docs) {
+    if (!latest.has(c.platform)) latest.set(c.platform, c.metrics as Record<string, MetricSummary>)
+  }
+  for (const [platform, metrics] of latest) {
+    const line = headline(platform, metrics)
+    if (line) out.push(`• ${esc(platform)}: ${esc(line)}`)
+  }
+  for (const p of posts.docs) {
+    const draft = typeof p.draft === 'object' ? p.draft?.id : p.draft
+    const line = headline(p.platform, p.metrics as Record<string, MetricSummary>)
+    out.push(`• Post #${draft ?? '?'} on ${esc(p.platform)} at ${esc(p.checkpoint ?? '?')}: ${esc(line || 'no numbers')}`)
+  }
+  if (clicks.docs.length) {
+    const bySource = new Map<string, number>()
+    for (const c of clicks.docs) bySource.set(c.source, (bySource.get(c.source) ?? 0) + 1)
+    out.push(
+      `• Link clicks: ${[...bySource].sort((a, b) => b[1] - a[1]).map(([s, k]) => `${esc(s)} ${k}`).join(' · ')}`,
+    )
+  }
+  return out.length ? ['', '<b>Socials</b> <i>(accounts: last 7 days)</i>', ...out] : []
 }
 
 const count = (payload: Payload, collection: 'listing-requests' | 'listings' | 'hq-social-drafts', where: object) =>
@@ -133,6 +214,8 @@ export async function buildBrief(payload: Payload, now: Date = new Date()): Prom
       out.push(`• ${esc(t.title)}${who}${due}`)
     }
   }
+
+  out.push(...(await socialsSection(payload, from, now)))
 
   if (upcoming.docs.length) {
     out.push('', '<b>Posting in the next 24h</b>')

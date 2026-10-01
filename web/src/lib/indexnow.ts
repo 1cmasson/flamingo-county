@@ -93,6 +93,10 @@ export function indexNowHooks(collection: 'listings' | 'events' | 'stories' | 'c
     void pingIndexNow(urlsFor(collection, doc, citySlug), (m) => req.payload.logger.warn(m))
   }
   const afterChange: CollectionAfterChangeHook = async ({ doc, req }) => {
+    // Listings, events and stories have drafts: a draft save changes nothing a
+    // crawler can see, and a never-published draft's URL is a 404. Ping only
+    // when the saved version is the live one.
+    if ((doc as { _status?: string })._status === 'draft') return doc
     await run(req, doc)
     return doc
   }

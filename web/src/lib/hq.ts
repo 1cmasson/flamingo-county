@@ -1,3 +1,4 @@
+import { createHash } from 'crypto'
 import { readFile } from 'fs/promises'
 import path from 'path'
 import type { Payload, PayloadRequest } from 'payload'
@@ -9,6 +10,7 @@ import {
   buildPostBody,
   connectedChannels,
   createPost,
+  postIdsFrom,
   uploadMedia,
   type Platform,
 } from './postiz'
@@ -134,6 +136,20 @@ async function readMedia(doc: HqMedia): Promise<Blob> {
   return new Blob([buf], { type: doc.mimeType ?? 'application/octet-stream' })
 }
 
+/**
+ * Everything Approve would send to Postiz. Stored as `previewedHash` when the
+ * preview goes out and compared again at approval, so what gets posted is
+ * always exactly what the owner saw.
+ */
+export function draftFingerprint(draft: Pick<HqSocialDraft, 'caption' | 'media' | 'platforms' | 'scheduledFor'>): string {
+  const media = (draft.media ?? []).map((m) => (typeof m === 'object' ? m.id : m))
+  return createHash('sha256')
+    .update(
+      JSON.stringify([draft.caption, media, [...(draft.platforms ?? [])].sort(), new Date(draft.scheduledFor).toISOString()]),
+    )
+    .digest('hex')
+}
+
 export function draftPreviewText(draft: HqSocialDraft, extraFiles: number): string {
   const lines = [
     `<b>📣 Social draft #${draft.id}</b>`,
@@ -177,7 +193,7 @@ export async function sendDraftPreview(payload: Payload, draft: HqSocialDraft): 
   await payload.update({
     collection: 'hq-social-drafts',
     id: draft.id,
-    data: { telegramMessageId: messageId },
+    data: { telegramMessageId: messageId, previewedHash: draftFingerprint(draft) },
     overrideAccess: true,
     context: { [HQ_INTERNAL]: true },
   })
@@ -239,6 +255,15 @@ async function decide(payload: Payload, id: number, action: DraftAction): Promis
     return `✖️ Draft #${id} rejected. Nothing was sent to Postiz.`
   }
 
+  if (draft.previewedHash !== draftFingerprint(draft)) {
+    // Edited after the preview the owner tapped. Show the current version
+    // instead of posting something they have not seen.
+    void sendDraftPreview(payload, draft).catch((err) =>
+      console.error('[hq] draft preview failed:', err instanceof Error ? err.message : err),
+    )
+    return `Draft #${id} changed since that preview, so nothing was posted. The current version is below — approve that one.`
+  }
+
   await setDraft(payload, id, { status: 'approved', error: null })
   try {
     const platforms = (draft.platforms ?? []) as Platform[]
@@ -256,7 +281,15 @@ async function decide(payload: Payload, id: number, action: DraftAction): Promis
     })
     const response = await createPost(body)
 
-    await setDraft(payload, id, { status: 'scheduled', postizResponse: response as never })
+    // Saved for the stats job: when it went out, and which Postiz post is
+    // which platform. An empty `postizPosts` is filled in later by
+    // `findPostIds` if the reply carried no ids.
+    await setDraft(payload, id, {
+      status: 'scheduled',
+      publishAt: body.date,
+      postizPosts: postIdsFrom(response, channels),
+      postizResponse: response as never,
+    })
     const when = body.type === 'now' ? 'now' : miamiTime(body.date)
     await recordEvent(payload, {
       type: 'social.scheduled',

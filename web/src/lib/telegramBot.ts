@@ -3,6 +3,7 @@ import type { Payload } from 'payload'
 import { buildBrief } from './brief'
 import { decideDraft, parseDraftCallback } from './hq'
 import { answerCallback, esc, ownerChatId, resolveButtons, sendMessage } from './telegram'
+import { decidePublish, parsePublishCallback } from './publishRequests'
 
 /** The slice of a Telegram `Update` the bot reads. */
 export type TelegramUpdate = {
@@ -134,6 +135,14 @@ export async function handleUpdate(payload: Payload, update: TelegramUpdate): Pr
 
   const cb = update.callback_query
   if (cb) {
+    const publish = parsePublishCallback(cb.data)
+    if (publish && cb.message) {
+      await answerCallback(cb.id, publish.action === 'publish' ? 'Publishing…' : 'Rejecting…')
+      const outcome = await decidePublish(payload, publish.id, publish.action)
+      await resolveButtons(cb.message.chat.id, cb.message.message_id, outcome)
+      return
+    }
+
     const parsed = parseDraftCallback(cb.data)
     if (!parsed || !cb.message) {
       await answerCallback(cb.id)

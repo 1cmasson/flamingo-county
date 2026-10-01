@@ -3,6 +3,7 @@ import config from '../payload.config'
 import type { Lang } from '../i18n'
 import type { Member } from '../payload-types'
 import { cleanList, keepKnown, type Lists } from './savedLists'
+import { PUBLISHED } from '../fields/shared'
 
 /**
  * Server-side access to a member's saved lists. Every call here has already
@@ -30,6 +31,8 @@ async function knownEventSlugs(): Promise<Set<string>> {
   const payload = await db()
   const { docs } = await payload.find({
     collection: 'events',
+    // Only events visitors can see can be saved; a draft's slug is not one.
+    where: PUBLISHED,
     limit: 0,
     pagination: false,
     depth: 0,
