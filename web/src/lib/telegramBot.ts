@@ -6,12 +6,12 @@ import { answerCallback, esc, ownerChatId, resolveButtons, sendMessage } from '.
 
 /** The slice of a Telegram `Update` the bot reads. */
 export type TelegramUpdate = {
-  message?: { chat: { id: number }; from?: { id: number }; text?: string }
+  message?: { chat: { id: number; type?: string }; from?: { id: number }; text?: string }
   callback_query?: {
     id: string
     from: { id: number }
     data?: string
-    message?: { chat: { id: number }; message_id: number }
+    message?: { chat: { id: number; type?: string }; message_id: number }
   }
 }
 
@@ -25,11 +25,27 @@ const HELP = [
   '/task &lt;text&gt; — file a task for Claude',
 ].join('\n')
 
-/** Only the owner is answered. Everyone else is ignored, not refused. */
+/**
+ * Only the owner, in the owner's own one-to-one chat with the bot. Everyone
+ * else is ignored, not refused — no reply tells a stranger the bot is alive.
+ *
+ * Both the sender *and* the chat must be the owner. Checking the sender alone
+ * would let the owner's `/brief` typed in a group, or a button tapped there,
+ * be answered into that group. In a private chat Telegram makes the chat id
+ * the user's id, so `chat.id === owner` pins it to that one conversation.
+ */
 export function isOwner(update: TelegramUpdate): boolean {
   const owner = ownerChatId()
+  if (!owner) return false
   const from = update.message?.from?.id ?? update.callback_query?.from.id
-  return Boolean(owner) && from !== undefined && String(from) === owner
+  const chat = update.message?.chat ?? update.callback_query?.message?.chat
+  return (
+    from !== undefined &&
+    String(from) === owner &&
+    chat !== undefined &&
+    String(chat.id) === owner &&
+    (chat.type === undefined || chat.type === 'private')
+  )
 }
 
 async function inbox(payload: Payload): Promise<string> {
@@ -134,5 +150,6 @@ export async function handleUpdate(payload: Payload, update: TelegramUpdate): Pr
   const text = update.message?.text
   if (!text || !update.message) return
   const reply = text.startsWith('/') ? await command(payload, text) : HELP
-  await sendMessage(reply, { chatId: update.message.chat.id })
+  // To the owner's chat by id, never to wherever the update came from.
+  await sendMessage(reply)
 }

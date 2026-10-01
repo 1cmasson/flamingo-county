@@ -317,6 +317,18 @@ describe('HQ against the database', () => {
     expect(fresh.error).toMatch(/facebook/)
   })
 
+  it('ignores the owner too, anywhere but their own chat with the bot', async () => {
+    const net = fakeNetwork()
+    const group = -100123
+    await handleUpdate(payload, { message: { chat: { id: group, type: 'group' }, from: { id: Number(OWNER) }, text: '/brief' } })
+    await handleUpdate(payload, {
+      callback_query: { id: 'cb', from: { id: Number(OWNER) }, data: 'sd:r:1', message: { chat: { id: group, type: 'supergroup' }, message_id: 1 } },
+    })
+    // A stranger's private chat, with the owner's id forged as sender, is ignored too.
+    await handleUpdate(payload, { message: { chat: { id: STRANGER, type: 'private' }, from: { id: Number(OWNER) }, text: '/brief' } })
+    expect(net.telegram()).toHaveLength(0)
+  })
+
   it('ignores strangers and files /task for Claude from the owner', async () => {
     const net = fakeNetwork()
     await handleUpdate(payload, { message: { chat: { id: STRANGER }, from: { id: STRANGER }, text: '/task HQ-TEST nope' } })
