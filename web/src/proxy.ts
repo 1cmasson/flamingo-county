@@ -29,7 +29,33 @@ export const LANG_COOKIE = 'fc.lang'
 const WWW = 'www.flamingocounty.com'
 const CANONICAL = 'flamingocounty.com'
 
+/**
+ * AI crawlers and AI-referred visits, one JSON line each to stdout (Railway
+ * keeps these in the service logs). This is the raw data for the AEO
+ * measurement loop: which engines fetch which pages, and which people arrive
+ * from an answer. Nothing identifying is kept — no IP, no cookies.
+ *
+ * Referrers are undercounted: several assistants strip them. ChatGPT tags its
+ * outbound links with utm_source=chatgpt.com, which is matched too.
+ */
+const AI_BOTS =
+  /(GPTBot|OAI-SearchBot|ChatGPT-User|ClaudeBot|Claude-SearchBot|Claude-User|anthropic-ai|PerplexityBot|Perplexity-User|Google-Extended|Google-CloudVertexBot|Applebot-Extended|Bytespider|CCBot|Amazonbot|meta-externalagent|DuckAssistBot|MistralAI-User)/i
+const AI_REFERRERS = /(chatgpt\.com|chat\.openai\.com|perplexity\.ai|claude\.ai|gemini\.google\.com|copilot\.microsoft\.com|you\.com|phind\.com)/i
+
+function logAiTraffic(req: NextRequest) {
+  const ua = req.headers.get('user-agent') ?? ''
+  const bot = ua.match(AI_BOTS)?.[1]
+  const ref = req.headers.get('referer') ?? ''
+  const utm = req.nextUrl.searchParams.get('utm_source') ?? ''
+  const source = ref.match(AI_REFERRERS)?.[1] ?? utm.match(AI_REFERRERS)?.[1]
+  if (!bot && !source) return
+  console.log(
+    JSON.stringify({ aeo: bot ? 'bot' : 'referral', who: bot ?? source, path: req.nextUrl.pathname, t: new Date().toISOString() }),
+  )
+}
+
 export function proxy(req: NextRequest) {
+  logAiTraffic(req)
   const host = (req.headers.get('x-forwarded-host') ?? req.headers.get('host') ?? '').split(':')[0]
   if (host === WWW) {
     const url = req.nextUrl.clone()

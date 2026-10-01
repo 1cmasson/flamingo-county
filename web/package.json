@@ -21,6 +21,8 @@
     "seed": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" tsx src/seed/index.ts",
     "seed:inspect": "cross-env NODE_OPTIONS=--no-deprecation tsx src/seed/inspect.ts",
     "verify": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" tsx src/seed/verify.ts",
+    "aeo:probe": "tsx scripts/aeo/probe.ts",
+    "aeo:indexnow": "tsx scripts/aeo/indexnow-submit.ts",
     "gen:dictionary": "cross-env NODE_OPTIONS=--no-deprecation tsx src/i18n/generate.ts"
   },
   "dependencies": {
@@ -39,6 +41,7 @@
     "react": "19.2.6",
     "react-dom": "19.2.6",
     "sharp": "0.34.2",
+    "web-vitals": "^6.2.2",
     "zod": "3.25.76"
   },
   "devDependencies": {

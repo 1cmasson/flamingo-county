@@ -56,9 +56,9 @@ export default async function MyWeekPage({ params }: { params: Promise<{ lang: s
   const h = await headers()
   const session = await auth.api.getSession({ headers: h })
   const user = session ? { name: session.user.name, email: session.user.email } : null
-  // Only needed when signed out — it decides between the Google button and the
-  // "open this in your browser" prompt.
-  const webview = user ? null : detectWebview(h.get('user-agent'))
+  // Signed out it decides between the Google button and the emailed code;
+  // signed in, what the re-check before deleting the account can offer.
+  const webview = detectWebview(h.get('user-agent'))
   const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'flamingocounty.com'
   const proto = h.get('x-forwarded-proto') ?? (host.startsWith('localhost') ? 'http' : 'https')
   const pageUrl = `${proto}://${host}${routes.myWeek(lang as Lang)}`
@@ -172,7 +172,9 @@ export default async function MyWeekPage({ params }: { params: Promise<{ lang: s
                   confirmDelete: 'SÍ, BORRAR',
                   cancel: 'CANCELAR',
                   deleteFailed: 'No se pudo borrar la cuenta. Inténtalo de nuevo.',
-                  reauth: 'Por seguridad, vuelve a entrar con Google y luego bórrala.',
+                  reauth:
+                    'Por seguridad, confirma que eres tú — con Google o con un código a tu correo — y luego bórrala.',
+                  reauthCode: 'Por seguridad, confirma que eres tú con un código a tu correo y luego bórrala.',
                   privacy: 'Cómo tratamos tus datos →',
                 }
               : {
@@ -192,7 +194,8 @@ export default async function MyWeekPage({ params }: { params: Promise<{ lang: s
                   confirmDelete: 'YES, DELETE',
                   cancel: 'CANCEL',
                   deleteFailed: 'Couldn’t delete the account. Try again.',
-                  reauth: 'For your safety, sign in with Google again, then delete.',
+                  reauth: 'For your safety, confirm it’s you — with Google or a code to your email — then delete.',
+                  reauthCode: 'For your safety, confirm it’s you with a code to your email, then delete.',
                   privacy: 'How we handle your data →',
                 }
           }

@@ -1,7 +1,10 @@
 import { test, expect, type Page } from '@playwright/test'
 import {
+  ageSessions,
   authUserExists,
+  authUserIdByEmail,
   createMember,
+  mintSignInCode,
   eventSlugs,
   memberLists,
   removeMember,
@@ -102,6 +105,28 @@ test.describe('Members', () => {
 
     await expect(page.getByRole('button', { name: /SIGN IN WITH GOOGLE/ })).toBeVisible()
     expect(await memberLists(member.id)).toBeNull()
+    expect(await authUserExists(member.id)).toBe(false)
+  })
+
+  test('an old session proves itself with an emailed code before deleting', async ({ page }) => {
+    await ageSessions(member.id)
+    await page.goto(MY_WEEK)
+
+    await page.getByRole('button', { name: 'Delete my account' }).click()
+    await page.getByRole('button', { name: 'YES, DELETE' }).click()
+    const confirm = page.getByRole('group', { name: 'DELETE YOUR ACCOUNT?' })
+    await expect(confirm.getByText(/confirm it’s you — with Google or a code/)).toBeVisible()
+
+    // The code goes to the account's own address — there is nothing to type.
+    await expect(confirm.getByLabel('YOUR EMAIL', { exact: true })).toHaveCount(0)
+    await confirm.getByRole('button', { name: 'EMAIL ME A CODE' }).click()
+    // Mint only once the UI's own send has landed, or that one replaces ours.
+    await expect(confirm.getByLabel('CODE', { exact: true })).toBeVisible()
+    await confirm.getByLabel('CODE', { exact: true }).fill(await mintSignInCode(member.email))
+    await confirm.getByRole('button', { name: 'SIGN IN', exact: true }).click()
+
+    await confirm.getByRole('button', { name: 'YES, DELETE' }).click()
+    await expect(page.getByRole('button', { name: /SIGN IN WITH GOOGLE/ })).toBeVisible()
     expect(await authUserExists(member.id)).toBe(false)
   })
 
@@ -211,11 +236,13 @@ test.describe('Inside Instagram', () => {
       'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 339.0.3.12.91',
   })
 
-  test('My Week offers "open in Safari" instead of the Google button', async ({ page }) => {
+  test('My Week offers an emailed code, and "open in Safari", instead of the Google button', async ({ page }) => {
     await page.goto(MY_WEEK)
     // Scoped to the page: the gate's (closed) dialog carries the same copy.
     const main = page.locator('main')
-    await expect(main.getByText('OPEN THIS IN Safari TO SIGN IN.')).toBeVisible()
+    await expect(main.getByText('SIGN IN WITH YOUR EMAIL.')).toBeVisible()
+    await expect(main.getByRole('button', { name: 'EMAIL ME A CODE' })).toBeVisible()
+    await expect(main.getByText('Or open this page in Safari to sign in with Google.')).toBeVisible()
     await expect(main.getByRole('button', { name: 'COPY LINK' })).toBeVisible()
     await expect(page.getByRole('button', { name: /SIGN IN WITH GOOGLE/ })).toHaveCount(0)
   })
@@ -230,9 +257,82 @@ test.describe('Inside Instagram', () => {
     await page.getByRole('button', { name: '+ MY WEEK' }).first().click()
 
     const dialog = page.getByRole('dialog')
-    await expect(dialog.getByText('OPEN THIS IN Safari TO SIGN IN.')).toBeVisible()
+    await expect(dialog.getByText('SIGN IN WITH YOUR EMAIL.')).toBeVisible()
     await dialog.getByRole('button', { name: 'CLOSE' }).click()
     await expect(dialog).toBeHidden()
     expect(signInCalled).toBe(false)
+  })
+})
+
+test.describe('Signing in with an emailed code', () => {
+  test.use({
+    userAgent:
+      'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 Instagram 339.0.3.12.91',
+  })
+
+  const cleanup: string[] = []
+  test.afterEach(async () => {
+    for (const id of cleanup.splice(0)) await removeMember(id)
+  })
+
+  async function enterCode(page: Page, scope: ReturnType<Page['locator']>, email: string) {
+    await scope.getByLabel('YOUR EMAIL', { exact: true }).fill(email)
+    await scope.getByRole('button', { name: 'EMAIL ME A CODE' }).click()
+    await expect(scope.getByLabel('CODE', { exact: true })).toBeVisible()
+    await scope.getByLabel('CODE', { exact: true }).fill(await mintSignInCode(email))
+    await scope.getByRole('button', { name: 'SIGN IN', exact: true }).click()
+  }
+
+  test('someone who joined with Google gets the same account back', async ({ page }) => {
+    // Typed in capitals on purpose: Google stored it lower-case.
+    const email = `e2e-code-google-${Date.now()}@example.com`
+    const member = await createMember(email)
+    cleanup.push(member.id)
+    await setMemberLists(member.id, [A])
+
+    await page.goto(MY_WEEK)
+    await enterCode(page, page.locator('main'), email.toUpperCase())
+
+    await expect(listed(page, A)).toBeVisible()
+    expect(await authUserIdByEmail(email)).toBe(member.id)
+  })
+
+  test('a new address gets a new account', async ({ page }) => {
+    const email = `e2e-code-new-${Date.now()}@example.com`
+    await page.goto(MY_WEEK)
+    await enterCode(page, page.locator('main'), email)
+
+    await expect(page.getByText('NOTHING SAVED YET.')).toBeVisible()
+    const id = await authUserIdByEmail(email)
+    expect(id).not.toBeNull()
+    cleanup.push(id!)
+  })
+
+  test('a wrong code is refused', async ({ page }) => {
+    const email = `e2e-code-wrong-${Date.now()}@example.com`
+    await page.goto(MY_WEEK)
+    const main = page.locator('main')
+    await main.getByLabel('YOUR EMAIL', { exact: true }).fill(email)
+    await main.getByRole('button', { name: 'EMAIL ME A CODE' }).click()
+    await expect(main.getByLabel('CODE', { exact: true })).toBeVisible()
+    const real = await mintSignInCode(email)
+    await main.getByLabel('CODE', { exact: true }).fill(real === '000000' ? '111111' : '000000')
+    await main.getByRole('button', { name: 'SIGN IN', exact: true }).click()
+    await expect(main.getByRole('alert')).toHaveText('That code isn’t right. Check it or ask for a new one.')
+    expect(await authUserIdByEmail(email)).toBeNull()
+  })
+
+  test('a save tapped in the gate is finished after the code', async ({ page }) => {
+    const email = `e2e-code-gate-${Date.now()}@example.com`
+    await page.goto(`${BASE}/en/events/${A}`)
+    await page.getByRole('button', { name: '+ MY WEEK' }).first().click()
+    await enterCode(page, page.getByRole('dialog'), email)
+
+    await expect(page).toHaveURL(`${BASE}/en/events/${A}`)
+    await expect(page.getByRole('button', { name: 'IN MY WEEK' }).first()).toBeVisible()
+    const id = await authUserIdByEmail(email)
+    expect(id).not.toBeNull()
+    cleanup.push(id!)
+    await expect.poll(async () => (await memberLists(id!))?.saved).toEqual([A])
   })
 })
