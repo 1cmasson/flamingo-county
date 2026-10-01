@@ -6,6 +6,9 @@ import { Luckiest_Guy, Archivo } from 'next/font/google'
 import { DEFAULT_LANG, isLang, LOCALES, translator } from '../../../i18n'
 import { Nav } from '../../../components/Nav'
 import { Footer } from '../../../components/Footer'
+import { JsonLd } from '../../../components/JsonLd'
+import { websiteJsonLd } from '../../../lib/jsonld'
+import { DEFAULT_OG_IMAGE, SITE_NAME } from '../../../lib/site'
 import { MemberProvider } from '../../../components/MemberProvider'
 import { auth } from '../../../lib/auth'
 import { webviewCopy } from '../../../lib/memberCopy'
@@ -44,13 +47,22 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { lang } = await params
   const t = translator(isLang(lang) ? lang : DEFAULT_LANG)
+  const description = t('A directory of the restaurants and bars the locals actually vouch for.')
   return {
     metadataBase: new URL('https://flamingocounty.com'),
     title: {
       default: 'Flamingo County',
       template: '%s · Flamingo County',
     },
-    description: t('A directory of the restaurants and bars the locals actually vouch for.'),
+    description,
+    // Pages that set their own title/description inherit these for the rest.
+    openGraph: {
+      type: 'website',
+      siteName: SITE_NAME,
+      locale: lang === 'es' ? 'es_US' : 'en_US',
+      images: [{ url: DEFAULT_OG_IMAGE, width: 512, height: 512, alt: SITE_NAME }],
+    },
+    twitter: { card: 'summary', images: [DEFAULT_OG_IMAGE] },
     icons: {
       icon: [
         { url: '/uploads/favicon.ico', sizes: 'any' },
@@ -120,6 +132,12 @@ export default async function LangLayout({
       className={`${luckiest.variable} ${archivo.variable}`}
     >
       <body>
+        <JsonLd
+          data={websiteJsonLd(
+            lang,
+            translator(lang)('A directory of the restaurants and bars the locals actually vouch for.'),
+          )}
+        />
         {/* Flex column over nav, content and footer, so a short page's slack
             is absorbed by the content area and the footer stays flush with
             the bottom of the screen instead of leaving a gap below it. `svh`

@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { isLang, translator, type Lang } from '../../../../../i18n'
 import { routes } from '../../../../../lib/routes'
+import { openGraph, twitterCard } from '../../../../../lib/site'
 import {
   getCity,
   getListing,
@@ -13,6 +14,8 @@ import {
   rel,
 } from '../../../../../lib/data'
 import type { Category, City, Media } from '../../../../../payload-types'
+import { JsonLd } from '../../../../../components/JsonLd'
+import { breadcrumbJsonLd, listingJsonLd, mediaUrl, titleCase } from '../../../../../lib/jsonld'
 import { PageShell } from '../../../../../components/PageShell'
 import { MediaSlot } from '../../../../../components/MediaSlot'
 import { FULL_WIDTH_SIZES } from '../../../../../lib/srcset'
@@ -57,6 +60,13 @@ export async function generateMetadata({
   return {
     title: doc.name,
     description: doc.tag ?? undefined,
+    openGraph: openGraph(lang, {
+      title: doc.name,
+      description: doc.tag ?? undefined,
+      url: routes.business(lang, city, business),
+      image: mediaUrl(Array.isArray(doc.gallery) ? doc.gallery[0] : null),
+    }),
+    twitter: twitterCard(mediaUrl(Array.isArray(doc.gallery) ? doc.gallery[0] : null)),
     alternates: {
       canonical: routes.business(lang, city, business),
       languages: {
@@ -126,6 +136,16 @@ export default async function BusinessPage({
 
   return (
     <PageShell>
+      <JsonLd
+        data={[
+          listingJsonLd(lang, listing, citySlug),
+          breadcrumbJsonLd([
+            { name: 'Flamingo County', path: routes.home(lang) },
+            { name: titleCase(city?.name ?? listingCity.name) ?? listingCity.name, path: routes.city(lang, citySlug) },
+            { name: listing.name, path: routes.business(lang, citySlug, listing.slug) },
+          ]),
+        ]}
+      />
       <main
         style={{
           maxWidth: 1180,
