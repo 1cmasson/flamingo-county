@@ -88,6 +88,7 @@ export interface Config {
     'hq-social-stats': HqSocialStat;
     'hq-clicks': HqClick;
     'hq-publish-requests': HqPublishRequest;
+    'hq-chat-turns': HqChatTurn;
     'payload-mcp-api-keys': PayloadMcpApiKey;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
@@ -117,6 +118,7 @@ export interface Config {
     'hq-social-stats': HqSocialStatsSelect<false> | HqSocialStatsSelect<true>;
     'hq-clicks': HqClicksSelect<false> | HqClicksSelect<true>;
     'hq-publish-requests': HqPublishRequestsSelect<false> | HqPublishRequestsSelect<true>;
+    'hq-chat-turns': HqChatTurnsSelect<false> | HqChatTurnsSelect<true>;
     'payload-mcp-api-keys': PayloadMcpApiKeysSelect<false> | PayloadMcpApiKeysSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
@@ -1147,6 +1149,19 @@ export interface HqPublishRequest {
   createdAt: string;
 }
 /**
+ * The Telegram chat's short memory. Redacted, and pruned after two days.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-chat-turns".
+ */
+export interface HqChatTurn {
+  id: number;
+  role: 'user' | 'assistant';
+  text: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * API keys control which collections, resources, tools, and prompts MCP clients can access
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1555,6 +1570,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'hq-publish-requests';
         value: number | HqPublishRequest;
+      } | null)
+    | ({
+        relationTo: 'hq-chat-turns';
+        value: number | HqChatTurn;
       } | null)
     | ({
         relationTo: 'payload-mcp-api-keys';
@@ -2148,6 +2167,16 @@ export interface HqPublishRequestsSelect<T extends boolean = true> {
   expiresAt?: T;
   telegramMessageId?: T;
   error?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-chat-turns_select".
+ */
+export interface HqChatTurnsSelect<T extends boolean = true> {
+  role?: T;
+  text?: T;
   updatedAt?: T;
   createdAt?: T;
 }
