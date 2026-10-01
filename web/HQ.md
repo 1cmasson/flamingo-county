@@ -131,6 +131,52 @@ Two things found against the live instance on 2026-10-01:
   looks the post up with `GET /posts` by channel and publish time, so the first
   real approval will show which path it takes.
 
+## Claude over MCP
+
+`/api/mcp` lets Claude Code (or any MCP client) work against HQ directly: read
+the brief, work the task queue, write social drafts, and pull post results for
+a weekly review.
+
+**Connect it.**
+1. In the admin, open **MCP → API Keys** and create a key. Tick only what it
+   should use. For Claude, tick:
+   - **find, create and update** on HQ events, tasks and social drafts
+   - **find** on HQ media, social stats and clicks, listings and events
+   - **find and update** on listing requests
+   - all three **tools**
+   Copy the key; it's shown once.
+2. On the Mac, run:
+
+   ```sh
+   claude mcp add --transport http flamingo-hq https://flamingocounty.com/api/mcp \
+     --header "Authorization: Bearer <key>"
+   ```
+
+**What it can and can't reach.** Two layers: the list in `payload.config.ts`
+is what's possible at all, and a key's ticked boxes are what that key may
+use. `users`, `members`, `subscribers`, the public `media` and the jobs are
+not in the list, so no key can reach member data, visitor emails or the public
+site's uploads. Delete is off everywhere.
+
+**Approval stays human.** Claude can create and edit drafts, but a draft's
+`status` and HQ's bookkeeping fields refuse writes that arrive over MCP
+(`humanOnly` in `src/fields/shared.ts`). The only path to Postiz is the Approve
+tap in Telegram. The tool schemas still list those fields; they are silently
+dropped, and their descriptions say so.
+
+**What you approve is what gets posted.** Editing a pending draft, from Claude
+or the admin, sends a fresh preview. Approve also compares the draft with a
+fingerprint of the preview you tapped, so content changed after a preview is
+never posted unseen: you get the current version to approve instead.
+
+**HQ's own tools:**
+
+| Tool | Does |
+| --- | --- |
+| `hqBrief` | The brief as plain text, without moving the scheduled one. |
+| `hqSocialReport` | Every post in the last N days: pillar, language, time, furthest checkpoint per platform, clicks; plus account snapshots and bio clicks. The input to the weekly review. |
+| `hqAddDraftMediaFromUrl` | Downloads a public https JPEG, PNG or MP4 into HQ media for a draft. It refuses private and loopback hosts and doesn't follow redirects, so the server can't be pointed at itself. |
+
 ## Things that are deliberate
 
 - **The brief runs every hour and sends once.** The jobs queue has no timezone
@@ -167,10 +213,9 @@ Two things found against the live instance on 2026-10-01:
 
 ## What comes next
 
-2. **MCP for Claude.** `@payloadcms/plugin-mcp@3.88.0`, exposing only the HQ
-   collections, `listing-requests` and `listings`. Never `members`, `users` or
-   subscriber emails. Payload `users` has no roles, so any API key is full
-   admin: scope the plugin, not the key.
+2. **MCP for Claude** — built; see *Claude over MCP*. Next on it: a scheduled
+   weekly review that reads `hqSocialReport`, keeps a short playbook of what
+   works, and drafts the next week's posts for approval.
 3. **Social stats** — post checkpoints, account snapshots and tracking links
    are built (see *Measuring the posts*). The endpoints, checked against the
    live instance on 2026-10-01:

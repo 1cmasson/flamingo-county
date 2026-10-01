@@ -38,3 +38,12 @@ export const staffOnly = {
   update: ({ req }: { req: { user?: unknown } }) => Boolean(req.user),
   delete: ({ req }: { req: { user?: unknown } }) => Boolean(req.user),
 }
+
+/**
+ * Field access that refuses writes arriving over MCP (`@payloadcms/plugin-mcp`
+ * sets `req.payloadAPI = 'MCP'`). For the fields that must stay with a human or
+ * with HQ's own bookkeeping — a draft's approval status above all. HQ's own
+ * writes use `overrideAccess`, which skips field access, so they are unaffected.
+ */
+export const notFromMcp = ({ req }: { req: { payloadAPI?: string } }) => req.payloadAPI !== 'MCP'
+export const humanOnly = { create: notFromMcp, update: notFromMcp }
