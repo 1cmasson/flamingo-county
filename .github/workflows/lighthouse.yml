@@ -46,7 +46,7 @@ jobs:
         # error one); the real content check is after seeding, below.
         run: |
           for i in $(seq 1 60); do
-            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/en)
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/en || true)
             if [ "$code" != "000" ]; then
               echo "server is accepting connections (http $code)"
               exit 0
@@ -66,10 +66,16 @@ jobs:
             fc-ci pnpm seed
 
       - name: Restart so the running server picks up seeded content
+        # Same reasoning as the first wait: under `set -e` (the default for
+        # GitHub's `run:` steps), curl's own non-zero exit on a refused
+        # connection — not just a bad HTTP status — kills the step on the
+        # very first attempt instead of letting the loop retry, which is what
+        # actually failed here the first time this workflow ran.
         run: |
           docker restart fc-ci
           for i in $(seq 1 60); do
-            if curl -sf http://localhost:3000/en > /dev/null; then
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/en || true)
+            if [ "$code" = "200" ]; then
               echo "server is back up"
               exit 0
             fi
@@ -85,12 +91,12 @@ jobs:
         # would score a page with no images as fast, which is worse than no
         # check at all.
         run: |
-          media_path=$(curl -s http://localhost:3000/en | grep -oE '/api/media/file/[A-Za-z0-9._-]+\.webp' | head -1)
+          media_path=$(curl -s http://localhost:3000/en | grep -oE '/api/media/file/[A-Za-z0-9._-]+\.webp' | head -1 || true)
           if [ -z "$media_path" ]; then
             echo "no /api/media/file/*.webp URL found in the homepage HTML"
             exit 1
           fi
-          content_type=$(curl -s -o /dev/null -w '%{content_type}' "http://localhost:3000$media_path")
+          content_type=$(curl -s -o /dev/null -w '%{content_type}' "http://localhost:3000$media_path" || true)
           echo "$media_path -> $content_type"
           case "$content_type" in
             image/webp*) echo "ok" ;;
