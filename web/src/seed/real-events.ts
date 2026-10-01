@@ -96,15 +96,17 @@ export const REAL_EVENTS = [
     startTime: '17:00',
     endTime: '22:00',
     /**
-     * Spanish in both locales on purpose — the gala is announced in Spanish
-     * only, so it reads as the invitation prints it. Only the two short
-     * labels follow the English page.
+     * English on the English page (owner's call, 2026-10-01). It used to be
+     * Spanish in both locales, as the invitation prints it, but a page marked
+     * English carrying only Spanish is one search and answer engines read
+     * poorly. The note is a faithful translation of the Spanish, and it keeps
+     * the gala's Spanish name so a search for either name finds it.
      */
     en: {
-      title: 'Gala de la Amistad y Reconocimiento',
+      title: 'Friendship & Recognition Gala',
       timeLabel: '5:00 PM – 10:00 PM',
       freeLabel: 'BY INVITATION',
-      note: 'Una velada de amistad y reconocimiento del Club de la Amistad por un Hialeah Mejor. Invitado especial: el Honorable Alcalde de la Ciudad de Hialeah, Bryan Calvo. 4410 West 16th Ave., Suite 40, Hialeah, Florida 33012.',
+      note: 'An evening of friendship and recognition hosted by the Club de la Amistad por un Hialeah Mejor: the Gala de la Amistad y Reconocimiento. Special guest: the Honorable Bryan Calvo, Mayor of the City of Hialeah. Tuesday, October 6, 2026, 5 to 10 p.m., at Sapphire, 4410 West 16th Ave., Suite 40, Hialeah, Florida 33012.',
     },
     es: {
       title: 'Gala de la Amistad y Reconocimiento',
