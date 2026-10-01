@@ -1,6 +1,17 @@
 import { indexNowHooks } from '../lib/indexnow'
 import type { CollectionConfig } from 'payload'
-import { draftVersions, mcpDraftsOnly, publishedRead, slugField } from '../fields/shared'
+import { draftVersions, hhmm, mcpDraftsOnly, publishedRead, slugField } from '../fields/shared'
+
+/** schema.org `dayOfWeek` names, stored as-is so structured data needs no mapping. */
+const DAYS = [
+  { label: 'Mon', value: 'Monday' },
+  { label: 'Tue', value: 'Tuesday' },
+  { label: 'Wed', value: 'Wednesday' },
+  { label: 'Thu', value: 'Thursday' },
+  { label: 'Fri', value: 'Friday' },
+  { label: 'Sat', value: 'Saturday' },
+  { label: 'Sun', value: 'Sunday' },
+]
 
 /**
  * Business listings — `BIZ` (14 records) joined with `DETAIL` in fc-data.js.
@@ -83,6 +94,24 @@ export const Listings: CollectionConfig = {
       type: 'checkbox',
       defaultValue: false,
       admin: { position: 'sidebar', description: 'Paying member — earns the badge.' },
+    },
+    {
+      name: 'lastVerifiedAt',
+      type: 'date',
+      admin: {
+        position: 'sidebar',
+        date: { pickerAppearance: 'dayOnly', displayFormat: 'yyyy-MM-dd' },
+        description:
+          'The day the facts on this page were last checked against their sources. Set it when you actually check, never as a formality: answer engines read it as a freshness claim. Empty means nobody has.',
+      },
+    },
+    {
+      name: 'verifiedBy',
+      type: 'text',
+      admin: {
+        position: 'sidebar',
+        description: 'Who or what did that check, e.g. "Owner, by phone" or "Research dossier".',
+      },
     },
     {
       name: 'imageHint',
@@ -213,6 +242,45 @@ export const Listings: CollectionConfig = {
             { name: 'source', type: 'text', required: true },
             { name: 'detail', type: 'text', required: true },
           ],
+        },
+        {
+          // Beside `hours`, not instead of it: `hours` is display copy and can
+          // say things a clock can't ("Kitchen till 10"). This is the same
+          // schedule as data, which is what search and answer engines read.
+          name: 'openingHours',
+          type: 'array',
+          labels: { singular: 'Opening hours', plural: 'Opening hours' },
+          admin: {
+            description:
+              'The schedule as data, from the same source as `hours`. A closing time earlier than the opening time means past midnight. Only published as structured data when `hoursConfidence` is high — a guessed schedule in Google is worse than none.',
+          },
+          fields: [
+            { name: 'days', type: 'select', hasMany: true, required: true, options: DAYS },
+            {
+              type: 'row',
+              fields: [
+                {
+                  name: 'opens',
+                  type: 'text',
+                  required: true,
+                  validate: hhmm,
+                  admin: { description: '24-hour HH:mm' },
+                },
+                {
+                  name: 'closes',
+                  type: 'text',
+                  required: true,
+                  validate: hhmm,
+                  admin: { description: '24-hour HH:mm' },
+                },
+              ],
+            },
+          ],
+        },
+        {
+          name: 'hoursSource',
+          type: 'text',
+          admin: { description: 'The URL the schedule was read from.' },
         },
       ],
     },

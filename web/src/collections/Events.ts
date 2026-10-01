@@ -1,16 +1,6 @@
 import { indexNowHooks } from '../lib/indexnow'
 import type { CollectionConfig } from 'payload'
-import { draftVersions, mcpDraftsOnly, publishedRead, slugField } from '../fields/shared'
-
-/**
- * `HH:mm`, or empty. Validated at the edge rather than in the ICS route: a
- * malformed clock reaching `Date.UTC` produces `NaN`, and an ICS with
- * `DTSTART:NaNNaNNaN` is a file every calendar client rejects silently.
- */
-const hhmm = (value: unknown) =>
-  !value ||
-  (typeof value === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(value)) ||
-  'Use 24-hour HH:mm, e.g. 09:00.'
+import { draftVersions, hhmm, mcpDraftsOnly, publishedRead, slugField } from '../fields/shared'
 
 /**
  * Events — `EVENTS` (20 records) in fc-data.js.

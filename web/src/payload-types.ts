@@ -456,6 +456,14 @@ export interface Listing {
    */
   member?: boolean | null;
   /**
+   * The day the facts on this page were last checked against their sources. Set it when you actually check, never as a formality: answer engines read it as a freshness claim. Empty means nobody has.
+   */
+  lastVerifiedAt?: string | null;
+  /**
+   * Who or what did that check, e.g. "Owner, by phone" or "Research dossier".
+   */
+  verifiedBy?: string | null;
+  /**
    * Art direction for the empty photo slot, e.g. "Cantina bar". Shown as the placeholder label until a real photo lands.
    */
   imageHint?: string | null;
@@ -525,6 +533,27 @@ export interface Listing {
           id?: string | null;
         }[]
       | null;
+    /**
+     * The schedule as data, from the same source as `hours`. A closing time earlier than the opening time means past midnight. Only published as structured data when `hoursConfidence` is high — a guessed schedule in Google is worse than none.
+     */
+    openingHours?:
+      | {
+          days: ('Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday' | 'Sunday')[];
+          /**
+           * 24-hour HH:mm
+           */
+          opens: string;
+          /**
+           * 24-hour HH:mm
+           */
+          closes: string;
+          id?: string | null;
+        }[]
+      | null;
+    /**
+     * The URL the schedule was read from.
+     */
+    hoursSource?: string | null;
   };
   /**
    * Only populated for imported listings. This is what separates a sourced record from a plausible one — if you edit a field above, add or update the source here too, or the record quietly stops being auditable.
@@ -1708,6 +1737,8 @@ export interface ListingsSelect<T extends boolean = true> {
   reviews?: T;
   publicationStatus?: T;
   member?: T;
+  lastVerifiedAt?: T;
+  verifiedBy?: T;
   imageHint?: T;
   gallery?: T;
   logo?: T;
@@ -1744,6 +1775,15 @@ export interface ListingsSelect<T extends boolean = true> {
               detail?: T;
               id?: T;
             };
+        openingHours?:
+          | T
+          | {
+              days?: T;
+              opens?: T;
+              closes?: T;
+              id?: T;
+            };
+        hoursSource?: T;
       };
   research?:
     | T
