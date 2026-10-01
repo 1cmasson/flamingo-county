@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import { preload } from 'react-dom'
 import { isLang, translator, type Lang } from '../../../i18n'
 import { routes } from '../../../lib/routes'
 import { openGraph } from '../../../lib/site'
@@ -87,6 +88,15 @@ export default async function HomePage({
   const heroFrameBg = heroPhoto?.url
     ? `linear-gradient(rgba(22,224,242,0.18), rgba(22,224,242,0.18)), url("${heroPhoto.url}") ${heroPos}/cover no-repeat`
     : (city?.castBg ?? settings.heroCastBg ?? '#00feff')
+
+  // `heroPhoto` is only ever referenced from inline `style` strings (the two
+  // backgrounds above), which the browser's preload scanner does not reliably
+  // pick up as early as a real `<img>` or `<link rel=preload>` — it can start
+  // fetching noticeably later than the mascot art next to it, which is the
+  // "loads in stages" effect this avoids.
+  if (heroPhoto?.url) {
+    preload(heroPhoto.url, { as: 'image', fetchPriority: 'high' })
+  }
 
   return (
     <PageShell>
@@ -179,6 +189,7 @@ export default async function HomePage({
                   // Right-hand column of a `1.15fr 0.85fr` split on the 1280
                   // shell, so ~520px, and full width once that grid stacks.
                   sizes="(max-width: 900px) 100vw, 520px"
+                  fetchPriority="high"
                   alt={heroCastImg.alt ?? ''}
                   style={{
                     alignSelf: 'flex-end',
