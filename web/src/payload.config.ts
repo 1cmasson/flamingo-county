@@ -25,6 +25,7 @@ import { HqMedia } from './collections/HqMedia'
 import { HqSocialDrafts } from './collections/HqSocialDrafts'
 import { HqSocialStats } from './collections/HqSocialStats'
 import { HqClicks } from './collections/HqClicks'
+import { HqPublishRequests } from './collections/HqPublishRequests'
 import { morningBrief } from './jobs/morningBrief'
 import { socialStats } from './jobs/socialStats'
 import { hqMcpTools } from './lib/mcpTools'
@@ -63,6 +64,7 @@ export default buildConfig({
     HqSocialDrafts,
     HqSocialStats,
     HqClicks,
+    HqPublishRequests,
   ],
   globals: [SiteSettings, AboutPage, ListYourSpotPage],
 
@@ -109,6 +111,13 @@ export default buildConfig({
      * Delete is off everywhere. Drafts can be written and edited but their
      * status cannot be changed over MCP (see `humanOnly` in fields/shared.ts):
      * nothing reaches a social account without the owner's tap in Telegram.
+     *
+     * The site's content collections take drafts only over MCP — any other
+     * write is refused by `mcpDraftsOnly` on the collection itself — and
+     * publishing is the owner's tap in Telegram (hqRequestPublish,
+     * lib/publishRequests.ts). `hq-publish-requests` must never be added to
+     * this list: a generic update tool on it would let a client approve its
+     * own request.
      */
     mcpPlugin({
       collections: {
@@ -139,14 +148,14 @@ export default buildConfig({
           description: '“List your spot” submissions from business owners. Update status as they are handled.',
         },
         listings: {
-          enabled: { find: true },
+          enabled: { find: true, create: true, update: true },
           description:
-            'Directory listings. Only publicationStatus "ready" is fully sourced; "unsourced" detail is design placeholder — never quote it as fact.',
+            'Directory listings. Only publicationStatus "ready" is fully sourced; "unsourced" detail is design placeholder — never quote it as fact, and never invent owner details. Save with draft: true — drafts are never live; publish with hqRequestPublish.',
         },
-        events: { enabled: { find: true }, description: 'Dated events on the site.' },
-        'weekly-events': { enabled: { find: true }, description: 'Recurring weekly events.' },
-        stories: { enabled: { find: true }, description: 'Published stories.' },
-        spotlights: { enabled: { find: true } },
+        events: { enabled: { find: true, create: true, update: true }, description: 'Dated events on the site. Save with draft: true — drafts are never live; publish with hqRequestPublish.' },
+        'weekly-events': { enabled: { find: true, create: true, update: true }, description: 'Recurring weekly events. Save with draft: true — drafts are never live; publish with hqRequestPublish.' },
+        stories: { enabled: { find: true, create: true, update: true }, description: 'Stories. Save with draft: true — drafts are never live; publish with hqRequestPublish.' },
+        spotlights: { enabled: { find: true, create: true, update: true }, description: 'Home-page spotlights. Save with draft: true — drafts are never live; publish with hqRequestPublish.' },
         cities: { enabled: { find: true } },
         categories: { enabled: { find: true } },
       },
@@ -155,7 +164,7 @@ export default buildConfig({
         serverOptions: {
           serverInfo: { name: 'Flamingo HQ', version: '1.0.0' },
           instructions:
-            'Flamingo HQ, the private ops layer of flamingocounty.com (a bilingual Miami-Dade directory: Hialeah, Miami Lakes, Little Havana). Start with hqBrief. Social posts are drafts in hq-social-drafts; the owner approves each one in Telegram and you cannot. Give every draft a pillar and language (the audience is Spanish-first). Use real listings, events and stories only — never invent business details.',
+            'Flamingo HQ, the private ops layer of flamingocounty.com (a bilingual Miami-Dade directory: Hialeah, Miami Lakes, Little Havana). Start with hqBrief. Social posts are drafts in hq-social-drafts; the owner approves each one in Telegram and you cannot. Give every draft a pillar and language (the audience is Spanish-first). Use real listings, events and stories only — never invent business details. Site content (events, weekly events, stories, spotlights, listings) has drafts: save freely with draft: true — nothing you save is visible — then call hqRequestPublish; it goes live only when the owner taps Publish in Telegram. Never try to publish any other way.',
         },
       },
     }),

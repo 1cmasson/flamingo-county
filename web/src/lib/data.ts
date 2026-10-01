@@ -3,6 +3,7 @@ import type { Where } from 'payload'
 import config from '../payload.config'
 import type { Lang } from '../i18n'
 import type { City, Listing, Story, Event, WeeklyEvent, Spotlight, Category, EventKind } from '../payload-types'
+import { PUBLISHED } from '../fields/shared'
 import { routes } from './routes'
 import { fold, matches, metaLine, prepare, squash, type Suggestion } from './search'
 
@@ -13,6 +14,13 @@ import { fold, matches, metaLine, prepare, squash, type Suggestion } from './sea
 async function db() {
   return getPayload({ config })
 }
+
+/**
+ * Listings, stories, events, weekly events and spotlights have drafts. The
+ * local API skips access control, so it would return a never-published draft
+ * like any other row — every query on those collections goes through this.
+ */
+const published = (where?: Where): Where => (where && Object.keys(where).length ? { and: [PUBLISHED, where] } : PUBLISHED)
 
 /* ----------------------------------------------------------------- taxonomy */
 
@@ -84,7 +92,7 @@ export async function getListings(lang: Lang, filter: ListingFilter = {}): Promi
 
   const { docs } = await payload.find({
     collection: 'listings',
-    where,
+    where: published(where),
     locale: lang,
     limit: 200,
     // Same reason as stories: seed order is the authored order, and the default
@@ -184,7 +192,7 @@ export async function getListing(lang: Lang, slug: string): Promise<Listing | nu
   const payload = await db()
   const { docs } = await payload.find({
     collection: 'listings',
-    where: { slug: { equals: slug } },
+    where: published({ slug: { equals: slug } }),
     locale: lang,
     limit: 1,
     depth: 2,
@@ -198,6 +206,7 @@ export async function getStories(lang: Lang): Promise<Story[]> {
   const payload = await db()
   const { docs } = await payload.find({
     collection: 'stories',
+    where: published(),
     locale: lang,
     limit: 50,
     // Seed order, which is `fc-data.js` order. The index features whichever
@@ -213,7 +222,7 @@ export async function getStory(lang: Lang, slug: string): Promise<Story | null> 
   const payload = await db()
   const { docs } = await payload.find({
     collection: 'stories',
-    where: { slug: { equals: slug } },
+    where: published({ slug: { equals: slug } }),
     locale: lang,
     limit: 1,
     depth: 2,
@@ -226,7 +235,7 @@ export async function getStoryForListing(lang: Lang, listingId: number | string)
   const payload = await db()
   const { docs } = await payload.find({
     collection: 'stories',
-    where: { listing: { equals: listingId } },
+    where: published({ listing: { equals: listingId } }),
     locale: lang,
     limit: 1,
     depth: 1,
@@ -240,6 +249,7 @@ export async function getEvents(lang: Lang): Promise<Event[]> {
   const payload = await db()
   const { docs } = await payload.find({
     collection: 'events',
+    where: published(),
     locale: lang,
     limit: 500,
     sort: 'date',
@@ -255,7 +265,7 @@ export async function getEvent(lang: Lang, slug: string): Promise<Event | null> 
   const payload = await db()
   const { docs } = await payload.find({
     collection: 'events',
-    where: { slug: { equals: slug } },
+    where: published({ slug: { equals: slug } }),
     locale: lang,
     limit: 1,
     depth: 3,
@@ -267,6 +277,7 @@ export async function getWeeklyEvents(lang: Lang): Promise<WeeklyEvent[]> {
   const payload = await db()
   const { docs } = await payload.find({
     collection: 'weekly-events',
+    where: published(),
     locale: lang,
     limit: 50,
     sort: 'dow',
@@ -281,6 +292,7 @@ export async function getSpotlights(lang: Lang): Promise<Spotlight[]> {
   const payload = await db()
   const { docs } = await payload.find({
     collection: 'spotlights',
+    where: published(),
     locale: lang,
     limit: 20,
     // Seed order is city order — Hialeah, Miami Lakes, Little Havana — and the

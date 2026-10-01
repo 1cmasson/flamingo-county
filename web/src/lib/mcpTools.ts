@@ -8,6 +8,7 @@ import type { HqSocialDraft } from '../payload-types'
 import { buildBrief } from './brief'
 import { miamiTime } from './hq'
 import { isRunningCount, type MetricSummary } from './postiz'
+import { PUBLISHABLE, publishStatus, requestPublish } from './publishRequests'
 
 /**
  * HQ's own MCP tools, beside the generic per-collection ones the plugin
@@ -231,5 +232,33 @@ export const hqMcpTools: McpTool[] = [
       guard(async () =>
         text(JSON.stringify(await addMediaFromUrl(req, String(args.url), args.note as string | undefined))),
       ),
+  },
+  {
+    name: 'hqRequestPublish',
+    description:
+      'Ask the owner to publish the current draft of a site document (' +
+      PUBLISHABLE.join(', ') +
+      '). Save the draft first with the create/update tool and draft: true — drafts are never visible on the site. The owner sees exactly what changes against the live page in Telegram and taps Publish or Reject. If you edit the draft again before they tap, they are shown the new version instead. Publishes nothing by itself.',
+    parameters: {
+      collection: z.enum(PUBLISHABLE).describe('Which collection'),
+      id: z.union([z.string(), z.number()]).describe('Document id'),
+      reason: z.string().max(500).optional().describe('One line for the owner: what this is'),
+    },
+    handler: (args: Record<string, unknown>, req: PayloadRequest) =>
+      guard(async () =>
+        text(
+          JSON.stringify({
+            ...(await requestPublish(req.payload, args as never)),
+            next: 'Waiting for the owner to tap Publish in Telegram. Check with hqPublishStatus.',
+          }),
+        ),
+      ),
+  },
+  {
+    name: 'hqPublishStatus',
+    description: 'Where a publish request stands: pending, published, rejected, superseded, stale (the draft changed and was re-sent), expired or failed.',
+    parameters: { requestId: z.number().int().positive() },
+    handler: (args: Record<string, unknown>, req: PayloadRequest) =>
+      guard(async () => text(JSON.stringify(await publishStatus(req.payload, Number(args.requestId))))),
   },
 ]
