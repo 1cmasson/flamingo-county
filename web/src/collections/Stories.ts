@@ -1,3 +1,4 @@
+import { indexNowHooks } from '../lib/indexnow'
 import type { Block, CollectionConfig } from 'payload'
 import { slugField, publicRead } from '../fields/shared'
 
@@ -110,6 +111,7 @@ const SectionBreak: Block = {
 export const Stories: CollectionConfig = {
   slug: 'stories',
   access: publicRead,
+  hooks: indexNowHooks('stories'),
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'listing', 'readTime'],

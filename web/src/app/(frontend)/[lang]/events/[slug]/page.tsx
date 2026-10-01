@@ -3,9 +3,12 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { isLang, translator, type Lang } from '../../../../../i18n'
 import { routes } from '../../../../../lib/routes'
+import { openGraph, twitterCard } from '../../../../../lib/site'
 import { getCity, getEvent, getEvents, rel } from '../../../../../lib/data'
 import { dateOnly, parseISO, shortMonth, shortWeekday } from '../../../../../lib/dates'
 import type { City, EventKind, Media } from '../../../../../payload-types'
+import { JsonLd } from '../../../../../components/JsonLd'
+import { breadcrumbJsonLd, eventJsonLd, mediaUrl } from '../../../../../lib/jsonld'
 import { PageShell } from '../../../../../components/PageShell'
 import { MediaSlot } from '../../../../../components/MediaSlot'
 import { FULL_WIDTH_SIZES } from '../../../../../lib/srcset'
@@ -48,6 +51,13 @@ export async function generateMetadata({
   return {
     title: ev.title,
     description: ev.note ?? undefined,
+    openGraph: openGraph(lang, {
+      title: ev.title,
+      description: ev.note ?? undefined,
+      url: routes.event(lang, slug),
+      image: mediaUrl(ev.image),
+    }),
+    twitter: twitterCard(mediaUrl(ev.image)),
     alternates: {
       canonical: routes.event(lang, slug),
       languages: { en: routes.event('en', slug), es: routes.event('es', slug) },
@@ -97,6 +107,16 @@ export default async function EventPage({
 
   return (
     <PageShell>
+      <JsonLd
+        data={[
+          eventJsonLd(lang, ev, { listing, city: cityRef, name: venue }),
+          breadcrumbJsonLd([
+            { name: 'Flamingo County', path: routes.home(lang) },
+            { name: t('Events'), path: routes.events(lang) },
+            { name: ev.title, path: routes.event(lang, slug) },
+          ]),
+        ]}
+      />
       <main
         style={{
           maxWidth: 1180,

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
+import { preload } from 'react-dom'
 import { isLang, translator, type Lang } from '../../../../i18n'
 import { routes } from '../../../../lib/routes'
 import {
@@ -13,6 +14,8 @@ import {
 } from '../../../../lib/data'
 import { castBg } from '../../../../lib/castBg'
 import type { City, Media } from '../../../../payload-types'
+import { JsonLd } from '../../../../components/JsonLd'
+import { breadcrumbJsonLd, itemListJsonLd, titleCase } from '../../../../lib/jsonld'
 import { PageShell } from '../../../../components/PageShell'
 import { BusinessCard } from '../../../../components/BusinessCard'
 import { SearchForm } from '../../../../components/SearchForm'
@@ -105,6 +108,13 @@ export default async function CityPage({
     ? `linear-gradient(rgba(22,224,242,0.18), rgba(22,224,242,0.18)), url("${photo.url}") ${pos}/cover no-repeat`
     : (city.castBg ?? 'var(--cyan)')
 
+  // Same reasoning as the home page hero: a CSS `background` referencing
+  // `photo.url` isn't reliably caught by the preload scanner, so it can start
+  // fetching later than it should for an above-the-fold image.
+  if (photo?.url) {
+    preload(photo.url, { as: 'image', fetchPriority: 'high' })
+  }
+
   const cast = city.cast ?? []
   const isGroup = Boolean(cast[0]?.group)
   // Yellow-accented cities would put a yellow button on a yellow wash, so they
@@ -113,6 +123,20 @@ export default async function CityPage({
 
   return (
     <PageShell>
+      <JsonLd
+        data={[
+          itemListJsonLd(
+            titleCase(city.name) ?? city.name,
+            all
+              .filter((b) => b.publicationStatus !== 'unsourced')
+              .map((b) => ({ name: b.name, path: routes.business(lang, slug, b.slug) })),
+          ),
+          breadcrumbJsonLd([
+            { name: 'Flamingo County', path: routes.home(lang) },
+            { name: titleCase(city.name) ?? city.name, path: routes.city(lang, slug) },
+          ]),
+        ]}
+      />
       <main
         style={{
           maxWidth: 1280,
@@ -262,6 +286,7 @@ export default async function CityPage({
                   // Height-constrained to 320px with `width: auto`, so the box
                   // is roughly 400px across at the cast art's aspect ratio.
                   sizes="400px"
+                  fetchPriority="high"
                   alt={m.name ?? ''}
                   style={{
                     position: 'relative',
