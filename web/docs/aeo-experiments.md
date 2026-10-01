@@ -35,6 +35,6 @@ Change only the test pages. Leave the control pages alone so we can tell our cha
 - Review date: n/a.
 - Result: no engine cited flamingocounty.com for any question.
 
-The same day, the question bank grew from 24 to 160 questions. The first 24 ids did not change; they are the ones in commit `f620188`. Future runs should report the original 24 ids separately from the new ones. Only the original 24 compare directly with this baseline. The new ones get their own baseline on their first run.
+The same day, the question bank grew from 24 to 153 questions. Of the original 24 ids (commit `f620188`), 23 are unchanged. `cheap-eats-hialeah` was removed, because the site makes no price claims and can't answer a price question. Future runs should report the original 23 ids separately from the new ones. Only those 23 compare directly with this baseline: recompute its rate from the baseline file without `cheap-eats-hialeah`. The new ones get their own baseline on their first run.
 
 A full run now costs more. It is about 160 x 3 runs x 3 models, or 1,440 calls, instead of 216.
