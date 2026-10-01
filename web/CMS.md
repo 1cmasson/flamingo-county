@@ -157,6 +157,8 @@ written. `railway.json` at the repo root points at `web/Dockerfile`.
 | `BETTER_AUTH_SECRET` | a fresh random string, different from `PAYLOAD_SECRET` |
 | `BETTER_AUTH_URL` | `https://flamingocounty.com` |
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | the Google Cloud OAuth client |
+| `TELEGRAM_BOT_TOKEN` / `TELEGRAM_OWNER_CHAT_ID` / `TELEGRAM_WEBHOOK_SECRET` | the HQ bot — optional, see HQ.md |
+| `POSTIZ_API_URL` / `POSTIZ_API_KEY` | social approvals — optional, see HQ.md |
 
 **Two databases now live on the volume**: `content.db` (Payload) and `auth.db`
 (member identity). Back up both; `auth.db` holds personal data and, unlike the

@@ -1,4 +1,6 @@
 import type { CollectionConfig } from 'payload'
+import { recordEvent } from '../lib/hq'
+import { esc } from '../lib/telegram'
 
 /**
  * Newsletter signups.
@@ -23,6 +25,24 @@ export const Subscribers: CollectionConfig = {
     useAsTitle: 'email',
     defaultColumns: ['email', 'lang', 'createdAt'],
     group: 'Inbox',
+  },
+  hooks: {
+    afterChange: [
+      async ({ doc, operation, req }) => {
+        if (operation !== 'create') return doc
+        await recordEvent(
+          req.payload,
+          {
+            type: 'subscriber.created',
+            summary: `New subscriber (${doc.lang ?? '?'})`,
+            refCollection: 'subscribers',
+            refId: doc.id,
+          },
+          { req, ping: `📬 New newsletter subscriber: ${esc(doc.email)}` },
+        )
+        return doc
+      },
+    ],
   },
   fields: [
     { name: 'email', type: 'email', required: true, unique: true, index: true },

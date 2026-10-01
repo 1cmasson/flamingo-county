@@ -80,7 +80,12 @@ export interface Config {
     subscribers: Subscriber;
     'listing-requests': ListingRequest;
     members: Member;
+    'hq-events': HqEvent;
+    'hq-tasks': HqTask;
+    'hq-media': HqMedia;
+    'hq-social-drafts': HqSocialDraft;
     'payload-kv': PayloadKv;
+    'payload-jobs': PayloadJob;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
     'payload-migrations': PayloadMigration;
@@ -100,7 +105,12 @@ export interface Config {
     subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
     'listing-requests': ListingRequestsSelect<false> | ListingRequestsSelect<true>;
     members: MembersSelect<false> | MembersSelect<true>;
+    'hq-events': HqEventsSelect<false> | HqEventsSelect<true>;
+    'hq-tasks': HqTasksSelect<false> | HqTasksSelect<true>;
+    'hq-media': HqMediaSelect<false> | HqMediaSelect<true>;
+    'hq-social-drafts': HqSocialDraftsSelect<false> | HqSocialDraftsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
+    'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
     'payload-migrations': PayloadMigrationsSelect<false> | PayloadMigrationsSelect<true>;
@@ -113,11 +123,13 @@ export interface Config {
     'site-settings': SiteSetting;
     'about-page': AboutPage;
     'list-your-spot-page': ListYourSpotPage;
+    'payload-jobs-stats': PayloadJobsStat;
   };
   globalsSelect: {
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
     'about-page': AboutPageSelect<false> | AboutPageSelect<true>;
     'list-your-spot-page': ListYourSpotPageSelect<false> | ListYourSpotPageSelect<true>;
+    'payload-jobs-stats': PayloadJobsStatsSelect<false> | PayloadJobsStatsSelect<true>;
   };
   locale: 'en' | 'es';
   widgets: {
@@ -125,7 +137,13 @@ export interface Config {
   };
   user: User;
   jobs: {
-    tasks: unknown;
+    tasks: {
+      morningBrief: TaskMorningBrief;
+      inline: {
+        input: unknown;
+        output: unknown;
+      };
+    };
     workflows: unknown;
   };
 }
@@ -838,6 +856,109 @@ export interface Member {
   createdAt: string;
 }
 /**
+ * Everything the ops layer has seen. New rows show up in the morning brief.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-events".
+ */
+export interface HqEvent {
+  id: number;
+  status?: ('new' | 'seen' | 'done') | null;
+  /**
+   * e.g. listing_request.created, social.scheduled, brief.sent
+   */
+  type: string;
+  summary: string;
+  /**
+   * Collection that caused it.
+   */
+  refCollection?: string | null;
+  refId?: string | null;
+  /**
+   * Anything else worth keeping.
+   */
+  data?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-tasks".
+ */
+export interface HqTask {
+  id: number;
+  status?: ('open' | 'doing' | 'done') | null;
+  assignee?: ('me' | 'claude') | null;
+  dueAt?: string | null;
+  title: string;
+  detail?: string | null;
+  event?: (number | null) | HqEvent;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Photos and videos for social drafts. Private.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-media".
+ */
+export interface HqMedia {
+  id: number;
+  note?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
+}
+/**
+ * Posts waiting for approval in Telegram. Set a failed or rejected draft back to Pending to send it again.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-social-drafts".
+ */
+export interface HqSocialDraft {
+  id: number;
+  status: 'pending' | 'approved' | 'scheduled' | 'rejected' | 'failed';
+  /**
+   * A time in the past posts as soon as it is approved.
+   */
+  scheduledFor: string;
+  platforms: ('facebook' | 'instagram' | 'tiktok')[];
+  caption: string;
+  /**
+   * The first file is the cover shown in Telegram.
+   */
+  media?: (number | HqMedia)[] | null;
+  error?: string | null;
+  postizResponse?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  telegramMessageId?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
@@ -853,6 +974,107 @@ export interface PayloadKv {
     | number
     | boolean
     | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs".
+ */
+export interface PayloadJob {
+  id: number;
+  /**
+   * Input data provided to the job
+   */
+  input?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  taskStatus?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  completedAt?: string | null;
+  totalTried?: number | null;
+  /**
+   * If hasError is true this job will not be retried
+   */
+  hasError?: boolean | null;
+  /**
+   * If hasError is true, this is the error that caused it
+   */
+  error?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Task execution log
+   */
+  log?:
+    | {
+        executedAt: string;
+        completedAt: string;
+        taskSlug: 'inline' | 'morningBrief';
+        taskID: string;
+        input?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
+        output?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
+        state: 'failed' | 'succeeded';
+        error?:
+          | {
+              [k: string]: unknown;
+            }
+          | unknown[]
+          | string
+          | number
+          | boolean
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  taskSlug?: ('inline' | 'morningBrief') | null;
+  queue?: string | null;
+  waitUntil?: string | null;
+  processing?: boolean | null;
+  meta?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -912,6 +1134,22 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'members';
         value: number | Member;
+      } | null)
+    | ({
+        relationTo: 'hq-events';
+        value: number | HqEvent;
+      } | null)
+    | ({
+        relationTo: 'hq-tasks';
+        value: number | HqTask;
+      } | null)
+    | ({
+        relationTo: 'hq-media';
+        value: number | HqMedia;
+      } | null)
+    | ({
+        relationTo: 'hq-social-drafts';
+        value: number | HqSocialDraft;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -1356,11 +1594,105 @@ export interface MembersSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-events_select".
+ */
+export interface HqEventsSelect<T extends boolean = true> {
+  status?: T;
+  type?: T;
+  summary?: T;
+  refCollection?: T;
+  refId?: T;
+  data?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-tasks_select".
+ */
+export interface HqTasksSelect<T extends boolean = true> {
+  status?: T;
+  assignee?: T;
+  dueAt?: T;
+  title?: T;
+  detail?: T;
+  event?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-media_select".
+ */
+export interface HqMediaSelect<T extends boolean = true> {
+  note?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-social-drafts_select".
+ */
+export interface HqSocialDraftsSelect<T extends boolean = true> {
+  status?: T;
+  scheduledFor?: T;
+  platforms?: T;
+  caption?: T;
+  media?: T;
+  error?: T;
+  postizResponse?: T;
+  telegramMessageId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv_select".
  */
 export interface PayloadKvSelect<T extends boolean = true> {
   key?: T;
   data?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs_select".
+ */
+export interface PayloadJobsSelect<T extends boolean = true> {
+  input?: T;
+  taskStatus?: T;
+  completedAt?: T;
+  totalTried?: T;
+  hasError?: T;
+  error?: T;
+  log?:
+    | T
+    | {
+        executedAt?: T;
+        completedAt?: T;
+        taskSlug?: T;
+        taskID?: T;
+        input?: T;
+        output?: T;
+        state?: T;
+        error?: T;
+        id?: T;
+      };
+  taskSlug?: T;
+  queue?: T;
+  waitUntil?: T;
+  processing?: T;
+  meta?: T;
+  updatedAt?: T;
+  createdAt?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1495,6 +1827,24 @@ export interface ListYourSpotPage {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs-stats".
+ */
+export interface PayloadJobsStat {
+  id: number;
+  stats?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "site-settings_select".
  */
 export interface SiteSettingsSelect<T extends boolean = true> {
@@ -1570,6 +1920,16 @@ export interface ListYourSpotPageSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "payload-jobs-stats_select".
+ */
+export interface PayloadJobsStatsSelect<T extends boolean = true> {
+  stats?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "collections_widget".
  */
 export interface CollectionsWidget {
@@ -1577,6 +1937,16 @@ export interface CollectionsWidget {
     [k: string]: unknown;
   };
   width: 'full';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskMorningBrief".
+ */
+export interface TaskMorningBrief {
+  input?: unknown;
+  output: {
+    sent?: boolean | null;
+  };
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

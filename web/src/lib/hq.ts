@@ -1,0 +1,280 @@
+import { readFile } from 'fs/promises'
+import path from 'path'
+import type { Payload, PayloadRequest } from 'payload'
+
+import { hqMediaDir } from '../collections/HqMedia'
+import type { HqMedia, HqSocialDraft } from '../payload-types'
+import { SITE_TZ } from './dates'
+import {
+  buildPostBody,
+  connectedChannels,
+  createPost,
+  uploadMedia,
+  type Platform,
+} from './postiz'
+import {
+  FILE_UPLOAD_LIMIT,
+  PHOTO_UPLOAD_LIMIT,
+  esc,
+  notifyOwner,
+  sendMedia,
+  sendMessage,
+  telegramConfigured,
+  type InlineKeyboard,
+} from './telegram'
+
+/**
+ * Set on writes HQ makes to its own records, so the collection hooks that
+ * react to a draft being created or reset do not fire again on the bookkeeping
+ * update that follows (storing the Telegram message id, a status change).
+ */
+export const HQ_INTERNAL = 'hqInternal'
+
+type EventInput = {
+  type: string
+  summary: string
+  refCollection?: string
+  refId?: string | number
+  data?: Record<string, unknown>
+}
+
+/**
+ * Write one `hq-events` row, then optionally ping Telegram.
+ *
+ * Built for hooks on the public path: it never throws, and the ping is not
+ * awaited, so neither a Telegram outage nor a slow API can fail or delay a
+ * visitor's form submit. (The SQLite adapter runs without transactions — no
+ * `transactionOptions` in payload.config — so passing the hook's `req` only
+ * carries its context; there is no rollback to join or to break.)
+ */
+export async function recordEvent(
+  payload: Payload,
+  event: EventInput,
+  opts: { req?: PayloadRequest; ping?: string } = {},
+): Promise<void> {
+  try {
+    await payload.create({
+      collection: 'hq-events',
+      data: {
+        type: event.type,
+        summary: event.summary,
+        refCollection: event.refCollection,
+        refId: event.refId === undefined ? undefined : String(event.refId),
+        data: event.data,
+        status: 'new',
+      },
+      req: opts.req,
+    })
+  } catch (err) {
+    console.error('[hq] could not record event', event.type, err)
+  }
+  if (opts.ping) void notifyOwner(opts.ping)
+}
+
+/** "Thu Oct 1, 7:30 PM" in Miami time — the only clock the owner reads. */
+export function miamiTime(d: Date | string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: SITE_TZ,
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(d))
+}
+
+/* ------------------------------------------------------------------------ */
+/* Social drafts                                                             */
+/* ------------------------------------------------------------------------ */
+
+export type DraftAction = 'approve' | 'reject'
+
+/**
+ * Inline-button payloads. Telegram caps `callback_data` at 64 bytes, so a
+ * short `sd:a:<id>` rather than JSON.
+ */
+export function draftCallback(action: DraftAction, id: number | string): string {
+  return `sd:${action === 'approve' ? 'a' : 'r'}:${id}`
+}
+
+export function parseDraftCallback(data: string | undefined): { action: DraftAction; id: number } | null {
+  const m = /^sd:([ar]):(\d+)$/.exec(data ?? '')
+  if (!m) return null
+  return { action: m[1] === 'a' ? 'approve' : 'reject', id: Number(m[2]) }
+}
+
+function draftKeyboard(id: number): InlineKeyboard {
+  return {
+    inline_keyboard: [
+      [
+        { text: '✅ Approve', callback_data: draftCallback('approve', id) },
+        { text: '✖️ Reject', callback_data: draftCallback('reject', id) },
+      ],
+    ],
+  }
+}
+
+async function draftMedia(payload: Payload, draft: HqSocialDraft): Promise<HqMedia[]> {
+  const ids = (draft.media ?? []).map((m) => (typeof m === 'object' ? m.id : m))
+  if (!ids.length) return []
+  const { docs } = await payload.find({
+    collection: 'hq-media',
+    where: { id: { in: ids } },
+    limit: ids.length,
+    depth: 0,
+    overrideAccess: true,
+  })
+  // `in` does not preserve order; the first file is the cover everywhere.
+  return ids.map((id) => docs.find((d) => d.id === id)).filter((d): d is HqMedia => Boolean(d))
+}
+
+async function readMedia(doc: HqMedia): Promise<Blob> {
+  if (!doc.filename) throw new Error(`hq-media ${doc.id} has no file`)
+  const buf = await readFile(path.join(hqMediaDir(), doc.filename))
+  return new Blob([buf], { type: doc.mimeType ?? 'application/octet-stream' })
+}
+
+export function draftPreviewText(draft: HqSocialDraft, extraFiles: number): string {
+  const lines = [
+    `<b>📣 Social draft #${draft.id}</b>`,
+    `${(draft.platforms ?? []).join(' · ')} — ${esc(miamiTime(draft.scheduledFor))}`,
+  ]
+  if (extraFiles > 0) lines.push(`<i>+${extraFiles} more file${extraFiles === 1 ? '' : 's'} (see admin)</i>`)
+  // The caption goes last: `clip` can only cut safely after every tag closes.
+  lines.push('', esc(draft.caption))
+  return lines.join('\n')
+}
+
+/**
+ * Show a draft in Telegram with Approve / Reject buttons. The cover file is
+ * uploaded with the message, so what the owner approves is what they saw.
+ */
+export async function sendDraftPreview(payload: Payload, draft: HqSocialDraft): Promise<void> {
+  if (!telegramConfigured()) return
+  const media = await draftMedia(payload, draft)
+  const cover = media[0]
+  const keyboard = draftKeyboard(draft.id)
+
+  let text = draftPreviewText(draft, Math.max(0, media.length - 1))
+  let messageId: number
+
+  const kind = cover?.mimeType?.startsWith('video/') ? 'video' : 'photo'
+  const limit = kind === 'video' ? FILE_UPLOAD_LIMIT : PHOTO_UPLOAD_LIMIT
+  if (cover && (cover.filesize ?? 0) <= limit) {
+    const sent = await sendMedia({
+      kind,
+      file: await readMedia(cover),
+      filename: cover.filename ?? `draft-${draft.id}`,
+      caption: text,
+      keyboard,
+    })
+    messageId = sent.message_id
+  } else {
+    if (cover) text += '\n\n<i>(cover file is too large to preview here — check the admin)</i>'
+    messageId = (await sendMessage(text, { keyboard })).message_id
+  }
+
+  await payload.update({
+    collection: 'hq-social-drafts',
+    id: draft.id,
+    data: { telegramMessageId: messageId },
+    overrideAccess: true,
+    context: { [HQ_INTERNAL]: true },
+  })
+}
+
+async function setDraft(payload: Payload, id: number, data: Partial<HqSocialDraft>) {
+  return payload.update({
+    collection: 'hq-social-drafts',
+    id,
+    data,
+    overrideAccess: true,
+    context: { [HQ_INTERNAL]: true },
+  })
+}
+
+/**
+ * Approve or reject a pending draft. Returns a one-line outcome for Telegram.
+ *
+ * Only a `pending` draft moves. The status flips to `approved` *before* the
+ * Postiz calls, so a later tap — or Telegram redelivering the webhook — finds
+ * it no longer pending; a tap *during* the calls is stopped by `deciding`.
+ * Either way the post is scheduled once.
+ */
+export async function decideDraft(
+  payload: Payload,
+  id: number,
+  action: DraftAction,
+): Promise<string> {
+  // Read-then-write is not atomic, and Telegram delivers webhooks concurrently,
+  // so two taps can both read `pending`. One process serves every request
+  // (SQLite pins the service to a single instance), so an in-memory guard
+  // closes that gap.
+  if (deciding.has(id)) return `Draft #${id} is already being handled.`
+  deciding.add(id)
+  try {
+    return await decide(payload, id, action)
+  } finally {
+    deciding.delete(id)
+  }
+}
+
+const deciding = new Set<number>()
+
+async function decide(payload: Payload, id: number, action: DraftAction): Promise<string> {
+  const draft = await payload
+    .findByID({ collection: 'hq-social-drafts', id, depth: 0, overrideAccess: true })
+    .catch(() => null)
+  if (!draft) return `Draft #${id} no longer exists.`
+  if (draft.status !== 'pending') return `Draft #${id} is already ${draft.status}.`
+
+  if (action === 'reject') {
+    await setDraft(payload, id, { status: 'rejected' })
+    await recordEvent(payload, {
+      type: 'social.rejected',
+      summary: `Rejected social draft #${id}`,
+      refCollection: 'hq-social-drafts',
+      refId: id,
+    })
+    return `✖️ Draft #${id} rejected. Nothing was sent to Postiz.`
+  }
+
+  await setDraft(payload, id, { status: 'approved', error: null })
+  try {
+    const platforms = (draft.platforms ?? []) as Platform[]
+    const channels = await connectedChannels()
+    const uploaded = []
+    for (const doc of await draftMedia(payload, draft)) {
+      uploaded.push(await uploadMedia(await readMedia(doc), doc.filename ?? `hq-${doc.id}`))
+    }
+    const body = buildPostBody({
+      caption: draft.caption,
+      platforms,
+      integrations: channels,
+      media: uploaded,
+      scheduledFor: new Date(draft.scheduledFor),
+    })
+    const response = await createPost(body)
+
+    await setDraft(payload, id, { status: 'scheduled', postizResponse: response as never })
+    const when = body.type === 'now' ? 'now' : miamiTime(body.date)
+    await recordEvent(payload, {
+      type: 'social.scheduled',
+      summary: `Scheduled draft #${id} to ${platforms.join(', ')} for ${when}`,
+      refCollection: 'hq-social-drafts',
+      refId: id,
+    })
+    return `✅ Draft #${id} scheduled on ${esc(platforms.join(', '))} for ${esc(when)}.`
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err)
+    await setDraft(payload, id, { status: 'failed', error: message })
+    await recordEvent(payload, {
+      type: 'social.failed',
+      summary: `Draft #${id} failed to schedule`,
+      refCollection: 'hq-social-drafts',
+      refId: id,
+      data: { error: message },
+    })
+    return `⚠️ Draft #${id} failed: ${esc(message)}\nSet it back to Pending in the admin to try again.`
+  }
+}

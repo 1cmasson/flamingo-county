@@ -18,6 +18,11 @@ import { Spotlights } from './collections/Spotlights'
 import { Subscribers } from './collections/Subscribers'
 import { ListingRequests } from './collections/ListingRequests'
 import { Members } from './collections/Members'
+import { HqEvents } from './collections/HqEvents'
+import { HqTasks } from './collections/HqTasks'
+import { HqMedia } from './collections/HqMedia'
+import { HqSocialDrafts } from './collections/HqSocialDrafts'
+import { morningBrief } from './jobs/morningBrief'
 
 import { SiteSettings } from './globals/SiteSettings'
 import { AboutPage } from './globals/AboutPage'
@@ -47,6 +52,10 @@ export default buildConfig({
     Subscribers,
     ListingRequests,
     Members,
+    HqEvents,
+    HqTasks,
+    HqMedia,
+    HqSocialDrafts,
   ],
   globals: [SiteSettings, AboutPage, ListYourSpotPage],
 
@@ -82,4 +91,25 @@ export default buildConfig({
   }),
   sharp,
   plugins: [],
+
+  /**
+   * The HQ jobs queue — only the morning brief so far (src/jobs).
+   *
+   * One in-process runner, checking every minute. That is safe here and only
+   * here because the service is pinned to a single instance by SQLite on a
+   * volume; a second replica would run every scheduled job twice.
+   *
+   * `autoRun` does nothing until something calls `getPayload({ cron: true })`.
+   * Frontend code never does, so src/instrumentation.ts does it at boot —
+   * without that, the crons would start only after someone logged in to the
+   * admin, and a quiet night would skip the brief.
+   */
+  jobs: {
+    tasks: [morningBrief],
+    autoRun: [{ cron: '* * * * *', queue: 'hq' }],
+    jobsCollectionOverrides: ({ defaultJobsCollection }) => ({
+      ...defaultJobsCollection,
+      admin: { ...defaultJobsCollection.admin, group: 'HQ', hidden: false },
+    }),
+  },
 })

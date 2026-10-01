@@ -1,4 +1,6 @@
 import type { CollectionConfig } from 'payload'
+import { recordEvent } from '../lib/hq'
+import { esc } from '../lib/telegram'
 
 /**
  * "List your spot" submissions — a business owner asking to be added.
@@ -24,6 +26,32 @@ export const ListingRequests: CollectionConfig = {
     useAsTitle: 'business',
     defaultColumns: ['business', 'owner', 'city', 'status', 'createdAt'],
     group: 'Inbox',
+  },
+  hooks: {
+    // Tell the owner. A request used to sit in the admin until someone looked.
+    afterChange: [
+      async ({ doc, operation, req }) => {
+        if (operation !== 'create') return doc
+        const lines = [
+          `<b>🦩 New listing request</b>`,
+          `<b>${esc(doc.business)}</b>${doc.owner ? ` — ${esc(doc.owner)}` : ''}`,
+          `📞 ${esc(doc.phone)}${doc.email ? ` · ✉️ ${esc(doc.email)}` : ''}`,
+        ]
+        if (doc.story) lines.push('', esc(doc.story))
+        await recordEvent(
+          req.payload,
+          {
+            type: 'listing_request.created',
+            summary: `Listing request: ${doc.business}`,
+            refCollection: 'listing-requests',
+            refId: doc.id,
+            data: { lang: doc.lang },
+          },
+          { req, ping: lines.join('\n') },
+        )
+        return doc
+      },
+    ],
   },
   fields: [
     {

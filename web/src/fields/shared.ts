@@ -25,3 +25,16 @@ export const slugField: Field = {
 
 /** Public read, authenticated write — the default for every content collection. */
 export const publicRead = { read: () => true }
+
+/**
+ * Every operation staff-only — the HQ collections. Unlike `subscribers` and
+ * `listing-requests` there is no public `create`: no visitor writes here. Rows
+ * come from server-side hooks, the Telegram webhook and the jobs queue, which
+ * all use the local API.
+ */
+export const staffOnly = {
+  read: ({ req }: { req: { user?: unknown } }) => Boolean(req.user),
+  create: ({ req }: { req: { user?: unknown } }) => Boolean(req.user),
+  update: ({ req }: { req: { user?: unknown } }) => Boolean(req.user),
+  delete: ({ req }: { req: { user?: unknown } }) => Boolean(req.user),
+}
