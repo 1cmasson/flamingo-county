@@ -1022,7 +1022,7 @@ export interface HqSocialDraft {
   /**
    * Moved by the Approve/Reject tap in Telegram or here. Ignored when written over MCP.
    */
-  status: 'pending' | 'approved' | 'scheduled' | 'rejected' | 'failed';
+  status?: 'pending' | 'approved' | 'scheduled' | 'rejected' | 'failed';
   /**
    * A time in the past posts as soon as it is approved.
    */
