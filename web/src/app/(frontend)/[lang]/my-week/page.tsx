@@ -159,7 +159,7 @@ export default async function MyWeekPage({ params }: { params: Promise<{ lang: s
                   ...webviewCopy(lang as Lang),
                   pitchH: 'LLÉVATELO A TODOS LADOS.',
                   pitchP:
-                    'Para guardar eventos, decir que vas y añadirlos a tu calendario, entra con Google. Tu semana te sigue: al teléfono, a la computadora, a donde sea.',
+                    'Para guardar eventos y decir que vas, entra con Google. Tu semana te sigue: al teléfono, a la computadora, a donde sea.',
                   google: 'INICIAR SESIÓN CON GOOGLE',
                   signInFailed: 'No se pudo abrir Google. Inténtalo de nuevo.',
                   signedInAs: 'HOLA,',
@@ -181,7 +181,7 @@ export default async function MyWeekPage({ params }: { params: Promise<{ lang: s
                   ...webviewCopy(lang as Lang),
                   pitchH: 'TAKE IT EVERYWHERE.',
                   pitchP:
-                    'To save events, say you’re going and add them to your calendar, sign in with Google. Your week follows you — to your phone, your laptop, anywhere.',
+                    'To save events and say you’re going, sign in with Google. Your week follows you — to your phone, your laptop, anywhere.',
                   google: 'SIGN IN WITH GOOGLE',
                   signInFailed: 'Couldn’t reach Google. Try again.',
                   signedInAs: 'HI,',

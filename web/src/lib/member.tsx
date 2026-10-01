@@ -9,8 +9,10 @@ import type { Webview } from './webview'
  * in the [lang] layout (session cookie, user agent) and handed down, so the
  * first paint already knows whether to show saved state or ask for sign-in.
  *
- * Saving, going and the calendar file all need an account (MEMBERS.md). Every
- * one of those buttons calls `requireSignIn` rather than acting directly.
+ * Saving and going need an account (MEMBERS.md); both buttons call
+ * `requireSignIn` rather than acting directly. The calendar file is open to
+ * everyone, but 'ics' stays a valid kind so a sign-in already under way when
+ * that changed still finishes.
  */
 export type Pending = { kind: 'save' | 'going' | 'ics'; slug: string }
 

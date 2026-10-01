@@ -1,7 +1,4 @@
-import { headers } from 'next/headers'
-import { notFound, redirect } from 'next/navigation'
-import { auth } from '../../../../../../lib/auth'
-import { routes } from '../../../../../../lib/routes'
+import { notFound } from 'next/navigation'
 import { isLang } from '../../../../../../i18n'
 import { getEvent } from '../../../../../../lib/data'
 import { dateOnly, utcStamp } from '../../../../../../lib/dates'
@@ -34,8 +31,8 @@ const esc = (s: string) =>
  * REQUIRED in a VEVENT, and strict parsers reject a file without one. It is
  * written from `updatedAt` rather than `Date.now()` so the same event produces
  * the same bytes on every request, which is what makes the 300s cache header
- * safe for the member who asked — `private`, since the file is now behind
- * sign-in and a shared cache must not hand it to anyone else.
+ * safe. It is `public` again: the file holds only what the event page already
+ * shows, and it is open to everyone (MEMBERS.md, *Calendar file open*).
  *
  * `SEQUENCE` is what lets a change actually land. The UID is stable by design
  * (above), so a calendar that already holds this event treats a re-import as
@@ -52,12 +49,9 @@ export async function GET(
   const { lang, slug } = await params
   if (!isLang(lang)) notFound()
 
-  // Adding to the calendar needs an account (MEMBERS.md). The button asks for
-  // sign-in itself; this catches the bare link — shared, bookmarked, or opened
-  // from an old calendar entry — and sends it to the event, where the button is.
-  const session = await auth.api.getSession({ headers: await headers() })
-  if (!session) redirect(routes.event(lang, slug))
-
+  // No session check: this link is meant to be shared — a Facebook post or a
+  // Telegram button that drops the event into a phone calendar in one tap,
+  // from in-app browsers where signing in is hardest (MEMBERS.md).
   const ev = await getEvent(lang, slug)
   if (!ev) notFound()
 
@@ -105,7 +99,7 @@ export async function GET(
     headers: {
       'Content-Type': 'text/calendar; charset=utf-8',
       'Content-Disposition': `attachment; filename="${ev.slug}.ics"`,
-      'Cache-Control': 'private, max-age=300',
+      'Cache-Control': 'public, max-age=300',
     },
   })
 }

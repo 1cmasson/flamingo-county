@@ -9,7 +9,8 @@ is a Zoho alias; the Railway env vars are set. The privacy policy is at
 signed-out visitors on the old on-device behaviour and offered sign-in on My
 Week only. That changed: viewing My Week, + MY WEEK, GOING and + CALENDAR all
 need sign-in. See *Sign-in required* at the end; where it disagrees with the
-sections in between, it wins.
+sections in between, it wins. **+ CALENDAR was opened again on 2026-10-01** —
+see *Calendar file open*.
 
 Where it landed:
 
@@ -370,4 +371,22 @@ disagrees with the in-app-browser sections above, this wins.
   `send.flamingocounty.com`) in Resend and add its DNS records in Cloudflare.
   Resend's records sit on the `send.` / `resend._domainkey` names, so the root
   MX and SPF that Zoho uses for `hola@` are untouched.
+
+---
+
+## Calendar file open (2026-10-01)
+
+Reverses the calendar part of *Sign-in required*. **+ CALENDAR and the `.ics`
+route work for everyone, signed in or not.** Saving, going and My Week stay
+behind sign-in.
+
+- **Why:** the club shares event links on Facebook and Telegram for an older
+  audience to "save the date". Those taps land in in-app browsers, where Google
+  refuses to sign in and an emailed code is one step too many. The file holds
+  only what the event page already shows (title, date, time, venue), so gating
+  it protected nothing.
+- **The button** is a plain link with `download` — no `requireSignIn`.
+- **The route** has no session check, and its cache header is `public` again.
+- **`fc_do=ics` still finishes** in `MemberProvider`, so a sign-in that was
+  already under way when this shipped downloads the file on the way back.
 
