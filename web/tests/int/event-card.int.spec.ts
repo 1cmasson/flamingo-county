@@ -100,7 +100,7 @@ describe('what the card and the event page say', () => {
   })
 
   it('versions the card URL with the event and the design', () => {
-    expect(eventCardUrl(base, 'es', 'link')).toMatch(/^\/api\/og\/event\/sabor-fest\?lang=es&size=link&v=1\.[a-z0-9]+$/)
+    expect(eventCardUrl(base, 'es', 'link')).toMatch(/^\/api\/og\/event\/sabor-fest\?lang=es&size=link&v=2\.[a-z0-9]+$/)
     expect(eventCardUrl({ ...base, updatedAt: '2026-10-02T10:00:00.000Z' }, 'es', 'link')).not.toBe(eventCardUrl(base, 'es', 'link'))
   })
 })

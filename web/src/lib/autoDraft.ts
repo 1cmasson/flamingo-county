@@ -9,6 +9,7 @@ import { addDays, dateOnly, eventEndDay, eventRunEnd, miamiInstant, parseISO, to
 import { HQ_INTERNAL, recordEvent, sendDraftPreview } from './hq'
 import type { Platform } from './postiz'
 import { routes } from './routes'
+import { esc, sendMessage, telegramConfigured } from './telegram'
 import { SITE_URL } from './site'
 
 /**
@@ -91,6 +92,8 @@ async function create(
   collection: AutoDraftSource,
   id: number,
   now: Date,
+  /** A text-only draft of this page that already went out: draft it again, with its card. */
+  repostOf?: number,
 ): Promise<HqSocialDraft | null> {
   // Each language on its own, with no fallback, so a missing translation is
   // left out instead of repeating the English under the Spanish.
@@ -115,7 +118,7 @@ async function create(
     depth: 0,
     overrideAccess: true,
   })
-  if (existing.docs.length) return null
+  if (existing.docs.length && !repostOf) return null
 
   let body: (excerpts: boolean) => string
   let pagePath: string
@@ -150,6 +153,8 @@ async function create(
   const media =
     (await copyCover(payload, cover, `${collection} #${id}`, slug)) ??
     (event ? await cardImage(payload, event, `${collection} #${id}`, slug) : null)
+  // A repost is only worth making with the picture the first post lacked.
+  if (repostOf && !media) return null
   // Instagram and TikTok need media; a still goes to Facebook and Instagram.
   // TikTok is left to the owner, since it wants video.
   const platforms: Platform[] = media ? ['facebook', 'instagram'] : ['facebook']
@@ -185,7 +190,9 @@ async function create(
 
   await recordEvent(payload, {
     type: 'social.draft_created',
-    summary: `Social draft #${final.id} for ${platforms.join(', ')}, from the newly published ${collection === 'events' ? 'event' : 'story'} "${title}"`,
+    summary: repostOf
+      ? `Social draft #${final.id} for ${platforms.join(', ')}: "${title}" again with its card, as draft #${repostOf} went out as text only`
+      : `Social draft #${final.id} for ${platforms.join(', ')}, from the newly published ${collection === 'events' ? 'event' : 'story'} "${title}"`,
     refCollection: 'hq-social-drafts',
     refId: final.id,
   })
@@ -425,4 +432,110 @@ async function cardImage(payload: Payload, ev: Event, label: string, slug: strin
     console.error(`[hq] auto-draft: no card for ${label}:`, err instanceof Error ? err.message : err)
     return null
   }
+}
+
+/* ------------------------------------------------------------------------ */
+/* Cards for event drafts written without one                                */
+/* ------------------------------------------------------------------------ */
+
+/**
+ * Event drafts written before this are the ones that never had a card: the
+ * card shipped on Oct 2 2026, and this cut-off covers its deploy. A text-only
+ * draft that went out before it gets a repost; one written after it only
+ * lacks a card because drawing it failed, and is not posted twice.
+ */
+export const CARDS_SINCE = new Date('2026-10-03T00:00:00.000Z')
+
+/** How far back drafts are looked at: further than any event is announced ahead. */
+const MISSING_CARD_WINDOW_MS = 60 * 24 * 60 * 60 * 1000
+
+/**
+ * Give photo-less events whose drafts have no picture their generated card.
+ * Run hourly by the social stats job; once each event has a draft with a
+ * picture it is left alone, so a run with nothing to do costs one query.
+ *
+ * - A **pending** draft gets the card attached and Instagram added, and its
+ *   preview is sent again. The old preview's Approve then finds the draft
+ *   changed and posts nothing, so only the version with the card can go out.
+ * - A draft that **already went out** as text, written before `CARDS_SINCE`,
+ *   gets a fresh pending draft with the card, for the owner to approve like
+ *   any other. Only for an event still ahead.
+ *
+ * Rejected drafts, events with their own photo, and events that are over,
+ * cancelled or postponed are skipped. Nothing is posted from here.
+ */
+export async function addMissingCards(
+  payload: Payload,
+  now: Date = new Date(),
+): Promise<{ carded: number; reposted: number }> {
+  const { docs } = await payload.find({
+    collection: 'hq-social-drafts',
+    where: {
+      and: [
+        { sourceCollection: { equals: 'events' } },
+        { createdAt: { greater_than_equal: new Date(now.getTime() - MISSING_CARD_WINDOW_MS).toISOString() } },
+      ],
+    },
+    sort: 'createdAt',
+    limit: 1000,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const byEvent = new Map<string, HqSocialDraft[]>()
+  for (const d of docs) if (d.sourceId) byEvent.set(d.sourceId, [...(byEvent.get(d.sourceId) ?? []), d])
+
+  let carded = 0
+  let reposted = 0
+  for (const [sourceId, drafts] of byEvent) {
+    const live = drafts.filter((d) => d.status !== 'rejected')
+    if (!live.length || live.some((d) => d.media?.length)) continue
+    const pending = live.find((d) => d.status === 'pending')
+    const sent = live.filter(
+      (d) => (d.status === 'approved' || d.status === 'scheduled') && new Date(d.createdAt) < CARDS_SINCE,
+    )
+    if (!pending && !sent.length) continue
+
+    const id = Number(sourceId)
+    const ev = (await payload
+      .findByID({ collection: 'events', id, locale: 'es', depth: 2, overrideAccess: true })
+      .catch(() => null)) as Event | null
+    if (!ev || ev._status !== 'published' || ev.image || !eventIsAhead(ev, now)) continue
+
+    try {
+      if (pending) {
+        const card = await cardImage(payload, ev, `events #${id}`, ev.slug)
+        if (!card) continue
+        const platforms = [...new Set<Platform>([...((pending.platforms ?? []) as Platform[]), 'facebook', 'instagram'])]
+        const updated = await payload.update({
+          collection: 'hq-social-drafts',
+          id: pending.id,
+          data: { media: [card], platforms },
+          overrideAccess: true,
+          context: { [HQ_INTERNAL]: true },
+        })
+        await recordEvent(payload, {
+          type: 'social.draft_card_added',
+          summary: `Added the generated card to social draft #${pending.id} ("${ev.title}"), now for ${platforms.join(', ')}`,
+          refCollection: 'hq-social-drafts',
+          refId: pending.id,
+        })
+        await sendDraftPreview(payload, updated)
+        carded++
+      } else {
+        const old = sent[sent.length - 1].id
+        const draft = await oneAtATime(() => create(payload, 'events', id, now, old))
+        if (!draft) continue
+        reposted++
+        if (telegramConfigured()) {
+          await sendMessage(
+            `🖼️ Draft #${draft.id} is "${esc(ev.title)}" again, now with its picture: draft #${old} went out as text only. ` +
+              'Once the new one is up, you can delete the text-only post on Facebook.',
+          )
+        }
+      }
+    } catch (err) {
+      console.error(`[hq] missing card for events #${id}:`, err instanceof Error ? err.message : err)
+    }
+  }
+  return { carded, reposted }
 }

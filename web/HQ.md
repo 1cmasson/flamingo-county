@@ -405,6 +405,13 @@ preview arrives in Telegram for Approve / Reject like any other draft:
   Facebook and Instagram. An event with no photo gets its generated card
   instead (`src/lib/eventCard.tsx`, the 1080×1350 "social" size, in Spanish),
   so it goes to both too. A story with no cover is Facebook text only.
+- **Missing cards.** Hourly (with the social stats job), `addMissingCards`
+  looks for event drafts with no picture whose event has no photo either. A
+  pending one gets its card and Instagram, and its preview is sent again (the
+  old preview's Approve then posts nothing). One that already went out as text
+  before the card shipped (`CARDS_SINCE`) gets a fresh pending draft with the
+  card, plus a Telegram note to delete the text-only post. Only for events
+  still ahead; rejected drafts are left alone.
 - **Time.** The next 11:30 or 19:00 Miami slot at least 30 minutes away,
   skipping any slot within 3 hours of another pending, approved or scheduled
   draft. An event's post never goes out after the event starts: if the first

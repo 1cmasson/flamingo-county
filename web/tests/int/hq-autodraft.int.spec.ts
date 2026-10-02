@@ -6,7 +6,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
 
-import { draftForPublished, pickPostTime, postDeadline } from '@/lib/autoDraft'
+import { addMissingCards, draftForPublished, pickPostTime, postDeadline } from '@/lib/autoDraft'
 import { HQ_INTERNAL } from '@/lib/hq'
 import type { Event, HqSocialDraft, Story } from '@/payload-types'
 
@@ -320,6 +320,73 @@ describe('auto-drafting a social post when a page goes live', () => {
     const drawn = card.mock.calls.find(([e]) => e.id === ev.id)?.[0]
     expect(drawn?.title).toBe('Domino night')
     card.mockRestore()
+  })
+
+  describe('cards for event drafts written without one', () => {
+    const later = new Date('2026-10-05T12:00:00.000Z')
+
+    /** A photo-less event published with its draft made text-only, as drafts were before the card. */
+    async function textOnly(status: HqSocialDraft['status'], createdAt = '2026-10-01T12:00:00.000Z') {
+      const ev = await draftEvent('2099-03-14', { image: null })
+      await publish('events', ev.id)
+      const [d] = await draftsFor('events', ev.id)
+      await payload.update({
+        collection: 'hq-social-drafts',
+        id: d.id,
+        data: { media: [], platforms: ['facebook'], status, createdAt },
+        overrideAccess: true,
+        context: { [HQ_INTERNAL]: true },
+      })
+      return { ev, draft: d }
+    }
+
+    it('attaches the card to a pending draft and sends its preview again', async () => {
+      const tg = fakeTelegram()
+      const { ev, draft } = await textOnly('pending')
+      await vi.waitFor(() => expect(tg.previews().filter((p) => p.includes(`Social draft #${draft.id}<`))).toHaveLength(1))
+      await addMissingCards(payload, later)
+      const [d, ...rest] = await draftsFor('events', ev.id)
+      expect(rest).toHaveLength(0)
+      expect(d.id).toBe(draft.id)
+      expect(d.platforms).toEqual(['facebook', 'instagram'])
+      expect(d.media?.[0]).toMatchObject({ mimeType: 'image/jpeg', width: 1080, height: 1350 })
+      expect(tg.previews().filter((p) => p.includes(`Social draft #${draft.id}<`))).toHaveLength(2)
+    })
+
+    it('drafts an event that already went out as text again, with its card, once', async () => {
+      fakeTelegram()
+      const { ev, draft } = await textOnly('scheduled')
+      await addMissingCards(payload, later)
+      await addMissingCards(payload, later)
+      const drafts = await draftsFor('events', ev.id)
+      expect(drafts).toHaveLength(2)
+      const repost = drafts.find((d) => d.id !== draft.id)!
+      expect(repost).toMatchObject({ status: 'pending', platforms: ['facebook', 'instagram'] })
+      expect(repost.media).toHaveLength(1)
+      expect(repost.caption).toContain(`/go/fb/${repost.id}?`)
+    })
+
+    it('leaves rejected drafts, recent sent ones and events with a photo alone', async () => {
+      fakeTelegram()
+      const rejected = await textOnly('rejected')
+      const recent = await textOnly('scheduled', '2026-10-04T12:00:00.000Z')
+      const withPhoto = await draftEvent('2099-03-14')
+      await publish('events', withPhoto.id)
+      const [photoDraft] = await draftsFor('events', withPhoto.id)
+      await payload.update({
+        collection: 'hq-social-drafts',
+        id: photoDraft.id,
+        data: { media: [], platforms: ['facebook'], status: 'scheduled', createdAt: '2026-10-01T12:00:00.000Z' },
+        overrideAccess: true,
+        context: { [HQ_INTERNAL]: true },
+      })
+      await addMissingCards(payload, later)
+      for (const id of [rejected.ev.id, recent.ev.id, withPhoto.id]) {
+        const [d, ...rest] = await draftsFor('events', id)
+        expect(rest).toHaveLength(0)
+        expect(d.media).toEqual([])
+      }
+    })
   })
 
   it('spreads pages published together over different slots, 3 hours apart', async () => {
