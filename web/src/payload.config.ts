@@ -35,6 +35,7 @@ import { hqMcpTools } from './lib/mcpTools'
 import { SiteSettings } from './globals/SiteSettings'
 import { AboutPage } from './globals/AboutPage'
 import { ListYourSpotPage } from './globals/ListYourSpotPage'
+import { HqPlaybook } from './globals/HqPlaybook'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -69,7 +70,7 @@ export default buildConfig({
     HqPublishRequests,
     HqChatTurns,
   ],
-  globals: [SiteSettings, AboutPage, ListYourSpotPage],
+  globals: [SiteSettings, AboutPage, ListYourSpotPage, HqPlaybook],
 
   /**
    * Wired up front, not retrofitted: adding localization later is a schema
@@ -176,6 +177,13 @@ export default buildConfig({
         spotlights: { enabled: { find: true, create: true, update: true }, description: 'Home-page spotlights. Save with draft: true — drafts are never live; publish with hqRequestPublish.' },
         cities: { enabled: { find: true } },
         categories: { enabled: { find: true } },
+      },
+      globals: {
+        'hq-playbook': {
+          enabled: { find: true, update: true },
+          description:
+            'The social playbook: what works by pillar, language, hour and platform, with sample sizes. The weekly review rewrites it (web/hq/weekly-review.md). Notes only; nothing is posted from it.',
+        },
       },
       mcp: {
         tools: hqMcpTools,

@@ -232,6 +232,7 @@ a weekly review.
      spotlights and listings (drafts only; see *Drafts and publishing*)
    - **find** on HQ media, social stats and clicks, cities and categories
    - **find and update** on listing requests
+   - **find and update** on the HQ playbook (the weekly review's notes)
    - all the **tools**
    Copy the key; it's shown once.
 2. On the Mac, run:
@@ -264,9 +265,95 @@ never posted unseen: you get the current version to approve instead.
 | --- | --- |
 | `hqBrief` | The brief as plain text, without moving the scheduled one. |
 | `hqSocialReport` | Every post in the last N days: pillar, language, time, furthest checkpoint per platform, clicks; plus account snapshots and bio clicks. The input to the weekly review. |
+| `hqWeeklyReviewContext` | The weekly review's whole input in one call: the 28-day report, the playbook, published events in the next 14 days, the newest published stories, and drafts still pending. See *Weekly social review*. |
 | `hqRequestPublish` / `hqPublishStatus` | Ask you to publish a site draft (you tap Publish in Telegram), and check the answer. |
 | `hqSendTelegram` | Sends one plain-text message to your Telegram chat, headed "Claude", when you ask Claude to hand something over. It goes only to you (no chat id parameter), is escaped, refused rather than trimmed when too long, has no buttons, and is limited to 10 per 10 minutes. |
 | `hqAddDraftMediaFromUrl` | Downloads a public https JPEG, PNG or MP4 into HQ media for a draft. It refuses private and loopback hosts and doesn't follow redirects, so the server can't be pointed at itself. |
+
+## Weekly social review
+
+Every Monday at 8 AM Miami time, a scheduled Claude run (a cloud *routine*)
+reviews the last four weeks of posts and does three things:
+
+- **It keeps a short playbook** of what works by pillar, language, posting hour
+  and platform, under **HQ → Social playbook** (`hq-playbook`). Every lesson
+  names the number of posts it rests on, and a group of fewer than about 3 posts
+  is listed as "not enough data yet".
+- **It drafts the next week's posts**, 3 to 5 at most, as pending
+  `hq-social-drafts` from real events, stories and listings. Each one arrives in
+  Telegram with Approve / Reject, like any other draft.
+- **It sends you a short summary** in Telegram.
+
+It never approves, publishes, schedules or edits anything. The exact
+instructions it follows are in [`hq/weekly-review.md`](hq/weekly-review.md);
+change the review by editing that file and merging. It is only useful once
+there are 2 or 3 weeks of real posts. Before that, expect it to say the data is
+thin.
+
+**Setting it up.** You do this once:
+
+1. **Create a key just for the review.** In the admin, open **MCP → API Keys**
+   and create a key labelled `weekly-review`. The boxes don't all start the
+   same way:
+   - **Collection and global boxes start unticked.** Tick only these:
+
+     | Group | Tick |
+     | --- | --- |
+     | HqSocialDrafts | find, create |
+     | HqSocialStats, HqClicks | find |
+     | Events, WeeklyEvents, Stories, Listings | find |
+     | HqPlaybook | find, update |
+
+   - **Tool boxes start ticked.** Untick every tool except
+     `hqWeeklyReviewContext` and `hqSendTelegram`. That means unticking
+     `hqRequestPublish`, `hqPublishStatus`, `hqBrief`, `hqSocialReport` and
+     `hqAddDraftMediaFromUrl`.
+     - Optional: leave `hqAddDraftMediaFromUrl` ticked to let it attach a photo
+       and draft Instagram posts. Without it, it drafts Facebook text posts
+       only.
+
+   That leaves no update on drafts or site content, no `hqRequestPublish` and
+   no listing requests. Copy the key; it's shown once. The checkboxes only
+   render when scrolled into view.
+2. **Give the routine a way in. This hasn't been tried yet.** Cloud routines
+   don't read the `flamingo-hq` connection in your Mac's `~/.claude.json`. The
+   routine needs two things:
+   - **The key, as a header.** In the routine's cloud environment, add an
+     **API credential** for the host `flamingocounty.com`, with the header
+     `Authorization`, the prefix `Bearer` and the `weekly-review` key as the
+     value. The key never appears in the session.
+   - **The server, declared somewhere the routine reads.** Either:
+     - a project `.mcp.json` committed to the repo, pointing at
+       `https://flamingocounty.com/api/mcp`. This isn't in the repo yet, and
+       adding it changes every local Claude Code session in it too.
+     - or a claude.ai connector, if it accepts a static key rather than OAuth.
+
+   Check which of these works on the first **Run now** (step 4). Use the
+   `weekly-review` key, not your everyday one.
+3. **Create the routine.** In Claude Code, run `/schedule` and ask for:
+   - **Repository:** `1cmasson/flamingo-county`, default branch.
+   - **Schedule:** weekly, Monday, 8:00 AM. Times are entered in your local
+     zone, so set this from a Miami-time machine. Daylight saving is then
+     handled for you.
+   - **MCP:** the Flamingo HQ server from step 2.
+   - **Prompt:** `Run the weekly social review exactly as written in
+     web/hq/weekly-review.md.`
+4. **Test it once.** Use **Run now** and check three things:
+   - **HQ → Social playbook** has text.
+   - Any drafts show up in Telegram.
+   - The summary arrives, headed "Claude · Revisión semanal".
+
+   Reject any test drafts you don't want.
+
+**What it can't do.** The key is the fence. Without update on drafts it can't
+touch a draft once it's written, and status is human-only anyway. Without
+`hqRequestPublish` and site-content writes it can't change the site. Delete is
+off everywhere.
+
+**Its Facebook links aren't credited to a single post yet.** It can't know a
+draft's id before creating it, and editing the draft afterwards would send you
+a second preview. So its links use `/go/fb?to=<page>`, which counts as a
+Facebook click, not a click on that post.
 
 ## Drafts and publishing
 
@@ -399,9 +486,9 @@ live, make those harder.
 
 ## What comes next
 
-2. **MCP for Claude** — built; see *Claude over MCP*. Next on it: a scheduled
-   weekly review that reads `hqSocialReport`, keeps a short playbook of what
-   works, and drafts the next week's posts for approval.
+2. **MCP for Claude**: built; see *Claude over MCP*. The weekly review is
+   built too (see *Weekly social review*). Its key and routine are created by
+   the owner.
 3. **Social stats** — post checkpoints, account snapshots and tracking links
    are built (see *Measuring the posts*). The endpoints, checked against the
    live instance on 2026-10-01:
