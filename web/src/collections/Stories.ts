@@ -1,3 +1,4 @@
+import { autoDraftHook } from '../lib/autoDraft'
 import { indexNowHooks } from '../lib/indexnow'
 import type { Block, CollectionConfig } from 'payload'
 import { draftVersions, mcpDraftsOnly, publishedRead, slugField } from '../fields/shared'
@@ -108,13 +109,21 @@ const SectionBreak: Block = {
   fields: [],
 }
 
+const indexNow = indexNowHooks('stories')
+
 export const Stories: CollectionConfig = {
   slug: 'stories',
   // Drafts: saved changes stay off the site until published. Claude can only
   // save drafts; publishing is the owner's tap in Telegram. See shared.ts.
   access: publishedRead,
   versions: draftVersions,
-  hooks: { ...indexNowHooks('stories'), beforeOperation: [mcpDraftsOnly] },
+  // IndexNow and the social auto-draft both run after a save; the spread
+  // alone would let one replace the other.
+  hooks: {
+    ...indexNow,
+    afterChange: [...indexNow.afterChange, autoDraftHook('stories')],
+    beforeOperation: [mcpDraftsOnly],
+  },
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'listing', 'readTime'],
