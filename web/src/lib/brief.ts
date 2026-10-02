@@ -3,6 +3,7 @@ import type { Payload } from 'payload'
 import type { HqEvent } from '../payload-types'
 import { agendaSection, readAgenda } from './calendar'
 import { SITE_TZ, todayISO } from './dates'
+import { siteSection, trafficReport } from './growth'
 import { miamiTime, recordEvent } from './hq'
 import { isRunningCount, type MetricSummary } from './postiz'
 import { esc, sendMessage, telegramConfigured } from './telegram'
@@ -233,6 +234,7 @@ export async function buildBrief(
     }
   }
 
+  out.push(...siteSection(await trafficReport(payload, 28, now)))
   out.push(...(await socialsSection(payload, from, now)))
 
   if (upcoming.docs.length) {
