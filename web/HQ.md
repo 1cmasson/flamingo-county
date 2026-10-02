@@ -402,9 +402,16 @@ preview arrives in Telegram for Approve / Reject like any other draft:
   missing translation is left out rather than repeating the English. It ends
   with a `/go/fb/<draft id>` link to the Spanish page.
 - **Photo.** The page's photo is re-encoded as a JPEG into HQ media, for
-  Facebook and Instagram. With no photo, the draft is Facebook text only.
-- **Time.** 7 PM Miami the next day. An event on or before that day posts as
-  soon as you approve.
+  Facebook and Instagram. An event with no photo gets its generated card
+  instead (`src/lib/eventCard.tsx`, the 1080×1350 "social" size, in Spanish),
+  so it goes to both too. A story with no cover is Facebook text only.
+- **Time.** The next 11:30 or 19:00 Miami slot at least 30 minutes away,
+  skipping any slot within 3 hours of another pending, approved or scheduled
+  draft. An event's post never goes out after the event starts: if the first
+  free slot is too late, the first slot at all; if even that is too late, it
+  posts as soon as you approve. A run that has already started (an exhibit)
+  can post until the evening of its last day. Drafts are written one at a
+  time, so pages published together get different slots.
 - **When it doesn't draft.** A republish never drafts a page twice. A draft
   save and an event that is over, cancelled or postponed draft nothing.
   Neither does a page created already published: the seed, and **Publish on

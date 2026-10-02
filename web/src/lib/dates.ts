@@ -345,3 +345,73 @@ export function weekdayHeadings(lang: Lang): string[] {
       .replace('.', ''),
   )
 }
+
+/**
+ * A Miami wall-clock time as a `Date`: `utcStamp` as an instant rather than as
+ * ICS text, with the same DST handling.
+ */
+export function miamiInstant(iso: string, hhmm: string): Date {
+  const s = utcStamp(iso, hhmm)
+  return new Date(
+    `${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}T${s.slice(9, 11)}:${s.slice(11, 13)}:${s.slice(13, 15)}Z`,
+  )
+}
+
+/**
+ * Month and weekday names for the date line. Written out rather than taken
+ * from Intl, whose Spanish short September is "sept." in some ICU builds and
+ * "sep." in others: the image would change with the Node version.
+ */
+const MONTH_SHORT: Record<Lang, string[]> = {
+  es: ['ene.', 'feb.', 'mar.', 'abr.', 'may.', 'jun.', 'jul.', 'ago.', 'sep.', 'oct.', 'nov.', 'dic.'],
+  en: ['Jan.', 'Feb.', 'Mar.', 'Apr.', 'May', 'Jun.', 'Jul.', 'Aug.', 'Sep.', 'Oct.', 'Nov.', 'Dec.'],
+}
+const MONTH_LONG: Record<Lang, string[]> = {
+  es: ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'],
+  en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+}
+const WEEKDAY_LONG: Record<Lang, string[]> = {
+  es: ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'],
+  en: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+}
+
+/**
+ * The one line that says when an event is, for the generated event card:
+ *
+ * - one day: "Sábado 10 de octubre" / "Saturday, October 10"
+ * - a run that is already on: "Hasta el 19 de octubre" / "Through October 19"
+ * - a run still ahead: "Del 18 de sep. al 19 de oct." / "Sep. 18 to Oct. 19",
+ *   or "Del 18 al 25 de oct." / "Oct. 18 to 25" inside one month
+ *
+ * A past-midnight night (9PM–1AM) is one day: only `endDate` makes a run, the
+ * same as on the board (`eventRunEnd`).
+ */
+export function eventDateLine(ev: EventDates, lang: Lang, today: string = todayISO()): string {
+  const start = dateOnly(ev.date)
+  const end = eventRunEnd(ev)
+  const parts = (iso: string) => {
+    const d = parseISO(iso)
+    return { day: d.getUTCDate(), month: d.getUTCMonth(), dow: d.getUTCDay() }
+  }
+  const s = parts(start)
+  const e = parts(end)
+  if (end === start) {
+    return lang === 'es'
+      ? `${WEEKDAY_LONG.es[s.dow]} ${s.day} de ${MONTH_LONG.es[s.month]}`
+      : `${WEEKDAY_LONG.en[s.dow]}, ${MONTH_LONG.en[s.month]} ${s.day}`
+  }
+  if (start <= today) {
+    return lang === 'es'
+      ? `Hasta el ${e.day} de ${MONTH_LONG.es[e.month]}`
+      : `Through ${MONTH_LONG.en[e.month]} ${e.day}`
+  }
+  const sameMonth = start.slice(0, 7) === end.slice(0, 7)
+  if (lang === 'es') {
+    return sameMonth
+      ? `Del ${s.day} al ${e.day} de ${MONTH_SHORT.es[e.month]}`
+      : `Del ${s.day} de ${MONTH_SHORT.es[s.month]} al ${e.day} de ${MONTH_SHORT.es[e.month]}`
+  }
+  return sameMonth
+    ? `${MONTH_SHORT.en[s.month]} ${s.day} to ${e.day}`
+    : `${MONTH_SHORT.en[s.month]} ${s.day} to ${MONTH_SHORT.en[e.month]} ${e.day}`
+}

@@ -1,24 +1,16 @@
 import Link from 'next/link'
-import type { City, Event, EventKind, Listing, Media } from '../payload-types'
+import type { Event, EventKind, Media } from '../payload-types'
 import { rel } from '../lib/data'
 import { routes } from '../lib/routes'
 import { dateOnly, shortWeekday } from '../lib/dates'
+import { eventCardUrl, EVENT_CARD_SIZES } from '../lib/eventCardUrl'
+import { eventVenue } from '../lib/eventVenue'
 import type { Lang } from '../i18n'
 import { MediaSlot } from './MediaSlot'
 import { EventActions } from './EventActions'
 import s from './chrome.module.css'
 
-/** Where an event happens: a listed business, or a named place. */
-export function eventVenue(ev: Event) {
-  const listing = ev.venueType === 'listing' ? rel<Listing>(ev.listing) : null
-  const city = listing ? rel<City>(listing.city) : rel<City>(ev.city)
-  return {
-    listing,
-    city,
-    name: listing?.name ?? ev.place ?? '',
-    hood: listing?.hood ?? ev.hood ?? '',
-  }
-}
+export { eventVenue }
 
 /**
  * The chip for an event that is not simply on, or null. Shown on the card and
@@ -58,9 +50,10 @@ export function eventActionStrings(t: (s: string) => string) {
  * line sits below it because it can be a link of its own (to the business),
  * and anchors cannot nest.
  *
- * Every card gets a picture. Most events have no photo, so the frame falls back
- * to the event kind's colour with the city mascot leaning in; the badges and
- * the date flag sit on top either way, so the grid keeps one shape.
+ * Every card gets a picture. An event with a photo shows it with the badges
+ * and date flag on top; one without shows its generated card (the city's
+ * colour, title, date and mascot: lib/eventCard.tsx), which carries those
+ * itself. Both are 4:3, so the grid keeps one shape.
  */
 export function EventCard({
   lang,
@@ -73,7 +66,6 @@ export function EventCard({
 }) {
   const kind = rel<EventKind>(ev.kind)
   const { listing, city, name, hood } = eventVenue(ev)
-  const mascot = city ? rel<Media>(city.solo) : null
   const photo = rel<Media>(ev.image)
   const iso = dateOnly(ev.date)
 
@@ -99,27 +91,28 @@ export function EventCard({
             aspectRatio: '4 / 3',
             borderBottom: '4px solid var(--ink)',
             overflow: 'hidden',
-            background: photo?.url ? 'var(--ink)' : (kind?.bg ?? 'var(--grad-pink)'),
+            background: photo?.url ? 'var(--ink)' : (city?.accent ?? kind?.bg ?? 'var(--grad-pink)'),
           }}
         >
           {photo?.url ? (
             <MediaSlot media={photo} sizes="(max-width: 700px) 100vw, 330px" />
-          ) : mascot?.url ? (
+          ) : (
+            // No photo: the generated card, in the 4:3 shape of this slot. It
+            // carries the city, kind, date and mascot itself, so the badges,
+            // date flag and mascot below are drawn only over a photograph.
             // eslint-disable-next-line @next/next/no-img-element
             <img
-              src={mascot.url}
+              src={eventCardUrl(ev, lang, 'card')}
               alt=""
-              style={{
-                position: 'absolute',
-                right: 4,
-                bottom: -8,
-                height: '70%',
-                width: 'auto',
-                pointerEvents: 'none',
-                filter: 'drop-shadow(3px 3px 0 rgba(12,15,20,0.35))',
-              }}
+              width={EVENT_CARD_SIZES.card.width}
+              height={EVENT_CARD_SIZES.card.height}
+              loading="lazy"
+              decoding="async"
+              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}
             />
-          ) : null}
+          )}
+          {photo?.url ? (
+          <>
           <div
             style={{
               position: 'absolute',
@@ -173,6 +166,8 @@ export function EventCard({
           >
             {shortWeekday(iso, lang)} {new Date(`${iso}T12:00:00Z`).getUTCDate()}
           </div>
+          </>
+          ) : null}
         </div>
         <div
           data-cardtitle
