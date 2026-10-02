@@ -1,6 +1,9 @@
+import { autoDraftHook } from '../lib/autoDraft'
 import { indexNowHooks } from '../lib/indexnow'
 import type { CollectionConfig } from 'payload'
 import { draftVersions, hhmm, mcpDraftsOnly, noPrice, publishedRead, slugField } from '../fields/shared'
+
+const indexNow = indexNowHooks('events')
 
 /**
  * Events — `EVENTS` (20 records) in fc-data.js.
@@ -25,7 +28,13 @@ export const Events: CollectionConfig = {
   // save drafts; publishing is the owner's tap in Telegram. See shared.ts.
   access: publishedRead,
   versions: draftVersions,
-  hooks: { ...indexNowHooks('events'), beforeOperation: [mcpDraftsOnly] },
+  // IndexNow and the social auto-draft both run after a save; the spread
+  // alone would let one replace the other.
+  hooks: {
+    ...indexNow,
+    afterChange: [...indexNow.afterChange, autoDraftHook('events')],
+    beforeOperation: [mcpDraftsOnly],
+  },
   admin: {
     useAsTitle: 'title',
     defaultColumns: ['title', 'date', 'kind', 'star'],
