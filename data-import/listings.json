@@ -33,7 +33,8 @@
     "local_edits": [
       "2026-08-21 — `el-mejor-batido-de-hialeah` was renamed to `s-and-n-vegetables` and its display name set to \"S&N Vegetables\", the corporate and press name, by owner decision. long_description, seo.meta_title and seo.json_ld.name follow; the awning name survives in alternate_names and seo.json_ld.alternateName. THIS DIVERGES FROM THE UPSTREAM DOSSIER, which still reads El Mejor Batido de Hialeah and is still filed at research/hialeah/el-mejor-batido-de-hialeah.md — regenerating this file from the sibling flamingo-city repo will revert the rename. The seed carries the old slug in SLUG_RENAMES and DOSSIER_SLUG (web/src/seed/research-listings.ts).",
       "2026-09-01 — `casa-marin` and `el-club-de-la-amistad` were HAND-AUTHORED here, not generated from a flamingo-city dossier. There is no research/hialeah/casa-marin.md and no research/hialeah/el-club-de-la-amistad.md upstream, so regenerating this file from the sibling repo will DROP BOTH RECORDS. Their sources are in `references`; the seed carries their slugs in HAND_AUTHORED (web/src/seed/research-listings.ts) so that `research.sourceFile` is left empty rather than pointing at a dossier that does not exist. `el-club-de-la-amistad` is also the first listing in the `nonprofit` category, which is authored in web/src/seed/index.ts rather than in fc-data.js.",
-      "2026-10-01 — ALL PRICE DATA REMOVED, by owner decision: the site makes no price or cost claims anywhere, including structured data. Every listing's `price` block (band, band source, menu anchors) is gone, `priceRange` is out of `seo.json_ld`, `price.band` is out of `missing_fields` (with `missing_core_count` adjusted), the-bend-liquor-lounge's price-band blocking gap is dropped, and a trigo-cafe hours conflict no longer mentions prices. The Mariel-boatlift $1,800 in the S&N reference note stays: that is biography, not a price. THIS DIVERGES FROM THE UPSTREAM DOSSIERS, which still carry prices — regenerating this file from the sibling flamingo-city repo will bring them back."
+      "2026-10-01 — ALL PRICE DATA REMOVED, by owner decision: the site makes no price or cost claims anywhere, including structured data. Every listing's `price` block (band, band source, menu anchors) is gone, `priceRange` is out of `seo.json_ld`, `price.band` is out of `missing_fields` (with `missing_core_count` adjusted), the-bend-liquor-lounge's price-band blocking gap is dropped, and a trigo-cafe hours conflict no longer mentions prices. The Mariel-boatlift $1,800 in the S&N reference note stays: that is biography, not a price. THIS DIVERGES FROM THE UPSTREAM DOSSIERS, which still carry prices — regenerating this file from the sibling flamingo-city repo will bring them back.",
+      "2026-10-01 — FACT-CHECK PASS over the nine needs_owner_confirmation listings, against the Florida DBPR food-service licensee and inspection extracts, the ABT beverage licensee extract, the DBPR new-license and change-of-owner files, OpenCorporates and bisprofiles (aggregator mirrors of Sunbiz, which itself blocked retrieval), the US Census Geocoder and the IRS Exempt Organizations file. Nobody was contacted. Five published claims were removed as unsupported or contradicted: `the-garrison-taproom-billiards` — seo.meta_description said 'open daily from 4pm', but the own site and the Main Street directory open at noon on weekends; and long_description's 'food comes from neighboring partners rather than a house kitchen' (with serves_food_note's 'No house kitchen') is gone, because the venue holds its own state food-service license and its own Instagram says '& food'. `polo-norte` — 'this address operates independently of the similarly named Polo Norte group' is deleted; the relationship is unknown, and a separate licensee proves nothing because every group location has one. `casa-marin` — the fifty-five-seat claim is out of long_description and capacity; the state license says 16. `trattoria-pampered-chef` — 'Wood-oven pizza' is now 'Pizza'; nothing sources a wood oven. `el-club-de-la-amistad` — serves_food_note no longer calls it a nonprofit organisation; the only registration found is an LLC and the IRS file has no match. The `nonprofit` category key is taxonomy and is unchanged. Operating status, with the date of the last state inspection and the extract it came from, is appended to each listing's location.verification_note (The Bend has no food license and no dated 2026 signal, so its status is recorded as a blocking gap instead). Corporate document numbers found this pass appear in notes only, marked 'found via aggregator mirror, not yet opened on Sunbiz'. No document_number, entity_name, status, filing_date or legal_entity field and no publication_status was changed. THIS DIVERGES FROM THE UPSTREAM DOSSIERS — regenerating this file from the sibling flamingo-city repo will restore the removed claims."
     ]
   },
   "listings": [
@@ -585,7 +586,8 @@
       "publication_status": "needs_owner_confirmation",
       "blocking_gaps": [
         "City label is disputed across sources — filed under Miami Lakes by site-owner decision, but the venue sits in ZIP 33015 on unincorporated county land between Miami Lakes and Hialeah.",
-        "No live website — thebendmiami.com now redirects to Yelp."
+        "No live website — thebendmiami.com now redirects to Yelp.",
+        "Operating status unconfirmed: no dated 2026 activity was found (2026-10-01). The beverage license at this address is current to 2027-03-31, but a license shows licensing, not open doors; Instagram post dates sit behind a login and Yelp blocks retrieval. There is no state food-service license here, which fits a bar and is not evidence either way. Ask the owner."
       ],
       "cuisine": [],
       "established": "N/A",
@@ -603,7 +605,7 @@
         "country": "US",
         "district": "N/A",
         "verification": "street_confirmed_city_disputed",
-        "verification_note": "Every source agrees on street and ZIP. The municipality label does not agree. Recommended public phrasing: the street address plus 'on the Miami Lakes/Hialeah line'.",
+        "verification_note": "Every source agrees on street and ZIP. The municipality label does not agree. Recommended public phrasing: the street address plus 'on the Miami Lakes/Hialeah line'. US Census Geocoder (2026-10-01) matches 6844 NW 169th St to no incorporated place: it falls in Country Club CDP, unincorporated Miami-Dade, in neither Miami Lakes nor Hialeah. The geocoder interpolates and the address sits near a municipal line, so this is strong but not survey-grade.",
         "city_label_conflicts": [
           {
             "label": "just north of Miami Lakes",
@@ -711,12 +713,12 @@
         "principal_address": "N/A",
         "source": "search.sunbiz.org (record blocks automated retrieval)",
         "verification": "search_snippet",
-        "note": "The strongest link between this LLC and the bar is that its authorized persons match the owner names in press — not the address match. Exact legal name may or may not carry a leading 'The'.",
+        "note": "The strongest link between this LLC and the bar is that its authorized persons match the owner names in press — not the address match. Exact legal name may or may not carry a leading 'The'. 2026-10-01: the address match is now shown too. OpenCorporates lists the LLC's principal address as 6844 NW 169 Street, Miami, FL 33015, and ABT beverage license BEV2302435 (4COP) is held by Bend Hospitality Group LLC at 6844 N.W. 169 Street. bisprofiles gives the exact name as 'THE BEND HOSPITALITY GROUP, LLC', with the leading 'The'. The license's d/b/a also names 'The Flipside', which is unexplained; do not publish it. Seen via aggregator mirrors, not yet opened on Sunbiz.",
         "effective_date": "N/A",
         "document_number_note": "N/A",
         "historical_records": [],
-        "beverage_licensee": "N/A",
-        "beverage_license_source": "N/A"
+        "beverage_licensee": "Bend Hospitality Group LLC, d/b/a Bend Liquor Lounge (ABT license BEV2302435, 4COP, Current, expires 2027-03-31)",
+        "beverage_license_source": "https://www2.myfloridalicense.com/sto/file_download/extracts/bd400lic.csv"
       },
       "capacity": {
         "total_guests": "N/A",
@@ -866,9 +868,8 @@
       "schema_type": "BarOrPub",
       "publication_status": "needs_owner_confirmation",
       "blocking_gaps": [
-        "Own website garrisontaproom.com is down on an expired TLS certificate as of 2026-08-17.",
-        "The LLC's principal address (33016) is not the venue address (33014); the entity has not been positively confirmed as the operator at 6709 Main Street.",
-        "Whether the Pizza Scene / BurgerIM food partnerships still hold in 2026 is unverified."
+        "Own website: http://www.garrisontaproom.com loads (checked 2026-10-01), but https:// serves a self-signed certificate for another hostname that expired 2022-02-26. Do not link the https URL; linking the http URL is the site owner's call. Worth telling the owner.",
+        "Whether the Pizza Scene / BurgerIM food partnerships still hold in 2026 is unverified. The venue holds its own state food-service license, so 'no house kitchen' cannot be asserted either. Ask the owner whether there is a kitchen."
       ],
       "cuisine": [],
       "established": "N/A",
@@ -886,7 +887,7 @@
         "country": "US",
         "district": "Main Street Miami Lakes",
         "verification": "confirmed",
-        "verification_note": "Four independent sources agree: the Town of Miami Lakes business listing, the Main Street merchant directory, Yelp, and a Miami Laker feature.",
+        "verification_note": "Four independent sources agree: the Town of Miami Lakes business listing, the Main Street merchant directory, Yelp, and a Miami Laker feature. Operating as of 2026-05-20, the date of the last routine in-person state inspection: Florida DBPR food-service license SEA2337609 (Garrison Taproom LLC, d/b/a Garrison Taproom, 6709 Main St, phone matches) is Current/Active (Florida DBPR District 1 licensee and inspection extracts, https://www2.myfloridalicense.com/sto/file_download/extracts/hrfood1.csv and https://www2.myfloridalicense.com/sto/file_download/extracts/1fdinspi.csv, read 2026-10-01).",
         "city_label_conflicts": "N/A",
         "cross_street": "N/A"
       },
@@ -896,8 +897,8 @@
         "email": "N/A",
         "website": "http://www.garrisontaproom.com",
         "phone_note": "N/A",
-        "website_note": "Expired TLS certificate on both apex and www as of 2026-08-17. Do not link publicly until fixed — worth telling the owner.",
-        "website_status": "down",
+        "website_note": "http:// loads (HTTP 200) and shows hours, address and phone; https:// serves a self-signed certificate for another hostname (garrisontaproom.nexxtrealty.com) that expired 2022-02-26. Both checked 2026-10-01. Do not link the https URL — worth telling the owner.",
+        "website_status": "https_broken",
         "email_note": "N/A"
       },
       "social": {
@@ -941,7 +942,7 @@
         "conflicts": [],
         "confidence": "medium",
         "happy_hour": "N/A",
-        "confidence_note": "Corroborated by Restaurantji, but not sourced from an owned channel — the business's own site is down. Confirm with the owner.",
+        "confidence_note": "Corroborated by Restaurantji and, as of 2026-10-01, by the business's own site over http://, which shows the same schedule. The site's footer dates from 2021 and the directory may have copied it, so the sources may not be independent. Confirm with the owner.",
         "closed_days": []
       },
       "owners": [
@@ -968,12 +969,12 @@
         "principal_address": "8261 NW 165 Ter, Miami Lakes, FL 33016",
         "source": "search.sunbiz.org (record blocks automated retrieval)",
         "verification": "search_snippet",
-        "note": "Principal address differs from the venue address, which is normal for an LLC registered at a residence. The link to the venue rests on the Town of Miami Lakes business listing.",
+        "note": "Principal address differs from the venue address, which is normal for an LLC registered at a residence. The link to the venue rests on the Town of Miami Lakes business listing. 2026-10-01: the LLC is now shown as the operator at 6709 Main Street. The DBPR new-license file for FY2022-23 (https://www2.myfloridalicense.com/hr/licensing/documents/newfood_2223.csv) records food-service license SEA2337609 issued to Garrison Taproom LLC for 6709 Main St on 2023-04-05, mailed to the LLC's 33016 principal address; ABT beverage license BEV2300131 names the same LLC at 6709 Main Street; and the own site's footer reads '© 2021 The garrison taproom, llc.' Entity details re-checked on OpenCorporates and bisprofiles (manager Alexander Perez), aggregator mirrors, not yet opened on Sunbiz.",
         "effective_date": "N/A",
         "document_number_note": "N/A",
         "historical_records": [],
-        "beverage_licensee": "N/A",
-        "beverage_license_source": "N/A"
+        "beverage_licensee": "Garrison Taproom LLC, d/b/a Garrison Taproom (ABT license BEV2300131, 4COP, Current, expires 2027-03-31)",
+        "beverage_license_source": "https://www2.myfloridalicense.com/sto/file_download/extracts/bd400lic.csv"
       },
       "capacity": {
         "total_guests": "N/A",
@@ -981,7 +982,7 @@
         "source": "N/A"
       },
       "short_description": "Craft beer taproom and billiards hall on Main Street, opened in 2022 by Alex and Sue Perez.",
-      "long_description": "The Garrison brought a proper taproom to Main Street in January 2022, an idea Alex Perez had carried for roughly a decade after helping a friend open one in South Carolina. It pours craft flights alongside a full liquor bar and keeps pool tables going in the back; food comes from neighboring partners rather than a house kitchen. Perez describes the street plainly as the hub of Miami Lakes, the focal point of Miami Lakes.",
+      "long_description": "The Garrison brought a proper taproom to Main Street in January 2022, an idea Alex Perez had carried for roughly a decade after helping a friend open one in South Carolina. It pours craft flights alongside a full liquor bar and keeps pool tables going in the back. Perez describes the street plainly as the hub of Miami Lakes, the focal point of Miami Lakes.",
       "description_sources": [
         "https://miamilaker.com/Business/on-the-menu-at-the-garrison-taproom-billiards-friendship-and-flights-of-craft-beers",
         "https://mainstreetmiamilakes.com/business-posts/the-garrison-taproom/"
@@ -1012,7 +1013,7 @@
       ],
       "seo": {
         "meta_title": "The Garrison Taproom & Billiards | Craft Beer & Pool, Miami Lakes",
-        "meta_description": "Craft beer taproom and billiards hall on Main Street, Miami Lakes. Flights, full liquor bar and pool tables, open daily from 4pm.",
+        "meta_description": "Craft beer taproom and billiards hall on Main Street, Miami Lakes. Flights, full liquor bar and pool tables, open daily from 4pm on weekdays and noon on weekends.",
         "json_ld": {
           "@context": "https://schema.org",
           "@type": "BarOrPub",
@@ -1048,7 +1049,7 @@
         }
       ],
       "serves_food": true,
-      "serves_food_note": "No house kitchen. At opening, food was supplied through partnerships with Pizza Scene and BurgerIM. Do not describe it as a restaurant or attribute a chef to it.",
+      "serves_food_note": "Food arrangements unconfirmed. At opening, food was supplied through partnerships with Pizza Scene and BurgerIM; whether those still hold is unverified. The venue holds its own Florida DBPR food-service license (SEA2337609, 35 seats, issued 2023-04-05) and its own Instagram bio says '& food', so 'no house kitchen' cannot be asserted — but a license can cover limited food, so it is not proof of a kitchen either. Do not describe it as a restaurant or attribute a chef to it.",
       "related_locations": [],
       "established_note": "N/A",
       "awards": [],
@@ -1364,7 +1365,6 @@
       "schema_type": "Restaurant",
       "publication_status": "needs_owner_confirmation",
       "blocking_gaps": [
-        "This dossier was researched after the independent verification pass ran and has NOT been through it. Its claims are single-sourced in the way the others were before checking.",
         "Four conflicting founding years appear across sources (1989, ~1991, 1995, 1990). No founding year is published here.",
         "The contact email is spelled two different ways on the restaurant's own site; neither has been confirmed as live."
       ],
@@ -1381,7 +1381,7 @@
         "country": "US",
         "district": "N/A",
         "verification": "confirmed",
-        "verification_note": "Confirmed by the site owner. Delivery platforms render the same address as Hialeah; 33014 straddles the two municipalities.",
+        "verification_note": "Confirmed by the site owner. Delivery platforms render the same address as Hialeah; 33014 straddles the two municipalities. US Census Geocoder (2026-10-01) places 7347 Miami Lakes Dr inside Miami Lakes town limits. Operating as of 2026-05-08, the date of the last routine in-person state inspection: Florida DBPR food-service license SEA2325771 (Trattoria Pampered Chef, 7347 Miami Lakes Dr, phone matches; the license's expiry date is 2026-10-01, which is renewal timing, not a closure signal) is Current/Active (Florida DBPR District 1 licensee and inspection extracts, https://www2.myfloridalicense.com/sto/file_download/extracts/hrfood1.csv and https://www2.myfloridalicense.com/sto/file_download/extracts/1fdinspi.csv, read 2026-10-01).",
         "city_label_conflicts": "N/A",
         "cross_street": "N/A"
       },
@@ -1446,12 +1446,12 @@
         "principal_address": "7347 Miami Lakes Drive, Miami Lakes, FL 33014",
         "source": "search.sunbiz.org (record blocks automated retrieval)",
         "verification": "search_snippet",
-        "note": "The 1995 filing coincides with the year the About page gives for the restaurant's arrival in Miami Lakes, which makes it corroborating — it does not make it a founding year.",
+        "note": "The 1995 filing coincides with the year the About page gives for the restaurant's arrival in Miami Lakes, which makes it corroborating — it does not make it a founding year. 2026-10-01: name and address match now shown. OpenCorporates lists P95000008657 as Active with principal address 7347 Miami Lakes Drive, and the state food-service license (DBPR SEA2325771) and beverage license (ABT BEV2320829, 2COP, licensee Trattoria Pampered Chef Miami Lakes Inc) are at the same address. Incorporation date: 1995-01-28 per bisprofiles vs the 1995-01-30 filing above; the mirrors disagree by days. Checked via aggregator mirrors, not yet opened on Sunbiz.",
         "effective_date": "1995-01-23",
         "document_number_note": "N/A",
         "historical_records": [],
-        "beverage_licensee": "N/A",
-        "beverage_license_source": "N/A"
+        "beverage_licensee": "Trattoria Pampered Chef Miami Lakes Inc (ABT license BEV2320829, 2COP, Current, expires 2027-03-31)",
+        "beverage_license_source": "https://www2.myfloridalicense.com/sto/file_download/extracts/bd400lic.csv"
       },
       "capacity": {
         "total_guests": "N/A",
@@ -1467,7 +1467,7 @@
       ],
       "signature_items": [
         "Handmade pasta",
-        "Wood-oven pizza"
+        "Pizza"
       ],
       "references": [
         {
@@ -1488,7 +1488,8 @@
       ],
       "caveats": [
         "This listing was your original 'Trattorini'. No Miami Lakes business trades under that name.",
-        "A separate Broward entity, Trattoria Pampered Chef Miramar LLC, shares the trade name. Nothing found connects it to this owner or corporation. Do not write 'they expanded to Miramar'."
+        "A separate Broward entity, Trattoria Pampered Chef Miramar LLC, shares the trade name. Nothing found connects it to this owner or corporation. Do not write 'they expanded to Miramar'.",
+        "'Wood-oven' was dropped from the pizza on 2026-10-01: the own menu lists pizzas but names no wood oven, and the Miami Laker article does not mention one. Ask the owner before restoring it."
       ],
       "seo": {
         "meta_title": "Trattoria Pampered Chef | Italian Restaurant in Miami Lakes",
@@ -1556,7 +1557,7 @@
         "atm_on_site": "N/A",
         "source": "N/A"
       },
-      "owners_note": "N/A",
+      "owners_note": "Officer record shows 'Nashat N Ghobrial' (President); the registered agent shows 'Nashat T Ghobrial' (bisprofiles, 2026-10-01). Both recorded; not resolved.",
       "alternate_names": [],
       "service_model": "N/A",
       "service": {
@@ -1612,7 +1613,7 @@
         "country": "US",
         "district": "N/A",
         "verification": "confirmed",
-        "verification_note": "Confirmed on the own site, Miami New Times, Burger Beast, Time Out and the corporate principal address.",
+        "verification_note": "Confirmed on the own site, Miami New Times, Burger Beast, Time Out and the corporate principal address. Operating as of 2026-07-21, the date of the last routine in-person state inspection: Florida DBPR food-service license SEA2319259 (d/b/a Morro Castle, 1201 W 44 Pl, phone matches) is Current/Active (Florida DBPR District 1 licensee and inspection extracts, https://www2.myfloridalicense.com/sto/file_download/extracts/hrfood1.csv and https://www2.myfloridalicense.com/sto/file_download/extracts/1fdinspi.csv, read 2026-10-01).",
         "city_label_conflicts": "N/A",
         "cross_street": "N/A"
       },
@@ -1830,8 +1831,7 @@
       "publication_status": "needs_owner_confirmation",
       "blocking_gaps": [
         "Hours conflict across all three available sources and no owned channel publishes them. No hours are published here.",
-        "An Instagram-claimed Miami New Times 2012 'Best Cuban Restaurant' award could not be confirmed; the winner page was never located.",
-        "A second address, 364 W 29th St, is listed under the name 'Batidos cubanos' with the identical phone number. Unresolved."
+        "An Instagram-claimed Miami New Times 2012 'Best Cuban Restaurant' award could not be confirmed; the winner page was never located."
       ],
       "cuisine": [
         "Cuban",
@@ -1854,7 +1854,7 @@
         "country": "US",
         "district": "N/A",
         "verification": "confirmed",
-        "verification_note": "N/A",
+        "verification_note": "360 per the own Instagram bio, the only state food license on the block (DBPR NOS2318045, 360 W 29 St) and the corporate principal address. The '364 W 29th St / Batidos cubanos' entry, same phone, appears only on NetWaiter and Restaurantji and is treated as an aggregator variant (resolved 2026-10-01). Whether 364 is a second door of the same premises is not known. Operating as of 2026-08-17, the date of the last routine in-person state inspection: Florida DBPR non-seating food license NOS2318045 (d/b/a S & N Vegetables, 360 W 29 St, phone matches) is Current/Active (Florida DBPR District 1 licensee and inspection extracts, https://www2.myfloridalicense.com/sto/file_download/extracts/hrfood1.csv and https://www2.myfloridalicense.com/sto/file_download/extracts/1fdinspi.csv, read 2026-10-01).",
         "city_label_conflicts": "N/A",
         "cross_street": "at W 3rd Ct"
       },
@@ -1924,7 +1924,7 @@
         "principal_address": "N/A",
         "source": "search.sunbiz.org (record blocks automated retrieval)",
         "verification": "search_snippet",
-        "note": "The officer/registered address on file (770 W 35th St) differs from the operating address. Do not merge the two.",
+        "note": "The officer/registered address on file (770 W 35th St) differs from the operating address. Do not merge the two. 2026-10-01: OpenCorporates gives the principal address as 360 W 29th St., Hialeah, FL 33012-5708, the operating address; the 770 W 35th St address is the registered-agent and officer address and stays unpublished. Seen via aggregator mirrors (OpenCorporates, bisprofiles), not yet opened on Sunbiz.",
         "effective_date": "N/A",
         "document_number_note": "N/A",
         "historical_records": [],
@@ -2069,7 +2069,7 @@
       "blocking_gaps": [
         "No opening or founding year exists in any source. None is published.",
         "Hours conflict across three sources and the own site showed only a single day's hours.",
-        "The Florida document number could not be tied to this business — MATCH NOT PROVEN — so no document number is published."
+        "The Florida document number is now tied to this business on name and address (aggregator mirrors plus the state licenses, 2026-10-01), but the record has not been opened on Sunbiz directly, so none is published yet."
       ],
       "cuisine": [
         "Cuban",
@@ -2087,7 +2087,7 @@
         "country": "US",
         "district": "N/A",
         "verification": "confirmed",
-        "verification_note": "Confirmed on the own site, Yelp and 2016 press.",
+        "verification_note": "Confirmed on the own site, Yelp and 2016 press. Operating as of 2026-09-09, the date of the last routine in-person state inspection: Florida DBPR food-service license SEA2325156 (Trigo Cafe Corp, d/b/a Trigo, 839 W 49 St; the license's expiry date is 2026-10-01, which is renewal timing, not a closure signal) is Current/Active (Florida DBPR District 1 licensee and inspection extracts, https://www2.myfloridalicense.com/sto/file_download/extracts/hrfood1.csv and https://www2.myfloridalicense.com/sto/file_download/extracts/1fdinspi.csv, read 2026-10-01).",
         "city_label_conflicts": "N/A",
         "cross_street": "N/A"
       },
@@ -2158,10 +2158,10 @@
         "verification": "aggregator",
         "note": "N/A",
         "effective_date": "N/A",
-        "document_number_note": "A candidate number, P15000092207, surfaced only in the query string of an unrelated Sunbiz search. Nothing ties it to this Hialeah business. MATCH NOT PROVEN — deliberately not published.",
+        "document_number_note": "P15000092207 found via aggregator mirror, not yet opened on Sunbiz. It first surfaced only in the query string of an unrelated Sunbiz search. 2026-10-01: OpenCorporates, bisprofiles and bizprofile.net all show TRIGO CAFE CORP. as Active at principal address 839 W 49 St., Hialeah, FL 33012, incorporated 2015-11-12 (a filing date, not an opening date), president and registered agent Julio C Barrero (the owner named in press); and the state food-service (DBPR SEA2325156) and beverage (ABT BEV2334066) licenses at 839 W 49 St are held by Trigo Cafe Corp. Name and address now match. Not written to document_number until the Sunbiz record is opened directly.",
         "historical_records": [],
-        "beverage_licensee": "N/A",
-        "beverage_license_source": "N/A"
+        "beverage_licensee": "Trigo Cafe Corp, d/b/a Trigo Cafe (ABT license BEV2334066, 2COP, Current, expires 2027-03-31)",
+        "beverage_license_source": "https://www2.myfloridalicense.com/sto/file_download/extracts/bd400lic.csv"
       },
       "capacity": {
         "total_guests": "N/A",
@@ -2301,8 +2301,8 @@
       "schema_type": "Restaurant",
       "publication_status": "needs_owner_confirmation",
       "blocking_gaps": [
-        "No current operating entity could be located for 540 W 29th St. No active Florida corporation or fictitious name was found at this address.",
-        "The Infatuation states this location 'is no longer associated with the other locations' and it is absent from the Polo Norte group's own location list. The relationship — split, sale, or something else — is unknown.",
+        "The operating entity is now identified from state licenses (2026-10-01): the Florida DBPR food-service and ABT beer-and-wine licenses for 540/546 W 29th St, carrying the restaurant's own phone number, are held by Ice Paradise, Inc. Its corporate record has been seen only through aggregator mirrors and not yet opened on Sunbiz, so no legal entity is published yet.",
+        "The Infatuation states this location 'is no longer associated with the other locations' and it is absent from the Polo Norte group's own location list. The relationship — split, sale, or something else — is unknown. A separate licensee does not show independence: every Polo Norte group location is licensed to its own corporation (DBPR, 2026-10-01). Do not describe this address as independent of, or part of, the group.",
         "No founding year and no owner name is published by the business itself."
       ],
       "cuisine": [
@@ -2320,7 +2320,7 @@
         "country": "US",
         "district": "N/A",
         "verification": "confirmed",
-        "verification_note": "540 per the business's own contact page and Instagram. The Infatuation and the 1992 corporate filing use 546 W 29th St, same block. Both numbers documented, unreconciled.",
+        "verification_note": "540 per the business's own contact page and Instagram. The Infatuation and the 1992 corporate filing use 546 W 29th St, same block. Both numbers documented, unreconciled. The operating entity and its state licenses use '540/546 W 29 St' as one premises (2026-10-01). Operating as of 2026-08-18, the date of the last routine in-person state inspection: Florida DBPR food-service license SEA2323588 (Ice Paradise Inc, d/b/a Polo Norte Ice Cream, 546 W 29 St, phone matches the restaurant's own) is Current/Active (Florida DBPR District 1 licensee and inspection extracts, https://www2.myfloridalicense.com/sto/file_download/extracts/hrfood1.csv and https://www2.myfloridalicense.com/sto/file_download/extracts/1fdinspi.csv, read 2026-10-01).",
         "city_label_conflicts": "N/A",
         "cross_street": "N/A"
       },
@@ -2390,7 +2390,7 @@
         "principal_address": "N/A",
         "source": "N/A",
         "verification": "N/A",
-        "note": "No active Florida corporation or fictitious name was found at 540 W 29th St. Two historical Polo Norte corporations were filed on this block and both are administratively dissolved: Polo Norte Ice Cream Corp. (S39286, filed 1991-03-18, 540 W 29 St, dissolved 1993) and New Polo Norte Ice Cream Inc. (V62886, filed 1992-09-10, 546 W 29th St, Busquet, dissolved 1998). Neither is the current operator.",
+        "note": "The 2026-08 research found no active Florida corporation or fictitious name at 540 W 29th St. Two historical Polo Norte corporations were filed on this block and both are administratively dissolved: Polo Norte Ice Cream Corp. (S39286, filed 1991-03-18, 540 W 29 St, dissolved 1993) and New Polo Norte Ice Cream Inc. (V62886, filed 1992-09-10, 546 W 29th St, Busquet, dissolved 1998). Neither is the current operator. 2026-10-01: current operator identified as ICE PARADISE, INC. It holds DBPR food-service license SEA2323588 (d/b/a Polo Norte Ice Cream, 546 W 29 St) and ABT beverage license BEV2330111 (2COP, d/b/a Polo Norte, 540 West 29th Street), both with the restaurant's published phone; OpenCorporates gives its head office as 540/546 W 29 Street; and the USPTO 'PN' polar-bear service mark (serial 86412426, restaurant and ice-cream-shop services) is held by Ice Paradise, Inc. at 540/546 W 29 Street. Document number P97000080351, incorporated 1997-09-16 (a filing date, not an opening date), found via aggregator mirror, not yet opened on Sunbiz. The structured fields above are left unchanged until it is. No ownership change is recorded for this premises in the DBPR change-of-owner files, FY2022-23 to FY2025-26.",
         "effective_date": "N/A",
         "document_number_note": "N/A",
         "historical_records": [
@@ -2411,8 +2411,8 @@
             "source": "https://opengovus.com/florida-corporation/V62886"
           }
         ],
-        "beverage_licensee": "N/A",
-        "beverage_license_source": "N/A"
+        "beverage_licensee": "Ice Paradise Inc, d/b/a Polo Norte (ABT license BEV2330111, 2COP beer and wine, Current, expires 2027-03-31)",
+        "beverage_license_source": "https://www2.myfloridalicense.com/sto/file_download/extracts/bd400lic.csv"
       },
       "capacity": {
         "total_guests": "N/A",
@@ -2420,7 +2420,7 @@
         "source": "N/A"
       },
       "short_description": "Cuban restaurant and ice cream parlor on W 29th Street, known for pizza cubana.",
-      "long_description": "Polo Norte is a Cuban kitchen and ice cream parlor on West 29th Street, serving classic plates alongside pizza cubana and scooped desserts. It runs Tuesday through Sunday with takeout, delivery and catering, beer and wine, and its own parking lot, and it publishes its site in both English and Spanish. Note that this address operates independently of the similarly named Polo Norte group elsewhere in Hialeah.",
+      "long_description": "Polo Norte is a Cuban kitchen and ice cream parlor on West 29th Street, serving classic plates alongside pizza cubana and scooped desserts. It runs Tuesday through Sunday with takeout, delivery and catering, beer and wine, and its own parking lot, and it publishes its site in both English and Spanish.",
       "description_sources": [
         "https://www.polonortecubanrestaurant.com/",
         "https://www.polonortecubanrestaurant.com/about-us/",
@@ -2456,7 +2456,8 @@
       ],
       "caveats": [
         "CRITICAL: do not use the Polo Norte group's history, the Busquet family story, or the 'opened three days before Hurricane Andrew' account on this listing. They belong to a different business.",
-        "A quote about opening before Hurricane Andrew was previously attributed to Raul Busquet; CBS attributes it to Eugenio Busquet. Neither belongs on this listing."
+        "A quote about opening before Hurricane Andrew was previously attributed to Raul Busquet; CBS attributes it to Eugenio Busquet. Neither belongs on this listing.",
+        "CONTESTED, do not publish: the own Instagram bio calls this 'The Original location' and the own site says 'For over 27 years' (both 2026-10-01). These collide with the group's 'since 1992' story and the 1991/1992 corporations on this block. Do not publish 'the original', do not convert '27 years' into a year, and do not pair it with the 1997 incorporation."
       ],
       "seo": {
         "meta_title": "Polo Norte Cuban Restaurant | Pizza Cubana & Ice Cream, Hialeah",
@@ -2532,7 +2533,7 @@
         "atm_on_site": "N/A",
         "source": "N/A"
       },
-      "owners_note": "Deliberately empty. No current owning entity was located for this address, and the business publishes no owner name. The Busquet family history belongs to the separate Polo Norte group and must NOT be attributed here.",
+      "owners_note": "Deliberately empty. The operating corporation is now identified (Ice Paradise, Inc., see corporate_record.note), but an officer is not necessarily an owner, the aggregator mirrors disagree on the officer list, and the business publishes no owner name. The Busquet family history belongs to the Polo Norte group and must NOT be attributed here.",
       "alternate_names": [],
       "service_model": "N/A",
       "service": {
@@ -2838,7 +2839,7 @@
       "blocking_gaps": [
         "Hours are unconfirmed. The only schedule published anywhere is on casamarinrestaurant.com, whose About copy is unedited site-template boilerplate describing meze and meyhanes — a page nobody has edited is not a reliable owned channel for its own opening times. Ask the restaurant directly.",
         "That schedule reads Monday–Saturday, which would make the restaurant closed on Sunday. The Club de la Amistad event flyer puts a gathering here on Sunday 6 September 2026. Confirm whether Sunday is a closed day, a private-booking day, or the published hours are simply stale.",
-        "No Florida corporate record has been checked for this address.",
+        "The Florida corporate record has been checked only through aggregator mirrors (2026-10-01): the state food and liquor licenses for Casa Marin at 4195 Palm Ave are held by Latin American JR. Corp. (see corporate_record.note). Open the record on Sunbiz before publishing a legal entity.",
         "No verbatim quote from Diosdado Marín is on file. El Vocero publishes him in Spanish; the wording here would be a translation, so none is published on the listing."
       ],
       "cuisine": [
@@ -2850,7 +2851,7 @@
         "value": "1999-06-21",
         "label": "Opened June 21, 1999",
         "source": "https://elvoceronews.com/casa-marin-25-years-of-tasty-food-and-service-in-hialeah/",
-        "note": "Opening date as given in El Vocero's 25th-anniversary feature, published 2024. No corporate filing has been located for this address, so nothing contradicts or corroborates it."
+        "note": "Opening date as given in El Vocero's 25th-anniversary feature, published 2024. The operating corporation's Florida filing date, 1999-07-06 (seen via aggregator mirror, not yet opened on Sunbiz), is a registration date: it neither confirms nor contradicts the opening date."
       },
       "location": {
         "street": "4195 Palm Ave",
@@ -2860,7 +2861,7 @@
         "country": "US",
         "district": "Palm Ave",
         "verification": "confirmed",
-        "verification_note": "4195 Palm Ave agrees across the restaurant's own site, its Google Maps listing (the storefront photo shows the 4195 unit number over the door), and the Club de la Amistad event flyer.",
+        "verification_note": "4195 Palm Ave agrees across the restaurant's own site, its Google Maps listing (the storefront photo shows the 4195 unit number over the door), and the Club de la Amistad event flyer. Operating as of 2026-09-21, the date of the last routine in-person state inspection: Florida DBPR food-service license SEA2327632 (Latin American JR Corp, d/b/a Casa Marin, 4195 Palm Ave, phone matches) is Current/Active (Florida DBPR District 1 licensee and inspection extracts, https://www2.myfloridalicense.com/sto/file_download/extracts/hrfood1.csv and https://www2.myfloridalicense.com/sto/file_download/extracts/1fdinspi.csv, read 2026-10-01).",
         "city_label_conflicts": "N/A",
         "cross_street": "N/A"
       },
@@ -2915,20 +2916,20 @@
         "principal_address": "N/A",
         "source": "N/A",
         "verification": "N/A",
-        "note": "Not researched. This listing was hand-authored from press and the restaurant's own contact details rather than generated from a dossier, so the Sunbiz check that every other record here carries has not been done.",
+        "note": "This listing was hand-authored from press and the restaurant's own contact details rather than generated from a dossier. 2026-10-01: the state food-service license (DBPR SEA2327632) and beverage license (ABT BEV2326481, 2COP) for 'Casa Marin' at 4195 Palm Ave are held by Latin American JR. Corp. OpenCorporates and bisprofiles show LATIN AMERICAN JR., CORP. as Active, principal address 4195 Palm Ave., Hialeah, FL 33012, incorporated 1999-07-06 (a filing date, not an opening date), with Diosdado Marin as president and registered agent. Document number P99000060358 found via aggregator mirror, not yet opened on Sunbiz; status and the structured fields are left unchanged until it is. Not this listing: CASA MARIN RESTAURANT, INC. (P12000058067), inactive, at 9796 Coral Way, Miami.",
         "effective_date": "N/A",
         "document_number_note": "N/A",
         "historical_records": [],
-        "beverage_licensee": "N/A",
-        "beverage_license_source": "N/A"
+        "beverage_licensee": "Latin American JR. Corp, d/b/a Casa Marin (ABT license BEV2326481, 2COP, Current, expires 2027-03-31)",
+        "beverage_license_source": "https://www2.myfloridalicense.com/sto/file_download/extracts/bd400lic.csv"
       },
       "capacity": {
-        "total_guests": "55",
+        "total_guests": "N/A",
         "private_room_guests": "N/A",
-        "source": "https://elvoceronews.com/casa-marin-25-years-of-tasty-food-and-service-in-hialeah/"
+        "source": "N/A"
       },
       "short_description": "Cuban and Spanish cooking on Palm Avenue, from the same chef-owner since 1999.",
-      "long_description": "Diosdado Marín came from Cuba in 1990 with a degree in sport and no kitchen behind him, learned the trade working in other people's restaurants, and opened Casa Marín on Palm Avenue on 21 June 1999. Twenty-five years later he is still the chef. The room seats fifty-five between the tables and the counter, and there is a ventanita for cafecito and takeout. The menu is Cuban with a Spanish side to it — roast pork with moros and yuca, pan con bistec, the Cuban sandwich, and caldo gallego, fabada and a Catalan-style chicken fricassee alongside them. The house dish is la cosita de Marín: chicken breast marinated, layered with ham and cheese, wrapped in bacon, rolled, baked and then fried.",
+      "long_description": "Diosdado Marín came from Cuba in 1990 with a degree in sport and no kitchen behind him, learned the trade working in other people's restaurants, and opened Casa Marín on Palm Avenue on 21 June 1999. Twenty-five years later he is still the chef. There is a ventanita for cafecito and takeout. The menu is Cuban with a Spanish side to it — roast pork with moros and yuca, pan con bistec, the Cuban sandwich, and caldo gallego, fabada and a Catalan-style chicken fricassee alongside them. The house dish is la cosita de Marín: chicken breast marinated, layered with ham and cheese, wrapped in bacon, rolled, baked and then fried.",
       "description_sources": [
         "https://elvoceronews.com/casa-marin-25-years-of-tasty-food-and-service-in-hialeah/",
         "https://www.casamarinrestaurant.com/"
@@ -2946,7 +2947,7 @@
           "url": "https://elvoceronews.com/casa-marin-25-years-of-tasty-food-and-service-in-hialeah/",
           "type": "press",
           "independent": true,
-          "note": "Source for the opening date, the owner, the capacity, the ventanita and every dish named in long_description."
+          "note": "Source for the opening date, the owner, the ventanita and every dish named in long_description. Its seat count (fifty-five) conflicts with the state food-service license (16 seats) and is not published."
         },
         {
           "title": "Official site",
@@ -2959,7 +2960,8 @@
       ],
       "caveats": [
         "Do not use anything from the About section of casamarinrestaurant.com. It is unmodified site-template copy about meze, meyhanes and a curated wine list, and describes a Mediterranean restaurant that is not this one.",
-        "El Vocero publishes in Spanish. Any English wording attributed to Diosdado Marín would be a translation, so no direct quote is published on this listing."
+        "El Vocero publishes in Spanish. Any English wording attributed to Diosdado Marín would be a translation, so no direct quote is published on this listing.",
+        "Seat count is contested and not published: El Vocero (2024) says the room seats fifty-five between the tables and the counter; the Florida DBPR food-service license SEA2327632 for this address lists 16 seats (checked 2026-10-01). Ask the restaurant."
       ],
       "seo": {
         "meta_title": "Casa Marín Restaurant | Cuban & Spanish on Palm Ave, Hialeah",
@@ -2998,7 +3000,7 @@
       "serves_food": true,
       "serves_food_note": "N/A",
       "related_locations": [],
-      "established_note": "21 June 1999, per El Vocero's 25th-anniversary feature. This is an opening date reported in press, not a corporate filing date — no Florida registration has been checked for this address.",
+      "established_note": "21 June 1999, per El Vocero's 25th-anniversary feature. This is an opening date reported in press, not a corporate filing date — the operating corporation's 1999-07-06 filing is a separate registration event.",
       "awards": [],
       "payment": {
         "cash_only": "N/A",
@@ -3047,7 +3049,7 @@
         "No street address. The club has no premises — volunteers work the streets and report from their phones — so there is nothing to list. This is a fact about the organisation, not a missing field to fill.",
         "No published phone number for the organisation. The site routes contact through a volunteer sign-up form and a personal contact card for Edith Calvo.",
         "No founding year is published anywhere on the club's own site.",
-        "501(c)(3) status is not stated. The site calls the club 'a volunteer nonprofit'; whether that is a registered exemption or a description has not been checked against Sunbiz or the IRS."
+        "Legal and tax status unconfirmed. The site calls the club 'a volunteer nonprofit', but the only Florida registration found (2026-10-01) is a limited liability company, and the IRS Exempt Organizations file for Florida has no match — a recent exemption may not appear there yet. Ask the club whether it is a registered 501(c)(3) or an LLC."
       ],
       "cuisine": [],
       "established": "N/A",
@@ -3060,7 +3062,7 @@
         "country": "US",
         "district": "N/A",
         "verification": "confirmed",
-        "verification_note": "City only. The club states it serves Hialeah and operates across the whole city; it publishes no address because it has no premises.",
+        "verification_note": "City only. The club states it serves Hialeah and operates across the whole city; it publishes no address because it has no premises. Active organisation as of 2026-10-01: the club's own site and /about page are live, with volunteer sign-up open.",
         "city_label_conflicts": "N/A",
         "cross_street": "N/A"
       },
@@ -3110,7 +3112,7 @@
         "principal_address": "N/A",
         "source": "N/A",
         "verification": "N/A",
-        "note": "Not researched. Hand-authored from the club's own site rather than generated from a dossier. Its nonprofit registration, if any, has not been looked up.",
+        "note": "Hand-authored from the club's own site rather than generated from a dossier. 2026-10-01, aggregator mirror only: candidate CLUB DE LA AMISTAD POR UN HIALEAH MEJOR, LLC, a Florida limited liability company, Active, registered agent Edith Calvo (the founder named on the club's own site), per OpenCorporates. Document number L26000357918 found via aggregator mirror, not yet opened on Sunbiz. Not recorded as a proven match: the club publishes no address to test against. Status is left unchanged; confirm with the club.",
         "effective_date": "N/A",
         "document_number_note": "N/A",
         "historical_records": [],
@@ -3149,7 +3151,7 @@
       ],
       "caveats": [
         "Every source on this listing is the organisation's own site. Nothing here is independently corroborated, which is why it is not marked ready.",
-        "'Nonprofit' is the club's own description of itself ('a volunteer nonprofit serving Hialeah, Florida'). It is not a verified tax status."
+        "'Nonprofit' is the club's own description of itself ('a volunteer nonprofit serving Hialeah, Florida'). It is not a verified tax status. Checked 2026-10-01: the only Florida registration found is a limited liability company (a candidate match, see corporate_record.note), and no organisation of this name appears in the IRS Exempt Organizations file for Florida (https://www.irs.gov/pub/irs-soi/eo_fl.csv). Do not describe the club as a nonprofit or tax-exempt until it confirms."
       ],
       "seo": {
         "meta_title": "Club de la Amistad por un Hialeah Mejor | Volunteers, Hialeah",
@@ -3185,7 +3187,7 @@
         }
       ],
       "serves_food": false,
-      "serves_food_note": "Not a food business. Listed as a nonprofit organisation.",
+      "serves_food_note": "Not a food business. Volunteer organisation; legal/tax status unconfirmed.",
       "related_locations": [],
       "established_note": "Not published. The club's own site gives an account of how it started but names no year.",
       "awards": [],
