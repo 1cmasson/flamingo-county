@@ -575,6 +575,8 @@ Two rules it encodes, both learned the hard way:
   and 360px originals, so there is nothing to choose between. They are simply
   badly encoded for their dimensions and want re-encoding, or a WebP
   `formatOptions` on the media collection — an asset decision, not a markup one.
+  (Since 2026-10-02 the flamingo is a clean 422×1200 transparent cutout, 150 KB;
+  migration `20261002_060000_replace_flamingo_mascot` swapped it in place.)
 
 ### Still to do on the frontend
 

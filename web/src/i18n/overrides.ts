@@ -53,6 +53,9 @@ export const ES_OVERRIDES: Record<string, string> = {
   'NOTHING ON THE BOARD YET.': 'TODAVÍA NO HAY NADA EN LA PIZARRA.',
   'THIS WEEK': 'ESTA SEMANA',
   'AROUND HERE.': 'POR AQUÍ.',
+  // The event page's source line: who puts the event on.
+  'More info:': 'Más info:',
+  'Organized by': 'Organiza:',
 
   // --- Ticker ------------------------------------------------------------
   'NOW ON THE LISTING': 'AHORA EN EL DIRECTORIO',

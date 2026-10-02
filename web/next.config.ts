@@ -12,6 +12,13 @@ const nextConfig: NextConfig = {
   // the runtime stage copies. Without it the image builds and then fails at
   // `node server.js` because that file is never produced.
   output: 'standalone',
+  // The event card's fonts and mascots (lib/eventCard.tsx) are read from disk
+  // at request time, by the card route and by any route whose publish runs the
+  // social auto-draft (the admin, the REST API, the Telegram webhook), so they
+  // go into every route's trace. The Dockerfile also copies `src/` whole.
+  outputFileTracingIncludes: {
+    '/**': ['./src/assets/og/**/*'],
+  },
   images: {
     localPatterns: [
       {

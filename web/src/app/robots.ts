@@ -10,14 +10,16 @@ import { SITE_URL } from '../lib/site'
  * that engine's answers.
  *
  * Only pages with nothing to index are closed: admin, API, and the signed-in
- * My Week page.
+ * My Week page. The event cards under /api/og/ stay open: they are the
+ * og:image of events with no photo, and a crawler that honours robots (X's
+ * does) would otherwise show the link with no picture. The longer rule wins.
  */
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
         userAgent: '*',
-        allow: '/',
+        allow: ['/', '/api/og/'],
         disallow: ['/admin', '/api/', '/en/my-week', '/es/my-week'],
       },
     ],
