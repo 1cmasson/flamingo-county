@@ -43,6 +43,22 @@ export default buildConfig({
     importMap: {
       baseDir: path.resolve(dirname),
     },
+    /**
+     * The HQ dashboard at /admin/hq: a read-only overview for the owner's
+     * phone. The view checks the admin session itself, since Payload skips its
+     * login redirect for custom views. See components/hq/HqDashboard.tsx.
+     */
+    components: {
+      beforeNavLinks: ['/components/hq/HqNavLink#HqNavLink'],
+      views: {
+        hq: {
+          Component: '/components/hq/HqDashboard#HqDashboard',
+          path: '/hq',
+          exact: true,
+          meta: { title: 'HQ' },
+        },
+      },
+    },
   },
   collections: [
     Users,

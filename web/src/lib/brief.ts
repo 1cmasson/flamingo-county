@@ -47,7 +47,7 @@ async function since(payload: Payload, now: Date): Promise<Date> {
  * instance's own (checked 2026-10-01); a label that stops existing just drops
  * out, and an account with none of these falls back to its first two.
  */
-const HEADLINE: Record<string, string[]> = {
+export const HEADLINE: Record<string, string[]> = {
   facebook: ['Page followers', 'Page Impressions'],
   instagram: ['Reach', 'Likes'],
   tiktok: ['Followers', 'Total Likes'],

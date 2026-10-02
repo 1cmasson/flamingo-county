@@ -1,0 +1,272 @@
+// The HQ dashboard (/admin/hq). Payload's own variables only, so it follows
+// the admin's light and dark themes. Phone first: one column, full-width tap
+// rows; more columns appear only when there is room.
+
+.hq-nav-link {
+  margin-bottom: calc(var(--base) * 0.5);
+}
+
+.hq-dash {
+  padding-top: calc(var(--base) * 1);
+  padding-bottom: var(--spacing-view-bottom);
+
+  a {
+    text-decoration: none;
+    color: inherit;
+  }
+
+  &__head {
+    margin-bottom: calc(var(--base) * 0.8);
+
+    h1 {
+      margin: 0;
+    }
+  }
+
+  &__sub,
+  &__note,
+  &__empty {
+    margin: calc(var(--base) * 0.2) 0 0;
+    color: var(--theme-elevation-500);
+  }
+
+  &__empty {
+    padding: calc(var(--base) * 0.4) 0;
+  }
+
+  // The four numbers that say "is anything waiting on me".
+  &__stats {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: calc(var(--base) * 0.4);
+    margin-bottom: calc(var(--base) * 0.8);
+
+    @media (min-width: 900px) {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+
+  &__stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: calc(var(--base) * 0.6);
+    border: 1px solid var(--theme-border-color);
+    border-radius: var(--style-radius-m);
+    background: var(--theme-elevation-50);
+
+    &:hover,
+    &:focus-visible {
+      background: var(--theme-elevation-100);
+    }
+  }
+
+  &__stat-n {
+    font-size: calc(var(--base) * 1.4);
+    font-weight: 600;
+    line-height: 1.1;
+    font-variant-numeric: tabular-nums;
+    color: var(--theme-elevation-400);
+  }
+
+  &__stat--on &__stat-n {
+    color: var(--theme-text);
+  }
+
+  &__stat-label {
+    color: var(--theme-elevation-600);
+  }
+
+  &__grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 24rem), 1fr));
+    gap: calc(var(--base) * 0.6);
+    align-items: start;
+  }
+
+  &__card {
+    min-width: 0;
+    padding: calc(var(--base) * 0.6) calc(var(--base) * 0.6) calc(var(--base) * 0.3);
+    border: 1px solid var(--theme-border-color);
+    border-radius: var(--style-radius-m);
+    background: var(--theme-elevation-0);
+
+    &--wide {
+      grid-column: 1 / -1;
+    }
+  }
+
+  &__card-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: calc(var(--base) * 0.5);
+
+    h2 {
+      margin: 0;
+      font-size: calc(var(--base) * 0.8);
+      line-height: 1.3;
+    }
+  }
+
+  &__count {
+    display: inline-block;
+    margin-left: calc(var(--base) * 0.35);
+    padding: 0 calc(var(--base) * 0.3);
+    border-radius: 999px;
+    background: var(--theme-elevation-100);
+    font-size: 0.85em;
+    font-variant-numeric: tabular-nums;
+    vertical-align: 0.1em;
+  }
+
+  &__all {
+    flex-shrink: 0;
+    padding: calc(var(--base) * 0.2) 0;
+    color: var(--theme-elevation-600) !important;
+    text-decoration: underline !important;
+    text-underline-offset: 2px;
+  }
+
+  &__list {
+    list-style: none;
+    margin: calc(var(--base) * 0.3) 0 0;
+    padding: 0;
+
+    > li + li {
+      border-top: 1px solid var(--theme-elevation-100);
+    }
+  }
+
+  // Every row is one tap target that opens the record.
+  &__row {
+    display: flex;
+    align-items: flex-start;
+    gap: calc(var(--base) * 0.5);
+    min-height: 44px;
+    margin: 0 calc(var(--base) * -0.3);
+    padding: calc(var(--base) * 0.4) calc(var(--base) * 0.3);
+    border-radius: var(--style-radius-s);
+
+    &:hover,
+    &:focus-visible {
+      background: var(--theme-elevation-50);
+    }
+  }
+
+  &__row-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  &__row-title {
+    overflow-wrap: anywhere;
+  }
+
+  &__meta {
+    display: block;
+    font-size: 0.9em;
+    color: var(--theme-elevation-500);
+    overflow-wrap: anywhere;
+  }
+
+  &__late {
+    color: var(--theme-error-500);
+    font-weight: 600;
+  }
+
+  &__result {
+    display: block;
+  }
+
+  &__thumb {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--style-radius-s);
+    object-fit: cover;
+    background: var(--theme-elevation-100);
+
+    &--video,
+    &--none {
+      display: grid;
+      place-items: center;
+      color: var(--theme-elevation-500);
+    }
+  }
+
+  &__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: calc(var(--base) * 0.3);
+    margin-top: calc(var(--base) * 0.4);
+  }
+
+  &__chip {
+    padding: calc(var(--base) * 0.15) calc(var(--base) * 0.45);
+    border: 1px solid var(--theme-border-color);
+    border-radius: 999px;
+    background: var(--theme-elevation-50);
+
+    b {
+      font-variant-numeric: tabular-nums;
+    }
+
+    &:hover,
+    &:focus-visible {
+      background: var(--theme-elevation-100);
+    }
+  }
+
+  // Accounts: one block per platform, its numbers in a wrapping grid.
+  &__account {
+    display: flex;
+    flex-direction: column;
+    gap: calc(var(--base) * 0.3);
+    margin: 0 calc(var(--base) * -0.3);
+    padding: calc(var(--base) * 0.4) calc(var(--base) * 0.3);
+    border-radius: var(--style-radius-s);
+
+    &:hover,
+    &:focus-visible {
+      background: var(--theme-elevation-50);
+    }
+  }
+
+  &__account-name {
+    font-weight: 600;
+
+    .hq-dash__meta {
+      display: inline;
+      margin-left: calc(var(--base) * 0.4);
+      font-weight: normal;
+    }
+  }
+
+  &__numbers {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 9rem), 1fr));
+    gap: calc(var(--base) * 0.3) calc(var(--base) * 0.6);
+    margin: 0;
+
+    dt {
+      color: var(--theme-elevation-600);
+      overflow-wrap: anywhere;
+    }
+
+    dd {
+      margin: 0;
+      font-size: calc(var(--base) * 0.9);
+      font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+  }
+
+  &__window {
+    font-size: calc(var(--base) * 0.6);
+    font-weight: normal;
+    color: var(--theme-elevation-500);
+  }
+}
