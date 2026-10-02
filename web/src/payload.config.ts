@@ -26,6 +26,7 @@ import { HqSocialDrafts } from './collections/HqSocialDrafts'
 import { HqSocialStats } from './collections/HqSocialStats'
 import { HqClicks } from './collections/HqClicks'
 import { HqPublishRequests } from './collections/HqPublishRequests'
+import { HqChatTurns } from './collections/HqChatTurns'
 import { eveningWrap } from './jobs/eveningWrap'
 import { morningBrief } from './jobs/morningBrief'
 import { socialStats } from './jobs/socialStats'
@@ -67,6 +68,7 @@ export default buildConfig({
     HqSocialStats,
     HqClicks,
     HqPublishRequests,
+    HqChatTurns,
   ],
   globals: [SiteSettings, AboutPage, ListYourSpotPage, HqPlaybook],
 
