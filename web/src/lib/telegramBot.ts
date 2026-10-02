@@ -1,6 +1,7 @@
 import type { Payload } from 'payload'
 
 import { buildBrief } from './brief'
+import { chatConfigured, chatReply } from './chat'
 import { decideDraft, parseDraftCallback } from './hq'
 import { answerCallback, esc, ownerChatId, resolveButtons, sendMessage } from './telegram'
 import { decidePublish, parsePublishCallback } from './publishRequests'
@@ -16,7 +17,7 @@ export type TelegramUpdate = {
   }
 }
 
-const HELP = [
+export const HELP = [
   '<b>Flamingo HQ</b>',
   '/brief — the brief, right now',
   '/inbox — new events',
@@ -158,7 +159,13 @@ export async function handleUpdate(payload: Payload, update: TelegramUpdate): Pr
 
   const text = update.message?.text
   if (!text || !update.message) return
-  const reply = text.startsWith('/') ? await command(payload, text) : HELP
+  // Plain text goes to the chat model when one is configured (lib/chat.ts),
+  // and gets the help otherwise. Only ever reached by the owner: see isOwner.
+  const reply = text.startsWith('/')
+    ? await command(payload, text)
+    : chatConfigured()
+      ? await chatReply(payload, text)
+      : HELP
   // To the owner's chat by id, never to wherever the update came from.
   await sendMessage(reply)
 }

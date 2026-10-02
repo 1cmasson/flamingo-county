@@ -159,6 +159,8 @@ written. `railway.json` at the repo root points at `web/Dockerfile`.
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | the Google Cloud OAuth client |
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_OWNER_CHAT_ID` / `TELEGRAM_WEBHOOK_SECRET` | the HQ bot — optional, see HQ.md |
 | `POSTIZ_API_URL` / `POSTIZ_API_KEY` | social approvals — optional, see HQ.md |
+| `OPENROUTER_API_KEY` / `HQ_CHAT_MODEL` | the HQ bot's chat model — optional, both needed; unset means plain text gets the help reply. The owner picks the model and sets a credit limit on the key (HQ task H5), and must rotate the key that leaked (H3). See HQ.md |
+| `HQ_CHAT_DAILY_LIMIT` / `HQ_CHAT_MAX_TOKENS` | optional; model calls per 24 hours (default 50) and the cap on each reply (default 500 tokens) |
 | `GOOGLE_CALENDAR_ICS_URL` | the owner's Google Calendar *secret address in iCal format*, for the brief's Today and the evening wrap — optional, see HQ.md. A secret: never log or paste it |
 | `RESEND_API_KEY` | Resend API key — sends the emailed sign-in codes. Without it, production refuses to send (codes are never logged there) |
 | `AUTH_EMAIL_FROM` | optional; default `Flamingo County <hola@flamingocounty.com>`. The domain must be verified in Resend |

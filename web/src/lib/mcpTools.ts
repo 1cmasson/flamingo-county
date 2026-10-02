@@ -4,11 +4,14 @@ import type { MCPPluginConfig } from '@payloadcms/plugin-mcp'
 import type { Payload, PayloadRequest } from 'payload'
 import { z } from 'zod'
 
-import type { HqSocialDraft } from '../payload-types'
+import { PUBLISHED } from '../fields/shared'
+import type { Event, HqSocialDraft, Story } from '../payload-types'
 import { buildBrief } from './brief'
+import { addDays, dateOnly, eventEndDay, todayISO } from './dates'
 import { miamiTime } from './hq'
 import { isRunningCount, type MetricSummary } from './postiz'
 import { PUBLISHABLE, publishStatus, requestPublish } from './publishRequests'
+import { routes } from './routes'
 import { MESSAGE_LIMIT, esc, sendMessage, telegramConfigured } from './telegram'
 
 /**
@@ -119,6 +122,131 @@ export async function socialReport(payload: Payload, days: number, now: Date = n
   for (const c of clicks.docs.filter((c) => !c.draft)) bioClicks[c.source] = (bioClicks[c.source] ?? 0) + 1
 
   return { windowDays: days, posts, accounts, bioClicks }
+}
+
+/* ------------------------------------------------------------------------ */
+/* Weekly review: everything the routine reads, in one call                 */
+/* ------------------------------------------------------------------------ */
+
+const REVIEW_DAYS = 28
+const AHEAD_DAYS = 14
+const STORY_LIMIT = 10
+
+/** A localized field read with `locale: 'all'`: `{ en, es }`, or a bare string on an unlocalized read. */
+function bothLanguages(v: unknown): { es: string | null; en: string | null } {
+  if (v && typeof v === 'object') {
+    const l = v as Record<string, string | null | undefined>
+    return { es: l.es ?? null, en: l.en ?? null }
+  }
+  return { es: null, en: typeof v === 'string' ? v : null }
+}
+
+/**
+ * The weekly review's whole input: the 28-day social report, the current
+ * playbook, the published events coming up in the next 14 days, the newest
+ * published stories, and the social drafts already waiting for the owner.
+ *
+ * Built field by field from depth-0 reads, so nothing comes along by accident:
+ * no listing phone or hours (an event's `listing` would populate them at a
+ * higher depth, and most are placeholder data), and nothing from listing
+ * requests or subscribers, which are never read here. Only published site
+ * content is listed: the key's user is staff, and staff can read drafts.
+ */
+export async function weeklyReviewContext(payload: Payload, now: Date = new Date()) {
+  const today = todayISO(now)
+  const until = addDays(today, AHEAD_DAYS)
+
+  const [report, playbook, events, stories, pending] = await Promise.all([
+    socialReport(payload, REVIEW_DAYS, now),
+    payload.findGlobal({ slug: 'hq-playbook', depth: 0, overrideAccess: true }),
+    payload.find({
+      collection: 'events',
+      where: {
+        and: [
+          PUBLISHED,
+          { date: { less_than_equal: `${until}T23:59:59.999Z` } },
+          // From yesterday: a 9PM to 1AM night that started yesterday is still on today.
+          {
+            or: [
+              { date: { greater_than_equal: `${addDays(today, -1)}T00:00:00.000Z` } },
+              { endDate: { greater_than_equal: `${today}T00:00:00.000Z` } },
+            ],
+          },
+        ],
+      },
+      sort: 'date',
+      locale: 'all',
+      limit: 100,
+      depth: 0,
+      overrideAccess: true,
+    }),
+    payload.find({
+      collection: 'stories',
+      where: PUBLISHED,
+      sort: '-updatedAt',
+      locale: 'all',
+      limit: STORY_LIMIT,
+      depth: 0,
+      overrideAccess: true,
+    }),
+    payload.find({
+      collection: 'hq-social-drafts',
+      where: { status: { equals: 'pending' } },
+      sort: 'scheduledFor',
+      limit: 50,
+      depth: 0,
+      overrideAccess: true,
+    }),
+  ])
+
+  const upcomingEvents = (events.docs as Event[])
+    .map((e) => ({ e, endDay: eventEndDay(e) }))
+    .filter(({ endDay }) => endDay >= today)
+    .map(({ e, endDay }) => ({
+      id: e.id,
+      slug: e.slug,
+      title: bothLanguages(e.title),
+      date: dateOnly(e.date),
+      ...(endDay !== dateOnly(e.date) ? { endDay } : {}),
+      timeLabel: bothLanguages(e.timeLabel),
+      hasImage: Boolean(e.image),
+      path: { es: routes.event('es', e.slug), en: routes.event('en', e.slug) },
+    }))
+
+  const recentStories = (stories.docs as Story[]).map((s) => ({
+    id: s.id,
+    slug: s.slug,
+    title: bothLanguages(s.title),
+    updated: dateOnly(s.updatedAt),
+    hasImage: Boolean(s.cover),
+    path: { es: routes.story('es', s.slug), en: routes.story('en', s.slug) },
+  }))
+
+  const pendingDrafts = (pending.docs as HqSocialDraft[]).map((d) => ({
+    id: d.id,
+    scheduledMiami: miamiTime(d.scheduledFor),
+    platforms: d.platforms,
+    pillar: d.pillar ?? null,
+    language: d.language ?? null,
+    caption: d.caption.length > 120 ? d.caption.slice(0, 119) + '…' : d.caption,
+  }))
+
+  return {
+    generatedMiami: miamiTime(now),
+    socialReport: report,
+    playbook: playbook.body?.trim()
+      ? {
+          body: playbook.body,
+          updatedFrom: { from: dateOnly(playbook.updatedFrom?.from), to: dateOnly(playbook.updatedFrom?.to) },
+          sampleSize: playbook.sampleSize ?? null,
+          updatedAt: playbook.updatedAt ?? null,
+        }
+      : null,
+    upcomingEvents: { from: today, to: until, events: upcomingEvents },
+    // Stories carry no date of their own, so "upcoming" means the newest published ones.
+    recentStories,
+    pendingDrafts,
+  }
 }
 
 /* ------------------------------------------------------------------------ */
@@ -262,6 +390,14 @@ export const hqMcpTools: McpTool[] = [
     parameters: { days: z.number().int().min(1).max(90).default(28).describe('Window in days (default 28)') },
     handler: (args: Record<string, unknown>, req: PayloadRequest) =>
       guard(async () => text(JSON.stringify(await socialReport(req.payload, Number(args.days ?? 28)), null, 2))),
+  },
+  {
+    name: 'hqWeeklyReviewContext',
+    description:
+      'Everything the weekly social review needs, in one call, as JSON: the 28-day hqSocialReport, the current playbook (null until the first review writes it), published events in the next 14 days (Spanish and English titles, dates, slugs, site paths, whether they have an image), the 10 newest published stories, and the social drafts already pending approval. Read-only. Published site content only; no contact details of any kind.',
+    parameters: {},
+    handler: (_args: Record<string, unknown>, req: PayloadRequest) =>
+      guard(async () => text(JSON.stringify(await weeklyReviewContext(req.payload), null, 2))),
   },
   {
     name: 'hqSendTelegram',

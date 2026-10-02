@@ -88,6 +88,7 @@ export interface Config {
     'hq-social-stats': HqSocialStat;
     'hq-clicks': HqClick;
     'hq-publish-requests': HqPublishRequest;
+    'hq-chat-turns': HqChatTurn;
     'payload-mcp-api-keys': PayloadMcpApiKey;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
@@ -117,6 +118,7 @@ export interface Config {
     'hq-social-stats': HqSocialStatsSelect<false> | HqSocialStatsSelect<true>;
     'hq-clicks': HqClicksSelect<false> | HqClicksSelect<true>;
     'hq-publish-requests': HqPublishRequestsSelect<false> | HqPublishRequestsSelect<true>;
+    'hq-chat-turns': HqChatTurnsSelect<false> | HqChatTurnsSelect<true>;
     'payload-mcp-api-keys': PayloadMcpApiKeysSelect<false> | PayloadMcpApiKeysSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
@@ -132,12 +134,14 @@ export interface Config {
     'site-settings': SiteSetting;
     'about-page': AboutPage;
     'list-your-spot-page': ListYourSpotPage;
+    'hq-playbook': HqPlaybook;
     'payload-jobs-stats': PayloadJobsStat;
   };
   globalsSelect: {
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
     'about-page': AboutPageSelect<false> | AboutPageSelect<true>;
     'list-your-spot-page': ListYourSpotPageSelect<false> | ListYourSpotPageSelect<true>;
+    'hq-playbook': HqPlaybookSelect<false> | HqPlaybookSelect<true>;
     'payload-jobs-stats': PayloadJobsStatsSelect<false> | PayloadJobsStatsSelect<true>;
   };
   locale: 'en' | 'es';
@@ -1153,6 +1157,19 @@ export interface HqPublishRequest {
   createdAt: string;
 }
 /**
+ * The Telegram chat's short memory. Redacted, and pruned after two days.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-chat-turns".
+ */
+export interface HqChatTurn {
+  id: number;
+  role: 'user' | 'assistant';
+  text: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * API keys control which collections, resources, tools, and prompts MCP clients can access
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1324,6 +1341,16 @@ export interface PayloadMcpApiKey {
      */
     find?: boolean | null;
   };
+  hqPlaybook?: {
+    /**
+     * Allow clients to find hq-playbook global.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to update hq-playbook global.
+     */
+    update?: boolean | null;
+  };
   'payload-mcp-tool'?: {
     /**
      * The Flamingo HQ brief right now: what happened since the last scheduled brief, what is waiting on the owner (listing requests, drafts to approve, listings needing owner confirmation), open tasks, social numbers and posts going out in the next 24 hours. Read-only; does not move the scheduled brief.
@@ -1333,6 +1360,10 @@ export interface PayloadMcpApiKey {
      * Results of every social post published in the last N days: caption, pillar, language, platforms, Miami publish time, the furthest stats checkpoint (24h/3d/7d) per platform, and link clicks; plus each account’s first and last snapshot in the window and bio-link clicks. JSON. Use it for the weekly review. Small samples: compare over weeks, not single posts.
      */
     hqSocialReport?: boolean | null;
+    /**
+     * Everything the weekly social review needs, in one call, as JSON: the 28-day hqSocialReport, the current playbook (null until the first review writes it), published events in the next 14 days (Spanish and English titles, dates, slugs, site paths, whether they have an image), the 10 newest published stories, and the social drafts already pending approval. Read-only. Published site content only; no contact details of any kind.
+     */
+    hqWeeklyReviewContext?: boolean | null;
     /**
      * Send a message to the owner's Telegram chat, from HQ's bot (the same chat as the morning brief). Use it to hand over results when the owner asks you to: a summary, what you found, a link. Plain text, up to about 3,500 characters; put any link in the text. It goes only to the owner and cannot be pointed anywhere else. Rate limited (10 per 10 minutes). Do not send secrets or keys, and do not send unprompted.
      */
@@ -1561,6 +1592,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'hq-publish-requests';
         value: number | HqPublishRequest;
+      } | null)
+    | ({
+        relationTo: 'hq-chat-turns';
+        value: number | HqChatTurn;
       } | null)
     | ({
         relationTo: 'payload-mcp-api-keys';
@@ -2161,6 +2196,16 @@ export interface HqPublishRequestsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-chat-turns_select".
+ */
+export interface HqChatTurnsSelect<T extends boolean = true> {
+  role?: T;
+  text?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-mcp-api-keys_select".
  */
 export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
@@ -2254,11 +2299,18 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
     | {
         find?: T;
       };
+  hqPlaybook?:
+    | T
+    | {
+        find?: T;
+        update?: T;
+      };
   'payload-mcp-tool'?:
     | T
     | {
         hqBrief?: T;
         hqSocialReport?: T;
+        hqWeeklyReviewContext?: T;
         hqSendTelegram?: T;
         hqAddDraftMediaFromUrl?: T;
         hqRequestPublish?: T;
@@ -2442,6 +2494,32 @@ export interface ListYourSpotPage {
   createdAt?: string | null;
 }
 /**
+ * What works on social, by pillar, language, hour and platform. Rewritten each week by the Claude weekly review; edit it freely.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-playbook".
+ */
+export interface HqPlaybook {
+  id: number;
+  /**
+   * Markdown. Each lesson names how many posts it rests on. Fewer than about 3 posts in a group is "not enough data yet", not a lesson.
+   */
+  body?: string | null;
+  /**
+   * The days of results the current text is based on.
+   */
+  updatedFrom?: {
+    from?: string | null;
+    to?: string | null;
+  };
+  /**
+   * How many published posts in that window the text is based on.
+   */
+  sampleSize?: number | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-jobs-stats".
  */
@@ -2530,6 +2608,23 @@ export interface ListYourSpotPageSelect<T extends boolean = true> {
         text?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-playbook_select".
+ */
+export interface HqPlaybookSelect<T extends boolean = true> {
+  body?: T;
+  updatedFrom?:
+    | T
+    | {
+        from?: T;
+        to?: T;
+      };
+  sampleSize?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;
