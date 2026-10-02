@@ -182,6 +182,10 @@ Rank them by expected visits × confidence ÷ effort. Each one has to be:
 
 **The lever menu.** Start here. Add levers when an experiment earns one.
 
+Not on it: a Google Business Profile for Flamingo County. Google allows one only
+for a business with a place customers visit, or one that serves them where they
+are. An online-only guide likely doesn't qualify and risks suspension.
+
 | Lever | What it is | Who | Metric |
 | --- | --- | --- | --- |
 | Weekend page | A weekly "Qué hacer en Hialeah este fin de semana" page from real, sourced events, drafted Thursday for the owner's Publish tap | Claude drafts, owner taps | landing visits on it, search visits |
@@ -190,7 +194,7 @@ Rank them by expected visits × confidence ÷ effort. Each one has to be:
 | Stories | Miami-Dade stories through the story pipeline (e.g. Six Inches) | Claude produces, owner picks | landing visits, social reach |
 | Hub pages | Neighborhood and cuisine pages built from verified listings | Claude builds (PR) | search visits to them |
 | Community sharing | The owner shares a page in Hialeah and Miami Lakes Facebook groups, Nextdoor or r/Miami. Genuine posts, not spam. | Owner | facebook / nextdoor / reddit visits |
-| Google Business Profile | A profile for Flamingo County itself | Owner | google visits, brand queries |
+| Facebook Reels + groups | Short Spanish Reels on our own page, and genuine shares in Hialeah residents' groups. Reels and group posts reach non-followers (Meta's ranking docs) | Claude drafts, owner posts in groups | facebook visits |
 | Newsletter | A weekly email to the existing signups | Claude drafts, owner sends | signups, `direct`/email visits |
 | Small paid boost | Boost only a post that already did well organically, geo-targeted to Hialeah and Miami Lakes, with a budget the owner sets | **Owner decides and pays.** Never assume a budget | visits from that post's link |
 
