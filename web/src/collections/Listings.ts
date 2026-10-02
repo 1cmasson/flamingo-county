@@ -67,6 +67,15 @@ export const Listings: CollectionConfig = {
       admin: { description: 'The one-line pitch on the card. Fully translated in the source.' },
     },
     {
+      name: 'answer',
+      type: 'textarea',
+      localized: true,
+      admin: {
+        description:
+          'The 40–60 word answer the page opens with: what this place is, where, and what it is known for, in plain sentences an answer engine can quote. Only facts this record already holds with a source. A founding year whose research note says to attribute it must say who says so ("since 1982, according to Burger Beast"). No prices. Empty shows a short line built from the name, category, neighborhood and address instead.',
+      },
+    },
+    {
       type: 'row',
       fields: [
         { name: 'rating', type: 'number', min: 0, max: 5 },

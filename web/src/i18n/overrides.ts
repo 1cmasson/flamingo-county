@@ -64,6 +64,11 @@ export const ES_OVERRIDES: Record<string, string> = {
   'IN THE GUIDE': 'EN LA GUÍA',
   'SEE ALL EVENTS →': 'VER TODOS LOS EVENTOS →',
 
+  // --- Business and event pages -------------------------------------------
+  // The trail's accessible name, never drawn.
+  Breadcrumb: 'Ruta de navegación',
+  'When and where?': '¿Cuándo y dónde?',
+
   // --- Ticker ------------------------------------------------------------
   'NOW ON THE LISTING': 'AHORA EN EL DIRECTORIO',
   'LOCAL SPOTS': 'NEGOCIOS DE AQUÍ',
