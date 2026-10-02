@@ -219,6 +219,12 @@ type Layout = {
   top?: boolean
   /** The y the title must end above, when something other than the column's height limits it. */
   titleBottom?: number
+  /**
+   * The date and place centred in the room left under the title, rather than
+   * right under it, with each part of the place on its own row: the poster's
+   * lower half would otherwise sit empty beside the mascot.
+   */
+  lower?: boolean
   title: { max: number; lines: number }
   chip: number
   ticket: { max: number; maxW: number }
@@ -265,14 +271,15 @@ const LAYOUTS: Record<EventCardSize, Layout> = {
     // A poster: the chips and a big title across the top, the mascot's arch
     // bottom right, the date and place under the title on the left, clear of
     // the mascot. The title stops above the mascot's head (y 600).
-    col: { left: 72, top: 110, bottom: 420, width: 936 },
+    col: { left: 72, top: 96, bottom: 150, width: 936 },
     top: true,
-    titleBottom: 600,
-    title: { max: 230, lines: 3 },
+    titleBottom: 610,
+    lower: true,
+    title: { max: 230, lines: 4 },
     chip: 28,
-    ticket: { max: 56, maxW: 500 },
-    meta: { size: 34, maxW: 500 },
-    gap: { chips: 28, title: 30, meta: 20 },
+    ticket: { max: 60, maxW: 500 },
+    meta: { size: 46, maxW: 500 },
+    gap: { chips: 30, title: 30, meta: 26 },
     arch: { right: 44, bottom: -200, width: 440, height: 860, border: 6 },
     mascotH: 740,
     brand: { left: 72, bottom: 72, size: 26 },
@@ -318,22 +325,29 @@ function Card({ d, size, mascot }: { d: EventCardData; size: EventCardSize; masc
   const L = LAYOUTS[size]
   const colH = H - L.col.top - L.col.bottom
 
-  const ticketText = d.dateLine
+  // Luckiest Guy's lowercase is its own set of shapes, so mixed case reads as
+  // a ransom note ("SABOR fest"). Everything it draws is upper case.
+  const titleText = d.title.toLocaleUpperCase('es')
+  const ticketText = d.dateLine.toLocaleUpperCase('es')
   const ticketPadX = Math.round(L.ticket.max * 0.55)
   const ticketSize = fitLine(ticketText, L.ticket.maxW - ticketPadX * 2, L.ticket.max, 24, LUCKIEST_GUY, 0.01)
   const ticketH = ticketSize + Math.round(L.ticket.max * 0.32) * 2 + 6
 
   // Time · place on one line where it fits; a long one shrinks a little, then
   // breaks between its parts rather than inside a name.
-  const metaSize = d.meta ? fitLine(d.meta, L.meta.maxW, L.meta.size, Math.round(L.meta.size * 0.8), ARCHIVO_800) : 0
-  const metaRows = d.meta ? breakAtSeparators(d.meta.split(' · '), L.meta.maxW, metaSize) : []
+  const metaSize = !d.meta
+    ? 0
+    : L.lower
+      ? Math.min(...d.meta.split(' · ').map((part) => fitLine(part, L.meta.maxW, L.meta.size, Math.round(L.meta.size * 0.7), ARCHIVO_800)))
+      : fitLine(d.meta, L.meta.maxW, L.meta.size, Math.round(L.meta.size * 0.8), ARCHIVO_800)
+  const metaRows = !d.meta ? [] : L.lower ? d.meta.split(' · ') : breakAtSeparators(d.meta.split(' · '), L.meta.maxW, metaSize)
   const metaH = d.meta ? L.gap.meta + metaRows.length * metaSize * 1.2 : 0
 
   const chipsH = L.chip * 1.2 + Math.round(L.chip * 0.32) * 2 + 6
   const titleRoom = L.titleBottom
     ? L.titleBottom - L.col.top - chipsH - L.gap.chips
     : colH - chipsH - L.gap.chips - L.gap.title - ticketH - metaH - 8
-  const title = d.title ? fitTitle(d.title, L.col.width - 8, titleRoom, L.title.max, L.title.lines) : null
+  const title = titleText ? fitTitle(titleText, L.col.width - 8, titleRoom, L.title.max, L.title.lines) : null
 
   const arch = mascot ? L.arch : undefined
   const mascotH = L.mascotH ?? 0
@@ -432,8 +446,15 @@ function Card({ d, size, mascot }: { d: EventCardData; size: EventCardSize; masc
             ))}
           </div>
         ) : null}
-        {ticket}
-        {meta}
+        {L.lower ? (
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', justifyContent: 'center', flexGrow: 1 }}>
+            {ticket}
+            {meta}
+          </div>
+        ) : (
+          ticket
+        )}
+        {L.lower ? null : meta}
       </div>
 
       {arch && mascot ? (
