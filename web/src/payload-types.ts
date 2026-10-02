@@ -89,6 +89,8 @@ export interface Config {
     'hq-clicks': HqClick;
     'hq-publish-requests': HqPublishRequest;
     'hq-chat-turns': HqChatTurn;
+    'hq-visits': HqVisit;
+    'hq-experiments': HqExperiment;
     'payload-mcp-api-keys': PayloadMcpApiKey;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
@@ -119,6 +121,8 @@ export interface Config {
     'hq-clicks': HqClicksSelect<false> | HqClicksSelect<true>;
     'hq-publish-requests': HqPublishRequestsSelect<false> | HqPublishRequestsSelect<true>;
     'hq-chat-turns': HqChatTurnsSelect<false> | HqChatTurnsSelect<true>;
+    'hq-visits': HqVisitsSelect<false> | HqVisitsSelect<true>;
+    'hq-experiments': HqExperimentsSelect<false> | HqExperimentsSelect<true>;
     'payload-mcp-api-keys': PayloadMcpApiKeysSelect<false> | PayloadMcpApiKeysSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
@@ -1170,6 +1174,80 @@ export interface HqChatTurn {
   createdAt: string;
 }
 /**
+ * Page views on the site, from its own counter. No IPs, cookies or visitor ids. Bots and signed-in staff are not counted.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-visits".
+ */
+export interface HqVisit {
+  id: number;
+  path: string;
+  /**
+   * The first page of a visit. Count these for visits; every row for page views.
+   */
+  entry?: boolean | null;
+  /**
+   * Entries only: google, facebook, chatgpt…, a referring site’s hostname, a utm_source tag (qr, flyer), or direct.
+   */
+  source?: string | null;
+  /**
+   * Entries only: the referring hostname, never the full URL.
+   */
+  refHost?: string | null;
+  lang?: ('es' | 'en') | null;
+  device?: ('mobile' | 'desktop') | null;
+  country?: string | null;
+  /**
+   * e.g. FL
+   */
+  region?: string | null;
+  city?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Growth experiments: what we tried, what we expected, what happened. Kept by the growth review.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-experiments".
+ */
+export interface HqExperiment {
+  id: number;
+  title: string;
+  status: 'planned' | 'running' | 'done' | 'dropped';
+  /**
+   * Set when it is done.
+   */
+  verdict?: ('worked' | 'no_effect' | 'worse' | 'inconclusive') | null;
+  /**
+   * If we do X, then Y goes up, because Z.
+   */
+  hypothesis: string;
+  /**
+   * The one number that decides it, and where it is read: e.g. "visits from facebook to /es/…, hqGrowthContext traffic".
+   */
+  metric: string;
+  /**
+   * The number before, with its window.
+   */
+  baseline?: string | null;
+  /**
+   * What would count as working, and by when.
+   */
+  expected?: string | null;
+  startedOn?: string | null;
+  /**
+   * When there should be enough data to judge.
+   */
+  checkOn?: string | null;
+  /**
+   * What happened, with the numbers and sample size. What we keep doing, or stop.
+   */
+  result?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * API keys control which collections, resources, tools, and prompts MCP clients can access
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1248,6 +1326,26 @@ export interface PayloadMcpApiKey {
      * Allow clients to find hq-clicks.
      */
     find?: boolean | null;
+  };
+  hqVisits?: {
+    /**
+     * Allow clients to find hq-visits.
+     */
+    find?: boolean | null;
+  };
+  hqExperiments?: {
+    /**
+     * Allow clients to find hq-experiments.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to create hq-experiments.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update hq-experiments.
+     */
+    update?: boolean | null;
   };
   listingRequests?: {
     /**
@@ -1364,6 +1462,10 @@ export interface PayloadMcpApiKey {
      * Everything the weekly social review needs, in one call, as JSON: the 28-day hqSocialReport, the current playbook (null until the first review writes it), published events in the next 14 days (Spanish and English titles, dates, slugs, site paths, whether they have an image), the 10 newest published stories, and the social drafts already pending approval. Read-only. Published site content only; no contact details of any kind.
      */
     hqWeeklyReviewContext?: boolean | null;
+    /**
+     * Everything the growth review needs, in one call, as JSON: the goal; the site’s own traffic for 28 days (visits and views, by day, channel, source, referring site, landing page, language, device and place); what is on the site; what shipped (publishes, scheduled posts); intake counts; the experiment ledger; open tasks; and everything hqWeeklyReviewContext returns (social report, playbook, upcoming events, recent stories, pending drafts). Read-only. Published content only; no contact details. Follow web/hq/growth-review.md.
+     */
+    hqGrowthContext?: boolean | null;
     /**
      * Send a message to the owner's Telegram chat, from HQ's bot (the same chat as the morning brief). Use it to hand over results when the owner asks you to: a summary, what you found, a link. Plain text, up to about 3,500 characters; put any link in the text. It goes only to the owner and cannot be pointed anywhere else. Rate limited (10 per 10 minutes). Do not send secrets or keys, and do not send unprompted.
      */
@@ -1596,6 +1698,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'hq-chat-turns';
         value: number | HqChatTurn;
+      } | null)
+    | ({
+        relationTo: 'hq-visits';
+        value: number | HqVisit;
+      } | null)
+    | ({
+        relationTo: 'hq-experiments';
+        value: number | HqExperiment;
       } | null)
     | ({
         relationTo: 'payload-mcp-api-keys';
@@ -2206,6 +2316,41 @@ export interface HqChatTurnsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-visits_select".
+ */
+export interface HqVisitsSelect<T extends boolean = true> {
+  path?: T;
+  entry?: T;
+  source?: T;
+  refHost?: T;
+  lang?: T;
+  device?: T;
+  country?: T;
+  region?: T;
+  city?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-experiments_select".
+ */
+export interface HqExperimentsSelect<T extends boolean = true> {
+  title?: T;
+  status?: T;
+  verdict?: T;
+  hypothesis?: T;
+  metric?: T;
+  baseline?: T;
+  expected?: T;
+  startedOn?: T;
+  checkOn?: T;
+  result?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-mcp-api-keys_select".
  */
 export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
@@ -2247,6 +2392,18 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
     | T
     | {
         find?: T;
+      };
+  hqVisits?:
+    | T
+    | {
+        find?: T;
+      };
+  hqExperiments?:
+    | T
+    | {
+        find?: T;
+        create?: T;
+        update?: T;
       };
   listingRequests?:
     | T
@@ -2311,6 +2468,7 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         hqBrief?: T;
         hqSocialReport?: T;
         hqWeeklyReviewContext?: T;
+        hqGrowthContext?: T;
         hqSendTelegram?: T;
         hqAddDraftMediaFromUrl?: T;
         hqRequestPublish?: T;
@@ -2494,7 +2652,7 @@ export interface ListYourSpotPage {
   createdAt?: string | null;
 }
 /**
- * What works on social, by pillar, language, hour and platform. Rewritten each week by the Claude weekly review; edit it freely.
+ * What brings traffic: content, channels, and on social by pillar, language, hour and platform. Rewritten by each Claude growth review; edit it freely.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "hq-playbook".
@@ -2502,7 +2660,7 @@ export interface ListYourSpotPage {
 export interface HqPlaybook {
   id: number;
   /**
-   * Markdown. Each lesson names how many posts it rests on. Fewer than about 3 posts in a group is "not enough data yet", not a lesson.
+   * Markdown. Each lesson names how many posts or visits it rests on. Fewer than about 3 posts in a group is "not enough data yet", not a lesson.
    */
   body?: string | null;
   /**

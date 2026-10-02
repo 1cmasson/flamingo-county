@@ -7,6 +7,7 @@ import { z } from 'zod'
 import { PUBLISHED } from '../fields/shared'
 import type { Event, HqSocialDraft, Story } from '../payload-types'
 import { buildBrief } from './brief'
+import { trafficReport } from './growth'
 import { addDays, dateOnly, eventEndDay, todayISO } from './dates'
 import { miamiTime } from './hq'
 import { isRunningCount, type MetricSummary } from './postiz'
@@ -250,6 +251,124 @@ export async function weeklyReviewContext(payload: Payload, now: Date = new Date
 }
 
 /* ------------------------------------------------------------------------ */
+/* Growth review: traffic, what shipped, experiments, plus the social review */
+/* ------------------------------------------------------------------------ */
+
+const SHIPPED_TYPES = ['site.published', 'social.scheduled', 'social.failed', 'listing_request.created', 'subscriber.created']
+
+/**
+ * The growth review's whole input (web/hq/growth-review.md): everything the
+ * weekly social review reads, plus the site's own traffic, what is on the site,
+ * what shipped in the window, the experiment ledger and the open tasks.
+ *
+ * Same rules as `weeklyReviewContext`: published content only, depth 0, and
+ * nothing with contact details. Listing requests and signups are counted from
+ * `hq-events` by type, never read.
+ */
+export async function growthContext(payload: Payload, now: Date = new Date()) {
+  const since = new Date(now.getTime() - REVIEW_DAYS * 24 * 60 * 60 * 1000).toISOString()
+  const recentlyClosed = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000).toISOString()
+  const published = (collection: 'events' | 'stories' | 'spotlights' | 'weekly-events') =>
+    payload.count({ collection, where: PUBLISHED, overrideAccess: true }).then((r) => r.totalDocs)
+  const listingsBy = (status: string) =>
+    payload
+      .count({
+        collection: 'listings',
+        where: { and: [PUBLISHED, { publicationStatus: { equals: status } }] },
+        overrideAccess: true,
+      })
+      .then((r) => r.totalDocs)
+
+  const [review, traffic, events, stories, spotlights, weekly, ready, needsOwner, unsourced, shipped, experiments, tasks] =
+    await Promise.all([
+      weeklyReviewContext(payload, now),
+      trafficReport(payload, REVIEW_DAYS, now),
+      published('events'),
+      published('stories'),
+      published('spotlights'),
+      published('weekly-events'),
+      listingsBy('ready'),
+      listingsBy('needs_owner_confirmation'),
+      listingsBy('unsourced'),
+      payload.find({
+        collection: 'hq-events',
+        where: { and: [{ createdAt: { greater_than_equal: since } }, { type: { in: SHIPPED_TYPES } }] },
+        sort: '-createdAt',
+        limit: 200,
+        depth: 0,
+        overrideAccess: true,
+        select: { type: true, summary: true, createdAt: true },
+      }),
+      payload.find({
+        collection: 'hq-experiments',
+        where: {
+          or: [
+            { status: { in: ['planned', 'running'] } },
+            { and: [{ status: { equals: 'done' } }, { updatedAt: { greater_than_equal: recentlyClosed } }] },
+          ],
+        },
+        sort: '-updatedAt',
+        limit: 50,
+        depth: 0,
+        overrideAccess: true,
+      }),
+      payload.find({
+        collection: 'hq-tasks',
+        where: { status: { not_equals: 'done' } },
+        sort: 'dueAt',
+        limit: 50,
+        depth: 0,
+        overrideAccess: true,
+        select: { title: true, assignee: true, status: true, dueAt: true },
+      }),
+    ])
+
+  // Intake is counted, never listed: its summaries name the people who wrote in.
+  const intake = { listingRequests: 0, newsletterSignups: 0 }
+  const shippedRows: { day: string; type: string; summary: string }[] = []
+  for (const e of shipped.docs) {
+    if (e.type === 'listing_request.created') intake.listingRequests += 1
+    else if (e.type === 'subscriber.created') intake.newsletterSignups += 1
+    else shippedRows.push({ day: todayISO(new Date(e.createdAt)), type: e.type, summary: e.summary })
+  }
+
+  return {
+    goal: 'More visitors from Miami-Dade to flamingocounty.com, organic first. Then more verified restaurant listings, then paid spotlights sold privately (never prices on the site).',
+    ...review,
+    traffic,
+    inventory: {
+      listings: { ready, needsOwnerConfirmation: needsOwner, unsourced },
+      events,
+      weeklyEvents: weekly,
+      stories,
+      spotlights,
+    },
+    shipped: { days: REVIEW_DAYS, items: shippedRows },
+    intake: { days: REVIEW_DAYS, ...intake },
+    experiments: experiments.docs.map((x) => ({
+      id: x.id,
+      title: x.title,
+      status: x.status,
+      verdict: x.verdict ?? null,
+      hypothesis: x.hypothesis,
+      metric: x.metric,
+      baseline: x.baseline ?? null,
+      expected: x.expected ?? null,
+      startedOn: dateOnly(x.startedOn) || null,
+      checkOn: dateOnly(x.checkOn) || null,
+      result: x.result ?? null,
+    })),
+    openTasks: tasks.docs.map((t) => ({
+      id: t.id,
+      title: t.title,
+      assignee: t.assignee,
+      status: t.status,
+      due: t.dueAt ? miamiTime(t.dueAt) : null,
+    })),
+  }
+}
+
+/* ------------------------------------------------------------------------ */
 /* Draft media from a URL                                                   */
 /* ------------------------------------------------------------------------ */
 
@@ -398,6 +517,14 @@ export const hqMcpTools: McpTool[] = [
     parameters: {},
     handler: (_args: Record<string, unknown>, req: PayloadRequest) =>
       guard(async () => text(JSON.stringify(await weeklyReviewContext(req.payload), null, 2))),
+  },
+  {
+    name: 'hqGrowthContext',
+    description:
+      'Everything the growth review needs, in one call, as JSON: the goal; the site\u2019s own traffic for 28 days (visits and views, by day, channel, source, referring site, landing page, language, device and place); what is on the site; what shipped (publishes, scheduled posts); intake counts; the experiment ledger; open tasks; and everything hqWeeklyReviewContext returns (social report, playbook, upcoming events, recent stories, pending drafts). Read-only. Published content only; no contact details. Follow web/hq/growth-review.md.',
+    parameters: {},
+    handler: (_args: Record<string, unknown>, req: PayloadRequest) =>
+      guard(async () => text(JSON.stringify(await growthContext(req.payload), null, 2))),
   },
   {
     name: 'hqSendTelegram',
