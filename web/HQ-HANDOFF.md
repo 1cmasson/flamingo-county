@@ -91,7 +91,7 @@ set `status: done`.
 | #5 | W3 Chat with the bot (OpenRouter, summaries only) | agent, then owner (H5) |
 | #6 | W4 Weekly social review + playbook | agent |
 | #7 | W5 HQ dashboard view in the admin | agent |
-| #8 | W6 Root-cause the `auth:migrate` exit segfault | agent |
+| #8 | W6 Root-cause the `auth:migrate` exit segfault | done: #33 is the fix |
 | #9 | W7 Design doc for the customer-facing agents | agent drafts, owner decides |
 | #2 | Oct 22, 9 AM: check the deleted test post did not publish | owner |
 | #10–#15 | H1–H6, the human layer below | owner |
@@ -189,21 +189,21 @@ before starting any of them.
   logged-in only (admins). It works on a phone, because the owner checks from
   the phone.
 
-### W6: Root-cause the `auth:migrate` exit segfault (task #8)
-- **Symptom:** exit 139 *after* "auth: schema up to date", only on the x86-64
-  Alpine image. Seen twice in Lighthouse CI (runs 36906381654, 36917430434). It
-  doesn't reproduce on arm64 or macOS (65 clean runs). #33 guards the boot; this
-  task is the real fix.
-- **Approach:**
-  - Reproduce on x86-64: `docker buildx --platform linux/amd64`, or a throwaway
-    GitHub Actions job looping `auth:migrate` about 50 times.
-  - Then try, in order: closing the libsql client explicitly (`LibsqlDialect`
-    accepts `{ client }`; `auth.ts` creates its own connection on import),
-    switching to `@libsql/client`'s pure-JS path, or upgrading
-    `libsql`/`@libsql/client`.
-  - Check `payload migrate` for the same failure.
-- **Done when:** a loop of ≥50 runs on x86-64 is clean, and the #33 guard stays
-  in place as belt and braces.
+### W6: Root-cause the `auth:migrate` exit segfault (task #8): DONE, no PR needed
+Reproduced on x86-64 in a throwaway CI job (run 36941582861):
+
+| Variant on x86-64 | Runs | Segfaults |
+| --- | --- | --- |
+| `auth-migrate.ts` as it was before #33 (natural exit) | 200 | 7 (3.5%) |
+| `auth-migrate.ts` after #33 (marker + `process.exit(0)`) | 200 | 0 |
+| `pnpm auth:migrate` as deployed | 50 | 0 |
+| Bare `@libsql/client`, open/query/exit, with and without close | 600 | 0 |
+| `pnpm payload migrate` | 40 | 0 |
+
+**Cause:** the crash happens in teardown when the process exits naturally with
+Better Auth's libsql connection still alive. libsql alone never crashed. The
+immediate `process.exit(0)` that #33 added avoids it entirely, so **#33 is the
+fix. Keep both the exit and the entrypoint's marker guard.**
 
 ### W7: Design doc for the customer-facing agents (task #9)
 - **Goal:** a design for the two public agents from the original plan:
