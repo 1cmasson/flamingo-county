@@ -41,6 +41,17 @@ export function mediaUrl(m: Media | number | string | null | undefined): string 
 }
 
 /**
+ * The parts of an address in the importer's shape, or null for anything else.
+ * Greedy street: "4410 West 16th Ave., Suite 40, Hialeah, FL, 33012" keeps the
+ * suite in the street, and the city is the last part before the state.
+ */
+export function splitAddress(address: string | null | undefined) {
+  const m = address?.trim().match(/^(.+),\s*([^,]+),\s*([A-Z]{2}),?\s*(\d{5})(?:-\d{4})?$/)
+  if (!m) return null
+  return { streetAddress: m[1], addressLocality: m[2], addressRegion: m[3], postalCode: m[4] }
+}
+
+/**
  * "6743 Main St, Miami Lakes, FL, 33014" (how the importer joins it) becomes a
  * PostalAddress. Anything that doesn't match that shape stays whole in
  * `streetAddress` — still true, just less granular.
@@ -48,18 +59,9 @@ export function mediaUrl(m: Media | number | string | null | undefined): string 
 export function postalAddress(address: string | null | undefined, cityName?: string | null) {
   const text = address?.trim()
   if (!text) return undefined
-  // Greedy street: "4410 West 16th Ave., Suite 40, Hialeah, FL, 33012" keeps
-  // the suite in the street, and the city is the last part before the state.
-  const m = text.match(/^(.+),\s*([^,]+),\s*([A-Z]{2}),?\s*(\d{5})(?:-\d{4})?$/)
-  if (m) {
-    return clean({
-      '@type': 'PostalAddress',
-      streetAddress: m[1],
-      addressLocality: m[2],
-      addressRegion: m[3],
-      postalCode: m[4],
-      addressCountry: 'US',
-    })
+  const parts = splitAddress(text)
+  if (parts) {
+    return clean({ '@type': 'PostalAddress', ...parts, addressCountry: 'US' })
   }
   return clean({
     '@type': 'PostalAddress',
@@ -105,6 +107,33 @@ export function breadcrumbJsonLd(items: { name: string; path: string }[]): Obj {
       item: absUrl(it.path),
     })),
   }
+}
+
+/**
+ * The page itself, as distinct from the business or event it is about.
+ *
+ * `dateModified` lives here because it is a property of the page (a
+ * CreativeWork), not of a Restaurant or an Event, so it cannot go on the
+ * entity node. It comes from `lastVerifiedAt`, the day the facts were checked
+ * against their sources, and is absent when nobody has checked: Payload's own
+ * `updatedAt` moves on every re-seed and would claim a freshness nobody earned.
+ */
+export function webPageJsonLd(
+  lang: Lang,
+  path: string,
+  page: { name: string; mainEntityId?: string; dateModified?: string | null },
+): Obj {
+  return clean({
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    '@id': `${absUrl(path)}#webpage`,
+    url: absUrl(path),
+    name: page.name,
+    inLanguage: lang,
+    isPartOf: { '@id': `${SITE_URL}/#website` },
+    mainEntity: page.mainEntityId ? { '@id': page.mainEntityId } : undefined,
+    dateModified: page.dateModified ? page.dateModified.slice(0, 10) : undefined,
+  })
 }
 
 /** City names are stored as display caps ("MIAMI LAKES"); structured data wants "Miami Lakes". */
@@ -256,6 +285,7 @@ export function eventJsonLd(
   return clean({
     '@context': 'https://schema.org',
     '@type': 'Event',
+    '@id': `${absUrl(routes.event(lang, ev.slug))}#event`,
     name: ev.title,
     url: absUrl(routes.event(lang, ev.slug)),
     description: ev.note,

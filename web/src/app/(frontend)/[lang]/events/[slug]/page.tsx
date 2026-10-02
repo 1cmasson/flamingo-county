@@ -3,12 +3,15 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { isLang, translator, type Lang } from '../../../../../i18n'
 import { routes } from '../../../../../lib/routes'
-import { openGraph, twitterCard } from '../../../../../lib/site'
+import { absUrl, openGraph, twitterCard } from '../../../../../lib/site'
 import { getCity, getEvent, getEvents, rel } from '../../../../../lib/data'
 import { dateOnly, parseISO, shortMonth, shortWeekday } from '../../../../../lib/dates'
-import type { City, EventKind, Media } from '../../../../../payload-types'
+import type { City, EventKind, Listing, Media } from '../../../../../payload-types'
 import { JsonLd } from '../../../../../components/JsonLd'
-import { breadcrumbJsonLd, eventJsonLd, mediaUrl } from '../../../../../lib/jsonld'
+import { breadcrumbJsonLd, eventJsonLd, mediaUrl, titleCase, webPageJsonLd } from '../../../../../lib/jsonld'
+import { eventAnswer } from '../../../../../lib/answers'
+import { AnswerBlock } from '../../../../../components/AnswerBlock'
+import { Breadcrumbs, type Crumb } from '../../../../../components/Breadcrumbs'
 import { PageShell } from '../../../../../components/PageShell'
 import { MediaSlot } from '../../../../../components/MediaSlot'
 import { FULL_WIDTH_SIZES } from '../../../../../lib/srcset'
@@ -105,16 +108,29 @@ export default async function EventPage({
     (o) => o.slug !== ev.slug && dateOnly(o.date) === iso,
   )
 
+  const crumbs: Crumb[] = [
+    { name: 'Flamingo County', path: routes.home(lang) },
+    { name: t('Events'), path: routes.events(lang) },
+    { name: ev.title, path: routes.event(lang, slug) },
+  ]
+  const answer = eventAnswer(lang, ev, {
+    venue,
+    cityName: titleCase(t(cityRef?.name ?? '')),
+    // Only an organizer the event names. The JSON-LD falls back to the venue's
+    // listing; a visible "organized by" a room that may only be rented is not.
+    organizer: rel<Listing>(ev.organizer)?.name ?? ev.organizerName ?? undefined,
+  })
+
   return (
     <PageShell>
       <JsonLd
         data={[
           eventJsonLd(lang, ev, { listing, city: cityRef, name: venue }),
-          breadcrumbJsonLd([
-            { name: 'Flamingo County', path: routes.home(lang) },
-            { name: t('Events'), path: routes.events(lang) },
-            { name: ev.title, path: routes.event(lang, slug) },
-          ]),
+          webPageJsonLd(lang, routes.event(lang, slug), {
+            name: ev.title,
+            mainEntityId: `${absUrl(routes.event(lang, slug))}#event`,
+          }),
+          breadcrumbJsonLd(crumbs),
         ]}
       />
       <main
@@ -127,25 +143,7 @@ export default async function EventPage({
           gap: 'clamp(16px,3vw,22px)',
         }}
       >
-        <Link
-          href={routes.events(lang)}
-          className={s.chip}
-          style={{
-            textDecoration: 'none',
-            color: 'var(--ink)',
-            alignSelf: 'flex-start',
-            display: 'inline-flex',
-            alignItems: 'center',
-            fontFamily: 'var(--display)',
-            fontSize: 15,
-            padding: '9px 14px 7px',
-            border: '4px solid var(--ink)',
-            background: 'var(--grad-cream)',
-            boxShadow: '4px 4px 0 var(--ink)',
-          }}
-        >
-          {t('← ALL EVENTS')}
-        </Link>
+        <Breadcrumbs items={crumbs} label={t('Breadcrumb')} />
 
         <article
           style={{
@@ -385,6 +383,8 @@ export default async function EventPage({
             />
           </div>
         </article>
+
+        <AnswerBlock question={t('When and where?')} answer={answer} />
 
         {others.length ? (
           <section
