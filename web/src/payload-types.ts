@@ -1040,6 +1040,11 @@ export interface HqSocialDraft {
   pillar?: ('spotlight' | 'event' | 'story' | 'promo' | 'other') | null;
   language?: ('es' | 'en' | 'both') | null;
   /**
+   * Drafted when this page was published. Set by HQ.
+   */
+  sourceCollection?: string | null;
+  sourceId?: string | null;
+  /**
    * Why the last approval failed. Set by HQ.
    */
   error?: string | null;
@@ -2092,6 +2097,8 @@ export interface HqSocialDraftsSelect<T extends boolean = true> {
   media?: T;
   pillar?: T;
   language?: T;
+  sourceCollection?: T;
+  sourceId?: T;
   error?: T;
   publishAt?: T;
   postizPosts?:

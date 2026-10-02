@@ -264,6 +264,25 @@ request. The tap is your Telegram account behind the webhook's secret.
 version, which could be an unapproved draft, so the seed skips any document
 with a pending draft and says so.
 
+**A published event or story gets a social draft.** When an event or story
+goes from draft to published (your Publish tap, or Publish in the admin),
+`src/lib/autoDraft.ts` writes one pending `hq-social-drafts` entry, and its
+preview arrives in Telegram for Approve / Reject like any other draft:
+- **Caption.** Spanish, then English, made only from the page's own fields:
+  title, date, time, venue, who gets in and the note for an event; title and
+  standfirst for a story. A field that names a price is left out, and a
+  missing translation is left out rather than repeating the English. It ends
+  with a `/go/fb/<draft id>` link to the Spanish page.
+- **Photo.** The page's photo is re-encoded as a JPEG into HQ media, for
+  Facebook and Instagram. With no photo, the draft is Facebook text only.
+- **Time.** 7 PM Miami the next day. An event on or before that day posts as
+  soon as you approve.
+- **When it doesn't draft.** A republish never drafts a page twice. A draft
+  save and an event that is over, cancelled or postponed draft nothing.
+  Neither does a page created already published: the seed, and **Publish on
+  a never-saved page in the admin**. To get a social draft there, save a
+  draft first, then publish.
+
 **The migration that turned drafts on** (`20261001_170211_add_site_drafts`)
 rebuilds the five content tables, because SQLite can't loosen a column in
 place. Two bugs in the generated SQL were fixed by hand; keep the fixes if it

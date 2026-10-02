@@ -112,6 +112,21 @@ export const HqSocialDrafts: CollectionConfig = {
       ],
     },
     {
+      // The page a draft was written for when it went live (lib/autoDraft.ts).
+      // Republishing that page finds this and drafts nothing new.
+      type: 'row',
+      fields: [
+        {
+          name: 'sourceCollection',
+          type: 'text',
+          access: humanOnly,
+          admin: { readOnly: true, description: 'Drafted when this page was published. Set by HQ.' },
+        },
+        { name: 'sourceId', type: 'text', index: true, access: humanOnly, admin: { readOnly: true } },
+      ],
+      admin: { condition: (data) => Boolean(data?.sourceCollection) },
+    },
+    {
       name: 'error',
       access: humanOnly,
       type: 'text',

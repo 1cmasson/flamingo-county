@@ -114,6 +114,12 @@ describe('drafts are free, publishing needs the owner', () => {
     if (!payload) return
     await payload.delete({ collection: 'hq-publish-requests', where: { id: { exists: true } }, overrideAccess: true })
     for (const id of stories) await payload.delete({ collection: 'stories', id, overrideAccess: true }).catch(() => undefined)
+    // Publishing a story drafts a social post for it (lib/autoDraft.ts).
+    await payload.delete({
+      collection: 'hq-social-drafts',
+      where: { and: [{ sourceCollection: { equals: 'stories' } }, { sourceId: { in: stories.map(String) } }] },
+      overrideAccess: true,
+    })
     await payload.delete({ collection: 'hq-events', where: { type: { like: 'site.' } }, overrideAccess: true })
     if (user) await payload.delete({ collection: 'users', id: user.id, overrideAccess: true })
   })
