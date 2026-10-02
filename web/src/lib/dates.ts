@@ -152,6 +152,105 @@ export function buckets(today: string = todayISO()): Bucket[] {
   ]
 }
 
+/** The date fields the board reads off an event. */
+export type EventDates = Parameters<typeof eventEndDay>[0]
+
+/**
+ * Whether an event is still on the board today: it has not finished yet.
+ *
+ * Keyed on the last day, not the first, so an exhibit that opened last month
+ * stays listed for its whole run, and a 9PM–1AM night that started yesterday
+ * is still listed this morning.
+ */
+export function isStillOn(ev: EventDates, today: string): boolean {
+  return eventEndDay(ev) >= today
+}
+
+/**
+ * The last day an event occupies on the list view (the calendar uses `eventRunEnd`).
+ *
+ * That is its `endDate` for a multi-day run and its own day otherwise. The
+ * early-morning spill of a past-midnight night is deliberately left out — a
+ * Sunday 9PM–1AM night is a Sunday event, and counting Monday would also put
+ * it under NEXT WEEK. The one exception is when that morning is today: the
+ * night is still on, so it shows under today rather than vanishing.
+ */
+export function eventLastBoardDay(ev: EventDates, today: string): string {
+  const last = eventRunEnd(ev)
+  return eventEndDay(ev) === today && last < today ? today : last
+}
+
+/** Its `endDate` for a multi-day run, otherwise its own day — no spill. */
+export function eventRunEnd(ev: EventDates): string {
+  const start = dateOnly(ev.date)
+  const end = dateOnly(ev.endDate)
+  return end && end > start ? end : start
+}
+
+/**
+ * The day an event is shown under within [from, to], or null if its run
+ * misses that range: the first day of the overlap, never before today. One
+ * day per range, so a three-week exhibit is one card per bucket, not one per
+ * day.
+ */
+export function boardDayIn(ev: EventDates, from: string, to: string, today: string): string | null {
+  const start = dateOnly(ev.date)
+  const last = eventLastBoardDay(ev, today)
+  const lo = [start, from, today].reduce((a, b) => (a > b ? a : b))
+  const hi = last < to ? last : to
+  return lo <= hi ? lo : null
+}
+
+export type BucketGroup<E> = {
+  key: Bucket['key']
+  count: number
+  days: { iso: string; items: E[] }[]
+}
+
+/**
+ * The list view: each bucket with the events whose run overlaps it, grouped
+ * under the day each one is shown on. An event spanning two buckets is in
+ * both, once each. Events keep their input order within a day. Buckets with
+ * nothing in them are dropped.
+ */
+export function groupIntoBuckets<E extends EventDates>(
+  events: E[],
+  today: string,
+): BucketGroup<E>[] {
+  const live = events.filter((ev) => isStillOn(ev, today))
+  return buckets(today)
+    .map((bk) => {
+      const placed = live
+        .map((ev) => ({ ev, day: boardDayIn(ev, bk.from, bk.to, today) }))
+        .filter((p): p is { ev: E; day: string } => p.day !== null)
+      const days = [...new Set(placed.map((p) => p.day))].sort()
+      return {
+        key: bk.key,
+        count: placed.length,
+        days: days.map((iso) => ({
+          iso,
+          items: placed.filter((p) => p.day === iso).map((p) => p.ev),
+        })),
+      }
+    })
+    .filter((b) => b.count > 0)
+}
+
+/**
+ * The calendar days an event occupies within [from, to]: every day from its
+ * start through its `endDate`. A past-midnight night occupies only its start
+ * day, so it is not drawn twice on the grid — including the morning after,
+ * when the list still shows it under today: on the grid it sits on the night
+ * it happened.
+ */
+export function eventDaysIn(ev: EventDates, from: string, to: string): string[] {
+  const start = dateOnly(ev.date)
+  const end = eventRunEnd(ev)
+  const out: string[] = []
+  for (let d = start > from ? start : from; d <= end && d <= to; d = addDays(d, 1)) out.push(d)
+  return out
+}
+
 export const BUCKET_LABEL: Record<Bucket['key'], string> = {
   weekend: 'THIS WEEKEND',
   next: 'NEXT WEEK',
