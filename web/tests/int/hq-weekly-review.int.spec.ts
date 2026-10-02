@@ -12,7 +12,7 @@ import type { User } from '@/payload-types'
 
 /**
  * The weekly social review: `hqWeeklyReviewContext` (what the routine reads) and the
- * `hq-playbook` global (what it writes). See web/hq/weekly-review.md.
+ * `hq-playbook` global (what it writes). The growth review (web/hq/growth-review.md) reads both.
  */
 
 /** A Miami calendar date n days from today, the way the context counts days. */

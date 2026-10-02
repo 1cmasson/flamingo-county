@@ -5,9 +5,13 @@ import { isLang, translator, type Lang } from '../../../../i18n'
 import { routes, withQuery } from '../../../../lib/routes'
 import { getEvents, getWeeklyEvents, rel } from '../../../../lib/data'
 import {
+  addDays,
   BUCKET_LABEL,
-  buckets,
   dateOnly,
+  eventDaysIn,
+  eventRunEnd,
+  groupIntoBuckets,
+  isStillOn,
   monthGrid,
   monthTitle,
   parseISO,
@@ -62,31 +66,28 @@ export default async function EventsPage({
 
   const today = todayISO()
 
-  // Past events drop off, which is what the source's first bucket starting at
-  // its frozen "today" did. It makes the count time-varying, correctly.
-  const upcoming = all.filter((ev) => dateOnly(ev.date) >= today)
+  // Finished events drop off, which is what the source's first bucket starting
+  // at its frozen "today" did. It makes the count time-varying, correctly.
+  // "Finished" is the last day, not the first: a multi-day exhibit that opened
+  // last month stays on the board until it closes.
+  const upcoming = all.filter((ev) => isStillOn(ev, today))
 
   // LIST/CALENDAR is a view mode, not a filter — it stayed when the city and
   // kind chips came off.
   const evHref = (over: Partial<Search>) =>
     withQuery(routes.events(lang), { view: calendar ? 'cal' : undefined, ...over })
 
-  const grouped = buckets(today)
-    .map((bk) => {
-      const inB = upcoming.filter((ev) => {
-        const d = dateOnly(ev.date)
-        return d >= bk.from && d <= bk.to
-      })
-      const days = [...new Set(inB.map((ev) => dateOnly(ev.date)))].sort()
-      return {
-        key: bk.key,
-        label: t(BUCKET_LABEL[bk.key]),
-        sub: rangeLabel(days, lang),
-        count: inB.length,
-        days: days.map((d) => ({ iso: d, items: inB.filter((ev) => dateOnly(ev.date) === d) })),
-      }
-    })
-    .filter((b) => b.count > 0)
+  // A running event is in every bucket its run overlaps, once each, under the
+  // first day of the overlap. Bucket counts can therefore sum to more than the
+  // masthead's, which counts distinct events.
+  const grouped = groupIntoBuckets(upcoming, today).map((bk) => ({
+    ...bk,
+    label: t(BUCKET_LABEL[bk.key]),
+    sub: rangeLabel(
+      bk.days.map((d) => d.iso),
+      lang,
+    ),
+  }))
 
   return (
     <PageShell>
@@ -452,9 +453,12 @@ function CalendarView({
   month?: string
   evHref: (over: Partial<Search>) => string
 }) {
-  const isos = events.map((e) => dateOnly(e.date)).sort()
-  const min = isos[0] ?? today
-  const max = isos[isos.length - 1] ?? today
+  // Navigation runs from the earliest start to the latest last day, so the
+  // month an exhibit closes in is reachable even if nothing starts there.
+  const starts = events.map((e) => dateOnly(e.date)).sort()
+  const ends = events.map(eventRunEnd).sort()
+  const min = starts[0] ?? today
+  const max = ends[ends.length - 1] ?? today
 
   const current = /^\d{4}-\d{2}$/.test(month ?? '') ? (month as string) : (min > today ? min : today).slice(0, 7)
   const [y, m] = current.split('-').map(Number)
@@ -466,10 +470,18 @@ function CalendarView({
   const prev = step(-1) >= min.slice(0, 7) ? step(-1) : null
   const next = step(1) <= max.slice(0, 7) ? step(1) : null
 
+  // A multi-day event is drawn on every day of its run that falls in this
+  // month — a banner per day is how calendars show a run, and the grid is
+  // already one cell per day, so it is the small change. A past-midnight night
+  // stays on its start day only (see eventDaysIn). Mid-run days before today
+  // show too: the run did cover them.
+  const monthFrom = `${current}-01`
+  const monthTo = addDays(`${step(1)}-01`, -1)
   const byDay = new Map<string, Event[]>()
   for (const ev of events) {
-    const d = dateOnly(ev.date)
-    byDay.set(d, [...(byDay.get(d) ?? []), ev])
+    for (const d of eventDaysIn(ev, monthFrom, monthTo)) {
+      byDay.set(d, [...(byDay.get(d) ?? []), ev])
+    }
   }
 
   return (

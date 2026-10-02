@@ -2,6 +2,7 @@ import type { Payload } from 'payload'
 
 import { buildBrief } from './brief'
 import { chatConfigured, chatReply } from './chat'
+import { requestReview } from './growth'
 import { decideDraft, parseDraftCallback } from './hq'
 import { answerCallback, esc, ownerChatId, resolveButtons, sendMessage } from './telegram'
 import { decidePublish, parsePublishCallback } from './publishRequests'
@@ -25,6 +26,7 @@ export const HELP = [
   '/done &lt;id&gt; — mark one event done',
   '/tasks — open tasks',
   '/task &lt;text&gt; — file a task for Claude',
+  '/review — ask Claude for a growth review (traffic, what worked, next moves)',
 ].join('\n')
 
 /**
@@ -121,6 +123,8 @@ async function command(payload: Payload, text: string): Promise<string> {
       })
       return `🤖 Filed task #${task.id} for Claude.`
     }
+    case '/review':
+      return requestReview(payload)
     default:
       return HELP
   }

@@ -3,23 +3,24 @@ import type { GlobalConfig } from 'payload'
 const staff = ({ req }: { req: { user?: unknown } }) => Boolean(req.user)
 
 /**
- * What the weekly social review has learned so far: which pillars, languages,
- * posting hours and platforms do well, each with how many posts it rests on.
+ * What the growth review has learned so far about bringing traffic: which
+ * content and channels work, and on social which pillars, languages, posting
+ * hours and platforms do well, each with how many posts or visits it rests on.
  *
- * Rewritten once a week by the scheduled Claude routine (web/hq/weekly-review.md)
- * through the MCP `updateHqPlaybook` tool, and readable by it through
- * `hqWeeklyReviewContext`. Staff-only: nothing here is public. Claude may write
+ * Rewritten by each growth review (web/hq/growth-review.md), which runs when the
+ * owner asks with /review, through the MCP `updateHqPlaybook` tool, and readable
+ * through `hqGrowthContext`. Staff-only: nothing here is public. Claude may write
  * every field, because the playbook is notes, not a switch. Nothing reads it to
  * decide what gets posted; the owner's Approve tap still does that.
  */
 export const HqPlaybook: GlobalConfig = {
   slug: 'hq-playbook',
-  label: 'Social playbook',
+  label: 'Growth playbook',
   access: { read: staff, update: staff },
   admin: {
     group: 'HQ',
     description:
-      'What works on social, by pillar, language, hour and platform. Rewritten each week by the Claude weekly review; edit it freely.',
+      'What brings traffic: content, channels, and on social by pillar, language, hour and platform. Rewritten by each Claude growth review; edit it freely.',
   },
   fields: [
     {
@@ -30,7 +31,7 @@ export const HqPlaybook: GlobalConfig = {
       admin: {
         rows: 20,
         description:
-          'Markdown. Each lesson names how many posts it rests on. Fewer than about 3 posts in a group is "not enough data yet", not a lesson.',
+          'Markdown. Each lesson names how many posts or visits it rests on. Fewer than about 3 posts in a group is "not enough data yet", not a lesson.',
       },
     },
     {

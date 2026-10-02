@@ -27,6 +27,8 @@ import { HqSocialStats } from './collections/HqSocialStats'
 import { HqClicks } from './collections/HqClicks'
 import { HqPublishRequests } from './collections/HqPublishRequests'
 import { HqChatTurns } from './collections/HqChatTurns'
+import { HqVisits } from './collections/HqVisits'
+import { HqExperiments } from './collections/HqExperiments'
 import { eveningWrap } from './jobs/eveningWrap'
 import { morningBrief } from './jobs/morningBrief'
 import { socialStats } from './jobs/socialStats'
@@ -85,6 +87,8 @@ export default buildConfig({
     HqClicks,
     HqPublishRequests,
     HqChatTurns,
+    HqVisits,
+    HqExperiments,
   ],
   globals: [SiteSettings, AboutPage, ListYourSpotPage, HqPlaybook],
 
@@ -178,6 +182,16 @@ export default buildConfig({
           description: 'Saved Postiz numbers: kind "post" at 24h/3d/7d checkpoints, kind "channel" daily 7-day snapshots.',
         },
         'hq-clicks': { enabled: { find: true }, description: 'Clicks on /go/ tracking links.' },
+        'hq-visits': {
+          enabled: { find: true },
+          description:
+            'Page views from the site’s own counter (no IPs or visitor ids). entry = first page of a visit. hqGrowthContext summarizes them; query rows only for a detail it lacks.',
+        },
+        'hq-experiments': {
+          enabled: { find: true, create: true, update: true },
+          description:
+            'Growth experiments: hypothesis, metric, baseline, expected, result, verdict. The growth review (web/hq/growth-review.md) keeps them. Never delete; set status dropped.',
+        },
         'listing-requests': {
           enabled: { find: true, update: true },
           description: '“List your spot” submissions from business owners. Update status as they are handled.',
@@ -198,7 +212,7 @@ export default buildConfig({
         'hq-playbook': {
           enabled: { find: true, update: true },
           description:
-            'The social playbook: what works by pillar, language, hour and platform, with sample sizes. The weekly review rewrites it (web/hq/weekly-review.md). Notes only; nothing is posted from it.',
+            'The growth playbook: what brings traffic (content, channels, social by pillar, language, hour and platform), each lesson with its sample size and the experiment behind it. The growth review rewrites it (web/hq/growth-review.md). Notes only; nothing is posted from it.',
         },
       },
       mcp: {
@@ -206,7 +220,7 @@ export default buildConfig({
         serverOptions: {
           serverInfo: { name: 'Flamingo HQ', version: '1.0.0' },
           instructions:
-            'Flamingo HQ, the private ops layer of flamingocounty.com (a bilingual Miami-Dade directory: Hialeah, Miami Lakes, Little Havana). Start with hqBrief. Social posts are drafts in hq-social-drafts; the owner approves each one in Telegram and you cannot. Give every draft a pillar and language (the audience is Spanish-first). Use real listings, events and stories only — never invent business details. Site content (events, weekly events, stories, spotlights, listings) has drafts: save freely with draft: true — nothing you save is visible — then call hqRequestPublish; it goes live only when the owner taps Publish in Telegram. Never try to publish any other way.',
+            'Flamingo HQ, the private ops layer of flamingocounty.com (a bilingual Miami-Dade directory: Hialeah, Miami Lakes, Little Havana). Start with hqBrief. Social posts are drafts in hq-social-drafts; the owner approves each one in Telegram and you cannot. Give every draft a pillar and language (the audience is Spanish-first). Use real listings, events and stories only — never invent business details. Site content (events, weekly events, stories, spotlights, listings) has drafts: save freely with draft: true — nothing you save is visible — then call hqRequestPublish; it goes live only when the owner taps Publish in Telegram. Never try to publish any other way. The goal is traffic: when an open hq-task whose title starts with "Growth review (asked" is assigned to claude, run the growth review (hqGrowthContext, then web/hq/growth-review.md in the repo).',
         },
       },
     }),
