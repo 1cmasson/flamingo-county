@@ -18,7 +18,7 @@ only. Phase 1 has three parts:
   uploads the files to Postiz and schedules the post on Facebook, Instagram or
   TikTok. Nothing is posted without that tap.
 
-Everything is in the admin under **HQ**. The code is in `src/lib/{hq,brief,telegram,telegramBot,postiz}.ts`,
+Everything is in the admin under **HQ**. The code is in `src/lib/{hq,brief,telegram,telegramBot,chat,postiz}.ts`,
 `src/lib/{calendar,wrap}.ts`, `src/collections/Hq*.ts`, `src/jobs/{morningBrief,eveningWrap}.ts`
 and `src/app/api/telegram/route.ts`.
 
@@ -124,11 +124,56 @@ How it reads:
 | `/tasks` | Open tasks. 🤖 marks the ones assigned to Claude. |
 | `/task <text>` | File a task for Claude. Claude Code picks these up. |
 
+Anything that isn't a command gets the help, unless the chat model is set up
+(next section).
+
 Social drafts and site publish requests arrive as messages with buttons:
 Approve / Reject and Publish / Reject.
 
 Only `TELEGRAM_OWNER_CHAT_ID` gets answers. Anyone else is ignored without a
 reply.
+
+## Chatting with the bot
+
+With `OPENROUTER_API_KEY` and `HQ_CHAT_MODEL` set, a plain message to the bot
+(not a `/command`) is answered by a model on OpenRouter: "¿cómo van los posts
+esta semana?", "anything waiting on me?". It replies briefly, in the language
+you wrote in. The code is `src/lib/chat.ts`.
+
+| Variable | Value |
+| --- | --- |
+| `OPENROUTER_API_KEY` | an OpenRouter key. Set a **credit limit** on the key in OpenRouter: that is the monthly spend cap. |
+| `HQ_CHAT_MODEL` | an OpenRouter model id, e.g. `vendor/model-name` |
+| `HQ_CHAT_DAILY_LIMIT` | optional, model calls per 24 hours. Default 50. Past it, the bot says so and commands still work. |
+| `HQ_CHAT_MAX_TOKENS` | optional, the cap on each reply. Default 500. |
+
+Leave either of the first two unset and the bot behaves as before: plain text
+gets the help. **Owner to do:** pick the model and the budget (task H5), and
+rotate the OpenRouter key that was pasted in a transcript before setting it
+here (task H3).
+
+**What the model sees: summaries only.** The brief as plain text, open task
+titles, the last 15 event summaries and a compact 7-day social report (post
+times, kinds, stats, clicks). Nothing else is read for it, so it never gets a
+listing request's phone, email or owner, subscribers, members, or any event's
+raw `data`. As a backstop, every message sent, including yours and the stored
+history, has anything shaped like an email or phone number replaced with
+`[email]` / `[phone]`. A bare 7+ digit number is redacted too; counts in the
+summary are written with commas so they survive.
+
+**It can only read.** The model gets no tools. Ask it to do something
+("publica el evento", "email the venue") and it answers with a task line
+instead; HQ files an `hq-tasks` row assigned to Claude, the same as `/task`,
+and tells you its number. Nothing else is created or changed.
+
+**Short memory.** The last 8 turns from the past 12 hours are sent back with
+each message, so follow-ups work. Turns live in `hq-chat-turns` (admin → HQ),
+stored redacted, and are deleted after two days. That collection isn't
+exposed over MCP.
+
+The owner-only rule is unchanged: anyone else, or you in a group, gets no
+reply and costs no call. If the model fails or times out (25 s), you get a
+one-line reason, and the call still counts toward the daily limit.
 
 ## Measuring the posts
 
@@ -368,8 +413,8 @@ live, make those harder.
    - `GET /analytics/post/<post id>?date=N` is the per-post route. An unknown
      id returns `[]`. It can't be checked with real data until something has
      been posted.
-4. **A chat model in the bot** (OpenRouter), fed redacted summaries only. No raw
-   visitor emails or phones should go to a third-party model.
+4. **A chat model in the bot**: built; see *Chatting with the bot*. It goes
+   live when the owner sets `OPENROUTER_API_KEY` and `HQ_CHAT_MODEL` (H5).
 5. **A dashboard view** in the admin, or the Voysi dashboard reading HQ over the
    API.
 6. **Customer-facing agents**, and with them roles, least-privilege tools, evals
