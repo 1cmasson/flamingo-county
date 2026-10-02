@@ -11,6 +11,7 @@ import * as migration_20261001_170211_add_site_drafts from './20261001_170211_ad
 import * as migration_20261001_182504_add_listing_hours_verified from './20261001_182504_add_listing_hours_verified';
 import * as migration_20261001_193056_add_event_facts from './20261001_193056_add_event_facts';
 import * as migration_20261001_220129_add_send_telegram_tool from './20261001_220129_add_send_telegram_tool';
+import * as migration_20261001_232823_add_hq_playbook from './20261001_232823_add_hq_playbook';
 
 export const migrations = [
   {
@@ -76,6 +77,11 @@ export const migrations = [
   {
     up: migration_20261001_220129_add_send_telegram_tool.up,
     down: migration_20261001_220129_add_send_telegram_tool.down,
-    name: '20261001_220129_add_send_telegram_tool'
+    name: '20261001_220129_add_send_telegram_tool',
+  },
+  {
+    up: migration_20261001_232823_add_hq_playbook.up,
+    down: migration_20261001_232823_add_hq_playbook.down,
+    name: '20261001_232823_add_hq_playbook'
   },
 ];
