@@ -450,6 +450,10 @@ export interface Listing {
    * The one-line pitch on the card. Fully translated in the source.
    */
   tag?: string | null;
+  /**
+   * The 40–60 word answer the page opens with: what this place is, where, and what it is known for, in plain sentences an answer engine can quote. Only facts this record already holds with a source. A founding year whose research note says to attribute it must say who says so ("since 1982, according to Burger Beast"). No prices. Empty shows a short line built from the name, category, neighborhood and address instead.
+   */
+  answer?: string | null;
   rating?: number | null;
   reviews?: number | null;
   /**
@@ -1802,6 +1806,7 @@ export interface ListingsSelect<T extends boolean = true> {
   category?: T;
   hood?: T;
   tag?: T;
+  answer?: T;
   rating?: T;
   reviews?: T;
   publicationStatus?: T;

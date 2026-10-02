@@ -54,6 +54,14 @@ export const ES_OVERRIDES: Record<string, string> = {
   'THIS WEEK': 'ESTA SEMANA',
   'AROUND HERE.': 'POR AQUÍ.',
 
+  // --- Business and event pages -------------------------------------------
+  // The trail's accessible name, never drawn. 'Events' is also the trail's
+  // middle crumb and its BreadcrumbList name, which shipped English to Spanish
+  // pages until this entry existed.
+  Breadcrumb: 'Ruta de navegación',
+  Events: 'Eventos',
+  'When and where?': '¿Cuándo y dónde?',
+
   // --- Ticker ------------------------------------------------------------
   'NOW ON THE LISTING': 'AHORA EN EL DIRECTORIO',
   'LOCAL SPOTS': 'NEGOCIOS DE AQUÍ',
