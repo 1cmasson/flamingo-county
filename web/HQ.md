@@ -209,32 +209,43 @@ thin.
 **Setting it up.** You do this once:
 
 1. **Create a key just for the review.** In the admin, open **MCP → API Keys**
-   and create a key labelled `weekly-review`. Tick only:
+   and create a key labelled `weekly-review`. The boxes don't all start the
+   same way:
+   - **Collection and global boxes start unticked.** Tick only these:
 
-   | Group | Tick |
-   | --- | --- |
-   | HqSocialDrafts | find, create |
-   | HqSocialStats, HqClicks | find |
-   | Events, WeeklyEvents, Stories, Listings | find |
-   | HqPlaybook | find, update |
-   | Tools | `hqWeeklyReviewContext`, `hqSendTelegram` |
+     | Group | Tick |
+     | --- | --- |
+     | HqSocialDrafts | find, create |
+     | HqSocialStats, HqClicks | find |
+     | Events, WeeklyEvents, Stories, Listings | find |
+     | HqPlaybook | find, update |
 
-   Optional: tick `hqAddDraftMediaFromUrl` too, to let it attach a photo and
-   draft Instagram posts. Without it, it drafts Facebook text posts only.
+   - **Tool boxes start ticked.** Untick every tool except
+     `hqWeeklyReviewContext` and `hqSendTelegram`. That means unticking
+     `hqRequestPublish`, `hqPublishStatus`, `hqBrief`, `hqSocialReport` and
+     `hqAddDraftMediaFromUrl`.
+     - Optional: leave `hqAddDraftMediaFromUrl` ticked to let it attach a photo
+       and draft Instagram posts. Without it, it drafts Facebook text posts
+       only.
 
-   Leave everything else unticked: no update on drafts or site content, no
-   `hqRequestPublish`, no listing requests. Copy the key; it's shown once.
+   That leaves no update on drafts or site content, no `hqRequestPublish` and
+   no listing requests. Copy the key; it's shown once. The checkboxes only
+   render when scrolled into view.
+2. **Give the routine a way in. This hasn't been tried yet.** Cloud routines
+   don't read the `flamingo-hq` connection in your Mac's `~/.claude.json`. The
+   routine needs two things:
+   - **The key, as a header.** In the routine's cloud environment, add an
+     **API credential** for the host `flamingocounty.com`, with the header
+     `Authorization`, the prefix `Bearer` and the `weekly-review` key as the
+     value. The key never appears in the session.
+   - **The server, declared somewhere the routine reads.** Either:
+     - a project `.mcp.json` committed to the repo, pointing at
+       `https://flamingocounty.com/api/mcp`. This isn't in the repo yet, and
+       adding it changes every local Claude Code session in it too.
+     - or a claude.ai connector, if it accepts a static key rather than OAuth.
 
-   The checkboxes only render when scrolled into view.
-2. **Give the routine the key.** Cloud routines don't read the `flamingo-hq`
-   connection in your Mac's `~/.claude.json`. Use one of these:
-   - Add `https://flamingocounty.com/api/mcp` as a **connector** at
-     claude.ai → Settings → Connectors.
-   - Or, in the routine's cloud environment, add an **API credential** for the
-     host `flamingocounty.com`, with the header `Authorization`, the prefix
-     `Bearer` and the key as the value.
-
-   Use the `weekly-review` key here, not your everyday one.
+   Check which of these works on the first **Run now** (step 4). Use the
+   `weekly-review` key, not your everyday one.
 3. **Create the routine.** In Claude Code, run `/schedule` and ask for:
    - **Repository:** `1cmasson/flamingo-county`, default branch.
    - **Schedule:** weekly, Monday, 8:00 AM. Times are entered in your local

@@ -5,7 +5,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
 import config from '@/payload.config'
 
-import { addDays, todayISO } from '@/lib/dates'
+import { addDays, todayISO, utcStamp } from '@/lib/dates'
 import { HQ_INTERNAL } from '@/lib/hq'
 import { hqMcpTools, weeklyReviewContext } from '@/lib/mcpTools'
 import type { User } from '@/payload-types'
@@ -310,6 +310,34 @@ describe('weekly social review', () => {
       for (const absent of ['hqRequestPublish', 'hqBrief', 'updateHqSocialDrafts', 'updateEvents', 'createEvents', 'findListingRequests']) {
         expect(names).not.toContain(absent)
       }
+    })
+
+    it('creates a pending draft the way the routine does, with a Miami-offset time stored as UTC', async () => {
+      const day = miamiDay(2)
+      const utcHour = Number(utcStamp(day, '11:30').slice(9, 11)) // 15 in EDT, 16 in EST
+      const offset = utcHour - 11 === 4 ? '-04:00' : '-05:00'
+      const res = await rpc('tools/call', {
+        name: 'createHqSocialDrafts',
+        arguments: {
+          caption: 'WR-TEST routine draft',
+          platforms: ['facebook'],
+          scheduledFor: `${day}T11:30:00${offset}`,
+          pillar: 'event',
+          language: 'es',
+        },
+      })
+      expect(res.result.isError).toBeFalsy()
+      const { docs } = await payload.find({
+        collection: 'hq-social-drafts',
+        where: { caption: { equals: 'WR-TEST routine draft' } },
+        overrideAccess: true,
+      })
+      expect(docs).toHaveLength(1)
+      const d = docs[0]
+      cleanup.push(['hq-social-drafts', d.id])
+      expect(d).toMatchObject({ status: 'pending', pillar: 'event', language: 'es' })
+      expect(d.scheduledFor).toBe(`${day}T${String(utcHour).padStart(2, '0')}:30:00.000Z`)
+      await payload.delete({ collection: 'hq-events', where: { refId: { equals: String(d.id) }, refCollection: { equals: 'hq-social-drafts' } }, overrideAccess: true })
     })
 
     it('runs the context tool and writes the playbook', async () => {
