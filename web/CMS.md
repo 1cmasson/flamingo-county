@@ -159,6 +159,7 @@ written. `railway.json` at the repo root points at `web/Dockerfile`.
 | `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` | the Google Cloud OAuth client |
 | `TELEGRAM_BOT_TOKEN` / `TELEGRAM_OWNER_CHAT_ID` / `TELEGRAM_WEBHOOK_SECRET` | the HQ bot — optional, see HQ.md |
 | `POSTIZ_API_URL` / `POSTIZ_API_KEY` | social approvals — optional, see HQ.md |
+| `GOOGLE_CALENDAR_ICS_URL` | the owner's Google Calendar *secret address in iCal format*, for the brief's Today and the evening wrap — optional, see HQ.md. A secret: never log or paste it |
 | `RESEND_API_KEY` | Resend API key — sends the emailed sign-in codes. Without it, production refuses to send (codes are never logged there) |
 | `AUTH_EMAIL_FROM` | optional; default `Flamingo County <hola@flamingocounty.com>`. The domain must be verified in Resend |
 | `INDEXNOW_KEY` | 32 hex chars (`openssl rand -hex 16`). Served at `/<key>.txt`; saving a listing, event, story or city then pings Bing's IndexNow. Optional: unset means no pings. Public by design. |

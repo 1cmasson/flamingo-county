@@ -26,6 +26,7 @@ import { HqSocialDrafts } from './collections/HqSocialDrafts'
 import { HqSocialStats } from './collections/HqSocialStats'
 import { HqClicks } from './collections/HqClicks'
 import { HqPublishRequests } from './collections/HqPublishRequests'
+import { eveningWrap } from './jobs/eveningWrap'
 import { morningBrief } from './jobs/morningBrief'
 import { socialStats } from './jobs/socialStats'
 import { hqMcpTools } from './lib/mcpTools'
@@ -198,7 +199,7 @@ export default buildConfig({
    * admin, and a quiet night would skip the brief.
    */
   jobs: {
-    tasks: [morningBrief, socialStats],
+    tasks: [morningBrief, socialStats, eveningWrap],
     autoRun: [{ cron: '* * * * *', queue: 'hq' }],
     jobsCollectionOverrides: ({ defaultJobsCollection }) => ({
       ...defaultJobsCollection,
