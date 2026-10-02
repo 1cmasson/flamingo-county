@@ -6,17 +6,21 @@ only. Phase 1 has three parts:
 - **Intake pings.** A new listing request or newsletter signup is logged to
   `hq-events` and sent to Telegram. Before this they sat in the admin until
   someone looked.
-- **Morning brief.** At 7:30 AM Miami time, Telegram gets a summary: what
-  happened since the last brief, what is waiting (new requests, drafts to
-  approve, listings needing owner confirmation), open tasks, and posts going out
-  in the next 24 hours.
+- **Morning brief.** At 7:30 AM Miami time, Telegram gets a summary: today's
+  calendar (when it's connected; see *The calendar*), what happened since the
+  last brief, what is waiting (new requests, drafts to approve, listings needing
+  owner confirmation), open tasks, and posts going out in the next 24 hours.
+- **Evening wrap.** At 8 PM Miami time, Telegram gets the day's counterpart:
+  what happened today, open tasks due by the end of tomorrow (overdue ones
+  flagged), tomorrow's calendar, and the social and site drafts waiting on you.
 - **Social approvals.** A draft in `hq-social-drafts` is previewed in Telegram
   with its cover photo or video and **Approve / Reject** buttons. Approve
   uploads the files to Postiz and schedules the post on Facebook, Instagram or
   TikTok. Nothing is posted without that tap.
 
 Everything is in the admin under **HQ**. The code is in `src/lib/{hq,brief,telegram,telegramBot,postiz}.ts`,
-`src/collections/Hq*.ts`, `src/jobs/morningBrief.ts` and `src/app/api/telegram/route.ts`.
+`src/lib/{calendar,wrap}.ts`, `src/collections/Hq*.ts`, `src/jobs/{morningBrief,eveningWrap}.ts`
+and `src/app/api/telegram/route.ts`.
 
 ## Setting it up
 
@@ -72,7 +76,42 @@ Everything is in the admin under **HQ**. The code is in `src/lib/{hq,brief,teleg
    real check.
 
 Without the Telegram variables, nothing breaks. Events are still logged, the
-webhook answers 503 and the brief job skips.
+webhook answers 503 and the brief and wrap jobs skip.
+
+## The calendar
+
+The brief's **Today** and the wrap's **Tomorrow** come from your Google
+Calendar's *secret address in iCal format*. It's read-only and needs no OAuth.
+
+1. In Google Calendar, open **Settings → your calendar → Integrate calendar**
+   and copy **Secret address in iCal format** (it ends in `/basic.ics`).
+2. Set it in Railway without it touching the terminal history or the chat:
+   `railway variable set GOOGLE_CALENDAR_ICS_URL --stdin`, then paste it.
+
+| Variable | Value |
+| --- | --- |
+| `GOOGLE_CALENDAR_ICS_URL` | the secret iCal address. Optional: unset, the calendar sections are left out and nothing is fetched |
+
+**It's a secret.** Anyone holding the URL can read the whole calendar, so it is
+never logged and never put in an error message; a failed read logs only the
+reason (`timed out`, `HTTP 404`, `unreachable`, `unreadable`). If it leaks,
+**Reset** it on the same Google settings page and set the new one.
+
+How it reads:
+- The file is fetched fresh for each brief and wrap (and each `/brief` or
+  `hqBrief`), with an 8-second timeout. If the read fails, the brief still goes
+  out, with one line saying the calendar is unavailable and why.
+- Times are put on Miami's clock: an IANA `TZID` (what Google writes) through
+  Intl, UTC as is, another zone through the file's own `VTIMEZONE`, and
+  floating time as Miami time. Recurring events (`RRULE`, `EXDATE`, a moved or
+  cancelled single occurrence) are expanded by
+  [ical.js](https://github.com/kewisch/ical.js).
+- A timed event is listed on the day it starts, so an 11:30 PM event stays on
+  its own evening. One lasting a day or more also shows on its later days as
+  "Until …". An all-day event shows on each of its days. Cancelled events are
+  left out.
+- Only titles and times are shown, not descriptions, guests or locations. Note
+  that `hqBrief` hands the brief, Today included, to Claude over MCP.
 
 ## Telegram commands
 
@@ -264,6 +303,10 @@ live, make those harder.
   Miami run sends, which also stays correct across daylight saving. Completed
   jobs are deleted, so the other 23 runs leave nothing behind. This was found by
   running it: a fixed `11,12` UTC schedule queued for 15:30 UTC on a Mac.
+- **The evening wrap follows the same pattern**, at :00, sending only in the
+  8 PM Miami hour. It logs `wrap.sent`, which neither the brief nor the wrap
+  lists as news. The brief counts its window only from `brief.sent`, so a wrap
+  never moves it.
 - **`src/instrumentation.ts` starts the job runner.** Payload's `autoRun` only
   starts for `getPayload({ cron: true })`, which the frontend never calls.
   Without this file, the brief would only run after someone logged in to the
