@@ -3,7 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import { getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
 
-import { REVIEW_TITLE, requestReview, siteSection, trafficReport } from '@/lib/growth'
+import { REVIEW_PREFIX, requestReview, siteSection, trafficReport } from '@/lib/growth'
 import { growthContext, hqMcpTools } from '@/lib/mcpTools'
 import { HELP } from '@/lib/telegramBot'
 import {
@@ -103,11 +103,7 @@ describe('growth loop', () => {
     for (const [collection, id] of cleanup.reverse()) {
       await payload.delete({ collection: collection as never, id, overrideAccess: true }).catch(() => undefined)
     }
-    await payload.delete({
-      collection: 'hq-tasks',
-      where: { title: { like: REVIEW_TITLE } },
-      overrideAccess: true,
-    })
+    await payload.delete({ collection: 'hq-tasks', where: { title: { contains: REVIEW_PREFIX } }, overrideAccess: true })
   })
 
   const latest = async () =>
@@ -234,10 +230,19 @@ describe('growth loop', () => {
     })
 
     it('files one task for Claude, and points at it when asked again', async () => {
+      // A task *about* the growth review, like the one that built it, is not a request for one.
+      const decoy = await payload.create({
+        collection: 'hq-tasks',
+        data: { title: `HQ-G1: Growth loop foundation, /review, growth review prompt ${tag}`, assignee: 'claude', status: 'doing' },
+        overrideAccess: true,
+      })
+      cleanup.push(['hq-tasks', decoy.id])
+
       const first = await requestReview(payload)
+      expect(first).not.toContain(`#${decoy.id}`)
       const open = await payload.find({
         collection: 'hq-tasks',
-        where: { and: [{ title: { like: REVIEW_TITLE } }, { status: { not_equals: 'done' } }] },
+        where: { and: [{ title: { contains: REVIEW_PREFIX } }, { status: { not_equals: 'done' } }] },
         overrideAccess: true,
       })
       expect(open.totalDocs).toBe(1)
@@ -248,7 +253,7 @@ describe('growth loop', () => {
       expect(second).toContain(`Already asked: task #${open.docs[0].id}`)
       const after = await payload.count({
         collection: 'hq-tasks',
-        where: { and: [{ title: { like: REVIEW_TITLE } }, { status: { not_equals: 'done' } }] },
+        where: { and: [{ title: { contains: REVIEW_PREFIX } }, { status: { not_equals: 'done' } }] },
         overrideAccess: true,
       })
       expect(after.totalDocs).toBe(1)

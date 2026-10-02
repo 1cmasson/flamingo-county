@@ -151,7 +151,13 @@ export function siteSection(t: TrafficReport): string[] {
   return out
 }
 
-export const REVIEW_TITLE = 'Growth review'
+/**
+ * Every review task's title starts with exactly this, and that prefix is how
+ * one is recognized: by the dedup below, by the MCP server's instructions and
+ * by growth-review.md. Other tasks merely *about* the growth review (the build
+ * task, say) must not count as a request for one.
+ */
+export const REVIEW_PREFIX = 'Growth review (asked '
 
 /**
  * `/review` in Telegram: file one task asking Claude for a growth review, and
@@ -162,21 +168,27 @@ export async function requestReview(payload: Payload, now: Date = new Date()): P
   const open = await payload.find({
     collection: 'hq-tasks',
     where: {
-      and: [{ title: { like: REVIEW_TITLE } }, { assignee: { equals: 'claude' } }, { status: { not_equals: 'done' } }],
+      and: [
+        { title: { contains: REVIEW_PREFIX } },
+        { assignee: { equals: 'claude' } },
+        { status: { not_equals: 'done' } },
+      ],
     },
-    limit: 1,
+    limit: 20,
     depth: 0,
     overrideAccess: true,
   })
+  // `contains` ignores case and position; the prefix must be the start.
+  const pending = open.docs.find((t) => t.title.startsWith(REVIEW_PREFIX))
 
   let head: string
-  if (open.docs[0]) {
-    head = `🤖 Already asked: task #${open.docs[0].id} is waiting for Claude.`
+  if (pending) {
+    head = `🤖 Already asked: task #${pending.id} is waiting for Claude.`
   } else {
     const task = await payload.create({
       collection: 'hq-tasks',
       data: {
-        title: `${REVIEW_TITLE} (asked ${todayISO(now)})`,
+        title: `${REVIEW_PREFIX}${todayISO(now)})`,
         detail:
           'Asked for in Telegram with /review. Run web/hq/growth-review.md: hqGrowthContext, close or open experiments, rewrite the playbook, up to 3 next moves, one Telegram summary.',
         assignee: 'claude',
@@ -184,7 +196,7 @@ export async function requestReview(payload: Payload, now: Date = new Date()): P
       },
       overrideAccess: true,
     })
-    head = `🤖 Growth review filed as task #${task.id}. The next Claude session on Flamingo County runs it first and sends you the summary here.`
+    head = `🤖 Growth review filed as task #${task.id}. Next time you open Claude Code on Flamingo County, it runs first and sends you the summary here.`
   }
 
   const t = await trafficReport(payload, 28, now)

@@ -5,9 +5,11 @@ bilingual directory of Miami-Dade: Hialeah, Miami Lakes, Little Havana. Its
 audience is Spanish-first. Read this whole file before you call anything.
 
 **When it runs:** only when the owner asks. They send `/review` to the HQ bot,
-which files an `hq-tasks` row titled "Growth review (asked …)" for Claude. The
-next Claude session on Flamingo County runs it before anything else. Nothing
-schedules it. If you find that task open, this file is your job.
+which files an `hq-tasks` row for Claude whose title starts with
+"Growth review (asked". The next Claude session on Flamingo County runs it
+before anything else. Nothing schedules it. If you find such a task open, this
+file is your job. A task that is only *about* the review, such as building it,
+is not a request for one.
 
 ## The goal, and how we pursue it
 
