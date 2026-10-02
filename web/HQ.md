@@ -123,6 +123,7 @@ How it reads:
 | `/done <id>` | Mark one event done. |
 | `/tasks` | Open tasks. 🤖 marks the ones assigned to Claude. |
 | `/task <text>` | File a task for Claude. Claude Code picks these up. |
+| `/review` | Ask Claude for a growth review. It files one task (or points at the open one) and answers at once with the last 7 days of site visits. See *Growth review*. |
 
 Anything that isn't a command gets the help, unless the chat model is set up
 (next section).
@@ -221,8 +222,8 @@ Two things found against the live instance on 2026-10-01:
 ## Claude over MCP
 
 `/api/mcp` lets Claude Code (or any MCP client) work against HQ directly: read
-the brief, work the task queue, write social drafts, and pull post results for
-a weekly review.
+the brief, work the task queue, write social drafts, and pull traffic and post
+results for the growth review.
 
 **Connect it.**
 1. In the admin, open **MCP → API Keys** and create a key. Tick only what it
@@ -232,7 +233,9 @@ a weekly review.
      spotlights and listings (drafts only; see *Drafts and publishing*)
    - **find** on HQ media, social stats and clicks, cities and categories
    - **find and update** on listing requests
-   - **find and update** on the HQ playbook (the weekly review's notes)
+   - **find and update** on the HQ playbook (the growth review's notes)
+   - **find** on HQ visits, and **find, create and update** on HQ experiments
+     (the growth review's ledger). These start unticked on an existing key.
    - all the **tools**
    Copy the key; it's shown once.
 2. On the Mac, run:
@@ -264,96 +267,89 @@ never posted unseen: you get the current version to approve instead.
 | Tool | Does |
 | --- | --- |
 | `hqBrief` | The brief as plain text, without moving the scheduled one. |
-| `hqSocialReport` | Every post in the last N days: pillar, language, time, furthest checkpoint per platform, clicks; plus account snapshots and bio clicks. The input to the weekly review. |
-| `hqWeeklyReviewContext` | The weekly review's whole input in one call: the 28-day report, the playbook, published events in the next 14 days, the newest published stories, and drafts still pending. See *Weekly social review*. |
+| `hqSocialReport` | Every post in the last N days: pillar, language, time, furthest checkpoint per platform, clicks; plus account snapshots and bio clicks. Part of the growth review's input. |
+| `hqGrowthContext` | The growth review's whole input in one call: 28 days of site traffic, what's live, what shipped, intake counts, the experiment ledger, open tasks, and everything `hqWeeklyReviewContext` returns. See *Growth review*. |
+| `hqWeeklyReviewContext` | The social part of that: the 28-day report, the playbook, published events in the next 14 days, the newest published stories, and drafts still pending. |
 | `hqRequestPublish` / `hqPublishStatus` | Ask you to publish a site draft (you tap Publish in Telegram), and check the answer. |
 | `hqSendTelegram` | Sends one plain-text message to your Telegram chat, headed "Claude", when you ask Claude to hand something over. It goes only to you (no chat id parameter), is escaped, refused rather than trimmed when too long, has no buttons, and is limited to 10 per 10 minutes. |
 | `hqAddDraftMediaFromUrl` | Downloads a public https JPEG, PNG or MP4 into HQ media for a draft. It refuses private and loopback hosts and doesn't follow redirects, so the server can't be pointed at itself. |
 
-## Weekly social review
+## Growth review
 
-Every Monday at 8 AM Miami time, a scheduled Claude run (a cloud *routine*)
-reviews the last four weeks of posts and does three things:
+The goal is traffic: more people from Miami-Dade reading the site. The growth
+review is how HQ learns what brings them. It runs **only when you ask**. Nothing
+schedules it.
 
-- **It keeps a short playbook** of what works by pillar, language, posting hour
-  and platform, under **HQ → Social playbook** (`hq-playbook`). Every lesson
-  names the number of posts it rests on, and a group of fewer than about 3 posts
-  is listed as "not enough data yet".
-- **It drafts the next week's posts**, 3 to 5 at most, as pending
-  `hq-social-drafts` from real events, stories and listings. Each one arrives in
-  Telegram with Approve / Reject, like any other draft.
-- **It sends you a short summary** in Telegram.
+1. **You ask.** Send `/review` to the bot. It files one `hq-tasks` row,
+   "Growth review (asked <date>)", for Claude, and answers at once with the
+   last 7 days of visits. A second `/review` points at the open one.
+2. **Claude runs it** in the next Claude session on Flamingo County. The MCP
+   server's instructions and `HQ-HANDOFF.md` both say to do that task first.
+   It follows [`hq/growth-review.md`](hq/growth-review.md):
+   - read `hqGrowthContext`
+   - judge the experiments that are due
+   - rewrite the playbook
+   - pick at most three next moves, each as an experiment with the number that
+     decides it, and a task for whoever does it
+   - optionally draft social posts for your Approve tap
+3. **You get one Telegram message**, headed "Claude · Growth review".
 
-It never approves, publishes, schedules or edits anything. The exact
-instructions it follows are in [`hq/weekly-review.md`](hq/weekly-review.md);
-change the review by editing that file and merging. It is only useful once
-there are 2 or 3 weeks of real posts. Before that, expect it to say the data is
-thin.
+**The experiment ledger** (**HQ → Hq Experiments**, `hq-experiments`) is what
+makes it self-improving. Each experiment has six parts:
+- a hypothesis
+- the one metric that decides it
+- the baseline
+- what would count as working
+- a check date
+- the result and a verdict: worked, no effect, worse, or inconclusive
 
-**Setting it up.** You do this once:
+Only judged experiments feed the playbook (**HQ → Growth playbook**,
+`hq-playbook`). So over time the playbook becomes what actually worked here,
+with numbers, rather than opinions. Change how the review works by editing
+`hq/growth-review.md`.
 
-1. **Create a key just for the review.** In the admin, open **MCP → API Keys**
-   and create a key labelled `weekly-review`. The boxes don't all start the
-   same way:
-   - **Collection and global boxes start unticked.** Tick only these:
+It never approves, publishes or schedules anything. Drafts still need your tap.
 
-     | Group | Tick |
-     | --- | --- |
-     | HqSocialDrafts | find, create |
-     | HqSocialStats, HqClicks | find |
-     | Events, WeeklyEvents, Stories, Listings | find |
-     | HqPlaybook | find, update |
+**Replaced:** this used to be a weekly cloud routine (W4). On 2026-10-01 the
+owner chose to ask with `/review` instead of a schedule. `hqWeeklyReviewContext`
+and the playbook stayed; the routine, and the dedicated key it needed, were
+never created.
 
-   - **Tool boxes start ticked.** Untick every tool except
-     `hqWeeklyReviewContext` and `hqSendTelegram`. That means unticking
-     `hqRequestPublish`, `hqPublishStatus`, `hqBrief`, `hqSocialReport` and
-     `hqAddDraftMediaFromUrl`.
-     - Optional: leave `hqAddDraftMediaFromUrl` ticked to let it attach a photo
-       and draft Instagram posts. Without it, it drafts Facebook text posts
-       only.
+### The site's visit counter
 
-   That leaves no update on drafts or site content, no `hqRequestPublish` and
-   no listing requests. Copy the key; it's shown once. The checkboxes only
-   render when scrolled into view.
-2. **Give the routine a way in. This hasn't been tried yet.** Cloud routines
-   don't read the `flamingo-hq` connection in your Mac's `~/.claude.json`. The
-   routine needs two things:
-   - **The key, as a header.** In the routine's cloud environment, add an
-     **API credential** for the host `flamingocounty.com`, with the header
-     `Authorization`, the prefix `Bearer` and the `weekly-review` key as the
-     value. The key never appears in the session.
-   - **The server, declared somewhere the routine reads.** Either:
-     - a project `.mcp.json` committed to the repo, pointing at
-       `https://flamingocounty.com/api/mcp`. This isn't in the repo yet, and
-       adding it changes every local Claude Code session in it too.
-     - or a claude.ai connector, if it accepts a static key rather than OAuth.
+**What it does.** Every public page sends one beacon to `/api/view`
+(`components/Pageview.tsx`). That becomes an `hq-visits` row
+(`lib/visits.ts`): the path, whether it was the first page of a visit, and for
+that first page where it came from:
+- a known source: `google`, `facebook`, `chatgpt`…
+- a referring site's hostname, which marks a backlink
+- a `utm_source` tag, which the `/go/` links set
+- or `direct`
 
-   Check which of these works on the first **Run now** (step 4). Use the
-   `weekly-review` key, not your everyday one.
-3. **Create the routine.** In Claude Code, run `/schedule` and ask for:
-   - **Repository:** `1cmasson/flamingo-county`, default branch.
-   - **Schedule:** weekly, Monday, 8:00 AM. Times are entered in your local
-     zone, so set this from a Miami-time machine. Daylight saving is then
-     handled for you.
-   - **MCP:** the Flamingo HQ server from step 2.
-   - **Prompt:** `Run the weekly social review exactly as written in
-     web/hq/weekly-review.md.`
-4. **Test it once.** Use **Run now** and check three things:
-   - **HQ → Social playbook** has text.
-   - Any drafts show up in Telegram.
-   - The summary arrives, headed "Claude · Revisión semanal".
+It also keeps a mobile/desktop flag and Cloudflare's country.
 
-   Reject any test drafts you don't want.
+**No cookie, storage, IP, user agent or visitor id.** Two views can't be tied
+to one person.
 
-**What it can't do.** The key is the fence. Without update on drafts it can't
-touch a draft once it's written, and status is human-only anyway. Without
-`hqRequestPublish` and site-content writes it can't change the site. Delete is
-off everywhere.
+**Not counted:**
+- crawlers and link previews (`isBot`)
+- Lighthouse and other audit tools
+- headless browsers (`navigator.webdriver`)
+- cross-site posts
+- **anyone signed in to the admin**: log in once on your phone and your own
+  visits stop counting
 
-**Its Facebook links aren't credited to a single post yet.** It can't know a
-draft's id before creating it, and editing the draft afterwards would send you
-a second preview. So its links use `/go/fb?to=<page>`, which counts as a
-Facebook click, not a click on that post.
+**Where to see it.** The brief has a **Site** section with the last 7 days, and
+`hqGrowthContext` has the full 28-day report.
+
+**City and region.** These need Cloudflare to send its location headers: Rules →
+Transform Rules → Managed Transforms → **Add visitor location headers**, which
+is free. Until then, place is country only, and "how much of it is Miami-Dade"
+can't be answered. Turning it on is an owner task.
+
+**Searches aren't here.** Search queries, impressions and Google's own click
+counts are in Search Console. Task G2 brings them into HQ, once the owner grants
+read-only access (H7).
 
 ## Drafts and publishing
 
@@ -486,9 +482,8 @@ live, make those harder.
 
 ## What comes next
 
-2. **MCP for Claude**: built; see *Claude over MCP*. The weekly review is
-   built too (see *Weekly social review*). Its key and routine are created by
-   the owner.
+2. **MCP for Claude**: built; see *Claude over MCP*. The growth review is
+   built too (see *Growth review*). It runs when the owner sends `/review`.
 3. **Social stats** — post checkpoints, account snapshots and tracking links
    are built (see *Measuring the posts*). The endpoints, checked against the
    live instance on 2026-10-01:
