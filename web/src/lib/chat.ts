@@ -81,7 +81,8 @@ const fmt = (v: number) => new Intl.NumberFormat('en-US').format(Math.round(v))
  */
 export async function buildContext(payload: Payload, now: Date = new Date()): Promise<string> {
   const [brief, tasks, events, social] = await Promise.all([
-    buildBrief(payload, now),
+    // Never the calendar: event titles can name other people (see buildBrief).
+    buildBrief(payload, now, { calendar: false }),
     payload.find({
       collection: 'hq-tasks',
       where: { status: { not_equals: 'done' } },

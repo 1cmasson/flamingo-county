@@ -1,7 +1,8 @@
 import type { Payload } from 'payload'
 
 import type { HqEvent } from '../payload-types'
-import { SITE_TZ } from './dates'
+import { agendaSection, readAgenda } from './calendar'
+import { SITE_TZ, todayISO } from './dates'
 import { miamiTime, recordEvent } from './hq'
 import { isRunningCount, type MetricSummary } from './postiz'
 import { esc, sendMessage, telegramConfigured } from './telegram'
@@ -132,17 +133,29 @@ const count = (payload: Payload, collection: 'listing-requests' | 'listings' | '
  * still waiting on the owner. Every section is read from the database, so the
  * brief, the admin and (later) Claude over MCP can never disagree.
  */
-export async function buildBrief(payload: Payload, now: Date = new Date()): Promise<string> {
+export async function buildBrief(
+  payload: Payload,
+  now: Date = new Date(),
+  /**
+   * `calendar: false` leaves the owner's calendar out entirely — no fetch, no
+   * section. The chat model (lib/chat.ts) uses it: calendar titles can carry
+   * other people's names, and its redaction only strips emails and phones.
+   */
+  opts: { calendar?: boolean } = {},
+): Promise<string> {
+  const withCalendar = opts.calendar ?? true
   const from = await since(payload, now)
   const dayAhead = new Date(now.getTime() + 24 * 60 * 60 * 1000)
+  const today = todayISO(now)
 
-  const [events, tasks, newRequests, needsOwner, pendingDrafts, upcoming] = await Promise.all([
+  const [events, tasks, newRequests, needsOwner, pendingDrafts, upcoming, agenda] = await Promise.all([
     payload.find({
       collection: 'hq-events',
       where: {
         and: [
           { createdAt: { greater_than: from.toISOString() } },
-          { type: { not_equals: 'brief.sent' } },
+          // The bookkeeping rows of the brief and the evening wrap are not news.
+          { type: { not_in: ['brief.sent', 'wrap.sent'] } },
         ],
       },
       sort: '-createdAt',
@@ -175,6 +188,8 @@ export async function buildBrief(payload: Payload, now: Date = new Date()): Prom
       depth: 0,
       overrideAccess: true,
     }),
+    // The owner's calendar; `off` (no network call) when GOOGLE_CALENDAR_ICS_URL is unset.
+    withCalendar ? readAgenda([today]) : null,
   ])
 
   const date = new Intl.DateTimeFormat('en-US', {
@@ -184,6 +199,9 @@ export async function buildBrief(payload: Payload, now: Date = new Date()): Prom
     day: 'numeric',
   }).format(now)
   const out: string[] = [`<b>☀️ Flamingo HQ — ${esc(date)}</b>`, '']
+
+  const calendar = agenda ? agendaSection('Today', agenda, today) : []
+  if (calendar.length) out.push(...calendar, '')
 
   // Since the last brief
   const byType = new Map<string, number>()

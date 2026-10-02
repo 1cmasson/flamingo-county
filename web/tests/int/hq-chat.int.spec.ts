@@ -190,6 +190,23 @@ describe('HQ chat', () => {
     expect(net.telegram()[0].body).toMatchObject({ chat_id: OWNER, text: "I don't have the subscriber list." })
   })
 
+  it('never sends the owner\'s calendar to the model, even with it configured', async () => {
+    // Calendar titles can name other people; redaction only strips emails and
+    // phones. The chat context builds the brief with calendar: false, so the
+    // calendar is never even fetched — fakeNetwork throws on any other URL.
+    process.env.GOOGLE_CALENDAR_ICS_URL = 'https://calendar.example/private/secret/basic.ics'
+    try {
+      const net = fakeNetwork('Nada nuevo.')
+      await handleUpdate(payload, fromOwner('What do I have today?'))
+      expect(net.calls.some((c) => c.url.includes('calendar.example'))).toBe(false)
+      const sent = JSON.stringify(net.model()[0].body)
+      expect(sent).not.toMatch(/Calendar unavailable|Nothing on the calendar/)
+      expect(sent).toContain('Waiting on you')
+    } finally {
+      delete process.env.GOOGLE_CALENDAR_ICS_URL
+    }
+  })
+
   it('stops at the daily cap', async () => {
     process.env.HQ_CHAT_DAILY_LIMIT = '2'
     const net = fakeNetwork('ok')

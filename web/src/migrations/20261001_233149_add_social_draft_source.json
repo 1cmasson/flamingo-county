@@ -9045,6 +9045,20 @@
           "notNull": false,
           "autoincrement": false
         },
+        "source_collection": {
+          "name": "source_collection",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "source_id": {
+          "name": "source_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "error": {
           "name": "error",
           "type": "text",
@@ -9102,6 +9116,13 @@
           "name": "hq_social_drafts_status_idx",
           "columns": [
             "status"
+          ],
+          "isUnique": false
+        },
+        "hq_social_drafts_source_id_idx": {
+          "name": "hq_social_drafts_source_id_idx",
+          "columns": [
+            "source_id"
           ],
           "isUnique": false
         },
@@ -9577,75 +9598,6 @@
         },
         "hq_publish_requests_created_at_idx": {
           "name": "hq_publish_requests_created_at_idx",
-          "columns": [
-            "created_at"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {},
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "hq_chat_turns": {
-      "name": "hq_chat_turns",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "role": {
-          "name": "role",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "text": {
-          "name": "text",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
-        }
-      },
-      "indexes": {
-        "hq_chat_turns_role_idx": {
-          "name": "hq_chat_turns_role_idx",
-          "columns": [
-            "role"
-          ],
-          "isUnique": false
-        },
-        "hq_chat_turns_updated_at_idx": {
-          "name": "hq_chat_turns_updated_at_idx",
-          "columns": [
-            "updated_at"
-          ],
-          "isUnique": false
-        },
-        "hq_chat_turns_created_at_idx": {
-          "name": "hq_chat_turns_created_at_idx",
           "columns": [
             "created_at"
           ],
@@ -10623,13 +10575,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "hq_chat_turns_id": {
-          "name": "hq_chat_turns_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "payload_mcp_api_keys_id": {
           "name": "payload_mcp_api_keys_id",
           "type": "integer",
@@ -10797,13 +10742,6 @@
           "name": "payload_locked_documents_rels_hq_publish_requests_id_idx",
           "columns": [
             "hq_publish_requests_id"
-          ],
-          "isUnique": false
-        },
-        "payload_locked_documents_rels_hq_chat_turns_id_idx": {
-          "name": "payload_locked_documents_rels_hq_chat_turns_id_idx",
-          "columns": [
-            "hq_chat_turns_id"
           ],
           "isUnique": false
         },
@@ -11082,19 +11020,6 @@
           "tableTo": "hq_publish_requests",
           "columnsFrom": [
             "hq_publish_requests_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "payload_locked_documents_rels_hq_chat_turns_fk": {
-          "name": "payload_locked_documents_rels_hq_chat_turns_fk",
-          "tableFrom": "payload_locked_documents_rels",
-          "tableTo": "hq_chat_turns",
-          "columnsFrom": [
-            "hq_chat_turns_id"
           ],
           "columnsTo": [
             "id"
@@ -12215,6 +12140,6 @@
   "internal": {
     "indexes": {}
   },
-  "id": "42b3e704-44c3-4b08-8ee6-bdbc1911bc7a",
+  "id": "9ee76b09-268f-4d73-b736-97efe1835c23",
   "prevId": "00000000-0000-0000-0000-000000000000"
 }

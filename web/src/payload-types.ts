@@ -151,6 +151,7 @@ export interface Config {
     tasks: {
       morningBrief: TaskMorningBrief;
       socialStats: TaskSocialStats;
+      eveningWrap: TaskEveningWrap;
       inline: {
         input: unknown;
         output: unknown;
@@ -1041,6 +1042,11 @@ export interface HqSocialDraft {
   pillar?: ('spotlight' | 'event' | 'story' | 'promo' | 'other') | null;
   language?: ('es' | 'en' | 'both') | null;
   /**
+   * Drafted when this page was published. Set by HQ.
+   */
+  sourceCollection?: string | null;
+  sourceId?: string | null;
+  /**
    * Why the last approval failed. Set by HQ.
    */
   error?: string | null;
@@ -1435,7 +1441,7 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'morningBrief' | 'socialStats';
+        taskSlug: 'inline' | 'morningBrief' | 'socialStats' | 'eveningWrap';
         taskID: string;
         input?:
           | {
@@ -1468,7 +1474,7 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'morningBrief' | 'socialStats') | null;
+  taskSlug?: ('inline' | 'morningBrief' | 'socialStats' | 'eveningWrap') | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -2110,6 +2116,8 @@ export interface HqSocialDraftsSelect<T extends boolean = true> {
   media?: T;
   pillar?: T;
   language?: T;
+  sourceCollection?: T;
+  sourceId?: T;
   error?: T;
   publishAt?: T;
   postizPosts?:
@@ -2594,6 +2602,16 @@ export interface TaskSocialStats {
   output: {
     posts?: number | null;
     channels?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskEveningWrap".
+ */
+export interface TaskEveningWrap {
+  input?: unknown;
+  output: {
+    sent?: boolean | null;
   };
 }
 /**
