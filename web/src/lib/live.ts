@@ -261,16 +261,17 @@ export type Arrival = {
  * stops), soonest first. Live trips count from where the bus actually is;
  * trips that haven't started yet are the timetable. Sundays have neither.
  */
-export async function nextArrivals(stopIds: number[], nowDate: Date = new Date(), limit = 3): Promise<Arrival[]> {
+export async function nextArrivals(stopIds: number[], nowDate: Date = new Date(), limit = 3, route?: string): Promise<Arrival[]> {
   if (!stopIds.length) return []
-  return arrivalsFrom(await liveFeed(nowDate.getTime()), stopIds, nowDate, limit)
+  return arrivalsFrom(await liveFeed(nowDate.getTime()), stopIds, nowDate, limit, route)
 }
 
 /** ETA's schedule, for tests and the sync script's sanity checks. */
 export const ETA_SCHEDULE = ETA
 
 /** The pure half of nextArrivals, for tests: works with no feed at all (timetable only). */
-export function arrivalsFrom(feed: Feed | null, stopIds: number[], nowDate: Date, limit = 3): Arrival[] {
+/** `route`, when given, is applied before `limit`: at a stop both lines share, the other line's buses mustn't use up the answer. */
+export function arrivalsFrom(feed: Feed | null, stopIds: number[], nowDate: Date, limit = 3, route?: string): Arrival[] {
   const want = new Set(stopIds)
   const { dow, min } = miamiClock(nowDate)
   const nowS = min * 60 + nowDate.getUTCSeconds()
@@ -283,23 +284,29 @@ export function arrivalsFrom(feed: Feed | null, stopIds: number[], nowDate: Date
       const trip = ETA.trips[v.tripId]
       if (!trip || nowDate.getTime() / 1000 - v.ts > STALE_S) continue
       liveTrips.add(v.tripId)
+      // A loop passes a stop once each way (one pole per side of the street),
+      // so a trip can be the next bus in both directions: keep its first pass
+      // each way, not just its first pass.
+      const ways = new Set<string>()
       for (let i = Math.max(0, v.seq - trip.seq0); i < trip.stops.length; i++) {
         if (!want.has(trip.stops[i])) continue
+        const toward = towardAt(trip, i)
+        if (ways.has(String(toward))) continue
         const delay = delayFor(v.tripId, trip.seq0 + i, feed) ?? 0
         const minutes = Math.round((trip.secs[i] + delay - nowS) / 60)
-        if (minutes >= 0 && minutes <= HORIZON_MIN) {
-          out.push({
-            route: trip.route,
-            minutes,
-            live: true,
-            delayMin: Math.round(delay / 60),
-            stop: ETA.stops[String(trip.stops[i])] ?? '',
-            stopId: trip.stops[i],
-            toward: towardAt(trip, i),
-            vehicleId: v.id,
-          })
-          break
-        }
+        if (minutes < 0) continue
+        if (minutes > HORIZON_MIN) break
+        ways.add(String(toward))
+        out.push({
+          route: trip.route,
+          minutes,
+          live: true,
+          delayMin: Math.round(delay / 60),
+          stop: ETA.stops[String(trip.stops[i])] ?? '',
+          stopId: trip.stops[i],
+          toward,
+          vehicleId: v.id,
+        })
       }
     }
   }
@@ -311,10 +318,15 @@ export function arrivalsFrom(feed: Feed | null, stopIds: number[], nowDate: Date
     // is one we can't see, so the timetable is all there is — labelled as such.
     if (!services.has(trip.service) || liveTrips.has(id)) continue
     if (healthy && trip.secs[0] <= nowS) continue
-    const i = trip.stops.findIndex((s, k) => want.has(s) && trip.secs[k] >= nowS)
-    if (i < 0) continue
-    const minutes = Math.round((trip.secs[i] - nowS) / 60)
-    if (minutes <= HORIZON_MIN) {
+    // First pass each way, as above.
+    const ways = new Set<string>()
+    for (let i = 0; i < trip.stops.length; i++) {
+      if (!want.has(trip.stops[i]) || trip.secs[i] < nowS) continue
+      const toward = towardAt(trip, i)
+      if (ways.has(String(toward))) continue
+      const minutes = Math.round((trip.secs[i] - nowS) / 60)
+      if (minutes > HORIZON_MIN) break
+      ways.add(String(toward))
       out.push({
         route: trip.route,
         minutes,
@@ -322,11 +334,14 @@ export function arrivalsFrom(feed: Feed | null, stopIds: number[], nowDate: Date
         delayMin: 0,
         stop: ETA.stops[String(trip.stops[i])] ?? '',
         stopId: trip.stops[i],
-        toward: towardAt(trip, i),
+        toward,
         vehicleId: null,
       })
     }
   }
 
-  return out.sort((a, b) => a.minutes - b.minutes).slice(0, limit)
+  return out
+    .filter((a) => !route || a.route === route)
+    .sort((a, b) => a.minutes - b.minutes)
+    .slice(0, limit)
 }

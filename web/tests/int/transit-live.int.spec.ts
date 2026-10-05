@@ -175,3 +175,23 @@ describe('which way a bus is going', () => {
     expect(arrivals.filter((a) => !a.live).every((a) => a.vehicleId === null)).toBe(true)
   })
 })
+
+describe('a looped trip is the next bus both ways', () => {
+  // Marlin's loops pass W 28 Ave & W 68 St once each way. Reporting only a
+  // trip's first pass hid the whole E 65 St direction there.
+  it('offers both directions at a stop a loop passes twice', () => {
+    const marlin = TRANSIT.routes.find((r) => r.slug === 'marlin')!
+    const station = marlin.stations.find((s) => s.name === 'W 28 Ave & W 68 St')!
+    const ids = etaIdsFor(station)
+    expect(ids.length).toBeGreaterThan(1)
+    // Feed down → timetable only; a Wednesday mid-morning.
+    const arrivals = arrivalsFrom(null, ids, miami('2026-10-07T11:00:00'), 8, 'marlin')
+    expect(new Set(arrivals.map((a) => a.toward))).toEqual(new Set(['start', 'end']))
+  })
+
+  it('keeps the other line out of the answer when asked for one line', () => {
+    const shared = TRANSIT.routes[0].stations.find((s) => s.transfers.length)!
+    const arrivals = arrivalsFrom(null, etaIdsFor(shared), miami('2026-10-07T11:00:00'), 8, 'flamingo')
+    expect(arrivals.every((a) => a.route === 'flamingo')).toBe(true)
+  })
+})

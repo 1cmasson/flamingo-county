@@ -346,7 +346,7 @@ export function NearMe({
 
   const miles = (m: number) =>
     // Street distance, not as the crow flies: the same allowance walkMinutes makes.
-    new Intl.NumberFormat(lang === 'es' ? 'es-US' : 'en-US', { maximumFractionDigits: 1, minimumFractionDigits: 1 }).format((m * 1.3) / 1609.34)
+    new Intl.NumberFormat(lang === 'es' ? 'es-US' : 'en-US', { maximumFractionDigits: 1, minimumFractionDigits: 1 }).format(Math.max(0.1, (m * 1.3) / 1609.34))
 
   const errorText =
     error === 'denied' ? copy.denied : error === 'unavailable' ? copy.unavailable : error === 'noNumber' ? copy.noNumber : error === 'notFound' ? copy.notFound : null

@@ -579,6 +579,7 @@ export function leaveCopy(t: T): LeaveCopy {
     checking: t('Checking when the bus comes…'),
     oneSide: t('Buses going the other way stop across the street. The city’s tracker doesn’t show their times at that pole.'),
     untracked: t('The city’s tracker doesn’t list this stop, so we can’t show bus times here. The bus still stops.'),
+    unavailable: t('Bus times aren’t loading right now. The buses are still running; try again in a moment.'),
     places: towardPlaces(t),
   }
 }

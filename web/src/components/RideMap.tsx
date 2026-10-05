@@ -32,7 +32,12 @@ const LINE_COLOR: Record<TransitRoute['slug'], string> = { flamingo: '#ff2e88', 
 let lib: Promise<typeof ML> | null = null
 function maplibre(): Promise<typeof ML> {
   const url = LIB
-  lib ??= import(/* webpackIgnore: true */ /* turbopackIgnore: true */ url) as Promise<typeof ML>
+  lib ??= (import(/* webpackIgnore: true */ /* turbopackIgnore: true */ url) as Promise<typeof ML>).catch((e) => {
+    // A dropped connection shouldn't cost the map for the rest of the visit:
+    // closing and reopening it tries again.
+    lib = null
+    throw e
+  })
   return lib
 }
 

@@ -22,10 +22,19 @@ function usePageVisible() {
   return useSyncExternalStore(subscribeVisibility, () => document.visibilityState === 'visible', () => true)
 }
 
-/** GET `url` now and every `everyMs` while the page is visible. `null` until the first answer. */
+/**
+ * GET `url` now and every `everyMs` while the page is visible. `null` until
+ * the first answer — and again when `url` changes: an answer about one stop is
+ * never shown as if it were about the next.
+ */
 export function usePoll<T>(url: string | null, everyMs: number): { data: T | null; at: number | null; failed: boolean } {
   const visible = usePageVisible()
-  const [state, setState] = useState<{ data: T | null; at: number | null; failed: boolean }>({ data: null, at: null, failed: false })
+  const [state, setState] = useState<{ url: string | null; data: T | null; at: number | null; failed: boolean }>({
+    url: null,
+    data: null,
+    at: null,
+    failed: false,
+  })
   useEffect(() => {
     if (!url || !visible) return
     let alive = true
@@ -34,9 +43,9 @@ export function usePoll<T>(url: string | null, everyMs: number): { data: T | nul
         const res = await fetch(url, { cache: 'no-store' })
         if (!res.ok) throw new Error(String(res.status))
         const data = (await res.json()) as T
-        if (alive) setState({ data, at: Date.now(), failed: false })
+        if (alive) setState({ url, data, at: Date.now(), failed: false })
       } catch {
-        if (alive) setState((s) => ({ ...s, failed: true }))
+        if (alive) setState((s) => (s.url === url ? { ...s, failed: true } : { url, data: null, at: null, failed: true }))
       }
     }
     run()
@@ -46,7 +55,7 @@ export function usePoll<T>(url: string | null, everyMs: number): { data: T | nul
       clearInterval(t)
     }
   }, [url, visible, everyMs])
-  return state
+  return state.url === url ? state : { data: null, at: null, failed: false }
 }
 
 /** Seconds since `at`, ticking once a second. */
@@ -82,7 +91,7 @@ export function NextBus({
   copy: NextBusCopy
   tone?: 'light' | 'dark'
 }) {
-  const url = stops.length ? `/api/transit/arrivals?stops=${stops.join(',')}` : null
+  const url = stops.length ? `/api/transit/arrivals?stops=${stops.join(',')}&route=${route}` : null
   const { data } = usePoll<{ arrivals: Arrival[] }>(url, 30_000)
   if (!url || !data) return null
   const list = data.arrivals.filter((a) => a.route === route)
@@ -223,7 +232,8 @@ export type LeaveCopy = Record<
   | 'showBus'
   | 'checking'
   | 'oneSide'
-  | 'untracked',
+  | 'untracked'
+  | 'unavailable',
   string
 > & { places: Record<string, string> }
 
@@ -267,8 +277,8 @@ export function LeaveTimes({
   /** Buses stop on both sides of the street here, but only one side is in the city's tracker. */
   oneSide?: boolean
 }) {
-  const url = stops.length ? `/api/transit/arrivals?stops=${stops.join(',')}` : null
-  const { data, at: fetchedAt } = usePoll<{ arrivals: Arrival[] }>(url, 30_000)
+  const url = stops.length ? `/api/transit/arrivals?stops=${stops.join(',')}&route=${route.slug}` : null
+  const { data, at: fetchedAt, failed } = usePoll<{ arrivals: Arrival[] }>(url, 30_000)
   const list = (data?.arrivals ?? []).filter((a) => a.route === route.slug)
 
   const dirs: Direction[] = []
@@ -288,6 +298,8 @@ export function LeaveTimes({
 
   // A stop the city's tracker doesn't list: say so, rather than show nothing.
   if (!url) return <p style={{ margin: 0, fontSize: 16, fontWeight: 600, lineHeight: 1.45 }}>{copy.untracked}</p>
+  // A failed refresh: old times would be wrong in a minute, so say so instead.
+  if (failed) return <p style={{ margin: 0, fontSize: 16, fontWeight: 700, lineHeight: 1.45 }}>{copy.unavailable}</p>
   if (!data) {
     return (
       <p role="status" style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>

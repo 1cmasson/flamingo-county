@@ -15,8 +15,10 @@ export async function GET(req: NextRequest) {
     .filter((n) => Number.isInteger(n) && n > 0)
     .slice(0, 8)
   if (!stops.length) return NextResponse.json({ error: 'stops required' }, { status: 400 })
-  // Enough to have the next two each way: a stop is served in both directions.
-  const arrivals = await nextArrivals(stops, new Date(), 8)
+  // `?route=flamingo` keeps the other line from taking the slots at a shared
+  // stop. Eight is enough for the next two each way.
+  const route = req.nextUrl.searchParams.get('route') ?? undefined
+  const arrivals = await nextArrivals(stops, new Date(), 8, route === 'flamingo' || route === 'marlin' ? route : undefined)
   return NextResponse.json(
     { arrivals },
     { headers: { 'Cache-Control': 'public, max-age=10, s-maxage=15, stale-while-revalidate=30' } },

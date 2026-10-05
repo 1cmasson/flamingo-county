@@ -304,6 +304,8 @@ export const ES_OVERRIDES: Record<string, string> = {
     'Las guaguas que van para el otro lado paran enfrente. El rastreador de la ciudad no muestra sus horas en esa parada.',
   'The city’s tracker doesn’t list this stop, so we can’t show bus times here. The bus still stops.':
     'El rastreador de la ciudad no tiene esta parada, así que no podemos mostrar las horas aquí. La guagua sí para.',
+  'Bus times aren’t loading right now. The buses are still running; try again in a moment.':
+    'Las horas de las guaguas no están cargando ahora mismo. Las guaguas siguen pasando; prueba otra vez en un momento.',
   Close: 'Cerrar',
   'Zoom in': 'Acercar',
   'Zoom out': 'Alejar',
