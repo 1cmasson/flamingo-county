@@ -6,7 +6,7 @@ import sharp from 'sharp'
 import { noPrice } from '../fields/shared'
 import type { City, Event, HqSocialDraft, Listing, Media, Story } from '../payload-types'
 import { addDays, dateOnly, eventEndDay, eventRunEnd, miamiInstant, parseISO, todayISO } from './dates'
-import { HQ_INTERNAL, recordEvent, sendDraftPreview } from './hq'
+import { HQ_INTERNAL, POST_GAP_MS, recordEvent, sendDraftPreview } from './hq'
 import { photoCredit } from './photoLicense'
 import type { Platform } from './postiz'
 import { routes } from './routes'
@@ -333,7 +333,7 @@ export const POST_SLOTS = ['11:30', '19:00'] as const
 /** A slot this close to now is skipped: the owner needs time to see the draft. */
 const MIN_LEAD_MS = 30 * 60_000
 /** Two posts closer together than this would bury each other. */
-const MIN_GAP_MS = 3 * 60 * 60_000
+const MIN_GAP_MS = POST_GAP_MS
 /** How far ahead slots are looked for, at least: further when an event's window is later. */
 const HORIZON_DAYS = 21
 /** An event is announced in the days just before it, not as soon as it is published. */
