@@ -592,6 +592,7 @@ export function nextBusCopy(t: T): NextBusCopy {
     onTime: t('on time'),
     then: t('then {n} min'),
     none: t('No bus due here in the next 3 hours.'),
+    at: t('at {stop}'),
   }
 }
 

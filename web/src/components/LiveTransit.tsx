@@ -61,7 +61,7 @@ export function useAgo(at: number | null): number | null {
 /* ------------------------------------------------------------- next bus */
 
 export type NextBusCopy = Record<
-  'next' | 'arriving' | 'min' | 'live' | 'scheduled' | 'late' | 'early' | 'onTime' | 'then' | 'none',
+  'next' | 'arriving' | 'min' | 'live' | 'scheduled' | 'late' | 'early' | 'onTime' | 'then' | 'none' | 'at',
   string
 >
 
@@ -120,6 +120,11 @@ export function NextBus({
         </span>
         {rest[0] ? <span style={{ color: muted, fontWeight: 600 }}>· {fill(copy.then, { n: rest[0].minutes })}</span> : null}
       </div>
+      {/* Which pole: a stop is both sides of the street, and ETA's names say
+          the direction ("W 29th St & W 5th Ave (EB)"). */}
+      {first.stop ? (
+        <div style={{ flexBasis: '100%', fontSize: 12, fontWeight: 600, color: muted }}>{fill(copy.at, { stop: first.stop })}</div>
+      ) : null}
     </div>
   )
 }
@@ -135,8 +140,10 @@ export type StripLiveCopy = Record<'many' | 'one' | 'none' | 'near' | 'late' | '
  * (or on the folded run that holds it), which transit.module.css draws.
  */
 export function StripLive({ route, name, copy }: { route: string; name: string; copy: StripLiveCopy }) {
-  const { data, at, failed } = usePoll<LiveSnapshot>('/api/transit/live', 15_000)
-  const ago = useAgo(at)
+  const { data, failed } = usePoll<LiveSnapshot>('/api/transit/live', 15_000)
+  // Age of the data itself, not of our last fetch: a frozen feed fetched a
+  // second ago is still old.
+  const ago = useAgo(data?.updatedAt ?? null)
   const marked = useRef<Element[]>([])
   const buses = (data?.vehicles ?? []).filter((v) => v.route === route)
 

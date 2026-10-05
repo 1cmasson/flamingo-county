@@ -65,8 +65,8 @@ export function CityMap({
 
   // Live positions once the map has been seen; the illustration until (and
   // unless) the feed answers with buses on the road.
-  const { data: liveData, at } = usePoll<LiveSnapshot>(play ? '/api/transit/live' : null, 15_000)
-  const ago = useAgo(at)
+  const { data: liveData } = usePoll<LiveSnapshot>(play ? '/api/transit/live' : null, 15_000)
+  const ago = useAgo(liveData?.updatedAt ?? null)
   const live = liveData?.ok && liveData.vehicles.length ? liveData.vehicles : null
   const project = (lat: number, lng: number): [number, number] => {
     const p = model.proj

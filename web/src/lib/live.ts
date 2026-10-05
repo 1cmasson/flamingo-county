@@ -1,6 +1,6 @@
 import GtfsRealtimeBindings from 'gtfs-realtime-bindings'
 import eta from '../data/transit/hialeah-eta.json'
-import { getRoute, meters, miamiClock, type TransitRoute } from './transit'
+import { getRoute, meters, miamiClock, serviceStatus, type TransitRoute } from './transit'
 
 /**
  * Hialeah's buses, live.
@@ -138,8 +138,33 @@ export async function liveSnapshot(now: number = Date.now()): Promise<LiveSnapsh
 }
 
 /** The pure half of liveSnapshot, for tests: a decoded feed → what the map shows. */
+/**
+ * Whether the feed can be believed right now. Three ways it can't, each of
+ * which would otherwise turn into a confident "no buses on the road":
+ *
+ * - **Frozen.** The file is still served but stopped updating.
+ * - **Out of step with our schedule.** ETA reissues trip numbers when it
+ *   republishes its timetable (its schedule file already says it ended on
+ *   2026-09-11). Fresh buses on trips we can't look up mean
+ *   hialeah-eta.json is stale — rerun `pnpm transit:sync`.
+ * - **Empty in service hours.** The city runs buses from 6 AM; a feed with
+ *   none on the road then is broken, not quiet.
+ */
+export function feedHealthy(feed: Feed | null, now: number): boolean {
+  if (!feed) return false
+  if (feed.headerTs && now / 1000 - feed.headerTs > STALE_S) return false
+  const fresh = feed.vehicles.filter((v) => now / 1000 - v.ts <= STALE_S)
+  const known = fresh.filter((v) => ETA.trips[v.tripId])
+  if (fresh.length && known.length / fresh.length < 0.5) {
+    console.warn(`[live] ${fresh.length - known.length} of ${fresh.length} live buses are on trips missing from hialeah-eta.json — run pnpm transit:sync`)
+    return false
+  }
+  if (!fresh.length && serviceStatus(new Date(now)).state === 'running') return false
+  return true
+}
+
 export function snapshotFrom(feed: Feed | null, now: number): LiveSnapshot {
-  if (!feed) return { ok: false, updatedAt: null, vehicles: [] }
+  if (!feed || !feedHealthy(feed, now)) return { ok: false, updatedAt: feed?.headerTs ? feed.headerTs * 1000 : null, vehicles: [] }
   const vehicles = feed.vehicles.flatMap((v): LiveVehicle[] => {
     const trip = ETA.trips[v.tripId]
     if (!trip || now / 1000 - v.ts > STALE_S) return []
@@ -168,6 +193,8 @@ export type Arrival = {
   /** True when the time comes from a bus on the road, false when it's the timetable. */
   live: boolean
   delayMin: number
+  /** ETA's name for the pole the bus stops at — it carries the direction (EB, NB…). */
+  stop: string
 }
 
 /**
@@ -190,8 +217,9 @@ export function arrivalsFrom(feed: Feed | null, stopIds: number[], nowDate: Date
   const nowS = min * 60 + nowDate.getUTCSeconds()
   const out: Arrival[] = []
 
+  const healthy = feedHealthy(feed, nowDate.getTime())
   const liveTrips = new Set<string>()
-  if (feed) {
+  if (feed && healthy) {
     for (const v of feed.vehicles) {
       const trip = ETA.trips[v.tripId]
       if (!trip || nowDate.getTime() / 1000 - v.ts > STALE_S) continue
@@ -201,7 +229,7 @@ export function arrivalsFrom(feed: Feed | null, stopIds: number[], nowDate: Date
         const delay = delayFor(v.tripId, trip.seq0 + i, feed) ?? 0
         const minutes = Math.round((trip.secs[i] + delay - nowS) / 60)
         if (minutes >= 0 && minutes <= HORIZON_MIN) {
-          out.push({ route: trip.route, minutes, live: true, delayMin: Math.round(delay / 60) })
+          out.push({ route: trip.route, minutes, live: true, delayMin: Math.round(delay / 60), stop: ETA.stops[String(trip.stops[i])] ?? '' })
           break
         }
       }
@@ -210,13 +238,15 @@ export function arrivalsFrom(feed: Feed | null, stopIds: number[], nowDate: Date
 
   const services = new Set(dow === 0 ? [] : dow === 6 ? ETA.services.saturday : ETA.services.weekday)
   for (const [id, trip] of Object.entries(ETA.trips)) {
-    // Only trips that haven't left: one that's out without a live position is
-    // a bus we can't vouch for, so it isn't promised.
-    if (!services.has(trip.service) || liveTrips.has(id) || trip.secs[0] <= nowS) continue
-    const i = trip.stops.findIndex((s) => want.has(s))
+    // With a healthy feed, only trips that haven't left: one that's out with no
+    // live position is a bus we can't vouch for. With the feed down, every bus
+    // is one we can't see, so the timetable is all there is — labelled as such.
+    if (!services.has(trip.service) || liveTrips.has(id)) continue
+    if (healthy && trip.secs[0] <= nowS) continue
+    const i = trip.stops.findIndex((s, k) => want.has(s) && trip.secs[k] >= nowS)
     if (i < 0) continue
     const minutes = Math.round((trip.secs[i] - nowS) / 60)
-    if (minutes <= HORIZON_MIN) out.push({ route: trip.route, minutes, live: false, delayMin: 0 })
+    if (minutes <= HORIZON_MIN) out.push({ route: trip.route, minutes, live: false, delayMin: 0, stop: ETA.stops[String(trip.stops[i])] ?? '' })
   }
 
   return out.sort((a, b) => a.minutes - b.minutes).slice(0, limit)

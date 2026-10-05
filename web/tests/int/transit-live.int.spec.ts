@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { ETA_SCHEDULE, arrivalsFrom, snapshotFrom, type Feed } from '@/lib/live'
+import { ETA_SCHEDULE, arrivalsFrom, feedHealthy, snapshotFrom, type Feed } from '@/lib/live'
 import { TRANSIT, etaIdsFor } from '@/lib/transit'
 
 /** A wall-clock time in Miami. October is EDT, UTC−4. */
@@ -36,7 +36,7 @@ describe('arrivalsFrom — next bus = schedule + live delay', () => {
     const now = miami(at(trip.secs[STOP_INDEX] - 600))
     const feed = feedWith({ seqIndex: STOP_INDEX - 5, delay: 360, ts: now.getTime() / 1000 })
     const first = arrivalsFrom(feed, [stop], now).find((a) => a.live)
-    expect(first).toEqual({ route: 'flamingo', minutes: 16, live: true, delayMin: 6 })
+    expect(first).toMatchObject({ route: 'flamingo', minutes: 16, live: true, delayMin: 6 })
   })
 
   it('ignores a bus that has already passed the stop', () => {
@@ -92,5 +92,42 @@ describe('our stops ↔ ETA’s stops', () => {
       const station = TRANSIT.routes.flatMap((r) => r.stations).find((s) => s.names.includes(name))!
       expect(etaIdsFor(station).length, name).toBeGreaterThan(0)
     }
+  })
+})
+
+describe('feed health — never a confident "no bus" from bad data', () => {
+  const now = miami(at(trip.secs[STOP_INDEX] - 600))
+  const t = now.getTime() / 1000
+
+  it('distrusts a frozen feed, however fresh its buses claim to be', () => {
+    const feed = { ...feedWith({ seqIndex: STOP_INDEX - 5, delay: 0, ts: t }), headerTs: t - 900 }
+    expect(feedHealthy(feed, now.getTime())).toBe(false)
+    expect(snapshotFrom(feed, now.getTime()).ok).toBe(false)
+  })
+
+  it('distrusts buses on trips our schedule has never heard of (ETA republished)', () => {
+    const feed: Feed = {
+      headerTs: t,
+      vehicles: ['a', 'b', 'c'].map((id) => ({ id, tripId: `new-${id}`, lat: 25.86, lng: -80.3, bearing: 0, seq: 3, stopId: '1', ts: t })),
+      delays: new Map(),
+    }
+    expect(snapshotFrom(feed, now.getTime()).ok).toBe(false)
+  })
+
+  it('distrusts an empty feed during service hours', () => {
+    expect(feedHealthy({ headerTs: t, vehicles: [], delays: new Map() }, now.getTime())).toBe(false)
+  })
+
+  it('with the feed down, still offers a bus that left before now — as scheduled', () => {
+    // Trip already under way, due at the stop in ten minutes: a healthy feed
+    // would know where it is; without one, the timetable is the best answer.
+    const arrivals = arrivalsFrom(null, [stop], now)
+    expect(arrivals.some((a) => !a.live && a.minutes === 10)).toBe(true)
+  })
+
+  it('names the pole each arrival is at', () => {
+    const feed = feedWith({ seqIndex: STOP_INDEX - 5, delay: 0, ts: t })
+    const live = arrivalsFrom(feed, [stop], now).find((a) => a.live)!
+    expect(live.stop).toBe(ETA_SCHEDULE.stops[String(stop)])
   })
 })

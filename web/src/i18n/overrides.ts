@@ -141,8 +141,8 @@ export const ES_OVERRIDES: Record<string, string> = {
   'Miami-Dade’s free elevated train loops downtown, Brickell and Omni. The Little Havana trolley meets it at Brickell.':
     'El tren elevado gratis de Miami-Dade da la vuelta por Downtown, Brickell y Omni. El trolley de la Pequeña Habana lo conecta en Brickell.',
   'Stations & hours': 'Estaciones y horario',
-  'Stops and ride times from Miami-Dade Transit’s schedule data (updated {date}); hours from the City of Hialeah. Buses run late sometimes — check the live tracker before you head out.':
-    'Paradas y tiempos de viaje según los datos de horarios de Miami-Dade Transit (actualizados el {date}); horario de la Ciudad de Hialeah. A veces la guagua se atrasa: mírala en vivo antes de salir.',
+  'Live buses and arrival times: the City of Hialeah’s ETA SPOT tracker, by ETA Transit Systems. Stops and ride times: Miami-Dade Transit (updated {date}). Hours: City of Hialeah. Map: US Census Bureau.':
+    'Guaguas y llegadas en vivo: el rastreador ETA SPOT de la Ciudad de Hialeah, de ETA Transit Systems. Paradas y tiempos de viaje: Miami-Dade Transit (actualizado el {date}). Horario: Ciudad de Hialeah. Mapa: Oficina del Censo de EE. UU.',
   'RUNNING NOW · until {time}': 'PASANDO AHORA · hasta las {time}',
   'NOT OUT YET · starts at {time}': 'TODAVÍA NO SALE · empieza a las {time}',
   'DONE FOR TODAY · back tomorrow at {time}': 'TERMINÓ POR HOY · vuelve mañana a las {time}',
@@ -196,6 +196,7 @@ export const ES_OVERRIDES: Record<string, string> = {
   'on time': 'a tiempo',
   'then {n} min': 'después {n} min',
   'No bus due here in the next 3 hours.': 'No viene guagua por aquí en las próximas 3 horas.',
+  'at {stop}': 'en {stop}',
   '{n} buses on the {name} right now': '{n} guaguas en la ruta {name} ahora mismo',
   '1 bus on the {name} right now': '1 guagua en la ruta {name} ahora mismo',
   'No {name} buses on the road right now': 'No hay guaguas de la ruta {name} en la calle ahora mismo',
