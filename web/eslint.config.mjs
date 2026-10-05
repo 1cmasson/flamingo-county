@@ -40,6 +40,8 @@ const eslintConfig = [
       'src/payload-generated-schema.ts',
       // Local verification output — screenshots and one-off Playwright scripts.
       'shots/',
+      // MapLibre's browser build, copied in by scripts/vendor-maplibre.mjs.
+      'public/vendor/',
     ],
   },
 ]

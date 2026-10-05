@@ -16,7 +16,9 @@ import {
   ends,
   fill,
   nearMeCopy,
-  nextBusCopy,
+  leaveCopy,
+  rideMapCopy,
+  busWordsCopy,
   stripLiveCopy,
   nearMePlaces,
   routeHrefs,
@@ -161,7 +163,10 @@ export default async function FreeRoutePage({ params }: { params: Promise<{ lang
 
         <NearMe
           copy={nearMeCopy(t)}
-          nextBus={nextBusCopy(t)}
+          leave={leaveCopy(t)}
+          mapCopy={rideMapCopy(t)}
+          busWords={busWordsCopy(t)}
+          lang={lang}
           places={nearMePlaces(mine, lang)}
           only={route.slug}
           routeHref={routeHrefs(lang)}
