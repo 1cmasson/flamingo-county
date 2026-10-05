@@ -1,0 +1,3506 @@
+{
+ "rail": [
+  [
+   25.84343,
+   -80.32276
+  ],
+  [
+   25.84347,
+   -80.32183
+  ],
+  [
+   25.84267,
+   -80.3189
+  ],
+  [
+   25.84254,
+   -80.31811
+  ],
+  [
+   25.84254,
+   -80.31445
+  ],
+  [
+   25.84236,
+   -80.31339
+  ],
+  [
+   25.84053,
+   -80.30997
+  ],
+  [
+   25.83996,
+   -80.30864
+  ],
+  [
+   25.83958,
+   -80.30757
+  ],
+  [
+   25.8395,
+   -80.30669
+  ],
+  [
+   25.83974,
+   -80.30419
+  ],
+  [
+   25.83981,
+   -80.30273
+  ],
+  [
+   25.8398,
+   -80.29321
+  ],
+  [
+   25.83997,
+   -80.29089
+  ],
+  [
+   25.84058,
+   -80.28906
+  ],
+  [
+   25.84079,
+   -80.28369
+  ],
+  [
+   25.84098,
+   -80.28213
+  ],
+  [
+   25.84117,
+   -80.27917
+  ],
+  [
+   25.84133,
+   -80.27392
+  ],
+  [
+   25.84159,
+   -80.2728
+  ],
+  [
+   25.84224,
+   -80.27186
+  ],
+  [
+   25.84408,
+   -80.27
+  ],
+  [
+   25.84458,
+   -80.26927
+  ],
+  [
+   25.84494,
+   -80.26802
+  ],
+  [
+   25.84523,
+   -80.26598
+  ],
+  [
+   25.84544,
+   -80.25979
+  ],
+  [
+   25.8458,
+   -80.24878
+  ],
+  [
+   25.84591,
+   -80.24549
+  ],
+  [
+   25.84579,
+   -80.24447
+  ],
+  [
+   25.84551,
+   -80.24366
+  ],
+  [
+   25.84502,
+   -80.2429
+  ],
+  [
+   25.84418,
+   -80.24217
+  ],
+  [
+   25.84307,
+   -80.24174
+  ],
+  [
+   25.84033,
+   -80.24156
+  ],
+  [
+   25.83238,
+   -80.2412
+  ],
+  [
+   25.82476,
+   -80.24083
+  ],
+  [
+   25.82207,
+   -80.24071
+  ],
+  [
+   25.81533,
+   -80.24047
+  ],
+  [
+   25.81433,
+   -80.24024
+  ],
+  [
+   25.81349,
+   -80.23968
+  ],
+  [
+   25.81286,
+   -80.23885
+  ],
+  [
+   25.81279,
+   -80.2387
+  ]
+ ],
+ "source": {
+  "name": "Miami-Dade Transit GTFS",
+  "url": "https://www.miamidade.gov/transit/googletransit/current/google_transit.zip",
+  "fetchedAt": "2026-10-02",
+  "serviceEnds": "2027-12-31"
+ },
+ "routes": [
+  {
+   "slug": "flamingo",
+   "name": "Flamingo",
+   "gtfsShortName": "HIAFLA",
+   "headwayMin": {
+    "weekday": 40,
+    "saturday": 110
+   },
+   "rideMinutes": 90,
+   "stations": [
+    {
+     "id": "11564",
+     "name": "Aquabella",
+     "min": 0,
+     "points": [
+      [
+       25.925835,
+       -80.356378
+      ],
+      [
+       25.92527,
+       -80.357459
+      ]
+     ],
+     "names": [
+      "Aquabella",
+      "NW 97th Ave & W 112th St"
+     ],
+     "transfers": [],
+     "landmark": "Aquabella"
+    },
+    {
+     "id": "11561",
+     "name": "NW 102nd Ave & W 108th St",
+     "min": 5,
+     "points": [
+      [
+       25.920242,
+       -80.365256
+      ]
+     ],
+     "names": [
+      "NW 102nd Ave & W 108th St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "11562",
+     "name": "W 108th St & NW 97th Ave",
+     "min": 7,
+     "points": [
+      [
+       25.920389,
+       -80.358263
+      ]
+     ],
+     "names": [
+      "W 108th St & NW 97th Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "11566",
+     "name": "W 80th St & W 33rd Ln",
+     "min": 16,
+     "points": [
+      [
+       25.895053,
+       -80.35304
+      ]
+     ],
+     "names": [
+      "W 80th St & W 33rd Ln"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "10636",
+     "name": "W 76 St & W 32 Ave",
+     "min": 18,
+     "points": [
+      [
+       25.891427,
+       -80.348851
+      ]
+     ],
+     "names": [
+      "W 76 St & W 32 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "10640",
+     "name": "W 76 St & W 29 Wy",
+     "min": 20,
+     "points": [
+      [
+       25.891505,
+       -80.342723
+      ]
+     ],
+     "names": [
+      "W 76 St & W 29 Wy"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2262",
+     "name": "W 28 Ave & W 71 St",
+     "min": 22,
+     "points": [
+      [
+       25.887322,
+       -80.339823
+      ],
+      [
+       25.885124,
+       -80.33954
+      ],
+      [
+       25.887442,
+       -80.339637
+      ],
+      [
+       25.889317,
+       -80.339713
+      ]
+     ],
+     "names": [
+      "W 28 Ave & W 71 St",
+      "W 28 Ave & W 69 Ter",
+      "W 28 Ave & W 71 Pl",
+      "W 28 Ave & W 73 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "10611",
+     "name": "W 68 St & W 26 Dr",
+     "min": 24,
+     "points": [
+      [
+       25.88406,
+       -80.33549
+      ]
+     ],
+     "names": [
+      "W 68 St & W 26 Dr"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "11319",
+     "name": "W 68 St & W 24 Ave",
+     "min": 26,
+     "points": [
+      [
+       25.884093,
+       -80.331403
+      ],
+      [
+       25.884277,
+       -80.331413
+      ]
+     ],
+     "names": [
+      "W 68 St & W 24 Ave",
+      "W 68 St & W 24 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "9819",
+     "name": "W 68 St & W 22 Ct (E/N)",
+     "min": 26,
+     "points": [
+      [
+       25.884062,
+       -80.328728
+      ]
+     ],
+     "names": [
+      "W 68 St & W 22 Ct (E/N)"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "11565",
+     "name": "Social Security Administration",
+     "min": 27,
+     "points": [
+      [
+       25.882693,
+       -80.32669
+      ]
+     ],
+     "names": [
+      "Social Security Administration"
+     ],
+     "transfers": [],
+     "landmark": "Social Security Administration"
+    },
+    {
+     "id": "1008",
+     "name": "Palmetto General Hospital",
+     "min": 31,
+     "points": [
+      [
+       25.885214,
+       -80.324795
+      ]
+     ],
+     "names": [
+      "Palmetto General Hospital"
+     ],
+     "transfers": [],
+     "landmark": "Palmetto General Hospital"
+    },
+    {
+     "id": "9820",
+     "name": "W 68 St & W 21 Ct (W/F)",
+     "min": 32,
+     "points": [
+      [
+       25.884205,
+       -80.327111
+      ]
+     ],
+     "names": [
+      "W 68 St & W 21 Ct (W/F)"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "9817",
+     "name": "W 24 Ave & W 68 St (S/F)",
+     "min": 34,
+     "points": [
+      [
+       25.883753,
+       -80.331731
+      ],
+      [
+       25.883749,
+       -80.331553
+      ]
+     ],
+     "names": [
+      "W 24 Ave & W 68 St (S/F)",
+      "W 24 Ave & W 68 St (N/N)"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "9815",
+     "name": "W 24 Ave & opp. #6445 (S/N)",
+     "min": 35,
+     "points": [
+      [
+       25.881625,
+       -80.331648
+      ],
+      [
+       25.881632,
+       -80.33149
+      ]
+     ],
+     "names": [
+      "W 24 Ave & opp. #6445 (S/N)",
+      "W 24 Ave (#6445) (N/F)"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "9813",
+     "name": "W 24 Ave & opp. #6207 (S/N)",
+     "min": 35,
+     "points": [
+      [
+       25.878933,
+       -80.331519
+      ],
+      [
+       25.877369,
+       -80.331274
+      ],
+      [
+       25.878935,
+       -80.331348
+      ]
+     ],
+     "names": [
+      "W 24 Ave & opp. #6207 (S/N)",
+      "W 24 Ave & W 60 St",
+      "W 24 Ave (#6207) (N/F)"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "11395",
+     "name": "W 60 St & W 22 Ln",
+     "min": 37,
+     "points": [
+      [
+       25.876914,
+       -80.32872
+      ],
+      [
+       25.877135,
+       -80.328759
+      ]
+     ],
+     "names": [
+      "W 60 St & W 22 Ln",
+      "W 60 St & W 22 Ln (Buckey Dent Park)"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "11556",
+     "name": "W 60th St & W 19th Ave",
+     "min": 39,
+     "points": [
+      [
+       25.876939,
+       -80.321918
+      ],
+      [
+       25.877129,
+       -80.321843
+      ]
+     ],
+     "names": [
+      "W 60th St & W 19th Ave",
+      "W 60th St & W 19th Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "11396",
+     "name": "W 60 St & W 18 Ave",
+     "min": 39,
+     "points": [
+      [
+       25.876942,
+       -80.319635
+      ],
+      [
+       25.877126,
+       -80.318878
+      ]
+     ],
+     "names": [
+      "W 60 St & W 18 Ave",
+      "W 60 St & W 18 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2416",
+     "name": "W 60 St & W 16 Ave",
+     "min": 40,
+     "points": [
+      [
+       25.876972,
+       -80.315726
+      ],
+      [
+       25.877102,
+       -80.31564
+      ]
+     ],
+     "names": [
+      "W 60 St & W 16 Ave",
+      "W 60 St & W 16 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2235",
+     "name": "W 16 Ave & W 60 St",
+     "min": 41,
+     "points": [
+      [
+       25.876646,
+       -80.315354
+      ]
+     ],
+     "names": [
+      "W 16 Ave & W 60 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2236",
+     "name": "W 16 Ave & W 56 St",
+     "min": 42,
+     "points": [
+      [
+       25.873893,
+       -80.315216
+      ],
+      [
+       25.873614,
+       -80.315007
+      ],
+      [
+       25.875016,
+       -80.315109
+      ]
+     ],
+     "names": [
+      "W 16 Ave & W 56 St",
+      "W 16 Ave & W 56 St",
+      "W 16 Ave & W 58 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2237",
+     "name": "W 16 Ave & W 54 St",
+     "min": 42,
+     "points": [
+      [
+       25.871587,
+       -80.31511
+      ],
+      [
+       25.871324,
+       -80.31493
+      ]
+     ],
+     "names": [
+      "W 16 Ave & W 54 St",
+      "W 16 Ave & W 54 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2238",
+     "name": "W 16 Ave & W 53 St",
+     "min": 43,
+     "points": [
+      [
+       25.869205,
+       -80.314949
+      ]
+     ],
+     "names": [
+      "W 16 Ave & W 53 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2239",
+     "name": "W 16 Ave & 5000 Block",
+     "min": 43,
+     "points": [
+      [
+       25.868183,
+       -80.314628
+      ],
+      [
+       25.868749,
+       -80.31451
+      ]
+     ],
+     "names": [
+      "W 16 Ave & 5000 Block",
+      "W 16 Ave & 5100 Block"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "1009",
+     "name": "W 16 Ave & 49 St",
+     "min": 44,
+     "points": [
+      [
+       25.865791,
+       -80.314939
+      ],
+      [
+       25.866955,
+       -80.314767
+      ]
+     ],
+     "names": [
+      "W 16 Ave & 49 St",
+      "W 16 Ave & 49 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2240",
+     "name": "W 16 Ave & W 46 St",
+     "min": 45,
+     "points": [
+      [
+       25.864171,
+       -80.314896
+      ],
+      [
+       25.864551,
+       -80.314731
+      ]
+     ],
+     "names": [
+      "W 16 Ave & W 46 St",
+      "W 16 Ave & W 46 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2241",
+     "name": "W 16 Ave & W 44 Pl",
+     "min": 45,
+     "points": [
+      [
+       25.862747,
+       -80.31486
+      ],
+      [
+       25.862106,
+       -80.314637
+      ],
+      [
+       25.862853,
+       -80.314643
+      ]
+     ],
+     "names": [
+      "W 16 Ave & W 44 Pl",
+      "W 16 Ave & W 44 Pl",
+      "W 16 Ave & W 44 Pl"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2242",
+     "name": "W 16 Ave & W 42 St",
+     "min": 46,
+     "points": [
+      [
+       25.859912,
+       -80.314768
+      ],
+      [
+       25.86,
+       -80.314564
+      ]
+     ],
+     "names": [
+      "W 16 Ave & W 42 St",
+      "W 16 Ave & W 42 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2243",
+     "name": "W 16 Ave & W 39 Pl",
+     "min": 47,
+     "points": [
+      [
+       25.857203,
+       -80.31469
+      ],
+      [
+       25.857206,
+       -80.314497
+      ]
+     ],
+     "names": [
+      "W 16 Ave & W 39 Pl",
+      "W 16 Ave & W 39 Pl"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "11551",
+     "name": "Florida National University",
+     "min": 52,
+     "points": [
+      [
+       25.862011,
+       -80.322326
+      ]
+     ],
+     "names": [
+      "Florida National University"
+     ],
+     "transfers": [],
+     "landmark": "Florida National University"
+    },
+    {
+     "id": "11552",
+     "name": "W 44th Pl & W 18th Ct",
+     "min": 52,
+     "points": [
+      [
+       25.862448,
+       -80.32041
+      ]
+     ],
+     "names": [
+      "W 44th Pl & W 18th Ct"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "11553",
+     "name": "San Lazaro Roman Catholic Church",
+     "min": 53,
+     "points": [
+      [
+       25.861679,
+       -80.319025
+      ]
+     ],
+     "names": [
+      "San Lazaro Roman Catholic Church"
+     ],
+     "transfers": [],
+     "landmark": "San Lazaro Roman Catholic Church"
+    },
+    {
+     "id": "11554",
+     "name": "W 18th Ave & W 39th St",
+     "min": 54,
+     "points": [
+      [
+       25.85685,
+       -80.318711
+      ]
+     ],
+     "names": [
+      "W 18th Ave & W 39th St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2215",
+     "name": "W 12 Ave & W 34 St",
+     "min": 59,
+     "points": [
+      [
+       25.852709,
+       -80.306571
+      ],
+      [
+       25.852214,
+       -80.306339
+      ],
+      [
+       25.853834,
+       -80.306337
+      ],
+      [
+       25.854929,
+       -80.306398
+      ]
+     ],
+     "names": [
+      "W 12 Ave & W 34 St",
+      "W 12 Ave & W 33 Pl",
+      "W 12 Ave & W 35 St",
+      "W 12 Ave & W 37 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2216",
+     "name": "W 12 Ave & W 31 St",
+     "min": 60,
+     "points": [
+      [
+       25.849562,
+       -80.306458
+      ],
+      [
+       25.850581,
+       -80.306279
+      ]
+     ],
+     "names": [
+      "W 12 Ave & W 31 St",
+      "W 12 Ave & W 32 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2217",
+     "name": "W 12 Ave & W 29 St",
+     "min": 60,
+     "points": [
+      [
+       25.848444,
+       -80.306419
+      ],
+      [
+       25.848386,
+       -80.306238
+      ]
+     ],
+     "names": [
+      "W 12 Ave & W 29 St",
+      "W 12 Ave & W 30 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2218",
+     "name": "W 12 Ave & W 28 St",
+     "min": 61,
+     "points": [
+      [
+       25.846853,
+       -80.306385
+      ]
+     ],
+     "names": [
+      "W 12 Ave & W 28 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "11550",
+     "name": "Daisy and Rosy's Garden",
+     "min": 62,
+     "points": [
+      [
+       25.845536,
+       -80.308934
+      ]
+     ],
+     "names": [
+      "Daisy and Rosy's Garden"
+     ],
+     "transfers": [],
+     "landmark": "Daisy and Rosy's Garden"
+    },
+    {
+     "id": "10229",
+     "name": "W 29 St & W 12 Ave",
+     "min": 64,
+     "points": [
+      [
+       25.847918,
+       -80.306074
+      ]
+     ],
+     "names": [
+      "W 29 St & W 12 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2350",
+     "name": "W 29 St & W 11 Ave",
+     "min": 64,
+     "points": [
+      [
+       25.847897,
+       -80.304015
+      ],
+      [
+       25.848072,
+       -80.302065
+      ],
+      [
+       25.848064,
+       -80.304791
+      ]
+     ],
+     "names": [
+      "W 29 St & W 11 Ave",
+      "W 29 St & W 10 Ave",
+      "W 29 St & W 11 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2351",
+     "name": "W 29 St & W 9 Ave",
+     "min": 65,
+     "points": [
+      [
+       25.847909,
+       -80.300027
+      ],
+      [
+       25.848064,
+       -80.300116
+      ]
+     ],
+     "names": [
+      "W 29 St & W 9 Ave",
+      "W 29 St & W 9 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2352",
+     "name": "W 29 St & W 8 Ave",
+     "min": 66,
+     "points": [
+      [
+       25.84791,
+       -80.298641
+      ],
+      [
+       25.848077,
+       -80.298049
+      ]
+     ],
+     "names": [
+      "W 29 St & W 8 Ave",
+      "W 29 St & W 8 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2353",
+     "name": "W 29 St & W 7 Ave",
+     "min": 67,
+     "points": [
+      [
+       25.847932,
+       -80.295831
+      ]
+     ],
+     "names": [
+      "W 29 St & W 7 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2354",
+     "name": "W 29 St & W 5 Ave",
+     "min": 68,
+     "points": [
+      [
+       25.847937,
+       -80.292571
+      ],
+      [
+       25.848107,
+       -80.293989
+      ]
+     ],
+     "names": [
+      "W 29 St & W 5 Ave",
+      "W 29 St & W 6 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2355",
+     "name": "W 29 St & W 4 Ave",
+     "min": 68,
+     "points": [
+      [
+       25.847978,
+       -80.289812
+      ],
+      [
+       25.848106,
+       -80.289973
+      ]
+     ],
+     "names": [
+      "W 29 St & W 4 Ave",
+      "W 29 St & W 4 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2356",
+     "name": "W 29 St & W 3 Ct",
+     "min": 69,
+     "points": [
+      [
+       25.848025,
+       -80.288676
+      ]
+     ],
+     "names": [
+      "W 29 St & W 3 Ct"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2357",
+     "name": "W 29 St & W 2 Ave",
+     "min": 69,
+     "points": [
+      [
+       25.848102,
+       -80.28647
+      ],
+      [
+       25.848244,
+       -80.286076
+      ]
+     ],
+     "names": [
+      "W 29 St & W 2 Ave",
+      "W 29 St & W 2 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2358",
+     "name": "W 29 St & Palm Ave",
+     "min": 70,
+     "points": [
+      [
+       25.848235,
+       -80.283048
+      ],
+      [
+       25.848362,
+       -80.283136
+      ]
+     ],
+     "names": [
+      "W 29 St & Palm Ave",
+      "W 29 St & Palm Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2082",
+     "name": "Palm Ave & W 28 St",
+     "min": 71,
+     "points": [
+      [
+       25.847611,
+       -80.282406
+      ],
+      [
+       25.848159,
+       -80.282255
+      ]
+     ],
+     "names": [
+      "Palm Ave & W 28 St",
+      "Palm Ave & W 29 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2083",
+     "name": "Palm Ave & W 26 St",
+     "min": 71,
+     "points": [
+      [
+       25.84571,
+       -80.282324
+      ],
+      [
+       25.845141,
+       -80.282153
+      ],
+      [
+       25.846536,
+       -80.282191
+      ]
+     ],
+     "names": [
+      "Palm Ave & W 26 St",
+      "Palm Ave & E 25 St",
+      "Palm Ave & E 27 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2084",
+     "name": "Palm Ave & W 23 St",
+     "min": 72,
+     "points": [
+      [
+       25.843086,
+       -80.282214
+      ],
+      [
+       25.842091,
+       -80.282032
+      ]
+     ],
+     "names": [
+      "Palm Ave & W 23 St",
+      "Palm Ave & E 22 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "220",
+     "name": "Hialeah Sta & 115 E 21 St",
+     "min": 74,
+     "points": [
+      [
+       25.84128,
+       -80.27905
+      ],
+      [
+       25.840985,
+       -80.279805
+      ]
+     ],
+     "names": [
+      "Hialeah Sta & 115 E 21 St",
+      "E 21 St & E 1 Ave"
+     ],
+     "transfers": [
+      "Metrorail · Hialeah"
+     ]
+    },
+    {
+     "id": "2325",
+     "name": "E 21 St & E 3 Ave",
+     "min": 75,
+     "points": [
+      [
+       25.840914,
+       -80.275802
+      ],
+      [
+       25.841125,
+       -80.276401
+      ]
+     ],
+     "names": [
+      "E 21 St & E 3 Ave",
+      "E 21 St & E 3 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2048",
+     "name": "E 4 Ave & E 20 St",
+     "min": 76,
+     "points": [
+      [
+       25.840256,
+       -80.274064
+      ],
+      [
+       25.841167,
+       -80.274645
+      ]
+     ],
+     "names": [
+      "E 4 Ave & E 20 St",
+      "E 21 St & E 4 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2049",
+     "name": "E 4 Ave & E 19 St",
+     "min": 76,
+     "points": [
+      [
+       25.839055,
+       -80.274039
+      ],
+      [
+       25.839405,
+       -80.273832
+      ]
+     ],
+     "names": [
+      "E 4 Ave & E 19 St",
+      "E 4 Ave & E 19 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2050",
+     "name": "E 4 Ave & E 17 St",
+     "min": 77,
+     "points": [
+      [
+       25.837217,
+       -80.27394
+      ],
+      [
+       25.837696,
+       -80.273754
+      ]
+     ],
+     "names": [
+      "E 4 Ave & E 17 St",
+      "E 4 Ave & E 17 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2051",
+     "name": "E 4 Ave & E 15 St",
+     "min": 77,
+     "points": [
+      [
+       25.835439,
+       -80.273866
+      ],
+      [
+       25.835114,
+       -80.273683
+      ]
+     ],
+     "names": [
+      "E 4 Ave & E 15 St",
+      "E 4 Ave & E 14 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2052",
+     "name": "E 4 Ave & E 13 St",
+     "min": 78,
+     "points": [
+      [
+       25.833625,
+       -80.273795
+      ],
+      [
+       25.834046,
+       -80.273636
+      ]
+     ],
+     "names": [
+      "E 4 Ave & E 13 St",
+      "E 4 Ave & E 13 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2053",
+     "name": "E 4 Ave & E 11 St",
+     "min": 78,
+     "points": [
+      [
+       25.831797,
+       -80.273725
+      ],
+      [
+       25.831869,
+       -80.273575
+      ]
+     ],
+     "names": [
+      "E 4 Ave & E 11 St",
+      "E 4 Ave & E 11 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2054",
+     "name": "E 4 Ave & E 9 St",
+     "min": 79,
+     "points": [
+      [
+       25.830347,
+       -80.273667
+      ],
+      [
+       25.829739,
+       -80.273496
+      ]
+     ],
+     "names": [
+      "E 4 Ave & E 9 St",
+      "E 4 Ave & E 9 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2055",
+     "name": "E 4 Ave & E 7 St",
+     "min": 79,
+     "points": [
+      [
+       25.828187,
+       -80.273584
+      ],
+      [
+       25.828175,
+       -80.27343
+      ]
+     ],
+     "names": [
+      "E 4 Ave & E 7 St",
+      "E 4 Ave & E 7 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2056",
+     "name": "E 4 Ave & E 6 St",
+     "min": 80,
+     "points": [
+      [
+       25.826997,
+       -80.273561
+      ]
+     ],
+     "names": [
+      "E 4 Ave & E 6 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2057",
+     "name": "E 4 Ave & E 4 St",
+     "min": 80,
+     "points": [
+      [
+       25.825208,
+       -80.273494
+      ],
+      [
+       25.825859,
+       -80.27333
+      ]
+     ],
+     "names": [
+      "E 4 Ave & E 4 St",
+      "E 4 Ave & E 4 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "10615",
+     "name": "E 4 Ave & Hialeah Dr",
+     "min": 81,
+     "points": [
+      [
+       25.82219,
+       -80.273373
+      ]
+     ],
+     "names": [
+      "E 4 Ave & Hialeah Dr"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2290",
+     "name": "Hialeah Dr & E 5 Ave",
+     "min": 82,
+     "points": [
+      [
+       25.823093,
+       -80.271518
+      ]
+     ],
+     "names": [
+      "Hialeah Dr & E 5 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "1339",
+     "name": "Hialeah Dr & E 4 Ave",
+     "min": 82,
+     "points": [
+      [
+       25.823061,
+       -80.2725
+      ]
+     ],
+     "names": [
+      "Hialeah Dr & E 4 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "399",
+     "name": "Hialeah Dr & E 4 Ave",
+     "min": 83,
+     "points": [
+      [
+       25.823005,
+       -80.273611
+      ],
+      [
+       25.823751,
+       -80.273246
+      ]
+     ],
+     "names": [
+      "Hialeah Dr & E 4 Ave",
+      "E 4 Ave & E 2 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "9469",
+     "name": "Hialeah Dr & E 3 Ave (W/F)",
+     "min": 83,
+     "points": [
+      [
+       25.822927,
+       -80.275645
+      ]
+     ],
+     "names": [
+      "Hialeah Dr & E 3 Ave (W/F)"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "10214",
+     "name": "E 2 Ave & Hialeah Dr",
+     "min": 84,
+     "points": [
+      [
+       25.822849,
+       -80.277219
+      ]
+     ],
+     "names": [
+      "E 2 Ave & Hialeah Dr"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "10226",
+     "name": "E 2 Ave & Hialeah Dr",
+     "min": 84,
+     "points": [
+      [
+       25.823022,
+       -80.277256
+      ]
+     ],
+     "names": [
+      "E 2 Ave & Hialeah Dr"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "10228",
+     "name": "E 3 St & E 1 Ave",
+     "min": 85,
+     "points": [
+      [
+       25.824622,
+       -80.279093
+      ]
+     ],
+     "names": [
+      "E 3 St & E 1 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "10616",
+     "name": "Palm Ave & W 5 St (City Hall)",
+     "min": 86,
+     "points": [
+      [
+       25.82584,
+       -80.281529
+      ]
+     ],
+     "names": [
+      "Palm Ave & W 5 St (City Hall)"
+     ],
+     "transfers": [],
+     "landmark": "City Hall"
+    },
+    {
+     "id": "11348",
+     "name": "E 1 Ave & 5 St",
+     "min": 87,
+     "points": [
+      [
+       25.826488,
+       -80.279524
+      ]
+     ],
+     "names": [
+      "E 1 Ave & 5 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2294",
+     "name": "E 3 St & E 1 Ave",
+     "min": 87,
+     "points": [
+      [
+       25.824447,
+       -80.27913
+      ]
+     ],
+     "names": [
+      "E 3 St & E 1 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "10227",
+     "name": "E 2 Ave & Hialeah Dr",
+     "min": 88,
+     "points": [
+      [
+       25.822982,
+       -80.27741
+      ]
+     ],
+     "names": [
+      "E 2 Ave & Hialeah Dr"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "9465",
+     "name": "Hialeah Dr & Eucalyptus Dr (E/F)",
+     "min": 88,
+     "points": [
+      [
+       25.822719,
+       -80.277062
+      ]
+     ],
+     "names": [
+      "Hialeah Dr & Eucalyptus Dr (E/F)"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "388",
+     "name": "Hialeah Dr & E 4 Ave",
+     "min": 90,
+     "points": [
+      [
+       25.822833,
+       -80.273624
+      ],
+      [
+       25.822803,
+       -80.273532
+      ]
+     ],
+     "names": [
+      "Hialeah Dr & E 4 Ave",
+      "Hialeah Dr & E 4 Ave"
+     ],
+     "transfers": []
+    }
+   ]
+  },
+  {
+   "slug": "marlin",
+   "name": "Marlin",
+   "gtfsShortName": "HIAMAR",
+   "headwayMin": {
+    "weekday": 40,
+    "saturday": 95
+   },
+   "rideMinutes": 95,
+   "stations": [
+    {
+     "id": "10662",
+     "name": "NW 138 St (#10990)",
+     "min": 0,
+     "points": [
+      [
+       25.897381,
+       -80.377687
+      ]
+     ],
+     "names": [
+      "NW 138 St (#10990)"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "10663",
+     "name": "NW 138 St (#10820)",
+     "min": 1,
+     "points": [
+      [
+       25.89847,
+       -80.374243
+      ]
+     ],
+     "names": [
+      "NW 138 St (#10820)"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "10664",
+     "name": "NW 107 Ave (#13480)",
+     "min": 2,
+     "points": [
+      [
+       25.895845,
+       -80.372478
+      ]
+     ],
+     "names": [
+      "NW 107 Ave (#13480)"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "10665",
+     "name": "NW 107 Ave (#13090)",
+     "min": 3,
+     "points": [
+      [
+       25.892383,
+       -80.372329
+      ],
+      [
+       25.890873,
+       -80.371344
+      ]
+     ],
+     "names": [
+      "NW 107 Ave (#13090)",
+      "W Okeechobee Rd (#12963)"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "10666",
+     "name": "W Okeechobee Rd (#12531)",
+     "min": 6,
+     "points": [
+      [
+       25.887736,
+       -80.367361
+      ],
+      [
+       25.887955,
+       -80.367346
+      ]
+     ],
+     "names": [
+      "W Okeechobee Rd (#12531)",
+      "W Okeechobee Rd (#12531)"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "10667",
+     "name": "W Okeechobee Rd (#12253)",
+     "min": 7,
+     "points": [
+      [
+       25.885243,
+       -80.363954
+      ],
+      [
+       25.885202,
+       -80.363691
+      ],
+      [
+       25.8865,
+       -80.365468
+      ]
+     ],
+     "names": [
+      "W Okeechobee Rd (#12253)",
+      "W Okeechobee Rd (#12401)",
+      "Frontage Rd (Okech) & NW 124 St Court"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2468",
+     "name": "NW 122 St & Frontage Rd (Okech)",
+     "min": 7,
+     "points": [
+      [
+       25.884187,
+       -80.361708
+      ]
+     ],
+     "names": [
+      "NW 122 St & Frontage Rd (Okech)"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2469",
+     "name": "NW 122 St & NW 98 Pl",
+     "min": 8,
+     "points": [
+      [
+       25.884193,
+       -80.359214
+      ]
+     ],
+     "names": [
+      "NW 122 St & NW 98 Pl"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "10634",
+     "name": "W 68 St & W 36 Ave",
+     "min": 9,
+     "points": [
+      [
+       25.884178,
+       -80.356199
+      ],
+      [
+       25.884309,
+       -80.356339
+      ]
+     ],
+     "names": [
+      "W 68 St & W 36 Ave",
+      "NW 122 St & NW 97 Ct"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2470",
+     "name": "W 68 St & W 36 Ave",
+     "min": 9,
+     "points": [
+      [
+       25.884061,
+       -80.355628
+      ]
+     ],
+     "names": [
+      "W 68 St & W 36 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2471",
+     "name": "W 68 St & Hialeah Gardens Bd",
+     "min": 10,
+     "points": [
+      [
+       25.884011,
+       -80.352439
+      ]
+     ],
+     "names": [
+      "W 68 St & Hialeah Gardens Bd"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "10655",
+     "name": "W 68 St & NW 93 Ct",
+     "min": 10,
+     "points": [
+      [
+       25.884043,
+       -80.350528
+      ]
+     ],
+     "names": [
+      "W 68 St & NW 93 Ct"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "10633",
+     "name": "W 68 St & W 32 Ave",
+     "min": 11,
+     "points": [
+      [
+       25.884045,
+       -80.3482
+      ]
+     ],
+     "names": [
+      "W 68 St & W 32 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "10671",
+     "name": "NW 122 St (#8920)",
+     "min": 12,
+     "points": [
+      [
+       25.884033,
+       -80.344013
+      ],
+      [
+       25.884239,
+       -80.343558
+      ]
+     ],
+     "names": [
+      "NW 122 St (#8920)",
+      "W 68 St & W 30 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2263",
+     "name": "W 28 Ave & W 68 St",
+     "min": 13,
+     "points": [
+      [
+       25.883777,
+       -80.33969
+      ],
+      [
+       25.881688,
+       -80.339375
+      ],
+      [
+       25.883518,
+       -80.339466
+      ],
+      [
+       25.884271,
+       -80.340762
+      ]
+     ],
+     "names": [
+      "W 28 Ave & W 68 St",
+      "W 28 Ave & NW 119 St",
+      "W 28 Ave & W 68 St",
+      "W 68 St #8752"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2265",
+     "name": "W 28 Ave & opp. #5619",
+     "min": 17,
+     "points": [
+      [
+       25.872988,
+       -80.339199
+      ],
+      [
+       25.87299,
+       -80.338984
+      ],
+      [
+       25.874416,
+       -80.339097
+      ]
+     ],
+     "names": [
+      "W 28 Ave & opp. #5619",
+      "W 28 Ave (#5619)",
+      "NW 87 Ave #5751"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2266",
+     "name": "W 28 Ave & W 54 St",
+     "min": 17,
+     "points": [
+      [
+       25.87167,
+       -80.339139
+      ],
+      [
+       25.871833,
+       -80.338933
+      ]
+     ],
+     "names": [
+      "W 28 Ave & W 54 St",
+      "W 28 Ave & W 54 Pl"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2267",
+     "name": "W 28 Ave & W 52 St",
+     "min": 18,
+     "points": [
+      [
+       25.870175,
+       -80.339079
+      ],
+      [
+       25.870081,
+       -80.338853
+      ]
+     ],
+     "names": [
+      "W 28 Ave & W 52 St",
+      "W 28 Ave & W 52 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "253",
+     "name": "NW 87 Ave & 103 St",
+     "min": 18,
+     "points": [
+      [
+       25.867535,
+       -80.339038
+      ],
+      [
+       25.866375,
+       -80.338286
+      ]
+     ],
+     "names": [
+      "NW 87 Ave & 103 St",
+      "Frontage Rd (Okech) & NW 87 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2480",
+     "name": "Frontage Rd (Okech) & opp. #9911",
+     "min": 20,
+     "points": [
+      [
+       25.863294,
+       -80.334488
+      ],
+      [
+       25.863616,
+       -80.33458
+      ]
+     ],
+     "names": [
+      "Frontage Rd (Okech) & opp. #9911",
+      "Frontage Rd (Okech) (#9911)"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "10672",
+     "name": "W Okeechobee Rd (#9811)",
+     "min": 21,
+     "points": [
+      [
+       25.862405,
+       -80.33315
+      ],
+      [
+       25.862499,
+       -80.332958
+      ]
+     ],
+     "names": [
+      "W Okeechobee Rd (#9811)",
+      "W Okeechobee Rd #9811"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2458",
+     "name": "NW 95 St & opp. #8001",
+     "min": 22,
+     "points": [
+      [
+       25.859734,
+       -80.32812
+      ]
+     ],
+     "names": [
+      "NW 95 St & opp. #8001"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "1197",
+     "name": "#9300 Walmart & NW 77 Ave",
+     "min": 24,
+     "points": [
+      [
+       25.858508,
+       -80.324853
+      ]
+     ],
+     "names": [
+      "#9300 Walmart & NW 77 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2456",
+     "name": "NW 79 Ave (#9605)",
+     "min": 27,
+     "points": [
+      [
+       25.860587,
+       -80.325554
+      ],
+      [
+       25.860218,
+       -80.325657
+      ]
+     ],
+     "names": [
+      "NW 79 Ave (#9605)",
+      "NW 79 Ave (#9550)"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "9879",
+     "name": "NW 79 Ave & NW 98 St",
+     "min": 28,
+     "points": [
+      [
+       25.862721,
+       -80.325617
+      ],
+      [
+       25.862733,
+       -80.325731
+      ]
+     ],
+     "names": [
+      "NW 79 Ave & NW 98 St",
+      "NW 79 Ave & NW 98 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2457",
+     "name": "NW 79 Ave (#9905)",
+     "min": 28,
+     "points": [
+      [
+       25.863956,
+       -80.325623
+      ],
+      [
+       25.864171,
+       -80.325758
+      ]
+     ],
+     "names": [
+      "NW 79 Ave (#9905)",
+      "NW 79 Ave (#9960)"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "10673",
+     "name": "NW 79 Ave & #10147",
+     "min": 29,
+     "points": [
+      [
+       25.866611,
+       -80.325703
+      ],
+      [
+       25.866745,
+       -80.325849
+      ]
+     ],
+     "names": [
+      "NW 79 Ave & #10147",
+      "NW 79 Ave #10146"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2467",
+     "name": "NW 103 St & NW 77 Ave",
+     "min": 29,
+     "points": [
+      [
+       25.866611,
+       -80.324
+      ],
+      [
+       25.866896,
+       -80.323923
+      ]
+     ],
+     "names": [
+      "NW 103 St & NW 77 Ave",
+      "NW 103 St & NW 77 Ct"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2373",
+     "name": "W 49 St & W 19 Ct",
+     "min": 30,
+     "points": [
+      [
+       25.86648,
+       -80.320964
+      ]
+     ],
+     "names": [
+      "W 49 St & W 19 Ct"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "10674",
+     "name": "W 49 St & #1810",
+     "min": 31,
+     "points": [
+      [
+       25.86645,
+       -80.319335
+      ]
+     ],
+     "names": [
+      "W 49 St & #1810"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "384",
+     "name": "W 49 St & 17 Ct Hialeah",
+     "min": 31,
+     "points": [
+      [
+       25.866464,
+       -80.317262
+      ],
+      [
+       25.866711,
+       -80.318198
+      ]
+     ],
+     "names": [
+      "W 49 St & 17 Ct Hialeah",
+      "W 49 St & 17 Ct Westland Mall"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2374",
+     "name": "W 49 St & W 16 Ave",
+     "min": 32,
+     "points": [
+      [
+       25.866465,
+       -80.314366
+      ],
+      [
+       25.866725,
+       -80.315362
+      ]
+     ],
+     "names": [
+      "W 49 St & W 16 Ave",
+      "W 49 St & W 16 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2375",
+     "name": "W 49 St & W 14 Ln",
+     "min": 33,
+     "points": [
+      [
+       25.866482,
+       -80.311923
+      ],
+      [
+       25.866721,
+       -80.312464
+      ]
+     ],
+     "names": [
+      "W 49 St & W 14 Ln",
+      "W 49 St & W 14 La"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2376",
+     "name": "W 49 St & W 13 Ln",
+     "min": 33,
+     "points": [
+      [
+       25.866463,
+       -80.309307
+      ],
+      [
+       25.866725,
+       -80.309623
+      ]
+     ],
+     "names": [
+      "W 49 St & W 13 Ln",
+      "W 49 St & W 13 La"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2377",
+     "name": "W 49 St & W 12 Ave",
+     "min": 34,
+     "points": [
+      [
+       25.866507,
+       -80.306116
+      ],
+      [
+       25.866725,
+       -80.307589
+      ]
+     ],
+     "names": [
+      "W 49 St & W 12 Ave",
+      "W 49 St & W 12 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2378",
+     "name": "W 49 St & W 10 Ave",
+     "min": 35,
+     "points": [
+      [
+       25.866511,
+       -80.303651
+      ],
+      [
+       25.866762,
+       -80.303706
+      ]
+     ],
+     "names": [
+      "W 49 St & W 10 Ave",
+      "W 49 St & W 10 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2379",
+     "name": "W 49 St & # 950 (Approx)",
+     "min": 36,
+     "points": [
+      [
+       25.866516,
+       -80.300703
+      ],
+      [
+       25.866754,
+       -80.301588
+      ]
+     ],
+     "names": [
+      "W 49 St & # 950 (Approx)",
+      "W 49 St & # 901"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "257",
+     "name": "W 49 St & 8 Ave Hialeah",
+     "min": 36,
+     "points": [
+      [
+       25.866499,
+       -80.29908
+      ],
+      [
+       25.866764,
+       -80.299405
+      ]
+     ],
+     "names": [
+      "W 49 St & 8 Ave Hialeah",
+      "W 49 St & 8 Ave Hialeah"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2380",
+     "name": "W 49 St & W 8 Ave",
+     "min": 37,
+     "points": [
+      [
+       25.866527,
+       -80.297034
+      ],
+      [
+       25.866772,
+       -80.297121
+      ]
+     ],
+     "names": [
+      "W 49 St & W 8 Ave",
+      "W 49 St & # 775 (5)"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2381",
+     "name": "W 49 St & W 6 Ave",
+     "min": 37,
+     "points": [
+      [
+       25.866526,
+       -80.294646
+      ],
+      [
+       25.866775,
+       -80.295251
+      ]
+     ],
+     "names": [
+      "W 49 St & W 6 Ave",
+      "W 49 St & W 6 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2382",
+     "name": "W 49 St & W 6 Ave",
+     "min": 38,
+     "points": [
+      [
+       25.86653,
+       -80.293473
+      ]
+     ],
+     "names": [
+      "W 49 St & W 6 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2448",
+     "name": "W 78 Pl & W 4 Ave",
+     "min": 47,
+     "points": [
+      [
+       25.893884,
+       -80.290771
+      ]
+     ],
+     "names": [
+      "W 78 Pl & W 4 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2449",
+     "name": "W 78 Rd & W 2 Ct",
+     "min": 47,
+     "points": [
+      [
+       25.894677,
+       -80.288978
+      ]
+     ],
+     "names": [
+      "W 78 Rd & W 2 Ct"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2121",
+     "name": "W 2 Ct & opp. #7575",
+     "min": 48,
+     "points": [
+      [
+       25.891446,
+       -80.288739
+      ]
+     ],
+     "names": [
+      "W 2 Ct & opp. #7575"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2383",
+     "name": "W 49 St & W 3 La",
+     "min": 57,
+     "points": [
+      [
+       25.866578,
+       -80.290109
+      ],
+      [
+       25.866818,
+       -80.288573
+      ],
+      [
+       25.866774,
+       -80.290529
+      ],
+      [
+       25.866778,
+       -80.291599
+      ]
+     ],
+     "names": [
+      "W 49 St & W 3 La",
+      "W 49 St & W 3 Ave",
+      "W 49 St & W 4 Ave",
+      "W 49 St & W 4 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2384",
+     "name": "W 49 St & W 2 Ave",
+     "min": 58,
+     "points": [
+      [
+       25.866697,
+       -80.286357
+      ],
+      [
+       25.866891,
+       -80.286475
+      ]
+     ],
+     "names": [
+      "W 49 St & W 2 Ave",
+      "W 49 St & W 2 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "258",
+     "name": "W 49 St & Palm Ave Hialeah",
+     "min": 59,
+     "points": [
+      [
+       25.866792,
+       -80.283417
+      ],
+      [
+       25.866962,
+       -80.284408
+      ]
+     ],
+     "names": [
+      "W 49 St & Palm Ave Hialeah",
+      "W 49 St & W 1 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2073",
+     "name": "Palm Ave & W 4800",
+     "min": 59,
+     "points": [
+      [
+       25.865943,
+       -80.283108
+      ],
+      [
+       25.864791,
+       -80.282873
+      ]
+     ],
+     "names": [
+      "Palm Ave & W 4800",
+      "Palm Ave & # 4735"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2074",
+     "name": "Palm Ave & # 4500 (Approx)",
+     "min": 60,
+     "points": [
+      [
+       25.863175,
+       -80.282991
+      ],
+      [
+       25.863372,
+       -80.282827
+      ]
+     ],
+     "names": [
+      "Palm Ave & # 4500 (Approx)",
+      "Palm Ave & E 45 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2075",
+     "name": "Palm Ave & W 43 St",
+     "min": 60,
+     "points": [
+      [
+       25.861482,
+       -80.282923
+      ],
+      [
+       25.861243,
+       -80.282753
+      ]
+     ],
+     "names": [
+      "Palm Ave & W 43 St",
+      "Palm Ave & E 43 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2076",
+     "name": "Palm Ave & W 41 St",
+     "min": 61,
+     "points": [
+      [
+       25.859854,
+       -80.282871
+      ],
+      [
+       25.859964,
+       -80.282705
+      ]
+     ],
+     "names": [
+      "Palm Ave & W 41 St",
+      "Palm Ave & E 41 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2077",
+     "name": "Palm Ave & Approx # 3950 (39 Pl)",
+     "min": 61,
+     "points": [
+      [
+       25.857927,
+       -80.282793
+      ],
+      [
+       25.856881,
+       -80.282592
+      ],
+      [
+       25.857893,
+       -80.282609
+      ]
+     ],
+     "names": [
+      "Palm Ave & Approx # 3950 (39 Pl)",
+      "Palm Ave & E 38 St",
+      "Palm Ave & E 39 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2078",
+     "name": "Palm Ave & W 37 St",
+     "min": 62,
+     "points": [
+      [
+       25.855608,
+       -80.282711
+      ],
+      [
+       25.855066,
+       -80.28251
+      ]
+     ],
+     "names": [
+      "Palm Ave & W 37 St",
+      "Palm Ave & E 36 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2079",
+     "name": "Palm Ave & W 34 St",
+     "min": 63,
+     "points": [
+      [
+       25.852558,
+       -80.282607
+      ],
+      [
+       25.85267,
+       -80.28243
+      ]
+     ],
+     "names": [
+      "Palm Ave & W 34 St",
+      "Palm Ave & E 34 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2080",
+     "name": "Palm Ave & W 32 St",
+     "min": 63,
+     "points": [
+      [
+       25.850931,
+       -80.282533
+      ],
+      [
+       25.850908,
+       -80.282368
+      ]
+     ],
+     "names": [
+      "Palm Ave & W 32 St",
+      "Palm Ave & E 32 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2081",
+     "name": "Palm Ave & W 30 St",
+     "min": 64,
+     "points": [
+      [
+       25.848897,
+       -80.28245
+      ]
+     ],
+     "names": [
+      "Palm Ave & W 30 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2082",
+     "name": "Palm Ave & W 28 St",
+     "min": 64,
+     "points": [
+      [
+       25.847611,
+       -80.282406
+      ],
+      [
+       25.848159,
+       -80.282255
+      ]
+     ],
+     "names": [
+      "Palm Ave & W 28 St",
+      "Palm Ave & W 29 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2083",
+     "name": "Palm Ave & W 26 St",
+     "min": 65,
+     "points": [
+      [
+       25.84571,
+       -80.282324
+      ],
+      [
+       25.845141,
+       -80.282153
+      ],
+      [
+       25.846536,
+       -80.282191
+      ]
+     ],
+     "names": [
+      "Palm Ave & W 26 St",
+      "Palm Ave & E 25 St",
+      "Palm Ave & E 27 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2084",
+     "name": "Palm Ave & W 23 St",
+     "min": 66,
+     "points": [
+      [
+       25.843086,
+       -80.282214
+      ],
+      [
+       25.842091,
+       -80.282032
+      ]
+     ],
+     "names": [
+      "Palm Ave & W 23 St",
+      "Palm Ave & E 22 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "220",
+     "name": "Hialeah Sta & 115 E 21 St",
+     "min": 67,
+     "points": [
+      [
+       25.84128,
+       -80.27905
+      ],
+      [
+       25.840985,
+       -80.279805
+      ]
+     ],
+     "names": [
+      "Hialeah Sta & 115 E 21 St",
+      "E 21 St & E 1 Ave"
+     ],
+     "transfers": [
+      "Metrorail · Hialeah"
+     ]
+    },
+    {
+     "id": "2325",
+     "name": "E 21 St & E 3 Ave",
+     "min": 68,
+     "points": [
+      [
+       25.840914,
+       -80.275802
+      ],
+      [
+       25.841125,
+       -80.276401
+      ]
+     ],
+     "names": [
+      "E 21 St & E 3 Ave",
+      "E 21 St & E 3 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2008",
+     "name": "E 4 Ave & E 21 St",
+     "min": 69,
+     "points": [
+      [
+       25.841416,
+       -80.273929
+      ],
+      [
+       25.841167,
+       -80.274645
+      ]
+     ],
+     "names": [
+      "E 4 Ave & E 21 St",
+      "E 21 St & E 4 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2009",
+     "name": "E 4 Ave & E 23 St",
+     "min": 69,
+     "points": [
+      [
+       25.84305,
+       -80.274039
+      ],
+      [
+       25.842907,
+       -80.274197
+      ]
+     ],
+     "names": [
+      "E 4 Ave & E 23 St",
+      "E 4 Ave & E 23 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2010",
+     "name": "E 4 Ave & E 25 St",
+     "min": 70,
+     "points": [
+      [
+       25.845168,
+       -80.274163
+      ]
+     ],
+     "names": [
+      "E 4 Ave & E 25 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2011",
+     "name": "E 4 Ave & E 27 St",
+     "min": 70,
+     "points": [
+      [
+       25.846587,
+       -80.27424
+      ]
+     ],
+     "names": [
+      "E 4 Ave & E 27 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2012",
+     "name": "E 4 Ave & E 29 St",
+     "min": 71,
+     "points": [
+      [
+       25.848492,
+       -80.274342
+      ]
+     ],
+     "names": [
+      "E 4 Ave & E 29 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2013",
+     "name": "E 4 Ave & E 31 St",
+     "min": 72,
+     "points": [
+      [
+       25.850686,
+       -80.274464
+      ]
+     ],
+     "names": [
+      "E 4 Ave & E 31 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "10645",
+     "name": "E 32 St & E 3 Ave",
+     "min": 72,
+     "points": [
+      [
+       25.851478,
+       -80.27587
+      ]
+     ],
+     "names": [
+      "E 32 St & E 3 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "10646",
+     "name": "E 32 St & E 2 Ave",
+     "min": 73,
+     "points": [
+      [
+       25.851391,
+       -80.278079
+      ]
+     ],
+     "names": [
+      "E 32 St & E 2 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "10676",
+     "name": "Hialeah Park and Casino Entrance",
+     "min": 76,
+     "points": [
+      [
+       25.845976,
+       -80.279601
+      ]
+     ],
+     "names": [
+      "Hialeah Park and Casino Entrance"
+     ],
+     "transfers": [],
+     "landmark": "Hialeah Park and Casino Entrance"
+    },
+    {
+     "id": "2371",
+     "name": "E 32 St & E 2 Ave",
+     "min": 77,
+     "points": [
+      [
+       25.851217,
+       -80.278738
+      ]
+     ],
+     "names": [
+      "E 32 St & E 2 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "678",
+     "name": "E 32 St & E 2 Ave",
+     "min": 77,
+     "points": [
+      [
+       25.851251,
+       -80.278042
+      ]
+     ],
+     "names": [
+      "E 32 St & E 2 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2372",
+     "name": "E 32 St & E 4 Ave",
+     "min": 78,
+     "points": [
+      [
+       25.851351,
+       -80.274804
+      ]
+     ],
+     "names": [
+      "E 32 St & E 4 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2044",
+     "name": "E 4 Ave & E 31 St",
+     "min": 79,
+     "points": [
+      [
+       25.850077,
+       -80.274608
+      ]
+     ],
+     "names": [
+      "E 4 Ave & E 31 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2045",
+     "name": "E 4 Ave & E 29 St",
+     "min": 79,
+     "points": [
+      [
+       25.848862,
+       -80.274546
+      ]
+     ],
+     "names": [
+      "E 4 Ave & E 29 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2046",
+     "name": "E 4 Ave & E 27 St",
+     "min": 80,
+     "points": [
+      [
+       25.846745,
+       -80.274429
+      ]
+     ],
+     "names": [
+      "E 4 Ave & E 27 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2335",
+     "name": "E 25 St & E 4 Ave",
+     "min": 81,
+     "points": [
+      [
+       25.844576,
+       -80.273107
+      ],
+      [
+       25.844891,
+       -80.271946
+      ]
+     ],
+     "names": [
+      "E 25 St & E 4 Ave",
+      "E 25 St & E 5 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2336",
+     "name": "E 25 St & E 6 Ave",
+     "min": 81,
+     "points": [
+      [
+       25.844684,
+       -80.270408
+      ],
+      [
+       25.844928,
+       -80.270471
+      ]
+     ],
+     "names": [
+      "E 25 St & E 6 Ave",
+      "E 25 St & E 6 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2337",
+     "name": "E 25 St & E 7 Ave",
+     "min": 82,
+     "points": [
+      [
+       25.844734,
+       -80.268387
+      ],
+      [
+       25.844963,
+       -80.268672
+      ]
+     ],
+     "names": [
+      "E 25 St & E 7 Ave",
+      "E 25 St & E 7 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "1946",
+     "name": "E 8 Ave & E 26 St",
+     "min": 83,
+     "points": [
+      [
+       25.846022,
+       -80.266082
+      ],
+      [
+       25.846816,
+       -80.266382
+      ],
+      [
+       25.84529,
+       -80.266705
+      ]
+     ],
+     "names": [
+      "E 8 Ave & E 26 St",
+      "E 8 Ave & E 27 St",
+      "E 25 St & E 8 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "1947",
+     "name": "E 8 Ave & E 29 St",
+     "min": 84,
+     "points": [
+      [
+       25.849124,
+       -80.266244
+      ],
+      [
+       25.848764,
+       -80.266461
+      ]
+     ],
+     "names": [
+      "E 8 Ave & E 29 St",
+      "E 8 Ave & E 29 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "1948",
+     "name": "E 8 Ave & E 31 St",
+     "min": 84,
+     "points": [
+      [
+       25.850958,
+       -80.26632
+      ],
+      [
+       25.850483,
+       -80.266538
+      ]
+     ],
+     "names": [
+      "E 8 Ave & E 31 St",
+      "E 8 Ave & E 31 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "1949",
+     "name": "E 8 Ave & E 33 St",
+     "min": 85,
+     "points": [
+      [
+       25.852842,
+       -80.266408
+      ],
+      [
+       25.852799,
+       -80.266633
+      ]
+     ],
+     "names": [
+      "E 8 Ave & E 33 St",
+      "E 8 Ave & E 33 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "1950",
+     "name": "E 8 Ave & E 35 St",
+     "min": 85,
+     "points": [
+      [
+       25.85426,
+       -80.266423
+      ],
+      [
+       25.8541,
+       -80.266666
+      ]
+     ],
+     "names": [
+      "E 8 Ave & E 35 St",
+      "E 8 Ave & E 35 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "1951",
+     "name": "E 8 Ave & E 37 St",
+     "min": 86,
+     "points": [
+      [
+       25.856119,
+       -80.266449
+      ],
+      [
+       25.856126,
+       -80.266685
+      ]
+     ],
+     "names": [
+      "E 8 Ave & E 37 St",
+      "E 8 Ave & E 37 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "1952",
+     "name": "E 8 Ave & E 39 Pl",
+     "min": 87,
+     "points": [
+      [
+       25.858497,
+       -80.266487
+      ],
+      [
+       25.857961,
+       -80.26672
+      ]
+     ],
+     "names": [
+      "E 8 Ave & E 39 Pl",
+      "E 8 Ave & E 39 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "1953",
+     "name": "E 8 Ave & E 41 St",
+     "min": 87,
+     "points": [
+      [
+       25.860228,
+       -80.26651
+      ],
+      [
+       25.859524,
+       -80.266773
+      ]
+     ],
+     "names": [
+      "E 8 Ave & E 41 St",
+      "E 8 Ave & E 41 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "1954",
+     "name": "E 8 Ave & E 43 St",
+     "min": 88,
+     "points": [
+      [
+       25.862111,
+       -80.266577
+      ],
+      [
+       25.861595,
+       -80.266814
+      ]
+     ],
+     "names": [
+      "E 8 Ave & E 43 St",
+      "E 8 Ave & E 43 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "1955",
+     "name": "E 8 Ave & E 45 St",
+     "min": 88,
+     "points": [
+      [
+       25.863856,
+       -80.266607
+      ],
+      [
+       25.86343,
+       -80.266823
+      ]
+     ],
+     "names": [
+      "E 8 Ave & E 45 St",
+      "E 8 Ave & E 45 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "1956",
+     "name": "E 8 Ave & E 47 St",
+     "min": 89,
+     "points": [
+      [
+       25.865699,
+       -80.266618
+      ],
+      [
+       25.865617,
+       -80.266869
+      ]
+     ],
+     "names": [
+      "E 8 Ave & E 47 St",
+      "E 8 Ave & E 47 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "355",
+     "name": "E 8 Ave & 49 St",
+     "min": 89,
+     "points": [
+      [
+       25.866924,
+       -80.266633
+      ],
+      [
+       25.86684,
+       -80.266909
+      ]
+     ],
+     "names": [
+      "E 8 Ave & 49 St",
+      "E 8 Ave & 49 St Hialeah"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "1957",
+     "name": "E 8 Ave & E 51 St",
+     "min": 90,
+     "points": [
+      [
+       25.869064,
+       -80.2667
+      ],
+      [
+       25.869274,
+       -80.266976
+      ]
+     ],
+     "names": [
+      "E 8 Ave & E 51 St",
+      "E 8 Ave & E 51 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "1958",
+     "name": "E 8 Ave & E 53 St",
+     "min": 90,
+     "points": [
+      [
+       25.870915,
+       -80.266727
+      ],
+      [
+       25.87118,
+       -80.267034
+      ]
+     ],
+     "names": [
+      "E 8 Ave & E 53 St",
+      "E 8 Ave & E 53 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "1959",
+     "name": "E 8 Ave & E 56 St",
+     "min": 91,
+     "points": [
+      [
+       25.873913,
+       -80.266815
+      ],
+      [
+       25.875031,
+       -80.267149
+      ],
+      [
+       25.873031,
+       -80.267091
+      ]
+     ],
+     "names": [
+      "E 8 Ave & E 56 St",
+      "E 8 Ave & E 57 St",
+      "E 8 Ave & E 55 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "1960",
+     "name": "E 8 Ave & # 6101",
+     "min": 92,
+     "points": [
+      [
+       25.876711,
+       -80.266896
+      ],
+      [
+       25.877088,
+       -80.267217
+      ]
+     ],
+     "names": [
+      "E 8 Ave & # 6101",
+      "E 8 Ave & # 5900 (Approx)"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "1961",
+     "name": "NW 42 Ave & NW 42/37 Ave Connector",
+     "min": 93,
+     "points": [
+      [
+       25.879448,
+       -80.266983
+      ]
+     ],
+     "names": [
+      "NW 42 Ave & NW 42/37 Ave Connector"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "1962",
+     "name": "E 8 Ave & E 65 St",
+     "min": 93,
+     "points": [
+      [
+       25.881501,
+       -80.267045
+      ]
+     ],
+     "names": [
+      "E 8 Ave & E 65 St"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "2426",
+     "name": "E 65 St & E 8 Ave",
+     "min": 93,
+     "points": [
+      [
+       25.88172,
+       -80.266863
+      ]
+     ],
+     "names": [
+      "E 65 St & E 8 Ave"
+     ],
+     "transfers": []
+    },
+    {
+     "id": "1963",
+     "name": "NW 42/37 Ave (Connector & Gratigny Dr)",
+     "min": 95,
+     "points": [
+      [
+       25.881088,
+       -80.265218
+      ]
+     ],
+     "names": [
+      "NW 42/37 Ave (Connector & Gratigny Dr)"
+     ],
+     "transfers": []
+    }
+   ]
+  }
+ ]
+}
