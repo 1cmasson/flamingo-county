@@ -474,13 +474,18 @@ preview arrives in Telegram for Approve / Reject like any other draft:
   cover photo is re-encoded as a JPEG. Either way the picture goes into HQ
   media for Facebook and Instagram. A story with no cover is Facebook text
   only. A credited photo adds a last line to the caption (see *Venue photos*).
-  An event with no photo has a poster that stands on a drawn scene when the
-  venue suggests one (`src/lib/eventSetting.ts`): a library, a restaurant, a
-  festival street, or Miami Lakes' Main Street plaza, which is also the default
-  for any Miami Lakes event. The scenes are generic places, never a real
-  business, locked in the brand kit and bundled under
-  `src/assets/og/settings/`. Anything else gets the flat city-colour poster.
-  The wide sizes are always flat.
+  An event with no photo has a poster that stands on a drawn scene
+  (`src/lib/eventSetting.ts`). The event's **Setting** field (sidebar) picks
+  one, or "None" for the flat city-colour poster. Left empty, the venue's name
+  picks it (biblioteca/library, city hall, museo/arts/teatro,
+  iglesia/church, salón de fiestas/ballroom, bar/lounge, restaurante/café,
+  parque/park, calle/street), then a listing's category (restaurants, bars),
+  then the city: Main Street plaza for Miami Lakes, the city gateway for
+  Hialeah, a Calle Ocho street for Little Havana. Hialeah Park (the racetrack)
+  is not a park. The scenes are generic places, never a real business; the
+  three real public places have blank signs and no artwork. Locked in the
+  brand kit, bundled under `src/assets/og/settings/`. The wide sizes are
+  always flat.
 - **Time.** The next 11:30 or 19:00 Miami slot at least 30 minutes away,
   skipping any slot within 3 hours of another pending, approved or scheduled
   draft. An event more than 3 days out is posted in its last 72 hours: the

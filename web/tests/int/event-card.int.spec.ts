@@ -10,7 +10,7 @@ import { GET } from '@/app/api/og/event/[slug]/route'
 import { eventDateLine } from '@/lib/dates'
 import { eventCardData, renderEventCard } from '@/lib/eventCard'
 import { eventCardUrl } from '@/lib/eventCardUrl'
-import { eventSetting } from '@/lib/eventSetting'
+import { EVENT_SETTINGS, eventSetting } from '@/lib/eventSetting'
 import { eventSource, eventVenue } from '@/lib/eventVenue'
 import type { Event } from '@/payload-types'
 
@@ -101,7 +101,7 @@ describe('what the card and the event page say', () => {
   })
 
   it('versions the card URL with the event and the design', () => {
-    expect(eventCardUrl(base, 'es', 'link')).toMatch(/^\/api\/og\/event\/sabor-fest\?lang=es&size=link&v=3\.[a-z0-9]+$/)
+    expect(eventCardUrl(base, 'es', 'link')).toMatch(/^\/api\/og\/event\/sabor-fest\?lang=es&size=link&v=4\.[a-z0-9]+$/)
     expect(eventCardUrl({ ...base, updatedAt: '2026-10-02T10:00:00.000Z' }, 'es', 'link')).not.toBe(eventCardUrl(base, 'es', 'link'))
   })
 })
@@ -115,32 +115,68 @@ describe('eventSetting: the scene behind the social poster', () => {
   const atListing = (name: string, category: string, city: object) =>
     ({ id: 1, slug: 'x', title: 'x', venueType: 'listing', listing: { id: 3, name, city, category: { id: 1, slug: category } }, kind: community }) as unknown as Event
 
+  const havana = { id: 3, slug: 'havana', name: 'LITTLE HAVANA' }
+  const elsewhere = { id: 4, slug: 'doral', name: 'DORAL' }
+
   it('picks the scene for the venues the site has posted', () => {
     expect(eventSetting(at('Biblioteca JFK', hialeah))).toBe('library')
     expect(eventSetting(at('Main Street', lakes))).toBe('main-street-lakes')
     expect(eventSetting(atListing('Casa Marín Restaurant', 'food', hialeah))).toBe('restaurant')
-    expect(eventSetting(at('Milander Center for Arts & Entertainment', hialeah))).toBeNull()
-    expect(eventSetting(at('Sapphire', hialeah))).toBeNull()
+    expect(eventSetting(at('Milander Center for Arts & Entertainment', hialeah))).toBe('arts-center')
+    // A name that says nothing: the city's own scene.
+    expect(eventSetting(at('Sapphire', hialeah))).toBe('hialeah-gateway')
   })
 
   it('matches whole words, without accents, and never from the kind', () => {
     expect(eventSetting(at('Library of Hialeah', hialeah))).toBe('library')
     expect(eventSetting(at('Cafetería La Palma', hialeah))).toBe('restaurant')
-    expect(eventSetting(at('Librería Universal', hialeah))).toBeNull()
+    expect(eventSetting(at('Librería Universal', elsewhere))).toBeNull()
     expect(eventSetting(at('Calle Ocho', hialeah))).toBe('street-festival')
-    expect(eventSetting(at('Iglesia San Juan', hialeah))).toBeNull()
+    expect(eventSetting(at('Iglesia San Juan', hialeah))).toBe('church')
+    expect(eventSetting(at('Parroquia Inmaculada', havana))).toBe('church')
+    expect(eventSetting(at('Museo Cubano', havana))).toBe('arts-center')
+    expect(eventSetting(at('Art Deco Diner', elsewhere))).toBe('restaurant')
+    expect(eventSetting(at('Parque Máximo Gómez', havana))).toBe('park')
+    expect(eventSetting(at('Barbería El Corte', elsewhere))).toBeNull()
+  })
+
+  it('keeps the traps out: Hialeah Park, and a bare "hall"', () => {
+    // The racetrack and casino: the city's scene, not a park.
+    expect(eventSetting(at('Hialeah Park', hialeah))).toBe('hialeah-gateway')
+    expect(eventSetting(at('Hialeah Park Racing & Casino', hialeah))).toBe('hialeah-gateway')
+    expect(eventSetting(at('Amelia Earhart Park', hialeah))).toBe('park')
+    expect(eventSetting(at('Hialeah City Hall', hialeah))).toBe('city-hall')
+    expect(eventSetting(at('Town Hall', lakes))).toBe('city-hall')
+    expect(eventSetting(at('Elks Hall', elsewhere))).toBeNull()
+    expect(eventSetting(at('Salón de Fiestas Imperial', hialeah))).toBe('banquet-hall')
   })
 
   it('uses the listing category, then the city', () => {
     expect(eventSetting(atListing('Sapphire', 'food', hialeah))).toBe('restaurant')
-    expect(eventSetting(atListing('The Bend', 'night', hialeah))).toBeNull()
-    expect(eventSetting(at('Town Hall', lakes))).toBe('main-street-lakes')
+    expect(eventSetting(atListing('The Bend', 'night', hialeah))).toBe('bar')
+    expect(eventSetting(atListing('Club de la Amistad', 'nonprofit', hialeah))).toBe('hialeah-gateway')
     expect(eventSetting(at('Biblioteca', lakes))).toBe('library')
+    expect(eventSetting(at('Somewhere', havana))).toBe('calle-ocho')
+    expect(eventSetting(at('Somewhere', elsewhere))).toBeNull()
+  })
+
+  it("lets the event's own setting win, including no scene at all", () => {
+    expect(eventSetting(at('Sapphire', hialeah, { setting: 'banquet-hall' }))).toBe('banquet-hall')
+    expect(eventSetting(at('Biblioteca JFK', hialeah, { setting: 'flat' }))).toBeNull()
+    expect(eventSetting(at('Biblioteca JFK', hialeah, { setting: null }))).toBe('library')
+  })
+
+  it('has art bundled for every scene it can pick', async () => {
+    const { existsSync } = await import('node:fs')
+    const { join } = await import('node:path')
+    for (const s of EVENT_SETTINGS) {
+      expect(existsSync(join(process.cwd(), 'src/assets/og/settings', `${s}.jpg`)), s).toBe(true)
+    }
   })
 
   it('draws the social poster over the scene', async () => {
     const ev = at('Main Street', lakes, { title: 'Sabor Fest', date: day('2026-10-10') })
-    const flat = at('Sapphire', hialeah, { title: 'Sabor Fest', date: day('2026-10-10') })
+    const flat = at('Sapphire', hialeah, { title: 'Sabor Fest', date: day('2026-10-10'), setting: 'flat' })
     const scene = Buffer.from(await renderEventCard(ev, 'es', 'social', '2026-10-02'))
     const plain = Buffer.from(await renderEventCard(flat, 'es', 'social', '2026-10-02'))
     expect(scene.subarray(1, 4).toString()).toBe('PNG')
