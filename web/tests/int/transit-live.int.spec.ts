@@ -86,11 +86,12 @@ describe('snapshotFrom', () => {
 })
 
 describe('our stops ↔ ETA’s stops', () => {
-  it('links the poles beside every Hialeah listing', () => {
-    const names = ['Palm Ave & E 41 St', 'E 8 Ave & E 41 St', 'W 29 St & W 5 Ave', 'W 49 St & 8 Ave Hialeah', 'W 29 St & W 4 Ave', 'W 49 St & W 12 Ave']
-    for (const name of names) {
-      const station = TRANSIT.routes.flatMap((r) => r.stations).find((s) => s.names.includes(name))!
-      expect(etaIdsFor(station).length, name).toBeGreaterThan(0)
+  it('every pole on both lines is one of the city’s own stops', () => {
+    // The lines are built from the city's schedule, so the live feed can name
+    // every stop we draw — no pole is matched by distance and none is missing.
+    for (const station of TRANSIT.routes.flatMap((r) => r.stations)) {
+      expect(station.eta, station.name).toHaveLength(station.points.length)
+      expect(station.eta.every((id) => id !== null && ETA_SCHEDULE.stops[String(id)]), station.name).toBe(true)
     }
   })
 })
@@ -177,11 +178,11 @@ describe('which way a bus is going', () => {
 })
 
 describe('a looped trip is the next bus both ways', () => {
-  // Marlin's loops pass W 28 Ave & W 68 St once each way. Reporting only a
+  // Marlin's loops pass W 68th St & W 28th Ave once each way. Reporting only a
   // trip's first pass hid the whole E 65 St direction there.
   it('offers both directions at a stop a loop passes twice', () => {
     const marlin = TRANSIT.routes.find((r) => r.slug === 'marlin')!
-    const station = marlin.stations.find((s) => s.name === 'W 28 Ave & W 68 St')!
+    const station = marlin.stations.find((s) => s.name === 'W 68th St & W 28th Ave')!
     const ids = etaIdsFor(station)
     expect(ids.length).toBeGreaterThan(1)
     // Feed down → timetable only; a Wednesday mid-morning.

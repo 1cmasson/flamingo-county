@@ -5,15 +5,20 @@ import data from '../data/transit/hialeah.json'
 /**
  * Hialeah's free circulators, Flamingo and Marlin.
  *
- * Two sources, and which one answers which question is the whole design:
+ * Which source answers which question is the whole design:
  *
  * - **Where the line goes** — stops, their order, minutes between them, the
- *   Metrorail transfer — comes from Miami-Dade Transit's GTFS feed, reduced by
- *   `pnpm transit:sync` into `src/data/transit/hialeah.json`.
+ *   street path — comes from the City of Hialeah's own schedule (published by
+ *   ETA Transit Systems, the vendor behind its live tracker), reduced by
+ *   `pnpm transit:sync` into `src/data/transit/hialeah.json`. Each line is a
+ *   loop; the strip is its leg back from the far end, with the leg out
+ *   threaded in, so some stops are served one way only (`oneWay`).
+ *
+ * - **How often it comes, and Metrorail**, from Miami-Dade Transit's GTFS.
  *
  * - **When it runs** comes from the City of Hialeah (hialeahfl.gov/269/Transit
- *   and its 2023 brochure), NOT the feed. The feed's Hialeah block runs Marlin
- *   on Sundays and keeps both lines going until 8:45 PM; the city says no
+ *   and its 2023 brochure), NOT either feed. The county's runs Marlin on
+ *   Sundays and keeps both lines going until 8:45 PM; the city says no
  *   Sunday service and 7:30 PM. Same rule as listing hours on the business
  *   page: a schedule we know is contested doesn't get printed. So the pages
  *   quote the city's hours and a typical frequency, never a departure time.
@@ -34,6 +39,13 @@ export type Station = {
   eta: (number | null)[]
   transfers: string[]
   landmark?: string
+  /**
+   * Served by buses going one way only: 'start' means toward the line's
+   * start (the strip's top), 'end' toward its end. The line is a loop, so
+   * the other way is still a ride away — the bus turns at the end and comes
+   * back — but nobody should wait here for it.
+   */
+  oneWay?: 'start' | 'end'
 }
 
 export type TransitRoute = {
@@ -42,6 +54,8 @@ export type TransitRoute = {
   gtfsShortName: string
   headwayMin: { weekday: number | null; saturday: number | null }
   rideMinutes: number
+  /** The street path the bus drives, the whole loop, simplified. */
+  path: LatLng[]
   stations: Station[]
 }
 
@@ -175,32 +189,28 @@ export function walkMinutes(m: number): number {
 /** About a ten-minute walk. Further than that, the bus isn't the answer. */
 export const MAX_WALK_METERS = 600
 
-/** "Aquabella ↔ Hialeah Dr & E 4 Ave" — the line's two ends, as a rider reads them. */
-export function lineEnds(route: TransitRoute): [string, string] {
-  const a = route.stations[0]
-  const b = route.stations.at(-1)!
-  // "NW 138 St (#10990)" → "NW 138 St": the parenthetical is an address
-  // the rider doesn't need in a headline.
-  const short = (x: string) => x.replace(/\s*\((#|Connector).*\)$/i, '')
-  return [a.landmark ?? short(a.name), b.landmark ?? short(b.name)]
-}
-
 /**
  * What a rider reads as "which way": the place each direction is headed. The
- * ends' own names are corners nobody waits for ("NW 42/37 Ave"), so each line
- * names a place at or near its end that is on the line — Flamingo ends two
- * minutes past City Hall, Marlin's last stops are on E 65 St.
+ * ends' own stop names are corners nobody waits for ("NW 102nd Ave & W 108th
+ * St"), so each line names a place at or near its end that is on the line —
+ * Flamingo turns by Aquabella and loops downtown past City Hall's block;
+ * Marlin turns by the NW 138th St Home Depot and ends on E 65 St.
  */
 const TOWARD: Record<TransitRoute['slug'], [string, string]> = {
   flamingo: ['Aquabella', 'City Hall'],
   marlin: ['NW 138 St', 'E 65 St'],
 }
 
+/** "Aquabella ⇄ City Hall" — the line's two ends, as a rider reads them. */
+export function lineEnds(route: TransitRoute): [string, string] {
+  return TOWARD[route.slug]
+}
+
 /** Every direction name, for the pages to translate ("City Hall" → "la Alcaldía"). */
 export const TOWARD_PLACES = [...new Set(Object.values(TOWARD).flat())]
 
 export function towardName(route: TransitRoute, toward: 'start' | 'end', names: Record<string, string> = {}): string {
-  const place = (TOWARD[route.slug] ?? lineEnds(route))[toward === 'start' ? 0 : 1]
+  const place = lineEnds(route)[toward === 'start' ? 0 : 1]
   return names[place] ?? place
 }
 
@@ -237,6 +247,24 @@ export function nearestStops(at: LatLng, maxMeters: number = MAX_WALK_METERS): N
     if (best) out.push(best)
   }
   return out.sort((a, b) => a.meters - b.meters)
+}
+
+/**
+ * The closest stop on `route` that buses going `way` stop at — for when the
+ * nearest stop of all is served the other way only.
+ */
+export function nearestServing(route: TransitRoute, at: LatLng, way: 'start' | 'end'): NearestStop | null {
+  let best: NearestStop | null = null
+  route.stations.forEach((station, index) => {
+    if (station.oneWay && station.oneWay !== way) return
+    station.points.forEach((p, k) => {
+      const d = meters(at, p)
+      if (!best || d < best.meters) {
+        best = { route, index, station, stopName: station.names[k] ?? station.name, etaIds: etaIdsFor(station), meters: d }
+      }
+    })
+  })
+  return best
 }
 
 export type DiagramItem =
