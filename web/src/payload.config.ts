@@ -144,8 +144,12 @@ export default buildConfig({
      * touch: this list (what is possible at all) and the boxes ticked on each
      * API key under Admin → MCP (what that key may use). Anything missing here
      * is unreachable whatever a key says — and `users`, `members`,
-     * `subscribers`, `media` and the jobs are deliberately missing: no account
-     * data, no visitor emails, no uploads to the public site.
+     * `subscribers` and the jobs are deliberately missing: no account data, no
+     * visitor emails. The public `media` is here for find only (it is
+     * public-read already); the one way to add to it is the
+     * hqAddSiteMediaFromUrl tool, which takes allowlisted hosts and licences
+     * only. A photo there shows on a page only once an event using it is
+     * published by the owner's tap.
      *
      * Delete is off everywhere. Drafts can be written and edited but their
      * status cannot be changed over MCP (see `humanOnly` in fields/shared.ts):
@@ -207,6 +211,15 @@ export default buildConfig({
         spotlights: { enabled: { find: true, create: true, update: true }, description: 'Home-page spotlights. Save with draft: true — drafts are never live; publish with hqRequestPublish.' },
         cities: { enabled: { find: true } },
         categories: { enabled: { find: true } },
+        // Read-only, to reuse a venue photo already imported (credit, licence,
+        // source) rather than download it again. The public media library is
+        // public-read anyway; new photos come in only through
+        // hqAddSiteMediaFromUrl, which checks the host and the licence.
+        media: {
+          enabled: { find: true },
+          description:
+            'The public site’s photos (read-only). Use it to find a venue photo already imported with hqAddSiteMediaFromUrl (credit, license, sourceUrl) and set its id as an event’s image, in a draft.',
+        },
       },
       globals: {
         'hq-playbook': {

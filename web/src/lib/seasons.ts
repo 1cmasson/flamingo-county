@@ -62,6 +62,23 @@ export type Season = {
     title: Copy
     chip: Copy
     line: Copy
+    /**
+     * A drawn scene behind the card (link, social, page and card sizes), in
+     * place of the halftone and the mascot's arch. A JPEG under
+     * src/assets/og/ (Satori reads no WebP). Art adapted from a licensed photo
+     * carries that licence's credit wherever it is shown: on the cards and
+     * under the page's hero.
+     */
+    scene?: {
+      file: string
+      /** Where the crop centres, 0–100 across and down. */
+      focalX: number
+      focalY: number
+      /** In parts, so the page can link the photo and the licence: `sceneCreditText` joins them. */
+      credit: { lead: Copy; photo: Copy; license: string }
+      sourceUrl: string
+      licenseUrl: string
+    }
   }
   /** The events board's link while the window is open, and its colour. */
   boardLink: (lang: Lang, year: number) => string
@@ -100,11 +117,34 @@ export const SEASONS: Partial<Record<SeasonKey, Season>> = {
         es: 'Fiestas, trunk-or-treat y eventos · con su enlace oficial',
         en: 'Parties, trunk-or-treats and events · each with its official link',
       },
+      // Hialeah Park's clubhouse on Halloween night, drawn for the brand kit
+      // from Phillip Pessar's photo (CC BY 2.0), so the credit goes wherever
+      // it is shown. The building sits right of centre, the moon at left.
+      scene: {
+        file: 'seasons/halloween-hialeah-park.jpg',
+        focalX: 50,
+        focalY: 50,
+        // "Ilustración basada en una foto de Phillip Pessar (CC BY 2.0)"
+        credit: {
+          lead: { es: 'Ilustración basada en una ', en: 'Illustration adapted from a ' },
+          photo: { es: 'foto de Phillip Pessar', en: 'photo by Phillip Pessar' },
+          license: 'CC BY 2.0',
+        },
+        sourceUrl: 'https://commons.wikimedia.org/wiki/File:Hialeah_Park_Race_Track_(28830740140).jpg',
+        licenseUrl: 'https://creativecommons.org/licenses/by/2.0/',
+      },
     },
     boardLink: (lang, year) => (lang === 'es' ? `HALLOWEEN EN HIALEAH ${year} →` : `HALLOWEEN IN HIALEAH ${year} →`),
     // The card's orange.
     accent: '#ff7a1a',
   },
+}
+
+export type SeasonScene = NonNullable<Season['card']['scene']>
+
+/** The scene's credit as one line: "Ilustración basada en una foto de Phillip Pessar (CC BY 2.0)". */
+export function sceneCreditText(scene: SeasonScene, lang: Lang): string {
+  return `${scene.credit.lead[lang]}${scene.credit.photo[lang]} (${scene.credit.license})`
 }
 
 export function getSeason(key: string | null | undefined): Season | null {

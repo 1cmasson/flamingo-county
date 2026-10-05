@@ -235,9 +235,36 @@ export interface Media {
   id: number;
   alt: string;
   /**
-   * Photographer or source, where there is one.
+   * Photographer or source, where there is one. Shown wherever the photo is.
    */
   credit?: string | null;
+  /**
+   * Public domain, or Creative Commons that allows commercial reuse. Never non-commercial (NC) or no-derivatives (ND): the cards crop the photo and set type on it.
+   */
+  license?:
+    | (
+        | 'public-domain'
+        | 'cc0'
+        | 'cc-by-2.0'
+        | 'cc-by-3.0'
+        | 'cc-by-4.0'
+        | 'cc-by-sa-2.0'
+        | 'cc-by-sa-3.0'
+        | 'cc-by-sa-4.0'
+      )
+    | null;
+  /**
+   * The licence deed, e.g. https://creativecommons.org/licenses/by/2.0/
+   */
+  licenseUrl?: string | null;
+  /**
+   * The photo’s description page (Commons, Flickr, loc.gov), where its licence is stated.
+   */
+  sourceUrl?: string | null;
+  /**
+   * The file was cropped or edited. CC 3.0 and 4.0 require saying so; the credit adds “cropped”.
+   */
+  modified?: boolean | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -1443,6 +1470,12 @@ export interface PayloadMcpApiKey {
      */
     find?: boolean | null;
   };
+  media?: {
+    /**
+     * Allow clients to find media.
+     */
+    find?: boolean | null;
+  };
   hqPlaybook?: {
     /**
      * Allow clients to find hq-playbook global.
@@ -1478,6 +1511,10 @@ export interface PayloadMcpApiKey {
      * Download a public https JPEG, PNG or MP4 (up to 50 MB) into HQ media and return its id, for the `media` field of an hq-social-drafts document. The first media id on a draft is the cover shown in Telegram. Instagram and TikTok drafts need at least one.
      */
     hqAddDraftMediaFromUrl?: boolean | null;
+    /**
+     * Import a LICENSED photo of a venue into the public site’s media library, with its credit, and return its id for an event’s `image` (set it with updateEvents and draft: true; it shows on the site only once the owner publishes that event). Only public domain or Creative Commons that allows commercial reuse (no NC, no ND), with attribution. Only direct file URLs on upload.wikimedia.org, live.staticflickr.com, tile.loc.gov, loc.gov (Wikimedia Commons, Flickr, Library of Congress), JPEG or PNG, at least 1000 px wide; no redirects. Never Google Maps/Street View, Yelp, news sites or organizer flyers. Read the licence on the description page yourself; check `findMedia` first for a photo already imported. Returns {id, filename, width, height}.
+     */
+    hqAddSiteMediaFromUrl?: boolean | null;
     /**
      * Ask the owner to publish the current draft of a site document (events, weekly-events, stories, spotlights, listings). Save the draft first with the create/update tool and draft: true — drafts are never visible on the site. The owner sees exactly what changes against the live page in Telegram and taps Publish or Reject. If you edit the draft again before they tap, they are shown the new version instead. Publishes nothing by itself.
      */
@@ -1796,6 +1833,10 @@ export interface UsersSelect<T extends boolean = true> {
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
   credit?: T;
+  license?: T;
+  licenseUrl?: T;
+  sourceUrl?: T;
+  modified?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -2461,6 +2502,11 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
     | {
         find?: T;
       };
+  media?:
+    | T
+    | {
+        find?: T;
+      };
   hqPlaybook?:
     | T
     | {
@@ -2476,6 +2522,7 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         hqGrowthContext?: T;
         hqSendTelegram?: T;
         hqAddDraftMediaFromUrl?: T;
+        hqAddSiteMediaFromUrl?: T;
         hqRequestPublish?: T;
         hqPublishStatus?: T;
       };

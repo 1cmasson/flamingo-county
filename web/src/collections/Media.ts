@@ -1,5 +1,7 @@
 import type { CollectionConfig } from 'payload'
 
+import { PHOTO_LICENSES, licenseLabel } from '../lib/photoLicense'
+
 /**
  * The source images are large and unoptimized — carlos.png is 5.3 MB and the
  * mascot busts run to 6.5 MB each, all served at full size today. Sharp
@@ -30,7 +32,38 @@ export const Media: CollectionConfig = {
     {
       name: 'credit',
       type: 'text',
-      admin: { description: 'Photographer or source, where there is one.' },
+      admin: { description: 'Photographer or source, where there is one. Shown wherever the photo is.' },
+    },
+    /**
+     * Where a photo came from and under what terms, for photos the site does
+     * not own (a venue from Wikimedia Commons, Flickr, the Library of
+     * Congress). The event page, the board and the generated cards print the
+     * credit with these; see lib/photoLicense.ts. Left empty on the site's own
+     * photos and a partner's, which are credited by name only.
+     */
+    {
+      name: 'license',
+      type: 'select',
+      options: PHOTO_LICENSES.map((value) => ({ value, label: licenseLabel(value, 'en') })),
+      admin: {
+        description:
+          'Public domain, or Creative Commons that allows commercial reuse. Never non-commercial (NC) or no-derivatives (ND): the cards crop the photo and set type on it.',
+      },
+    },
+    {
+      name: 'licenseUrl',
+      type: 'text',
+      admin: { description: 'The licence deed, e.g. https://creativecommons.org/licenses/by/2.0/' },
+    },
+    {
+      name: 'sourceUrl',
+      type: 'text',
+      admin: { description: 'The photo’s description page (Commons, Flickr, loc.gov), where its licence is stated.' },
+    },
+    {
+      name: 'modified',
+      type: 'checkbox',
+      admin: { description: 'The file was cropped or edited. CC 3.0 and 4.0 require saying so; the credit adds “cropped”.' },
     },
   ],
   upload: {
