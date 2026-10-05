@@ -247,6 +247,23 @@ export function postIdsFrom(
 type ListedPost = { id: string; publishDate?: string; integration?: { id?: string } }
 
 /**
+ * When each post between two instants is set to go out, by post id, as Postiz
+ * has it now. A post moved in the Postiz calendar keeps its id and changes
+ * its date here; the public API has no way to move one, so HQ only reads it.
+ */
+export async function listPostTimes(from: Date, to: Date): Promise<Map<string, Date>> {
+  const q = new URLSearchParams({ startDate: from.toISOString(), endDate: to.toISOString() })
+  const res = await postiz<ListedPost[] | { posts?: ListedPost[] }>(`/posts?${q}`)
+  const list = Array.isArray(res) ? res : (res?.posts ?? [])
+  const out = new Map<string, Date>()
+  for (const p of list) {
+    const at = p.publishDate ? new Date(p.publishDate) : null
+    if (p.id && at && Number.isFinite(at.getTime())) out.set(p.id, at)
+  }
+  return out
+}
+
+/**
  * Find the ids of posts already scheduled for these channels around `at`, for
  * a draft whose create reply carried none. Matches on channel and publish
  * time within ten minutes — one person posting a handful of times a week will

@@ -547,6 +547,35 @@ describe('HQ against the database', () => {
     expect(await statsFor(draft.id)).toHaveLength(1)
   })
 
+  it('follows a post moved in the Postiz calendar, and does not measure it before it goes out', async () => {
+    const draft = await publishedDraft(25, [
+      { platform: 'facebook', postId: 'moved-fb' },
+      { platform: 'instagram', postId: 'moved-ig' },
+    ])
+    const movedTo = new Date(Date.now() + 5 * 24 * 3_600_000)
+    fakeNetwork({
+      listed: [
+        { id: 'moved-fb', publishDate: movedTo.toISOString(), integration: { id: 'fb-live' } },
+        { id: 'moved-ig', publishDate: new Date(movedTo.getTime() + 60_000).toISOString(), integration: { id: 'ig-off' } },
+        { id: 'someone-else', publishDate: new Date().toISOString(), integration: { id: 'fb-live' } },
+      ],
+      postStats: { 'moved-fb': [{ label: 'Page Impressions', data: [{ total: '0' }] }] },
+    })
+    await collectPostStats(payload)
+    const fresh = await payload.findByID({ collection: 'hq-social-drafts', id: draft.id, overrideAccess: true })
+    expect(fresh.publishAt).toBe(movedTo.toISOString())
+    expect(fresh.scheduledFor).toBe(movedTo.toISOString())
+    expect(await statsFor(draft.id)).toHaveLength(0)
+  })
+
+  it('leaves a draft alone when Postiz no longer lists its posts', async () => {
+    const draft = await publishedDraft(30, [{ platform: 'facebook', postId: 'gone-1' }])
+    fakeNetwork({ listed: [] })
+    await collectPostStats(payload)
+    const fresh = await payload.findByID({ collection: 'hq-social-drafts', id: draft.id, overrideAccess: true })
+    expect(fresh.publishAt).toBe(draft.publishAt)
+  })
+
   it('snapshots each account once a day', async () => {
     fakeNetwork()
     const first = await collectChannelStats(payload)

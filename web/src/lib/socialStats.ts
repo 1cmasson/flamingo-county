@@ -7,6 +7,7 @@ import {
   channelAnalytics,
   connectedChannels,
   findPostIds,
+  listPostTimes,
   postAnalytics,
   postizConfigured,
   summarizeMetrics,
@@ -69,8 +70,59 @@ async function idsFor(
   return found
 }
 
+/** How far ahead a moved post is looked for: the calendar is planned about a month out. */
+const AHEAD_MS = 90 * 24 * HOUR
+
+/**
+ * Bring each scheduled draft's `publishAt` and `scheduledFor` up to date with
+ * Postiz. A post dragged to another day in the Postiz calendar keeps its id,
+ * but HQ would go on measuring it from the old time: its checkpoints would
+ * come due before it was live and be skipped, and the brief would list it on
+ * the wrong day. A draft's posts go out together, so the earliest one counts.
+ * Returns how many drafts moved.
+ */
+export async function syncPublishTimes(payload: Payload, now: Date = new Date()): Promise<number> {
+  const drafts = await payload.find({
+    collection: 'hq-social-drafts',
+    where: {
+      and: [
+        { status: { equals: 'scheduled' } },
+        { publishAt: { greater_than: new Date(now.getTime() - LOOKBACK_MS).toISOString() } },
+      ],
+    },
+    limit: 200,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const withPosts = drafts.docs.filter((d) => d.postizPosts?.length && d.publishAt)
+  if (!withPosts.length) return 0
+
+  const times = await listPostTimes(new Date(now.getTime() - LOOKBACK_MS), new Date(now.getTime() + AHEAD_MS))
+  let moved = 0
+  for (const draft of withPosts) {
+    const found = (draft.postizPosts ?? []).map((p) => times.get(p.postId)).filter((t): t is Date => !!t)
+    if (!found.length) continue // deleted in Postiz, or outside the window: leave it
+    const at = new Date(Math.min(...found.map((t) => t.getTime())))
+    if (Math.abs(at.getTime() - new Date(draft.publishAt!).getTime()) < 60_000) continue
+    await payload.update({
+      collection: 'hq-social-drafts',
+      id: draft.id,
+      data: { publishAt: at.toISOString(), scheduledFor: at.toISOString() },
+      overrideAccess: true,
+      context: { [HQ_INTERNAL]: true },
+    })
+    moved++
+  }
+  return moved
+}
+
 /** Take every post checkpoint that has come due. Returns how many were saved. */
 export async function collectPostStats(payload: Payload, now: Date = new Date()): Promise<number> {
+  try {
+    await syncPublishTimes(payload, now)
+  } catch (err) {
+    console.error('[hq] syncing post times from Postiz failed:', err instanceof Error ? err.message : err)
+  }
   const drafts = await payload.find({
     collection: 'hq-social-drafts',
     where: {
