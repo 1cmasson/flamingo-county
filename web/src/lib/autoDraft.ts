@@ -7,6 +7,7 @@ import { noPrice } from '../fields/shared'
 import type { City, Event, HqSocialDraft, Listing, Media, Story } from '../payload-types'
 import { addDays, dateOnly, eventEndDay, eventRunEnd, miamiInstant, parseISO, todayISO } from './dates'
 import { HQ_INTERNAL, recordEvent, sendDraftPreview } from './hq'
+import { photoCredit } from './photoLicense'
 import type { Platform } from './postiz'
 import { routes } from './routes'
 import { SITE_URL } from './site'
@@ -146,10 +147,19 @@ async function create(
 
   const title = (en as { title?: string }).title ?? ''
   const slug = (en as { slug: string }).slug
-  // The page's photo, or for an event without one its generated card.
-  const media =
-    (await copyCover(payload, cover, `${collection} #${id}`, slug)) ??
-    (event ? await cardImage(payload, event, `${collection} #${id}`, slug) : null)
+  // An event's generated card, which frames its photo when it has one (with
+  // the credit printed on it); a story's cover photo. A card that cannot be
+  // drawn falls back to the photo itself.
+  const label = `${collection} #${id}`
+  const media = event
+    ? ((await cardImage(payload, event, label, slug)) ?? (await copyCover(payload, cover, label, slug)))
+    : await copyCover(payload, cover, label, slug)
+  // The photo's credit goes in the caption wherever the photo is in the post.
+  const coverDoc: Media | null =
+    cover && typeof cover !== 'object'
+      ? await payload.findByID({ collection: 'media', id: cover, depth: 0, overrideAccess: true }).catch(() => null)
+      : ((cover as Media | null | undefined) ?? null)
+  const credit = media ? creditLine(coverDoc) : null
   // Instagram and TikTok need media; a still goes to Facebook and Instagram.
   // TikTok is left to the owner, since it wants video.
   const platforms: Platform[] = media ? ['facebook', 'instagram'] : ['facebook']
@@ -159,7 +169,7 @@ async function create(
     collection: 'hq-social-drafts',
     data: {
       status: 'pending',
-      caption: caption(body, ''),
+      caption: caption(body, '', credit),
       platforms,
       media: media ? [media] : [],
       scheduledFor: scheduledFor.toISOString(),
@@ -178,7 +188,7 @@ async function create(
   const final = await payload.update({
     collection: 'hq-social-drafts',
     id: draft.id,
-    data: { caption: caption(body, link) },
+    data: { caption: caption(body, link, credit) },
     overrideAccess: true,
     context: { [HQ_INTERNAL]: true },
   })
@@ -267,9 +277,25 @@ function bilingual(lines: (lang: Lang) => string[]): string {
     .join('\n\n')
 }
 
-/** The body plus the link, within the limit: excerpts go first, then the tail. */
-function caption(body: (excerpts: boolean) => string, link: string): string {
-  const join = (text: string) => (link ? `${text}\n\n👉 ${link}` : text)
+/**
+ * The photo's credit line, for a post whose picture is a credited photo (or
+ * a card drawn from one): Creative Commons asks for attribution wherever the
+ * photo is used. Null when the photo carries no credit.
+ */
+export function creditLine(media: Media | null | undefined): string | null {
+  const c = photoCredit(media, 'es')
+  if (!c) return null
+  const license = c.license ? `, ${c.license}${c.licenseUrl ? ` (${c.licenseUrl})` : ''}` : ''
+  return `📷 ${c.lead}: ${c.credit}${license}`
+}
+
+/**
+ * The body plus the link and the photo's credit, within the limit: excerpts
+ * go first, then the tail of the body. The link and the credit are never cut.
+ */
+function caption(body: (excerpts: boolean) => string, link: string, credit: string | null = null): string {
+  const tail = [link ? `👉 ${link}` : '', credit ?? ''].filter(Boolean).join('\n\n')
+  const join = (text: string) => (tail ? `${text}\n\n${tail}` : text)
   const full = join(body(true))
   if (full.length <= CAPTION_MAX) return full
   const short = body(false)
@@ -402,10 +428,11 @@ async function copyCover(
 }
 
 /**
- * For an event with no photo: its generated card, Instagram's 4:5, in Spanish
- * (the audience is Spanish-first), stored in `hq-media` as a JPEG the same way
- * as a copied photo. Drawn from the published event's own fields only. Null if
- * it cannot be drawn; the draft then goes to Facebook as text, as before.
+ * An event's generated card, Instagram's 4:5, in Spanish (the audience is
+ * Spanish-first), stored in `hq-media` as a JPEG the same way as a copied
+ * photo. Drawn from the published event's own fields only, with its photo
+ * framed on it when it has one. Null if it cannot be drawn; the draft then
+ * takes the bare photo, or goes to Facebook as text.
  */
 async function cardImage(payload: Payload, ev: Event, label: string, slug: string): Promise<number | null> {
   try {
@@ -416,7 +443,7 @@ async function cardImage(payload: Payload, ev: Event, label: string, slug: strin
     const jpeg = await sharp(Buffer.from(png)).flatten({ background: '#ffffff' }).jpeg({ quality: 88 }).toBuffer()
     const created = await payload.create({
       collection: 'hq-media',
-      data: { note: `Generated card for ${label} (no photo), made when it was published` },
+      data: { note: `Generated card for ${label} (${ev.image ? 'with its photo' : 'no photo'}), made when it was published` },
       file: { data: jpeg, mimetype: 'image/jpeg', name: `${slug.slice(0, 60)}-card-${Date.now()}.jpg`, size: jpeg.length },
       overrideAccess: true,
     })

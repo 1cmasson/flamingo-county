@@ -1,16 +1,18 @@
 import { readFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { basename, join, resolve } from 'node:path'
 import { ImageResponse } from 'next/og'
+import sharp from 'sharp'
 
 import { noPrice } from '../fields/shared'
 import { translator, type Lang } from '../i18n'
-import type { City, Event, EventKind } from '../payload-types'
+import type { City, Event, EventKind, Media } from '../payload-types'
+import { photoCredit, photoCreditText } from './photoLicense'
 import { ARCHIVO_800, LUCKIEST_GUY } from './cardMetrics'
 import { EVENT_CARD_SIZES, type EventCardSize } from './eventCardUrl'
 import { eventDateLine, todayISO } from './dates'
 import { EVENT_SETTINGS, eventSetting, type EventSetting } from './eventSetting'
 import { eventVenue } from './eventVenue'
-import type { Season, SeasonCardTheme } from './seasons'
+import { sceneCreditText, type Season, type SeasonCardTheme } from './seasons'
 
 /**
  * The event card: the picture an event with no photo gets, drawn from its own
@@ -315,7 +317,7 @@ type Layout = {
   gap: { chips: number; title: number; meta: number }
   arch?: { right: number; bottom: number; width: number; height: number; border: number }
   mascotH?: number
-  brand?: { left: number; bottom: number; size: number }
+  brand?: { left?: number; right?: number; top?: number; bottom?: number; size: number }
 }
 
 const LAYOUTS: Record<EventCardSize, Layout> = {
@@ -368,6 +370,238 @@ const LAYOUTS: Record<EventCardSize, Layout> = {
   },
 }
 
+/* ------------------------------------------------------------------------ */
+/* Pictures: a venue photo in a frame, or a season's scene behind it all     */
+/* ------------------------------------------------------------------------ */
+
+/**
+ * A picture drawn into the card, read from disk and cropped by sharp to the
+ * exact box it fills (Satori reads JPEG, not the WebP Payload stores).
+ *
+ * - `frame`: an event's own photo (a licensed venue photo). It takes the
+ *   mascot arch's place, inside an ink-bordered frame with the site's hard
+ *   shadow, and the text stays on the city's halftone exactly as design C
+ *   draws it. The credit sits on a solid ink strip along the frame's bottom.
+ * - `scene`: a season's drawn scene (lib/seasons.ts) filling the whole card,
+ *   with a dark gradient where the text sits, and no mascot.
+ *
+ * `credit` is the line printed on the card (lib/photoLicense.ts makes it for
+ * a photo); `key` names the picture in the draw cache, so the bytes are never
+ * hashed.
+ */
+export type CardPicture = {
+  mode: 'frame' | 'scene'
+  file: string
+  /** Where the crop centres, 0–100 across and down (Payload's focal point). */
+  focalX?: number | null
+  focalY?: number | null
+  credit: string
+  key: string
+}
+
+type DrawnPhoto = { src: string; credit: string }
+
+type PhotoLayout = Layout & {
+  frame: { left: number; top: number; width: number; height: number; border: number; shadow: number }
+  /** The credit strip's type size. */
+  credit: number
+}
+
+/** Photo sizes. `page` is the event page's hero, which shows the photo itself. */
+type PhotoSize = 'link' | 'card' | 'social'
+const isPhotoSize = (s: EventCardSize): s is PhotoSize => s === 'link' || s === 'card' || s === 'social'
+
+const PHOTO_LAYOUTS: Record<PhotoSize, PhotoLayout> = {
+  link: {
+    // Text on the left as in design C, the photo framed on the right where
+    // the arch stood.
+    col: { left: 56, top: 36, bottom: 84, width: 580 },
+    title: { max: 112, lines: 3 },
+    chip: 22,
+    ticket: { max: 42, maxW: 580 },
+    meta: { size: 28, maxW: 580 },
+    gap: { chips: 20, title: 24, meta: 14 },
+    brand: { left: 56, bottom: 44, size: 22 },
+    frame: { left: 668, top: 38, width: 492, height: 532, border: 6, shadow: 12 },
+    credit: 15,
+  },
+  card: {
+    // The board's 4:3 slot: the photo across the top, the text under it.
+    col: { left: 40, top: 334, bottom: 22, width: 880 },
+    title: { max: 84, lines: 2 },
+    chip: 20,
+    ticket: { max: 36, maxW: 880 },
+    meta: { size: 26, maxW: 880 },
+    gap: { chips: 14, title: 16, meta: 10 },
+    frame: { left: 28, top: 24, width: 892, height: 282, border: 6, shadow: 12 },
+    credit: 17,
+  },
+  social: {
+    // Instagram's 4:5: the photo large on top, the poster's type below it.
+    col: { left: 72, top: 712, bottom: 120, width: 936 },
+    title: { max: 150, lines: 3 },
+    chip: 28,
+    ticket: { max: 54, maxW: 936 },
+    meta: { size: 34, maxW: 936 },
+    gap: { chips: 24, title: 26, meta: 18 },
+    brand: { left: 72, bottom: 64, size: 26 },
+    frame: { left: 56, top: 56, width: 956, height: 610, border: 6, shadow: 14 },
+    credit: 20,
+  },
+}
+
+type SceneLayout = Layout & {
+  /** The dark wash under the text, as a CSS gradient. */
+  wash: string
+  credit: number
+  /** Where the scene is anchored for this shape, overriding the season's own focal point. */
+  focalX?: number
+  focalY?: number
+  /**
+   * For a shape the scene cannot fill without losing most of it (the 4:5
+   * poster): where it sits instead, on its own sky colour, which it fades
+   * into at its top edge.
+   */
+  box?: { left: number; top: number; width: number; height: number; fade: number }
+  /** A tight tag behind each line of the time · place text, instead of washing over the art. */
+  panel?: string
+}
+
+/** The Halloween scene's sky at its top edge, sampled from the art. */
+const SCENE_SKY = '#390a75'
+
+/** Deep night purple, the scene's own sky, darkened. */
+const WASH = '24,10,48'
+
+/**
+ * A dark pool in the lower left, under the text, fading out before it reaches
+ * the moon at the top left or the clubhouse on the right.
+ */
+const SCENE_POOL = `radial-gradient(ellipse 760px 430px at 0px 100%, rgba(${WASH},0.9) 0%, rgba(${WASH},0.78) 55%, rgba(${WASH},0) 100%)`
+
+const SCENE_LAYOUTS: Record<EventCardSize, SceneLayout> = {
+  link: {
+    // The moon and bats stay clear: the text starts under the moon, on a
+    // soft dark pool in the lower left; the brand goes up into the sky.
+    col: { left: 56, top: 248, bottom: 34, width: 600 },
+    top: true,
+    title: { max: 92, lines: 2 },
+    chip: 20,
+    ticket: { max: 36, maxW: 600 },
+    meta: { size: 24, maxW: 600 },
+    gap: { chips: 12, title: 14, meta: 10 },
+    brand: { right: 36, top: 30, size: 18 },
+    wash: SCENE_POOL,
+    panel: `rgba(${WASH},0.82)`,
+    credit: 14,
+  },
+  page: {
+    // As `link`, without the brand: the page is the site.
+    col: { left: 56, top: 248, bottom: 34, width: 600 },
+    top: true,
+    title: { max: 92, lines: 2 },
+    chip: 20,
+    ticket: { max: 36, maxW: 600 },
+    meta: { size: 24, maxW: 600 },
+    gap: { chips: 12, title: 14, meta: 10 },
+    wash: SCENE_POOL,
+    panel: `rgba(${WASH},0.82)`,
+    credit: 14,
+  },
+  card: {
+    col: { left: 36, top: 300, bottom: 40, width: 560 },
+    top: true,
+    title: { max: 76, lines: 2 },
+    chip: 18,
+    ticket: { max: 34, maxW: 560 },
+    meta: { size: 22, maxW: 560 },
+    gap: { chips: 12, title: 12, meta: 8 },
+    wash: SCENE_POOL,
+    panel: `rgba(${WASH},0.82)`,
+    credit: 14,
+    // 4:3 loses the sides: keep the whole moon, give up some clubhouse.
+    focalX: 37,
+  },
+  social: {
+    // The text over the sky at the top; the scene, moon and clubhouse both,
+    // across the lower half, fading up into its own sky.
+    col: { left: 72, top: 80, bottom: 640, width: 936 },
+    top: true,
+    title: { max: 136, lines: 3 },
+    chip: 28,
+    ticket: { max: 52, maxW: 936 },
+    meta: { size: 34, maxW: 936 },
+    gap: { chips: 24, title: 24, meta: 16 },
+    brand: { left: 72, bottom: 60, size: 26 },
+    wash: `linear-gradient(180deg, rgba(${WASH},0.55) 0%, rgba(${WASH},0.2) 40%, rgba(${WASH},0) 50%, rgba(${WASH},0) 86%, rgba(${WASH},0.75) 100%)`,
+    panel: `rgba(${WASH},0.82)`,
+    credit: 18,
+    box: { left: 0, top: 624, width: 1080, height: 726, fade: 150 },
+    // Left of centre, so the whole moon is in.
+    focalX: 45,
+  },
+}
+
+/**
+ * `file` cropped to exactly `w`×`h` around its focal point, as a JPEG data
+ * URI: scaled to cover the box, then cut so the focal point is as near the
+ * middle as the edges allow.
+ */
+async function cropToBox(file: string, w: number, h: number, focalX = 50, focalY = 50): Promise<string> {
+  const img = sharp(file).rotate()
+  const meta = await img.metadata()
+  const upright = (meta.orientation ?? 1) >= 5
+  const iw = (upright ? meta.height : meta.width) ?? w
+  const ih = (upright ? meta.width : meta.height) ?? h
+  const scale = Math.max(w / iw, h / ih)
+  const rw = Math.max(w, Math.round(iw * scale))
+  const rh = Math.max(h, Math.round(ih * scale))
+  const clamp = (v: number, max: number) => Math.min(Math.max(0, Math.round(v)), max)
+  const left = clamp((focalX / 100) * rw - w / 2, rw - w)
+  const top = clamp((focalY / 100) * rh - h / 2, rh - h)
+  const jpeg = await img.resize(rw, rh).extract({ left, top, width: w, height: h }).jpeg({ quality: 84 }).toBuffer()
+  return `data:image/jpeg;base64,${jpeg.toString('base64')}`
+}
+
+/** The box a picture fills on this card, or null when this size has no place for one. */
+function pictureBox(picture: CardPicture, size: EventCardSize): { w: number; h: number; fx?: number; fy?: number } | null {
+  if (picture.mode === 'frame') {
+    if (!isPhotoSize(size)) return null
+    const f = PHOTO_LAYOUTS[size].frame
+    return { w: f.width - f.border * 2, h: f.height - f.border * 2 }
+  }
+  const S = SCENE_LAYOUTS[size]
+  const { width, height } = S.box ?? EVENT_CARD_SIZES[size]
+  return { w: width, h: height, fx: S.focalX, fy: S.focalY }
+}
+
+/** The media file of an event's photo, for the card: the 1920 `hero` size where there is one. */
+export function mediaFilePath(m: Media, dir: string = process.env.MEDIA_DIR || resolve('media')): string | null {
+  const name = m.sizes?.hero?.filename ?? m.filename
+  return name ? join(dir, basename(name)) : null
+}
+
+/**
+ * An event's photo as a card picture, with its credit line, or null when the
+ * event has no photo. A photo with no credit on file (the site's own) is drawn
+ * without a credit strip.
+ */
+export function eventCardPicture(ev: Event, lang: Lang): CardPicture | null {
+  const m = ev.image && typeof ev.image === 'object' ? (ev.image as Media) : null
+  if (!m?.mimeType?.startsWith('image/')) return null
+  const file = mediaFilePath(m)
+  if (!file) return null
+  const c = photoCredit(m, lang, { cropped: true, card: true })
+  return {
+    mode: 'frame',
+    file,
+    focalX: m.focalX,
+    focalY: m.focalY,
+    credit: c ? photoCreditText(c) : '',
+    key: `media:${m.id}:${m.updatedAt}`,
+  }
+}
+
 /**
  * The white dot grid over the city's colour, 22px apart. An SVG pattern drawn
  * as one image: Satori does not tile a repeating radial-gradient.
@@ -414,12 +648,110 @@ function Chip({
   )
 }
 
+/**
+ * The photo's frame and its credit strip: an ink border with the site's hard
+ * ink shadow, the photo cropped to fill it, and the credit on a solid ink strip
+ * along its bottom edge (never bare type on a busy photo).
+ */
+function PhotoFrame({ photo, L, mascotW = 0 }: { photo: DrawnPhoto; L: PhotoLayout; mascotW?: number }) {
+  const f = L.frame
+  const innerW = f.width - f.border * 2
+  const padX = Math.round(L.credit * 0.6)
+  // Clear of a small mascot standing on the frame's bottom right.
+  const stripW = innerW - (mascotW ? Math.round(mascotW * 0.85) : 0)
+  const room = stripW - padX * 2
+  const creditSize = photo.credit
+    ? fitLine(photo.credit, room, L.credit, Math.max(11, Math.round(L.credit * 0.7)), ARCHIVO_800, 0.02)
+    : 0
+  const rows = photo.credit ? breakAtSeparators(photo.credit.split(' · '), room, creditSize) : []
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        left: f.left,
+        top: f.top,
+        width: f.width,
+        height: f.height,
+        display: 'flex',
+        border: `${f.border}px solid ${INK}`,
+        background: INK,
+        boxShadow: `${f.shadow}px ${f.shadow}px 0 ${INK}`,
+      }}
+    >
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={photo.src} width={innerW} height={f.height - f.border * 2} alt="" style={{ position: 'absolute', left: 0, top: 0 }} />
+      {rows.length ? (
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          bottom: 0,
+          display: 'flex',
+          flexDirection: 'column',
+          maxWidth: stripW,
+          background: INK,
+          padding: `${Math.round(L.credit * 0.42)}px ${padX}px ${Math.round(L.credit * 0.32)}px`,
+        }}
+      >
+        {rows.map((row, i) => (
+          <div
+            key={i}
+            style={{
+              display: 'flex',
+              fontFamily: 'Archivo',
+              fontWeight: 800,
+              fontSize: creditSize,
+              lineHeight: 1.25,
+              letterSpacing: '0.02em',
+              color: CREAM,
+            }}
+          >
+            {row}
+          </div>
+        ))}
+      </div>
+      ) : null}
+    </div>
+  )
+}
+
+/** A scene's credit: one small line on an ink tab in the card's bottom right corner. */
+function SceneCredit({ credit, size, W }: { credit: string; size: number; W: number }) {
+  const padX = Math.round(size * 0.6)
+  const maxW = Math.round(W * 0.62)
+  const fontSize = fitLine(credit, maxW - padX * 2, size, 10, ARCHIVO_800, 0.02)
+  return (
+    <div
+      style={{
+        position: 'absolute',
+        right: 0,
+        bottom: 0,
+        display: 'flex',
+        maxWidth: maxW,
+        background: `rgba(12,15,20,0.82)`,
+        padding: `${Math.round(size * 0.42)}px ${padX}px ${Math.round(size * 0.32)}px`,
+        fontFamily: 'Archivo',
+        fontWeight: 800,
+        fontSize,
+        lineHeight: 1.25,
+        letterSpacing: '0.02em',
+        color: CREAM,
+      }}
+    >
+      {credit}
+    </div>
+  )
+}
+
 function Card({
   d,
   size,
   mascot,
   theme,
-  backdrop,
+  backdrop: backdropIn,
+  photo,
+  scene,
+  photoMascot = false,
 }: {
   d: EventCardData
   size: EventCardSize
@@ -427,10 +759,23 @@ function Card({
   theme: CardTheme
   /** A drawn scene (data URI) in place of the colour and halftone. */
   backdrop?: string
+  /** The event's photo in a frame where the arch stood (`PHOTO_LAYOUTS`). */
+  photo?: DrawnPhoto
+  /** A season's scene behind everything (`SCENE_LAYOUTS`). */
+  scene?: DrawnPhoto
+  /** With a photo, keep the mascot, small and without its arch. Drawn for comparison only. */
+  photoMascot?: boolean
 }) {
   const { width: W, height: H } = EVENT_CARD_SIZES[size]
-  const L = LAYOUTS[size]
+  const P = photo && isPhotoSize(size) ? PHOTO_LAYOUTS[size] : undefined
+  const S = scene && !P ? SCENE_LAYOUTS[size] : undefined
+  // The event's own photo wins over a generic drawn setting.
+  const backdrop = P || S ? undefined : backdropIn
+  const L: Layout = P ?? S ?? LAYOUTS[size]
   const colH = H - L.col.top - L.col.bottom
+  const smallMascot = P && photoMascot && mascot ? mascot : undefined
+  const smallMascotH = P ? Math.round(P.frame.height * 0.55) : 0
+  const smallMascotW = smallMascot ? Math.round((smallMascot.width / smallMascot.height) * smallMascotH) : 0
 
   const ticketText = d.dateLine
   const ticketPadX = Math.round(L.ticket.max * 0.55)
@@ -451,8 +796,9 @@ function Card({
     : colH - chipsH - L.gap.chips - L.gap.title - ticketH - metaH - 8
   const title = d.title ? fitTitle(d.title, L.col.width - 8, titleRoom, L.title.max, L.title.lines) : null
 
-  const arch = mascot ? L.arch : undefined
-  // Over a scene the mascot stands in it, so the arch goes.
+  // A photo or a season's scene takes the arch's place, mascot and all.
+  const arch = mascot && !P && !S ? L.arch : undefined
+  // Over a drawn setting the mascot stands in it, so only the arch goes.
   const showArch = !!arch && !backdrop
   const mascotH = L.mascotH ?? 0
   const mascotW = mascot ? Math.round((mascot.width / mascot.height) * mascotH) : 0
@@ -489,6 +835,8 @@ function Card({
             lineHeight: 1.2,
             color: theme.text,
             ...(backdrop ? { background: CREAM, padding: '4px 12px', marginTop: i ? 6 : 0 } : {}),
+            // Over a season's scene: each line on its own tight dark tag, not a wash over the art.
+            ...(S?.panel ? { background: S.panel, padding: `2px ${Math.round(metaSize * 0.35)}px`, alignSelf: 'flex-start' } : {}),
           }}
         >
           {row}
@@ -513,10 +861,55 @@ function Card({
       {backdrop ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={backdrop} width={W} height={H} alt="" style={{ position: 'absolute', left: 0, top: 0, objectFit: 'cover' }} />
+      ) : S && scene ? (
+        <>
+          {S.box ? (
+            <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, display: 'flex', background: SCENE_SKY }} />
+          ) : null}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={scene.src}
+            width={S.box?.width ?? W}
+            height={S.box?.height ?? H}
+            alt=""
+            style={{ position: 'absolute', left: S.box?.left ?? 0, top: S.box?.top ?? 0 }}
+          />
+          {S.box ? (
+            <div
+              style={{
+                position: 'absolute',
+                left: S.box.left,
+                top: S.box.top - 1,
+                width: S.box.width,
+                height: S.box.fade,
+                display: 'flex',
+                backgroundImage: `linear-gradient(180deg, ${SCENE_SKY} 0%, ${SCENE_SKY}00 100%)`,
+              }}
+            />
+          ) : null}
+          <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, display: 'flex', backgroundImage: S.wash }} />
+        </>
       ) : (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={halftone(W, H, theme)} width={W} height={H} alt="" style={{ position: 'absolute', left: 0, top: 0 }} />
       )}
+      {P && photo ? <PhotoFrame photo={photo} L={P} mascotW={smallMascotW} /> : null}
+      {P && smallMascot ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={smallMascot.src}
+          width={smallMascotW}
+          height={smallMascotH}
+          alt=""
+          style={{
+            position: 'absolute',
+            left: P.frame.left + P.frame.width - smallMascotW + Math.round(smallMascotW * 0.18),
+            top: P.frame.top + P.frame.height - smallMascotH + Math.round(smallMascotH * 0.1),
+          }}
+        />
+      ) : null}
+      {/* The page hero's credit is the page's own linked caption under it, so it is not printed twice. */}
+      {S && scene?.credit && size !== 'page' ? <SceneCredit credit={scene.credit} size={S.credit} W={W} /> : null}
       <div
         style={{
           position: 'absolute',
@@ -591,8 +984,10 @@ function Card({
         <div
           style={{
             position: 'absolute',
-            left: L.brand.left,
-            bottom: L.brand.bottom,
+            // Only the sides it is anchored to: Satori chokes on an undefined offset.
+            ...Object.fromEntries(
+              (['left', 'right', 'top', 'bottom'] as const).filter((k) => L.brand?.[k] !== undefined).map((k) => [k, L.brand![k]]),
+            ),
             display: 'flex',
             fontFamily: 'Archivo',
             fontWeight: 800,
@@ -620,7 +1015,10 @@ function Card({
 const cache = new Map<string, ArrayBuffer>()
 const CACHE_MAX = 48
 
-/** Any card as PNG bytes: its data, size and palette, and whose mascot stands in the arch. */
+/**
+ * Any card as PNG bytes: its data, size and palette, whose mascot stands in
+ * the arch, and the picture it draws, if any (`CardPicture`).
+ */
 async function drawCard(
   d: EventCardData,
   size: EventCardSize,
@@ -628,8 +1026,12 @@ async function drawCard(
   themeName: string,
   mascotSlug: string,
   setting: EventSetting | null = null,
+  opts: { picture?: CardPicture | null; photoMascot?: boolean } = {},
 ): Promise<ArrayBuffer> {
-  const key = `${size}|${themeName}|${mascotSlug}|${setting ?? ''}|${JSON.stringify(d)}`
+  const pic = opts.picture ?? null
+  const box = pic ? pictureBox(pic, size) : null
+  const picKey = pic && box ? `${pic.mode}|${pic.key}|${pic.focalX ?? ''},${pic.focalY ?? ''}|${pic.credit}|${opts.photoMascot ? 'm' : ''}` : ''
+  const key = `${size}|${themeName}|${mascotSlug}|${setting ?? ''}|${picKey}|${JSON.stringify(d)}`
   const hit = cache.get(key)
   if (hit) return hit
 
@@ -637,8 +1039,24 @@ async function drawCard(
   // The page card has no mascot: the page draws its own over the right side.
   const mascot = size === 'page' ? undefined : a.mascots[mascotSlug]
   const backdrop = setting ? a.settings[setting] : undefined
+  const drawn =
+    pic && box
+      ? { src: await cropToBox(pic.file, box.w, box.h, box.fx ?? pic.focalX ?? 50, box.fy ?? pic.focalY ?? 50), credit: pic.credit }
+      : undefined
   const { width, height } = EVENT_CARD_SIZES[size]
-  const res = new ImageResponse(<Card d={d} size={size} mascot={mascot} theme={theme} backdrop={backdrop} />, {
+  const card = (
+    <Card
+      d={d}
+      size={size}
+      mascot={mascot}
+      theme={theme}
+      backdrop={backdrop}
+      photo={pic?.mode === 'frame' ? drawn : undefined}
+      scene={pic?.mode === 'scene' ? drawn : undefined}
+      photoMascot={opts.photoMascot}
+    />
+  )
+  const res = new ImageResponse(card, {
     width,
     height,
     fonts: [
@@ -661,11 +1079,17 @@ export async function renderEventCard(
   lang: Lang,
   size: EventCardSize,
   today: string = todayISO(),
+  /** With a photo, keep a small mascot. Only to draw the other option for comparison; the route never passes it. */
+  opts: { photoMascot?: boolean } = {},
 ): Promise<ArrayBuffer> {
   const d = eventCardData(ev, lang, today)
-  // Only the social poster has room for a scene; the wide sizes stay flat.
-  const setting = size === 'social' ? eventSetting(ev) : null
-  return drawCard(d, size, DESIGN_C, 'c', d.citySlug, setting)
+  // An event with a photo draws it at the link, card and social sizes; the
+  // page hero shows the photo itself, so `page` stays the plain card.
+  const picture = isPhotoSize(size) ? eventCardPicture(ev, lang) : null
+  // Without one, only the social poster has room for a drawn setting; the
+  // wide sizes stay flat.
+  const setting = size === 'social' && !picture ? eventSetting(ev) : null
+  return drawCard(d, size, DESIGN_C, 'c', d.citySlug, setting, { picture, photoMascot: opts.photoMascot })
 }
 
 /**
@@ -686,10 +1110,25 @@ export function seasonCardData(season: Season, lang: Lang, year: number): EventC
   }
 }
 
+/** A season's drawn scene as a card picture, or null when the season has none. */
+export function seasonCardPicture(season: Season, lang: Lang): CardPicture | null {
+  const s = season.card.scene
+  if (!s) return null
+  return {
+    mode: 'scene',
+    file: join(ASSET_DIR, s.file),
+    focalX: s.focalX,
+    focalY: s.focalY,
+    credit: sceneCreditText(s, lang),
+    key: `scene:${s.file}`,
+  }
+}
+
 /**
- * A seasonal guide's card: the guide's hero and its og:image. `theme`
- * overrides the season's own palette, only so the other option can be drawn
- * for comparison; the route never passes it.
+ * A seasonal guide's card: the guide's hero and its og:image, over the
+ * season's scene when it has one. `theme` and `scene: false` override the
+ * season's own, only so the other option can be drawn for comparison; the
+ * route never passes them.
  */
 export async function renderSeasonCard(
   season: Season,
@@ -697,6 +1136,8 @@ export async function renderSeasonCard(
   size: EventCardSize,
   year: number,
   theme: SeasonCardTheme = season.card.theme,
+  opts: { scene?: boolean } = {},
 ): Promise<ArrayBuffer> {
-  return drawCard(seasonCardData(season, lang, year), size, SEASON_THEMES[theme], theme, season.card.mascot)
+  const picture = opts.scene === false ? null : seasonCardPicture(season, lang)
+  return drawCard(seasonCardData(season, lang, year), size, SEASON_THEMES[theme], theme, season.card.mascot, null, { picture })
 }

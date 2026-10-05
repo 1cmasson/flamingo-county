@@ -8,7 +8,9 @@ import { getCity, getEvent, getEvents, rel } from '../../../../../lib/data'
 import { dateOnly, parseISO, shortMonth, shortWeekday } from '../../../../../lib/dates'
 import type { City, EventKind, Media } from '../../../../../payload-types'
 import { JsonLd } from '../../../../../components/JsonLd'
-import { breadcrumbJsonLd, eventJsonLd, mediaUrl } from '../../../../../lib/jsonld'
+import { breadcrumbJsonLd, eventJsonLd } from '../../../../../lib/jsonld'
+import { photoCredit } from '../../../../../lib/photoLicense'
+import { PhotoCredit } from '../../../../../components/PhotoCredit'
 import { PageShell } from '../../../../../components/PageShell'
 import { MediaSlot } from '../../../../../components/MediaSlot'
 import { FULL_WIDTH_SIZES } from '../../../../../lib/srcset'
@@ -50,9 +52,9 @@ export async function generateMetadata({
   if (!isLang(lang)) return {}
   const ev = await getEvent(lang, slug)
   if (!ev) return {}
-  // No photo: the generated card, so a shared link still has a picture.
-  const photo = mediaUrl(ev.image)
-  const image = photo ?? eventCardUrl(ev, lang, 'link')
+  // The generated card, with or without a photo: a shared link always has a
+  // picture, and a photo on it carries its credit (the bare photo would not).
+  const image = eventCardUrl(ev, lang, 'link')
   return {
     title: ev.title,
     description: ev.note ?? undefined,
@@ -61,8 +63,8 @@ export async function generateMetadata({
       description: ev.note ?? undefined,
       url: routes.event(lang, slug),
       image,
-      imageSize: photo ? undefined : EVENT_CARD_SIZES.link,
-      imageAlt: photo ? undefined : ev.title,
+      imageSize: EVENT_CARD_SIZES.link,
+      imageAlt: ev.title,
     }),
     twitter: twitterCard(image),
     alternates: {
@@ -116,6 +118,8 @@ export default async function EventPage({
    */
   const hasPhoto = !!rel<Media>(ev.image)?.url
   const heroCard = hasPhoto ? null : eventCardUrl(ev, lang, 'page')
+  // The hero strip crops the photo (object-fit: cover), so the credit says so.
+  const credit = hasPhoto ? photoCredit(ev.image, lang as Lang, { cropped: true }) : null
 
   const iso = dateOnly(ev.date)
   const day = parseISO(iso).getUTCDate()
@@ -369,6 +373,9 @@ export default async function EventPage({
               />
             ) : null}
           </div>
+          {credit ? (
+            <PhotoCredit credit={credit} style={{ padding: '8px clamp(16px,3.5vw,26px) 0' }} />
+          ) : null}
 
           <div
             style={{

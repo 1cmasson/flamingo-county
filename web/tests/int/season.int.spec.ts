@@ -205,7 +205,7 @@ describe('the season card route', () => {
       ['page', { width: 1200, height: 630 }],
     ] as const) {
       for (const lang of ['es', 'en']) {
-        const res = await get('halloween', `lang=${lang}&size=${size}&v=1.2026`)
+        const res = await get('halloween', `lang=${lang}&size=${size}&v=2.2026`)
         expect(res.status).toBe(200)
         expect(res.headers.get('content-type')).toBe('image/png')
         expect(res.headers.get('cache-control')).toContain('s-maxage')
@@ -219,6 +219,6 @@ describe('the season card route', () => {
   })
 
   it('versions its URL with the year', () => {
-    expect(seasonCardUrl('halloween', 'es', 'link', 2026)).toBe('/api/og/season/halloween?lang=es&size=link&v=1.2026')
+    expect(seasonCardUrl('halloween', 'es', 'link', 2026)).toBe('/api/og/season/halloween?lang=es&size=link&v=2.2026')
   })
 })

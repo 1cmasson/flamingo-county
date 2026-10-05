@@ -17,6 +17,7 @@ import * as migration_20261002_005459_add_hq_playbook from './20261002_005459_ad
 import * as migration_20261002_020917_add_growth_loop from './20261002_020917_add_growth_loop';
 import * as migration_20261002_060000_replace_flamingo_mascot from './20261002_060000_replace_flamingo_mascot';
 import * as migration_20261005_145545_add_event_season from './20261005_145545_add_event_season';
+import * as migration_20261005_154532_add_venue_photos from './20261005_154532_add_venue_photos';
 
 export const migrations = [
   {
@@ -112,6 +113,11 @@ export const migrations = [
   {
     up: migration_20261005_145545_add_event_season.up,
     down: migration_20261005_145545_add_event_season.down,
-    name: '20261005_145545_add_event_season'
+    name: '20261005_145545_add_event_season',
+  },
+  {
+    up: migration_20261005_154532_add_venue_photos.up,
+    down: migration_20261005_154532_add_venue_photos.down,
+    name: '20261005_154532_add_venue_photos'
   },
 ];

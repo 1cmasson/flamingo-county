@@ -2,6 +2,7 @@ import { lookup } from 'dns/promises'
 import { isIP } from 'net'
 import type { MCPPluginConfig } from '@payloadcms/plugin-mcp'
 import type { Payload, PayloadRequest } from 'payload'
+import sharp from 'sharp'
 import { z } from 'zod'
 
 import { PUBLISHED } from '../fields/shared'
@@ -12,6 +13,7 @@ import { addDays, dateOnly, eventEndDay, todayISO } from './dates'
 import { miamiTime } from './hq'
 import { isRunningCount, type MetricSummary } from './postiz'
 import { PUBLISHABLE, publishStatus, requestPublish } from './publishRequests'
+import { PHOTO_LICENSES, canonicalLicenseUrl, isPhotoLicense, licenseLabel, type PhotoLicense } from './photoLicense'
 import { routes } from './routes'
 import { MESSAGE_LIMIT, esc, sendMessage, telegramConfigured } from './telegram'
 
@@ -396,14 +398,17 @@ export function isPrivateAddress(ip: string): boolean {
 }
 
 /**
- * Fetch a public https image or video into `hq-media` so a draft can use it.
+ * Fetch a file the server is pointed at, without letting it reach inside.
  *
- * The server does the fetching, so it refuses anything that could reach
- * inside: https only, every resolved address must be public, and redirects
- * are not followed (a public URL could otherwise bounce to a private one).
- * Same type and size rules as an upload in the admin.
+ * https only, no credentials or port in the URL, every resolved address
+ * public, and redirects are not followed (a public URL could otherwise bounce
+ * to a private one). When `hosts` is given, the host must be one of them,
+ * exactly. Then the type and size rules of an upload in the admin.
  */
-export async function addMediaFromUrl(req: PayloadRequest, rawUrl: string, note?: string) {
+async function fetchPublicFile(
+  rawUrl: string,
+  opts: { types: readonly string[]; typesLabel: string; limit: number; hosts?: readonly string[] },
+): Promise<{ url: URL; data: Buffer; type: string }> {
   let url: URL
   try {
     url = new URL(rawUrl)
@@ -411,30 +416,227 @@ export async function addMediaFromUrl(req: PayloadRequest, rawUrl: string, note?
     throw new Error('Not a URL.')
   }
   if (url.protocol !== 'https:') throw new Error('Only https URLs.')
+  if (url.username || url.password || url.port) throw new Error('No credentials or port in the URL.')
+  if (opts.hosts && !opts.hosts.includes(url.hostname.toLowerCase())) {
+    throw new Error(`Host "${url.hostname}" is not allowed. Only: ${opts.hosts.join(', ')}.`)
+  }
   const addresses = await lookup(url.hostname, { all: true })
   if (!addresses.length || addresses.some((a) => isPrivateAddress(a.address))) {
     throw new Error('That host is not a public address.')
   }
 
-  const res = await fetch(url, { redirect: 'error', signal: AbortSignal.timeout(60_000) })
+  let res: Response
+  try {
+    res = await fetch(url, {
+      redirect: 'error',
+      signal: AbortSignal.timeout(60_000),
+      // Wikimedia refuses requests without a descriptive User-Agent.
+      headers: { 'User-Agent': 'FlamingoCountyHQ/1.0 (+https://flamingocounty.com)' },
+    })
+  } catch (err) {
+    throw new Error(`Fetch failed (redirects are not followed): ${err instanceof Error ? err.message : String(err)}`)
+  }
+  if (res.redirected || (res.status >= 300 && res.status < 400)) {
+    throw new Error('The URL redirects, and redirects are not followed. Use the direct file URL.')
+  }
   if (!res.ok) throw new Error(`Fetch failed: HTTP ${res.status}`)
   const type = (res.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase()
-  if (!MEDIA_TYPES.includes(type)) throw new Error(`Unsupported type "${type}". JPEG, PNG or MP4 only.`)
-  if (Number(res.headers.get('content-length') ?? 0) > MEDIA_LIMIT) throw new Error('Larger than 50 MB.')
+  if (!opts.types.includes(type)) throw new Error(`Unsupported type "${type}". ${opts.typesLabel} only.`)
+  const tooBig = `Larger than ${Math.round(opts.limit / 1024 / 1024)} MB.`
+  if (Number(res.headers.get('content-length') ?? 0) > opts.limit) throw new Error(tooBig)
 
   const data = Buffer.from(await res.arrayBuffer())
-  if (data.length > MEDIA_LIMIT) throw new Error('Larger than 50 MB.')
+  if (data.length > opts.limit) throw new Error(tooBig)
+  return { url, data, type }
+}
 
+/** A filename stem from a URL's last path segment: "Hialeah_Park_Race_Track_-28830740140-". */
+function fileStem(url: URL): string {
+  let last = url.pathname.split('/').pop() || 'media'
+  try {
+    last = decodeURIComponent(last)
+  } catch {
+    // keep it as it is
+  }
+  return last.replace(/\.[^.]*$/, '').replace(/[^\w-]+/g, '-').slice(0, 60) || 'media'
+}
+
+/**
+ * Fetch a public https image or video into `hq-media` so a draft can use it.
+ * The server does the fetching, so it refuses anything that could reach
+ * inside (`fetchPublicFile`). Same type and size rules as an admin upload.
+ */
+export async function addMediaFromUrl(req: PayloadRequest, rawUrl: string, note?: string) {
+  const { url, data, type } = await fetchPublicFile(rawUrl, {
+    types: MEDIA_TYPES,
+    typesLabel: 'JPEG, PNG or MP4',
+    limit: MEDIA_LIMIT,
+  })
   const ext = type === 'video/mp4' ? 'mp4' : type === 'image/png' ? 'png' : 'jpg'
-  const base = (url.pathname.split('/').pop() || 'media').replace(/\.[^.]*$/, '').replace(/[^\w-]+/g, '-').slice(0, 60)
   const doc = await req.payload.create({
     collection: 'hq-media',
     data: { note: note ?? `From ${url.hostname}` },
-    file: { data, mimetype: type, name: `${base || 'media'}-${Date.now()}.${ext}`, size: data.length },
+    file: { data, mimetype: type, name: `${fileStem(url)}-${Date.now()}.${ext}`, size: data.length },
     req,
     overrideAccess: false,
   })
   return { id: doc.id, filename: doc.filename, mimeType: doc.mimeType, filesize: doc.filesize }
+}
+
+/* ------------------------------------------------------------------------ */
+/* Licensed venue photos, into the public media library                     */
+/* ------------------------------------------------------------------------ */
+
+/**
+ * Where a site photo may be downloaded from: Wikimedia Commons' file server,
+ * Flickr's, and the Library of Congress's. Each publishes a licence per file.
+ * Exact hostnames, no subdomains.
+ */
+export const SITE_MEDIA_HOSTS = ['upload.wikimedia.org', 'live.staticflickr.com', 'tile.loc.gov', 'loc.gov'] as const
+/** Where the description page stating the licence may be. It is linked from the public page. */
+const SOURCE_HOSTS = ['commons.wikimedia.org', 'en.wikipedia.org', 'es.wikipedia.org', 'www.flickr.com', 'flickr.com', 'www.loc.gov', 'loc.gov']
+const SITE_MEDIA_LIMIT = 40 * 1024 * 1024
+const SITE_MEDIA_TYPES = ['image/jpeg', 'image/png']
+/** Narrower than this and the 1200-wide link card would blow it up. */
+const SITE_MEDIA_MIN_WIDTH = 1000
+/** The stored original is cut to this before Payload makes its sizes (the largest is 1920). */
+const SITE_MEDIA_MAX_SIDE = 2560
+/** Room for it on the cards' credit line. */
+const CREDIT_MAX = 120
+
+export type SiteMediaArgs = {
+  url: string
+  altEs: string
+  altEn: string
+  credit: string
+  license: string
+  licenseUrl?: string | null
+  sourceUrl: string
+  modified?: boolean
+  /** Where the crops centre, 0–100 across and down (default the middle). */
+  focalX?: number
+  focalY?: number
+}
+
+const focal = (v: unknown, what: string): number | undefined => {
+  if (v === undefined || v === null) return undefined
+  const n = Number(v)
+  if (!Number.isFinite(n) || n < 0 || n > 100) throw new Error(`${what} must be 0–100.`)
+  return n
+}
+
+function httpsUrl(v: string, what: string): URL {
+  let u: URL
+  try {
+    u = new URL(v)
+  } catch {
+    throw new Error(`${what} is not a URL.`)
+  }
+  if (u.protocol !== 'https:') throw new Error(`${what} must be https.`)
+  return u
+}
+
+/**
+ * The licence deed to link. For a CC licence it must be that licence's own
+ * deed on creativecommons.org (`deed.es` and `legalcode` are fine), so a
+ * `cc-by-2.0` claim cannot point at a `by-nc` deed. Left out, it is filled in.
+ */
+export function checkLicenseUrl(license: PhotoLicense, given: string | null | undefined): string | null {
+  const canonical = canonicalLicenseUrl(license)
+  if (!given?.trim()) return canonical
+  const u = httpsUrl(given.trim(), 'licenseUrl')
+  if (!canonical) return u.toString() // public domain: whichever page says so
+  const want = new URL(canonical)
+  const path = u.pathname.replace(/(deed|legalcode)(\.[\w-]+)?$/, '').replace(/\/?$/, '/')
+  if (u.hostname !== want.hostname || path !== want.pathname) {
+    throw new Error(`licenseUrl does not match ${licenseLabel(license, 'en')}: expected ${canonical}`)
+  }
+  return canonical
+}
+
+/**
+ * Download a licensed photo of a venue into the public `media` library, with
+ * its credit, licence and source, and return its id for an event's `image`.
+ *
+ * Every rule is checked here, not only in the tool's schema:
+ * - the file comes from an allowlisted host (`SITE_MEDIA_HOSTS`), over https,
+ *   without redirects, from a public address, as a JPEG or PNG under 40 MB;
+ * - the licence is public domain or a CC licence that allows commercial reuse
+ *   and changes (`PHOTO_LICENSES`: NC and ND are not there), and a licence
+ *   URL, if given, is that licence's own deed;
+ * - a credit and an https description page are required.
+ *
+ * The photo is decoded and re-encoded (no metadata carried over) and cut to
+ * 2560 px; Payload then stores it as WebP with its sizes, like any upload.
+ *
+ * It lands in the public library, so the file has a URL from now on. It is on
+ * a page only once an event that uses it is published, and that is the
+ * owner's tap: setting an event's `image` over MCP is a draft edit.
+ */
+export async function addSiteMediaFromUrl(req: PayloadRequest, args: SiteMediaArgs) {
+  const credit = String(args.credit ?? '').replace(/\s+/g, ' ').trim()
+  if (!credit) throw new Error('A credit is required: the photographer or the institution.')
+  if (credit.length > CREDIT_MAX) throw new Error(`Credit too long (${credit.length} of ${CREDIT_MAX} characters).`)
+  const altEn = String(args.altEn ?? '').trim()
+  const altEs = String(args.altEs ?? '').trim()
+  if (!altEn || !altEs) throw new Error('Alt text is required in both languages (altEs, altEn).')
+  if (!isPhotoLicense(args.license)) {
+    throw new Error(
+      `License "${String(args.license)}" is not allowed. Only ${PHOTO_LICENSES.join(', ')}: public domain, or Creative Commons that allows commercial reuse and changes (no NC, no ND).`,
+    )
+  }
+  const license = args.license
+  const licenseUrl = checkLicenseUrl(license, args.licenseUrl)
+  const source = httpsUrl(String(args.sourceUrl ?? ''), 'sourceUrl')
+  if (!SOURCE_HOSTS.includes(source.hostname.toLowerCase())) {
+    throw new Error(`sourceUrl must be the photo's description page on ${SOURCE_HOSTS.join(', ')}.`)
+  }
+  const focalX = focal(args.focalX, 'focalX')
+  const focalY = focal(args.focalY, 'focalY')
+
+  const { url, data } = await fetchPublicFile(args.url, {
+    types: SITE_MEDIA_TYPES,
+    typesLabel: 'JPEG or PNG',
+    limit: SITE_MEDIA_LIMIT,
+    hosts: SITE_MEDIA_HOSTS,
+  })
+
+  // The bytes, not the header, decide what it is.
+  const meta = await sharp(data)
+    .metadata()
+    .catch(() => null)
+  if (!meta || (meta.format !== 'jpeg' && meta.format !== 'png') || !meta.width || !meta.height) {
+    throw new Error('Not a readable JPEG or PNG.')
+  }
+  const wide = meta.orientation && meta.orientation >= 5 ? meta.height : meta.width
+  if (wide < SITE_MEDIA_MIN_WIDTH) throw new Error(`Too small: ${wide} px wide, at least ${SITE_MEDIA_MIN_WIDTH} needed.`)
+  const jpeg = await sharp(data)
+    .rotate()
+    .resize({ width: SITE_MEDIA_MAX_SIDE, height: SITE_MEDIA_MAX_SIDE, fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: 90 })
+    .toBuffer()
+
+  const doc = await req.payload.create({
+    collection: 'media',
+    data: {
+      alt: altEn,
+      credit,
+      license,
+      licenseUrl,
+      sourceUrl: source.toString(),
+      modified: args.modified ?? true,
+      // Payload takes a focal point only with both values set, and reads 0 as unset.
+      ...(focalX !== undefined || focalY !== undefined
+        ? { focalX: Math.max(1, focalX ?? 50), focalY: Math.max(1, focalY ?? 50) }
+        : {}),
+    },
+    file: { data: jpeg, mimetype: 'image/jpeg', name: `${fileStem(url)}-${Date.now()}.jpg`, size: jpeg.length },
+    locale: 'en',
+    req,
+    overrideAccess: false,
+  })
+  await req.payload.update({ collection: 'media', id: doc.id, data: { alt: altEs }, locale: 'es', req, overrideAccess: false })
+  return { id: doc.id, filename: doc.filename, width: doc.width, height: doc.height }
 }
 
 /* ------------------------------------------------------------------------ */
@@ -552,6 +754,27 @@ export const hqMcpTools: McpTool[] = [
       guard(async () =>
         text(JSON.stringify(await addMediaFromUrl(req, String(args.url), args.note as string | undefined))),
       ),
+  },
+  {
+    name: 'hqAddSiteMediaFromUrl',
+    description:
+      'Import a LICENSED photo of a venue into the public site’s media library, with its credit, and return its id for an event’s `image` (set it with updateEvents and draft: true; it shows on the site only once the owner publishes that event). Only public domain or Creative Commons that allows commercial reuse (no NC, no ND), with attribution. Only direct file URLs on ' +
+      SITE_MEDIA_HOSTS.join(', ') +
+      ' (Wikimedia Commons, Flickr, Library of Congress), JPEG or PNG, at least 1000 px wide; no redirects. Never Google Maps/Street View, Yelp, news sites or organizer flyers. Read the licence on the description page yourself; check `findMedia` first for a photo already imported. Returns {id, filename, width, height}.',
+    parameters: {
+      url: z.string().url().describe('Direct https file URL, e.g. https://upload.wikimedia.org/wikipedia/commons/…/File.jpg'),
+      altEs: z.string().min(1).max(300).describe('Alt text in Spanish: what the photo shows'),
+      altEn: z.string().min(1).max(300).describe('Alt text in English'),
+      credit: z.string().min(1).max(CREDIT_MAX).describe('The author as the licence asks to credit them, e.g. "Phillip Pessar" or "Town of Miami Lakes"'),
+      license: z.enum(PHOTO_LICENSES).describe('The licence stated on the description page'),
+      licenseUrl: z.string().url().optional().describe('The licence deed; filled in from `license` when left out, and must match it'),
+      sourceUrl: z.string().url().describe('The description page (commons.wikimedia.org, flickr.com or loc.gov) where the licence is stated'),
+      modified: z.boolean().optional().describe('Cropped or edited (default true: the site crops every photo it shows)'),
+      focalX: z.number().min(0).max(100).optional().describe('Where crops centre across, 0–100 (default 50)'),
+      focalY: z.number().min(0).max(100).optional().describe('Where crops centre down, 0–100 (default 50); e.g. 40 to crop off empty foreground'),
+    },
+    handler: (args: Record<string, unknown>, req: PayloadRequest) =>
+      guard(async () => text(JSON.stringify(await addSiteMediaFromUrl(req, args as unknown as SiteMediaArgs)))),
   },
   {
     name: 'hqRequestPublish',

@@ -8,7 +8,7 @@ import { EVENT_CARD_SIZES, seasonCardUrl } from '../lib/eventCardUrl'
 import { eventVenue } from '../lib/eventVenue'
 import { breadcrumbJsonLd, eventJsonLd, eventListJsonLd } from '../lib/jsonld'
 import { routes } from '../lib/routes'
-import { groupByWeek, seasonWindow, type Season } from '../lib/seasons'
+import { groupByWeek, seasonWindow, type Season, type SeasonScene } from '../lib/seasons'
 import { openGraph, twitterCard } from '../lib/site'
 import { EventCard } from './EventCard'
 import { JsonLd } from './JsonLd'
@@ -59,6 +59,12 @@ export async function SeasonGuide({ season, lang }: { season: Season; lang: Lang
   ])
   const mascot = city ? rel<Media>(city.solo) : null
   const weeks = groupByWeek(events, today)
+  /**
+   * A season with a drawn scene has it as the hero card's background. The
+   * city's mascot is then left off the hero: over the scene's right side it
+   * stands on the building it depicts (compared both ways in the PR).
+   */
+  const scene = season.card.scene
 
   return (
     <PageShell>
@@ -114,7 +120,7 @@ export async function SeasonGuide({ season, lang }: { season: Season; lang: Lang
               fetchPriority="high"
               style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}
             />
-            {mascot?.url ? (
+            {mascot?.url && !scene ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={mascot.url}
@@ -134,6 +140,7 @@ export async function SeasonGuide({ season, lang }: { season: Season; lang: Lang
               />
             ) : null}
           </div>
+          {scene ? <SceneCredit scene={scene} lang={lang} /> : null}
 
           <div
             style={{
@@ -323,6 +330,39 @@ function WeekHeading({
         {count}
       </div>
     </div>
+  )
+}
+
+/**
+ * The scene's credit under the hero: art adapted from a CC BY photo is
+ * credited wherever it is shown, with the photo and the licence linked.
+ */
+function SceneCredit({ scene, lang }: { scene: SeasonScene; lang: Lang }) {
+  const link = { color: 'inherit', textDecorationThickness: '1px', textUnderlineOffset: '2px' } as const
+  return (
+    <p
+      data-scene-credit
+      style={{
+        margin: 0,
+        padding: '8px clamp(16px,3.5vw,26px) 0',
+        fontSize: 11,
+        fontWeight: 700,
+        lineHeight: 1.4,
+        letterSpacing: '0.2px',
+        color: 'var(--ink)',
+        opacity: 0.72,
+      }}
+    >
+      {scene.credit.lead[lang]}
+      <a href={scene.sourceUrl} rel="noopener" target="_blank" style={link}>
+        {scene.credit.photo[lang]}
+      </a>{' '}
+      (
+      <a href={scene.licenseUrl} rel="license noopener" target="_blank" style={link}>
+        {scene.credit.license}
+      </a>
+      )
+    </p>
   )
 }
 

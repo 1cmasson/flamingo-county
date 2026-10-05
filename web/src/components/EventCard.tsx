@@ -2,13 +2,14 @@ import Link from 'next/link'
 import type { Event, EventKind, Media } from '../payload-types'
 import { rel } from '../lib/data'
 import { routes } from '../lib/routes'
-import { dateOnly, eventDateLine, shortWeekday } from '../lib/dates'
+import { eventDateLine } from '../lib/dates'
 import { eventCardUrl, EVENT_CARD_SIZES } from '../lib/eventCardUrl'
 import { eventVenue } from '../lib/eventVenue'
+import { photoCredit } from '../lib/photoLicense'
 import type { Lang } from '../i18n'
-import { MediaSlot } from './MediaSlot'
 import { EventActions } from './EventActions'
 import { EventSource } from './EventSource'
+import { PhotoCredit } from './PhotoCredit'
 import s from './chrome.module.css'
 
 export { eventVenue }
@@ -51,10 +52,10 @@ export function eventActionStrings(t: (s: string) => string) {
  * line sits below it because it can be a link of its own (to the business),
  * and anchors cannot nest.
  *
- * Every card gets a picture. An event with a photo shows it with the badges
- * and date flag on top; one without shows its generated card (the city's
- * colour, title, date and mascot: lib/eventCard.tsx), which carries those
- * itself. Both are 4:3, so the grid keeps one shape.
+ * Every card's picture is its generated card (lib/eventCard.tsx): the city's
+ * colour, kind, title and date, with the event's photo framed beside them or,
+ * with no photo, the mascot's arch. All 4:3, so the grid keeps one shape. A
+ * photo's credit, with its links, sits under the picture.
  */
 export function EventCard({
   lang,
@@ -75,7 +76,8 @@ export function EventCard({
   const kind = rel<EventKind>(ev.kind)
   const { listing, city, name, hood } = eventVenue(ev)
   const photo = rel<Media>(ev.image)
-  const iso = dateOnly(ev.date)
+  // The card crops the photo to its frame and sets type beside it.
+  const credit = photo?.url ? photoCredit(photo, lang, { cropped: true, card: true }) : null
 
   return (
     <article
@@ -99,83 +101,23 @@ export function EventCard({
             aspectRatio: '4 / 3',
             borderBottom: '4px solid var(--ink)',
             overflow: 'hidden',
-            background: photo?.url ? 'var(--ink)' : (city?.accent ?? kind?.bg ?? 'var(--grad-pink)'),
+            // The city's colour behind the card while it loads.
+            background: city?.accent ?? kind?.bg ?? 'var(--grad-pink)',
           }}
         >
-          {photo?.url ? (
-            <MediaSlot media={photo} sizes="(max-width: 700px) 100vw, 330px" />
-          ) : (
-            // No photo: the generated card, in the 4:3 shape of this slot. It
-            // carries the city, kind, date and mascot itself, so the badges,
-            // date flag and mascot below are drawn only over a photograph.
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={eventCardUrl(ev, lang, 'card')}
-              alt=""
-              width={EVENT_CARD_SIZES.card.width}
-              height={EVENT_CARD_SIZES.card.height}
-              loading="lazy"
-              decoding="async"
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}
-            />
-          )}
-          {photo?.url ? (
-          <>
-          <div
-            style={{
-              position: 'absolute',
-              top: 10,
-              left: 10,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'flex-start',
-              gap: 6,
-            }}
-          >
-            <div
-              style={{
-                background: 'var(--ink)',
-                color: 'var(--cyan)',
-                fontWeight: 800,
-                fontSize: 10,
-                letterSpacing: '1.4px',
-                padding: '5px 8px',
-              }}
-            >
-              {city?.name}
-            </div>
-            <div
-              style={{
-                background: kind?.bg ?? 'var(--grad-pink)',
-                color: kind?.ink ?? 'var(--cream)',
-                border: '2px solid var(--ink)',
-                fontWeight: 800,
-                fontSize: 10,
-                letterSpacing: '1.4px',
-                padding: '5px 8px',
-              }}
-            >
-              {kind?.label}
-            </div>
-          </div>
-          <div
-            style={{
-              position: 'absolute',
-              right: 10,
-              top: 10,
-              background: 'var(--yellow)',
-              border: '3px solid var(--ink)',
-              padding: '6px 10px 4px',
-              fontFamily: 'var(--display)',
-              fontSize: 17,
-              lineHeight: 1,
-              transform: 'rotate(3deg)',
-            }}
-          >
-            {shortWeekday(iso, lang)} {new Date(`${iso}T12:00:00Z`).getUTCDate()}
-          </div>
-          </>
-          ) : null}
+          {/* The generated card, in the 4:3 shape of this slot: the city,
+              kind, date and title on the city's colour, with the event's
+              photo framed on it (credit printed) or the mascot's arch. */}
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={eventCardUrl(ev, lang, 'card')}
+            alt={photo?.alt ?? ''}
+            width={EVENT_CARD_SIZES.card.width}
+            height={EVENT_CARD_SIZES.card.height}
+            loading="lazy"
+            decoding="async"
+            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}
+          />
         </div>
         <div
           data-cardtitle
@@ -199,6 +141,8 @@ export function EventCard({
           flex: 1,
         }}
       >
+        {/* Out here, not on the picture: it has links, and the picture is one. */}
+        {credit ? <PhotoCredit credit={credit} style={{ fontSize: 10.5 }} /> : null}
         <div
           style={{
             fontWeight: 800,

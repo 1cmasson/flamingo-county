@@ -236,7 +236,10 @@ results for the growth review.
    - **find and update** on the HQ playbook (the growth review's notes)
    - **find** on HQ visits, and **find, create and update** on HQ experiments
      (the growth review's ledger). These start unticked on an existing key.
-   - all the **tools**
+   - **find** on media (the public site's photos, to reuse a venue photo
+     already imported). It starts unticked on an existing key.
+   - all the **tools** (a new tool, like `hqAddSiteMediaFromUrl`, starts
+     ticked)
    Copy the key; it's shown once.
 2. On the Mac, run:
 
@@ -247,9 +250,12 @@ results for the growth review.
 
 **What it can and can't reach.** Two layers: the list in `payload.config.ts`
 is what's possible at all, and a key's ticked boxes are what that key may
-use. `users`, `members`, `subscribers`, the public `media` and the jobs are
-not in the list, so no key can reach member data, visitor emails or the public
-site's uploads. Delete is off everywhere.
+use. `users`, `members`, `subscribers` and the jobs are not in the list, so
+no key can reach member data or visitor emails. The public `media` is there
+for **find** only: it is public-read anyway. Delete is off everywhere.
+
+The one way in to the public `media` is `hqAddSiteMediaFromUrl` (see *Venue
+photos*), which takes licensed photos from three archives only.
 
 **Approval stays human.** Claude can create and edit drafts, but a draft's
 `status` and HQ's bookkeeping fields refuse writes that arrive over MCP
@@ -273,6 +279,63 @@ never posted unseen: you get the current version to approve instead.
 | `hqRequestPublish` / `hqPublishStatus` | Ask you to publish a site draft (you tap Publish in Telegram), and check the answer. |
 | `hqSendTelegram` | Sends one plain-text message to your Telegram chat, headed "Claude", when you ask Claude to hand something over. It goes only to you (no chat id parameter), is escaped, refused rather than trimmed when too long, has no buttons, and is limited to 10 per 10 minutes. |
 | `hqAddDraftMediaFromUrl` | Downloads a public https JPEG, PNG or MP4 into HQ media for a draft. It refuses private and loopback hosts and doesn't follow redirects, so the server can't be pointed at itself. |
+| `hqAddSiteMediaFromUrl` | Imports a licensed venue photo into the public site's media, with its credit, licence and source, for an event's `image`. See *Venue photos*. |
+
+### Venue photos
+
+An event can show a real photo of its venue, if the photo's licence allows it.
+The owner's rule: **public domain, or Creative Commons that allows commercial
+reuse, always credited.** Never Google Maps or Street View, Yelp, news sites
+or organizer flyers.
+
+**How Claude adds one.**
+1. Find the photo on Wikimedia Commons, Flickr or the Library of Congress, and
+   read its licence on the description page.
+2. Call `hqAddSiteMediaFromUrl` with:
+   - the direct file URL
+   - alt text in both languages
+   - the credit (author)
+   - the licence
+   - the description page
+   - optionally a focal point for the crop
+3. Set the returned id as the event's `image`, in a draft.
+4. Ask for the publish with `hqRequestPublish`.
+
+Before importing, check `findMedia`: the photo may already be there.
+
+**What the tool refuses:**
+- **Hosts.** Only `upload.wikimedia.org`, `live.staticflickr.com`,
+  `tile.loc.gov` and `loc.gov`, matched exactly.
+- **Fetching.** Only https, with no redirects and no private addresses, the
+  same as the draft-media tool.
+- **Files.** Only JPEG or PNG, under 40 MB and at least 1000 px wide.
+- **Licences.** Only public domain, CC0, CC BY and CC BY-SA, versions 2.0 to
+  4.0. There is no NC or ND value, so neither can be stored. A licence URL that
+  names a different licence is refused.
+- **Credit and source.** A credit is required, and the source must be the
+  photo's description page on Commons, Flickr or loc.gov.
+
+**Where the photo goes.**
+- The file lands in the public media library, so it has a URL from then on.
+- It shows on a page only once an event that uses it is published, which is
+  your Publish tap. Setting `image` over MCP is a draft edit like any other.
+- Nothing is published around you. The drafts-only rule is about what the
+  site shows, and an imported photo shows nowhere until you publish an event
+  that uses it.
+
+**The credit, wherever the photo appears.** For example, "Foto: Phillip Pessar
+· CC BY 2.0 · recortada", with the name linked to the description page and the
+licence to its deed. It appears:
+- **Under the hero** on the event page.
+- **On the events board and the seasonal guides,** under the card.
+- **On the generated cards** (link preview, board, Instagram), printed on the
+  photo. A card made from a CC BY-SA photo is a derivative, so its line adds
+  "tarjeta CC BY-SA 4.0": the card is shared under the same licence.
+- **In the auto-drafted social post,** as a last line: "📷 Foto: Phillip
+  Pessar, CC BY 2.0 (https://creativecommons.org/licenses/by/2.0/)".
+
+The site crops every photo it shows, so "recortada" / "cropped" is always
+there. CC 3.0 and 4.0 require saying a photo was changed.
 
 ## Growth review
 
@@ -401,16 +464,19 @@ preview arrives in Telegram for Approve / Reject like any other draft:
   standfirst for a story. A field that names a price is left out, and a
   missing translation is left out rather than repeating the English. It ends
   with a `/go/fb/<draft id>` link to the Spanish page.
-- **Photo.** The page's photo is re-encoded as a JPEG into HQ media, for
-  Facebook and Instagram. An event with no photo gets its generated card
-  instead (`src/lib/eventCard.tsx`, the 1080×1350 "social" size, in Spanish),
-  so it goes to both too. A story with no cover is Facebook text only.
-  That poster stands on a drawn scene when the venue suggests one
-  (`src/lib/eventSetting.ts`): a library, a restaurant, a festival street, or
-  Miami Lakes' Main Street plaza, which is also the default for any Miami
-  Lakes event. The scenes are generic places, never a real business, locked
-  in the brand kit and bundled under `src/assets/og/settings/`. Anything else
-  gets the flat city-colour poster. The wide sizes are always flat.
+- **Photo.** An event gets its generated card (`src/lib/eventCard.tsx`, the
+  1080×1350 "social" size, in Spanish). It has the event's photo framed on it,
+  with the credit printed, or the mascot when there is no photo. A story's
+  cover photo is re-encoded as a JPEG. Either way the picture goes into HQ
+  media for Facebook and Instagram. A story with no cover is Facebook text
+  only. A credited photo adds a last line to the caption (see *Venue photos*).
+  An event with no photo has a poster that stands on a drawn scene when the
+  venue suggests one (`src/lib/eventSetting.ts`): a library, a restaurant, a
+  festival street, or Miami Lakes' Main Street plaza, which is also the default
+  for any Miami Lakes event. The scenes are generic places, never a real
+  business, locked in the brand kit and bundled under
+  `src/assets/og/settings/`. Anything else gets the flat city-colour poster.
+  The wide sizes are always flat.
 - **Time.** The next 11:30 or 19:00 Miami slot at least 30 minutes away,
   skipping any slot within 3 hours of another pending, approved or scheduled
   draft. An event's post never goes out after the event starts: if the first
