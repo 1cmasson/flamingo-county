@@ -75,7 +75,7 @@
   flex-direction: column;
   align-items: center;
   gap: 2px;
-  cursor: grab;
+  pointer-events: none;
 }
 .pinLabel {
   font-family: var(--body);
@@ -100,9 +100,6 @@
 }
 .pinYou .pinHead {
   background: #2b7bff;
-}
-.pinStop {
-  cursor: default;
 }
 .pinStop .pinLabel {
   background: var(--yellow);

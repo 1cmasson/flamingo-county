@@ -221,7 +221,9 @@ export type LeaveCopy = Record<
   | 'otherSide'
   | 'walkThere'
   | 'showBus'
-  | 'checking',
+  | 'checking'
+  | 'oneSide'
+  | 'untracked',
   string
 > & { places: Record<string, string> }
 
@@ -247,6 +249,7 @@ export function LeaveTimes({
   walkHref,
   onShowBus,
   onFirstLive,
+  oneSide,
 }: {
   route: TransitRoute
   stops: number[]
@@ -261,6 +264,8 @@ export function LeaveTimes({
   onShowBus?: (id: string) => void
   /** Told the first live bus a rider could catch, so the map can point at it. */
   onFirstLive?: (id: string | null) => void
+  /** Buses stop on both sides of the street here, but only one side is in the city's tracker. */
+  oneSide?: boolean
 }) {
   const url = stops.length ? `/api/transit/arrivals?stops=${stops.join(',')}` : null
   const { data, at: fetchedAt } = usePoll<{ arrivals: Arrival[] }>(url, 30_000)
@@ -281,7 +286,8 @@ export function LeaveTimes({
     if (data) onFirstLive?.(firstLive)
   }, [data, firstLive, onFirstLive])
 
-  if (!url) return null
+  // A stop the city's tracker doesn't list: say so, rather than show nothing.
+  if (!url) return <p style={{ margin: 0, fontSize: 16, fontWeight: 600, lineHeight: 1.45 }}>{copy.untracked}</p>
   if (!data) {
     return (
       <p role="status" style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>
@@ -289,7 +295,15 @@ export function LeaveTimes({
       </p>
     )
   }
-  if (!list.length) return <p style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{copy.none}</p>
+  const sideNote = oneSide ? <p style={{ margin: 0, fontSize: 15, fontWeight: 600, lineHeight: 1.45, color: '#3d4248' }}>{copy.oneSide}</p> : null
+  if (!list.length) {
+    return (
+      <>
+        <p style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{copy.none}</p>
+        {sideNote}
+      </>
+    )
+  }
 
   // Minutes are counted from when the server answered, so the clock is too.
   // "1:11 p. m." must not break across lines between its parts.
@@ -355,6 +369,7 @@ export function LeaveTimes({
           </div>
         )
       })}
+      {sideNote}
     </div>
   )
 }

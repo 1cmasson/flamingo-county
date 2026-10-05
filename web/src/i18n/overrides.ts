@@ -299,6 +299,16 @@ export const ES_OVERRIDES: Record<string, string> = {
   'On time.': 'A tiempo.',
   'Buses on the road right now': 'Guaguas en la calle ahora mismo',
   'City Hall': 'la Alcaldía',
+  'That spot is outside the area Hialeah’s free buses cover.': 'Ese lugar está fuera del área donde pasan las guaguas gratis de Hialeah.',
+  'Buses going the other way stop across the street. The city’s tracker doesn’t show their times at that pole.':
+    'Las guaguas que van para el otro lado paran enfrente. El rastreador de la ciudad no muestra sus horas en esa parada.',
+  'The city’s tracker doesn’t list this stop, so we can’t show bus times here. The bus still stops.':
+    'El rastreador de la ciudad no tiene esta parada, así que no podemos mostrar las horas aquí. La guagua sí para.',
+  Close: 'Cerrar',
+  'Zoom in': 'Acercar',
+  'Zoom out': 'Alejar',
+  'Map credits': 'Créditos del mapa',
+  'Use two fingers to move the map': 'Usa dos dedos para mover el mapa',
   'Call Hialeah Transit · {phone}': 'Llama a Hialeah Transit · {phone}',
   'FIND MY STOP & NEXT BUS ↓': 'MI PARADA Y LA PRÓXIMA GUAGUA ↓',
   'Prefer an app? The city’s free ETA SPOT app shows the same buses: pick “Hialeah Transit System”, then your line.':

@@ -10,7 +10,7 @@ import rm from './ridemap.module.css'
 /**
  * The street map behind "Where are you?": real streets with their names, the
  * two free lines over them, the buses where the city's tracker says they are,
- * and the rider's own spot — which they can set by tapping the map.
+ * and the rider's own spot — which they set, or move, by tapping the map.
  *
  * Streets come from OpenFreeMap (OpenStreetMap data, no key). The map library
  * is fetched only when this component mounts, from the site's own copy
@@ -36,7 +36,10 @@ function maplibre(): Promise<typeof ML> {
   return lib
 }
 
-export type RideMapCopy = Record<'label' | 'tapHint' | 'you' | 'yourStop' | 'yourBus' | 'loading' | 'failed', string>
+export type RideMapCopy = Record<
+  'label' | 'tapHint' | 'you' | 'yourStop' | 'yourBus' | 'loading' | 'failed' | 'zoomIn' | 'zoomOut' | 'close' | 'credits' | 'twoFingers',
+  string
+>
 
 export type RideMapProps = {
   only?: TransitRoute['slug']
@@ -95,6 +98,15 @@ export default function RideMap({ only, origin, target, vehicles, yourBus, descr
           pitchWithRotate: false,
           touchPitch: false,
           maxZoom: 18,
+          // MapLibre's own buttons and messages, in the page's language.
+          locale: {
+            'NavigationControl.ZoomIn': copy.zoomIn,
+            'NavigationControl.ZoomOut': copy.zoomOut,
+            'Popup.Close': copy.close,
+            'AttributionControl.ToggleAttribution': copy.credits,
+            'Map.Title': copy.label,
+            'CooperativeGesturesHandler.MobileHelpText': copy.twoFingers,
+          },
         })
         m.touchZoomRotate.disableRotation()
         m.keyboard.disableRotation()
@@ -184,13 +196,9 @@ export default function RideMap({ only, origin, target, vehicles, yourBus, descr
 
     if (origin) {
       if (!mk.origin) {
-        mk.origin = new lib.Marker({ element: pin('you', copy.you), anchor: 'bottom', draggable: true })
-          .setLngLat(lngLat(origin))
-          .addTo(m)
-        mk.origin.on('dragend', () => {
-          const p = mk.origin!.getLngLat()
-          pick.current([Number(p.lat.toFixed(6)), Number(p.lng.toFixed(6))])
-        })
+        // Not draggable: with one finger kept for scrolling the page, a drag
+        // never reaches the pin on a phone. Tapping somewhere else moves it.
+        mk.origin = new lib.Marker({ element: pin('you', copy.you), anchor: 'bottom' }).setLngLat(lngLat(origin)).addTo(m)
       } else mk.origin.setLngLat(lngLat(origin))
     } else {
       mk.origin?.remove()

@@ -70,6 +70,7 @@ export type NearMeCopy = Record<
   | 'ride'
   | 'walkFromStop'
   | 'far'
+  | 'outside'
   | 'freebee'
   | 'line',
   string
@@ -83,6 +84,8 @@ const STORE = 'fc-free-rides-origin'
 const noop = () => () => {}
 /** About a twenty-minute walk. Past that, say so first and offer Freebee. */
 const LONG_WALK_MIN = 20
+/** About five miles: not a walk to a stop at all, but somewhere the buses don't go. */
+const OUTSIDE_METERS = 8000
 
 const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (_, k) => String(v[k] ?? ''))
 const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim()
@@ -104,6 +107,14 @@ function stopIndex(routes: TransitRoute[]) {
   }
   return out
 }
+
+/**
+ * A stop with a pole on each side of the street where the city's tracker
+ * knows only one: the other direction's buses stop there too, unseen. The
+ * line's two ends have one way to go, so they don't count.
+ */
+const isOneSided = (a: NearestStop) =>
+  a.index > 0 && a.index < a.route.stations.length - 1 && a.station.points.length > 1 && a.etaIds.length === 1
 
 /** The pole a stop answer is measured to. */
 const poleOf = (a: NearestStop): LatLng => a.station.points[a.station.names.indexOf(a.stopName)] ?? a.station.points[0]
@@ -305,6 +316,7 @@ export function NearMe({
     [origin, only],
   )
   const nearestWalk = answers[0] ? walkMinutes(answers[0].meters) : 0
+  const outside = answers[0] ? answers[0].meters > OUTSIDE_METERS : false
   const target = useMemo(() => (answers[0] ? { at: poleOf(answers[0]), label: answers[0].stopName } : null), [answers])
 
   // Live buses for the map — only once the map is open.
@@ -484,11 +496,12 @@ export function NearMe({
         </div>
       ) : null}
 
-      <div ref={resultsRef} aria-live="polite" style={{ scrollMarginTop: 110 }}>
+      <div ref={resultsRef} style={{ scrollMarginTop: 110 }}>
         {origin ? (
           <div className={tr.reveal} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, justifyContent: 'space-between' }}>
-              <div style={{ fontSize: 16, fontWeight: 600, lineHeight: 1.4, minWidth: 0 }}>
+              {/* Announced when the spot changes — not the cards, whose times refresh every 30s. */}
+              <div aria-live="polite" style={{ fontSize: 16, fontWeight: 600, lineHeight: 1.4, minWidth: 0 }}>
                 {copy.showingFor} <strong style={{ fontWeight: 800 }}>{origin.label}</strong>
               </div>
               <button
@@ -504,7 +517,7 @@ export function NearMe({
             {nearestWalk > LONG_WALK_MIN ? (
               <div style={{ border: '4px solid var(--ink)', background: 'var(--yellow)', padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
                 <p style={{ margin: 0, fontWeight: 800, fontSize: 18, lineHeight: 1.4 }}>
-                  {fill(copy.far, { n: nearestWalk, mi: miles(answers[0].meters) })}
+                  {outside ? copy.outside : fill(copy.far, { n: nearestWalk, mi: miles(answers[0].meters) })}
                 </p>
                 <p style={{ margin: 0, fontWeight: 600, fontSize: 16, lineHeight: 1.45 }}>{copy.freebee}</p>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
@@ -527,6 +540,7 @@ export function NearMe({
               </div>
             ) : null}
 
+            {outside ? null : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,320px),1fr))', gap: 16 }}>
               {answers.map((a, n) => {
                 const st = ROUTE_STYLE[a.route.slug]
@@ -574,6 +588,7 @@ export function NearMe({
                         walkHref={directions}
                         onShowBus={showBus}
                         onFirstLive={n === 0 ? onFirstLive : undefined}
+                        oneSide={isOneSided(a)}
                       />
 
                       {rides.length ? (
@@ -607,6 +622,7 @@ export function NearMe({
                 )
               })}
             </div>
+            )}
           </div>
         ) : null}
       </div>

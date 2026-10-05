@@ -551,6 +551,7 @@ export function nearMeCopy(t: T): NearMeCopy {
     ride: t('~{n} min ride'),
     walkFromStop: t('{n} min walk'),
     far: t('The closest free bus stop is a {n}-minute walk (about {mi} mi).'),
+    outside: t('That spot is outside the area Hialeah’s free buses cover.'),
     freebee: t('Freebee runs free on-demand rides around Hialeah and Miami Lakes — book one in the app.'),
     line: t('{name} BUS'),
   }
@@ -576,6 +577,8 @@ export function leaveCopy(t: T): LeaveCopy {
     walkThere: t('Walk there ↗'),
     showBus: t('Show this bus on the map'),
     checking: t('Checking when the bus comes…'),
+    oneSide: t('Buses going the other way stop across the street. The city’s tracker doesn’t show their times at that pole.'),
+    untracked: t('The city’s tracker doesn’t list this stop, so we can’t show bus times here. The bus still stops.'),
     places: towardPlaces(t),
   }
 }
@@ -589,6 +592,11 @@ export function rideMapCopy(t: T): RideMapCopy {
     yourBus: t('YOUR BUS'),
     loading: t('Loading the map…'),
     failed: t('The map didn’t load. Everything below still works.'),
+    zoomIn: t('Zoom in'),
+    zoomOut: t('Zoom out'),
+    close: t('Close'),
+    credits: t('Map credits'),
+    twoFingers: t('Use two fingers to move the map'),
   }
 }
 
