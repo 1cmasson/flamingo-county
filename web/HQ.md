@@ -186,7 +186,11 @@ fetches stats live and keeps none:
   to `hq-social-stats`. Measuring every post at the same ages is what makes them
   comparable. Postiz answers `[]` until a post is live and matched, so an empty
   reply is retried hourly for 48 hours, then skipped. A gap is never stored as
-  zeros.
+  zeros. Before that, each run reads every scheduled post's time back from
+  Postiz: a post dragged to another day in the Postiz calendar is followed
+  (`publishAt` and `scheduledFor` move with it), so it is measured from when it
+  really went out and the brief lists it on the right day. Postiz's public API
+  cannot move a post, so moving one is done in Postiz, not here.
 - **Account snapshots.** Once a day, in the 6 AM Miami hour before the brief,
   each account's last seven days are saved. The brief's **Socials** section
   reads the latest one.
@@ -479,7 +483,11 @@ preview arrives in Telegram for Approve / Reject like any other draft:
   The wide sizes are always flat.
 - **Time.** The next 11:30 or 19:00 Miami slot at least 30 minutes away,
   skipping any slot within 3 hours of another pending, approved or scheduled
-  draft. An event's post never goes out after the event starts: if the first
+  draft. An event more than 3 days out is posted in its last 72 hours: the
+  first free slot from then to the start, or if those are all taken, the
+  nearest free one before (up to two weeks). So a class on the 31st published
+  on the 5th goes out the week of the 31st, and dates published together each
+  get their own week. An event's post never goes out after the event starts: if the first
   free slot is too late, the first slot at all; if even that is too late, it
   posts as soon as you approve. A run that has already started (an exhibit)
   can post until the evening of its last day. Drafts are written one at a

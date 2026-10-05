@@ -472,11 +472,19 @@ export async function addMediaFromUrl(req: PayloadRequest, rawUrl: string, note?
     typesLabel: 'JPEG, PNG or MP4',
     limit: MEDIA_LIMIT,
   })
-  const ext = type === 'video/mp4' ? 'mp4' : type === 'image/png' ? 'png' : 'jpg'
+  // Instagram takes JPEG only, and a PNG (the event poster, a screenshot)
+  // would fail there at approval time. Re-encoded here, flattened on white.
+  let file = data
+  let mimetype = type
+  if (type === 'image/png') {
+    file = await sharp(data).flatten({ background: '#ffffff' }).jpeg({ quality: 88 }).toBuffer()
+    mimetype = 'image/jpeg'
+  }
+  const ext = mimetype === 'video/mp4' ? 'mp4' : 'jpg'
   const doc = await req.payload.create({
     collection: 'hq-media',
     data: { note: note ?? `From ${url.hostname}` },
-    file: { data, mimetype: type, name: `${fileStem(url)}-${Date.now()}.${ext}`, size: data.length },
+    file: { data: file, mimetype, name: `${fileStem(url)}-${Date.now()}.${ext}`, size: file.length },
     req,
     overrideAccess: false,
   })
@@ -745,7 +753,7 @@ export const hqMcpTools: McpTool[] = [
   {
     name: 'hqAddDraftMediaFromUrl',
     description:
-      'Download a public https JPEG, PNG or MP4 (up to 50 MB) into HQ media and return its id, for the `media` field of an hq-social-drafts document. The first media id on a draft is the cover shown in Telegram. Instagram and TikTok drafts need at least one.',
+      'Download a public https JPEG, PNG or MP4 (up to 50 MB) into HQ media (a PNG is stored as JPEG, which Instagram requires) and return its id, for the `media` field of an hq-social-drafts document. The first media id on a draft is the cover shown in Telegram. Instagram and TikTok drafts need at least one.',
     parameters: {
       url: z.string().url().describe('Public https URL of the image or video'),
       note: z.string().max(200).optional().describe('Optional note, e.g. the source or credit'),

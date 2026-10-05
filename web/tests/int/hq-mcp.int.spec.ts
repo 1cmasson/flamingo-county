@@ -233,7 +233,9 @@ describe('MCP against the database', () => {
     )
     const media = await addMediaFromUrl(mcpReq, 'https://93.184.215.14/photos/flamingo.png', 'MCP-TEST')
     expect(redirectMode).toBe('error')
-    expect(media.mimeType).toBe('image/png')
+    // Stored as JPEG, which Instagram requires.
+    expect(media.mimeType).toBe('image/jpeg')
+    expect(media.filename).toMatch(/\.jpg$/)
     await payload.delete({ collection: 'hq-media', id: media.id, overrideAccess: true })
 
     vi.stubGlobal('fetch', vi.fn(async () => new Response('<html>', { headers: { 'content-type': 'text/html' } })))
