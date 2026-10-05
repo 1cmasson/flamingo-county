@@ -156,7 +156,7 @@ export type EventCardData = {
   status: string
   dateLine: string
   meta: string
-  /** A season's chip after the kind ("HALLOWEEN"): every size but the board's tile. */
+  /** A season's chip after the kind ("HALLOWEEN"), at every size. */
   season?: string
 }
 
@@ -1324,10 +1324,10 @@ export async function renderEventCard(
   // asked for by the site) stays the plain one.
   const picture = bg.kind === 'photo' && isPhotoSize(size) ? bg.picture : null
   const setting = bg.kind === 'scene' ? bg.setting : null
-  // A seasonal event wears its season's palette and chip (lib/seasons.ts) on
-  // its hero, its link preview and its social poster; the board's tile stays
-  // in the city's colour among the others.
-  const look = size === 'card' ? undefined : getSeason(ev.season)?.card.event
+  // A seasonal event wears its season's palette and chip (lib/seasons.ts) at
+  // every size: its tile on the board and the season's guide, its hero, its
+  // link preview and its social poster.
+  const look = getSeason(ev.season)?.card.event
   const d = { ...eventCardData(ev, lang, today), ...(look ? { season: look.chip[lang] } : {}) }
   const theme = look ? SEASON_THEMES[look.theme] : DESIGN_C
   return drawCard(d, size, theme, look?.theme ?? 'c', d.citySlug, setting, { picture, photoMascot: opts.photoMascot })

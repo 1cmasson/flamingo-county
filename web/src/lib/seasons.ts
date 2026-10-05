@@ -81,9 +81,9 @@ export type Season = {
     }
     /**
      * How each event tagged with the season dresses its cards: the palette
-     * in place of the city's colour, and a chip naming the season, on the
-     * event page's hero, its link preview and its social poster. The events
-     * board's tile keeps the city's design.
+     * in place of the city's colour, and a chip naming the season, at every
+     * size (the board's and the guide's tiles, the event page's hero, the
+     * link preview and the social poster).
      */
     event?: {
       theme: SeasonCardTheme
