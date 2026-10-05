@@ -8,8 +8,9 @@ import config from '@/payload.config'
 
 import { GET } from '@/app/api/og/event/[slug]/route'
 import { eventDateLine } from '@/lib/dates'
-import { eventCardData } from '@/lib/eventCard'
+import { eventCardData, renderEventCard } from '@/lib/eventCard'
 import { eventCardUrl } from '@/lib/eventCardUrl'
+import { eventSetting } from '@/lib/eventSetting'
 import { eventSource, eventVenue } from '@/lib/eventVenue'
 import type { Event } from '@/payload-types'
 
@@ -100,9 +101,52 @@ describe('what the card and the event page say', () => {
   })
 
   it('versions the card URL with the event and the design', () => {
-    expect(eventCardUrl(base, 'es', 'link')).toMatch(/^\/api\/og\/event\/sabor-fest\?lang=es&size=link&v=1\.[a-z0-9]+$/)
+    expect(eventCardUrl(base, 'es', 'link')).toMatch(/^\/api\/og\/event\/sabor-fest\?lang=es&size=link&v=2\.[a-z0-9]+$/)
     expect(eventCardUrl({ ...base, updatedAt: '2026-10-02T10:00:00.000Z' }, 'es', 'link')).not.toBe(eventCardUrl(base, 'es', 'link'))
   })
+})
+
+describe('eventSetting: the scene behind the social poster', () => {
+  const lakes = { id: 1, slug: 'lakes', name: 'MIAMI LAKES' }
+  const hialeah = { id: 2, slug: 'hialeah', name: 'HIALEAH' }
+  const community = { id: 7, slug: 'church', label: 'COMUNIDAD' }
+  const at = (place: string, city: object, extra: object = {}) =>
+    ({ id: 1, slug: 'x', title: 'x', venueType: 'place', place, city, kind: community, ...extra }) as unknown as Event
+  const atListing = (name: string, category: string, city: object) =>
+    ({ id: 1, slug: 'x', title: 'x', venueType: 'listing', listing: { id: 3, name, city, category: { id: 1, slug: category } }, kind: community }) as unknown as Event
+
+  it('picks the scene for the venues the site has posted', () => {
+    expect(eventSetting(at('Biblioteca JFK', hialeah))).toBe('library')
+    expect(eventSetting(at('Main Street', lakes))).toBe('main-street-lakes')
+    expect(eventSetting(atListing('Casa Marín Restaurant', 'food', hialeah))).toBe('restaurant')
+    expect(eventSetting(at('Milander Center for Arts & Entertainment', hialeah))).toBeNull()
+    expect(eventSetting(at('Sapphire', hialeah))).toBeNull()
+  })
+
+  it('matches whole words, without accents, and never from the kind', () => {
+    expect(eventSetting(at('Library of Hialeah', hialeah))).toBe('library')
+    expect(eventSetting(at('Cafetería La Palma', hialeah))).toBe('restaurant')
+    expect(eventSetting(at('Librería Universal', hialeah))).toBeNull()
+    expect(eventSetting(at('Calle Ocho', hialeah))).toBe('street-festival')
+    expect(eventSetting(at('Iglesia San Juan', hialeah))).toBeNull()
+  })
+
+  it('uses the listing category, then the city', () => {
+    expect(eventSetting(atListing('Sapphire', 'food', hialeah))).toBe('restaurant')
+    expect(eventSetting(atListing('The Bend', 'night', hialeah))).toBeNull()
+    expect(eventSetting(at('Town Hall', lakes))).toBe('main-street-lakes')
+    expect(eventSetting(at('Biblioteca', lakes))).toBe('library')
+  })
+
+  it('draws the social poster over the scene', async () => {
+    const ev = at('Main Street', lakes, { title: 'Sabor Fest', date: day('2026-10-10') })
+    const flat = at('Sapphire', hialeah, { title: 'Sabor Fest', date: day('2026-10-10') })
+    const scene = Buffer.from(await renderEventCard(ev, 'es', 'social', '2026-10-02'))
+    const plain = Buffer.from(await renderEventCard(flat, 'es', 'social', '2026-10-02'))
+    expect(scene.subarray(1, 4).toString()).toBe('PNG')
+    // A drawn scene does not compress like a flat colour with dots.
+    expect(scene.length).toBeGreaterThan(plain.length * 1.5)
+  }, 30000)
 })
 
 describe('the card route', () => {

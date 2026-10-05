@@ -405,6 +405,12 @@ preview arrives in Telegram for Approve / Reject like any other draft:
   Facebook and Instagram. An event with no photo gets its generated card
   instead (`src/lib/eventCard.tsx`, the 1080×1350 "social" size, in Spanish),
   so it goes to both too. A story with no cover is Facebook text only.
+  That poster stands on a drawn scene when the venue suggests one
+  (`src/lib/eventSetting.ts`): a library, a restaurant, a festival street, or
+  Miami Lakes' Main Street plaza, which is also the default for any Miami
+  Lakes event. The scenes are generic places, never a real business, locked
+  in the brand kit and bundled under `src/assets/og/settings/`. Anything else
+  gets the flat city-colour poster. The wide sizes are always flat.
 - **Time.** The next 11:30 or 19:00 Miami slot at least 30 minutes away,
   skipping any slot within 3 hours of another pending, approved or scheduled
   draft. An event's post never goes out after the event starts: if the first
