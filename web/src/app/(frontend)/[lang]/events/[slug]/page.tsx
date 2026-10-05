@@ -119,8 +119,11 @@ export default async function EventPage({
    */
   const hasPhoto = !!rel<Media>(ev.image)?.url
   const heroCard = hasPhoto ? null : eventCardUrl(ev, lang, 'page')
-  // A seasonal event's hero card is drawn in its season's palette (lib/seasons.ts).
-  const seasonGround = heroCard ? getSeason(ev.season)?.card.event?.ground : undefined
+  // A seasonal event's look (lib/seasons.ts): its hero card is drawn in the
+  // season's palette, and a photo hero carries the season's badge instead.
+  const season = getSeason(ev.season)
+  const seasonLook = season?.card.event
+  const seasonGround = heroCard ? seasonLook?.ground : undefined
   // The hero strip crops the photo (object-fit: cover), so the credit says so.
   const credit = hasPhoto ? photoCredit(ev.image, lang as Lang, { cropped: true }) : null
 
@@ -271,6 +274,21 @@ export default async function EventPage({
               >
                 {kind?.label}
               </div>
+              {season && seasonLook ? (
+                <div
+                  style={{
+                    background: season.accent,
+                    color: seasonLook.ground,
+                    border: '3px solid var(--ink)',
+                    fontWeight: 800,
+                    fontSize: 11,
+                    letterSpacing: '1.5px',
+                    padding: '6px 9px',
+                  }}
+                >
+                  {seasonLook.chip[lang]}
+                </div>
+              ) : null}
               {eventStatusLabel(ev, t) ? (
                 <div
                   style={{

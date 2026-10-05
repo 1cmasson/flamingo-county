@@ -76,8 +76,10 @@ export type CardTheme = {
   ticketText: string
   archBg: string
   archBorder: string
-  /** A tint over a wide scene, under the text's ground: Halloween's dusk. */
+  /** A tint over a drawn scene, under the text's ground: Halloween's dusk. */
   sceneWash?: string
+  /** Over the poster's portrait scene: a shade from the top, so the title sits on the palette's ground. */
+  backdropShade?: string
 }
 
 const DESIGN_C: CardTheme = {
@@ -120,7 +122,7 @@ export const SEASON_THEMES: Record<SeasonCardTheme, CardTheme> = {
     ticketText: INK,
   },
   /**
-   * A Halloween event's hero: the Hialeah Park scene's night purple in place
+   * A Halloween event's card: the Hialeah Park scene's night purple in place
    * of the city's colour, orange dots and title, and the scene behind tinted
    * towards dusk. The city keeps its own colour on its chip.
    */
@@ -137,6 +139,8 @@ export const SEASON_THEMES: Record<SeasonCardTheme, CardTheme> = {
     archBg: CREAM,
     archBorder: ORANGE,
     sceneWash: 'rgba(57,10,117,0.3)',
+    // The title sits in the poster's top 45%; the mascot and the place below stay clear.
+    backdropShade: 'linear-gradient(180deg, rgba(57,10,117,0.94) 0%, rgba(57,10,117,0.85) 36%, rgba(57,10,117,0) 58%)',
   },
 }
 
@@ -152,7 +156,7 @@ export type EventCardData = {
   status: string
   dateLine: string
   meta: string
-  /** A season's chip after the kind ("HALLOWEEN"), on the event page's hero only. */
+  /** A season's chip after the kind ("HALLOWEEN"): every size but the board's tile. */
   season?: string
 }
 
@@ -342,6 +346,34 @@ function breakAtSeparators(parts: string[], maxW: number, size: number): string[
 function fitLine(text: string, maxW: number, max: number, min: number, table: Record<string, number>, spacingEm = 0) {
   const at1 = width(text, table, 1, spacingEm)
   return Math.max(min, Math.min(max, Math.floor(maxW / Math.max(at1, 0.01))))
+}
+
+/** The space between chips, across and between rows. */
+const CHIP_GAP = 10
+
+/**
+ * How many rows the chips wrap into across `maxW`, measured as `Chip` draws
+ * them: upper case, tracked 0.08em, padded, and the outlined kind chip's
+ * border on both sides.
+ */
+function chipRows(d: EventCardData, size: number, maxW: number): number {
+  const chips = [
+    [d.city, 0],
+    [d.kind, 6],
+    [d.status, 0],
+    [d.season, 0],
+  ] as const
+  let rows = 0
+  let x = 0
+  for (const [text, border] of chips) {
+    if (!text) continue
+    const w = width(text.toLocaleUpperCase(), ARCHIVO_800, size, 0.08) + Math.round(size * 0.64) * 2 + border
+    if (!rows || x + CHIP_GAP + w > maxW) {
+      rows++
+      x = w
+    } else x += CHIP_GAP + w
+  }
+  return Math.max(1, rows)
 }
 
 /* ------------------------------------------------------------------------ */
@@ -949,7 +981,10 @@ function Card({
   const metaRows = d.meta ? breakAtSeparators(d.meta.split(' · '), metaW, metaSize) : []
   const metaH = d.meta ? L.gap.meta + metaRows.length * metaSize * 1.2 : 0
 
-  const chipsH = L.chip * 1.2 + Math.round(L.chip * 0.32) * 2 + 6
+  // A season's chip can push the row past the column and wrap it, so the title gets the rows' real height.
+  const chipRowH = L.chip * 1.2 + Math.round(L.chip * 0.32) * 2 + 6
+  const rows = chipRows(d, L.chip, L.col.width)
+  const chipsH = rows * chipRowH + (rows - 1) * CHIP_GAP
   const titleRoom = L.titleBottom
     ? L.titleBottom - L.col.top - chipsH - L.gap.chips
     : colH - chipsH - L.gap.chips - L.gap.title - ticketH - metaH - 8
@@ -996,7 +1031,8 @@ function Card({
             fontSize: metaSize,
             lineHeight: 1.2,
             color: theme.text,
-            ...(backdrop ? { background: CREAM, padding: '4px 12px', marginTop: i ? 6 : 0 } : {}),
+            // On its cream strip the line is ink, whatever the palette's own text colour.
+            ...(backdrop ? { background: CREAM, color: INK, padding: '4px 12px', marginTop: i ? 6 : 0 } : {}),
             // Over a season's scene: each line on its own tight dark tag, not a wash over the art.
             ...(S?.panel ? { background: S.panel, padding: `2px ${Math.round(metaSize * 0.35)}px`, alignSelf: 'flex-start' } : {}),
           }}
@@ -1021,8 +1057,16 @@ function Card({
       }}
     >
       {backdrop ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={backdrop} width={W} height={H} alt="" style={{ position: 'absolute', left: 0, top: 0, objectFit: 'cover' }} />
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={backdrop} width={W} height={H} alt="" style={{ position: 'absolute', left: 0, top: 0, objectFit: 'cover' }} />
+          {theme.sceneWash ? (
+            <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, display: 'flex', background: theme.sceneWash }} />
+          ) : null}
+          {theme.backdropShade ? (
+            <div style={{ position: 'absolute', left: 0, top: 0, width: W, height: H, display: 'flex', backgroundImage: theme.backdropShade }} />
+          ) : null}
+        </>
       ) : Wd && wideIn ? (
         <>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -1101,7 +1145,7 @@ function Card({
           alignItems: 'flex-start',
         }}
       >
-        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: L.gap.chips }}>
+        <div style={{ display: 'flex', gap: CHIP_GAP, flexWrap: 'wrap', marginBottom: L.gap.chips }}>
           {d.city ? (
             <Chip text={d.city} size={L.chip} solid color={d.citySlug === 'lakes' ? CYAN : YELLOW} theme={theme} />
           ) : null}
@@ -1183,7 +1227,7 @@ function Card({
             fontSize: L.brand.size,
             letterSpacing: '0.12em',
             color: theme.text,
-            ...(backdrop ? { background: CREAM, padding: '8px 14px 6px', marginLeft: -14 } : {}),
+            ...(backdrop ? { background: CREAM, color: INK, padding: '8px 14px 6px', marginLeft: -14 } : {}),
           }}
         >
           FLAMINGOCOUNTY.COM
@@ -1280,8 +1324,10 @@ export async function renderEventCard(
   // asked for by the site) stays the plain one.
   const picture = bg.kind === 'photo' && isPhotoSize(size) ? bg.picture : null
   const setting = bg.kind === 'scene' ? bg.setting : null
-  // A seasonal event's hero wears its season's palette and chip (lib/seasons.ts).
-  const look = size === 'page' ? getSeason(ev.season)?.card.event : undefined
+  // A seasonal event wears its season's palette and chip (lib/seasons.ts) on
+  // its hero, its link preview and its social poster; the board's tile stays
+  // in the city's colour among the others.
+  const look = size === 'card' ? undefined : getSeason(ev.season)?.card.event
   const d = { ...eventCardData(ev, lang, today), ...(look ? { season: look.chip[lang] } : {}) }
   const theme = look ? SEASON_THEMES[look.theme] : DESIGN_C
   return drawCard(d, size, theme, look?.theme ?? 'c', d.citySlug, setting, { picture, photoMascot: opts.photoMascot })
