@@ -408,7 +408,7 @@ export function RouteStrip({
   const lineVar = { '--line': ROUTE_STYLE[route.slug].color } as React.CSSProperties
 
   return (
-    <ol className={tr.strip} style={lineVar} aria-label={fill(t('Stops on the {name} line'), { name: route.name })}>
+    <ol className={tr.strip} style={lineVar} data-strip={route.slug} aria-label={fill(t('Stops on the {name} line'), { name: route.name })}>
       {items.map((it) => {
         if (it.kind === 'gap') {
           return (
@@ -619,6 +619,7 @@ export function busWordsCopy(t: T): BusWordsCopy {
     noToward: t('{name} bus.'),
     nextIn: t('Next stop: {stop} · in ~{n} min'),
     arriving: t('Arriving at {stop} now'),
+    next: t('Next stop: {stop}'),
     late: t('{n} min late.'),
     onTime: t('On time.'),
     places: towardPlaces(t),

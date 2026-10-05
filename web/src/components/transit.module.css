@@ -42,7 +42,8 @@
   top: 22px;
 }
 .row:last-child::before {
-  bottom: calc(100% - 22px);
+  /* --node-y: the last stop's dot, set by StripLive when a bus card moves it. */
+  bottom: calc(100% - var(--node-y, 22px));
 }
 
 /* A folded run of stops: the same rail, ticked, so it reads as "more here". */

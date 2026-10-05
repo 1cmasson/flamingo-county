@@ -184,7 +184,6 @@ export default async function FreeRidesPage({ params }: { params: Promise<{ lang
                 rail: 'Metrorail',
                 liveStatus: t('LIVE · {n} BUSES · {s}S AGO'),
                 liveNote: t('Live positions from the City of Hialeah’s ETA SPOT tracker, every 15 seconds.'),
-                busTitle: t('{name} bus · next stop {stop}{delay}'),
                 late: t(' · {n} min late'),
                 onTime: t(' · on time'),
                 tapBus: t('Tap a bus to see where it’s going and when it gets to its next stop.'),

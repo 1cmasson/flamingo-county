@@ -39,7 +39,6 @@ export function CityMap({
     rail: string
     liveStatus: string
     liveNote: string
-    busTitle: string
     late: string
     onTime: string
     tapBus: string
@@ -88,7 +87,8 @@ export function CityMap({
         <svg
           ref={svgRef}
           viewBox={`0 0 ${w} ${h}`}
-          role="img"
+          // A group, not an image: the buses and spots inside are controls.
+          role="group"
           aria-labelledby={`${id}-t`}
           data-play={play ? '' : undefined}
           className={cm.map}
@@ -275,7 +275,7 @@ export function CityMap({
       </div>
 
       {live ? (
-        <div aria-live="polite" className={cm.busCard} data-on={pickedBus ? '' : undefined}>
+        <div className={cm.busCard} data-on={pickedBus ? '' : undefined}>
           {pickedBus ? (
             <>
               <span>{busSentence(pickedBus, busWords)}</span>

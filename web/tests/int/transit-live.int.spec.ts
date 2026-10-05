@@ -205,10 +205,25 @@ describe('where each bus stops next', () => {
     expect(v.nextStop).toBeTruthy()
     // Due at STOP_INDEX in 10 minutes, running 2 late — if that stop is one of ours.
     const flamingo = TRANSIT.routes.find((r) => r.slug === 'flamingo')!
-    const ours = flamingo.stations.find((s) => (s.eta ?? []).includes(trip.stops[STOP_INDEX]))
-    if (ours) {
-      expect(v.nextStationId).toBe(ours.id)
-      expect(v.nextInMin).toBe(12)
+    const ours = flamingo.stations.find((s) => (s.eta ?? []).includes(trip.stops[STOP_INDEX]))!
+    expect(ours).toBeDefined()
+    expect(v.nextStationId).toBe(ours.id)
+    expect(v.nextInMin).toBe(12)
+  })
+})
+
+describe('a late bus with no delay reported', () => {
+  it('is "arriving" at the stop it is heading to, on the strip and in arrivals alike', () => {
+    // Five minutes past its time at STOP_INDEX, and still short of it.
+    const now = miami(at(trip.secs[STOP_INDEX] + 300))
+    const feed: Feed = {
+      headerTs: now.getTime() / 1000,
+      vehicles: [{ id: 'late', tripId, lat: 25.86, lng: -80.3, bearing: 0, seq: trip.seq0 + STOP_INDEX, stopId: String(stop), ts: now.getTime() / 1000 }],
+      delays: new Map(),
     }
+    const [v] = snapshotFrom(feed, now.getTime()).vehicles
+    expect(v.nextInMin).toBe(0)
+    const live = arrivalsFrom(feed, [stop], now, 8).find((a) => a.vehicleId === 'late')
+    expect(live?.minutes).toBe(0)
   })
 })
