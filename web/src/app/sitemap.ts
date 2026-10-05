@@ -3,6 +3,7 @@ import { LOCALES, type Lang } from '../i18n'
 import { routes } from '../lib/routes'
 import { getCities, getEvents, getListings, getStories, rel } from '../lib/data'
 import { absUrl } from '../lib/site'
+import { ROUTE_SLUGS } from '../lib/transit'
 import type { City } from '../payload-types'
 
 // Reads Payload at request time; a container build runs against an empty DB.
@@ -35,6 +36,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...both(routes.stories, undefined, 0.7),
     ...both(routes.about, undefined, 0.4),
     ...both(routes.listYourSpot, undefined, 0.4),
+    ...both(routes.freeRides, undefined, 0.7),
+    ...ROUTE_SLUGS.flatMap((r) => both((l) => routes.freeRoute(l, r), undefined, 0.6)),
     ...cities.flatMap((c) => both((l) => routes.city(l, c.slug), c.updatedAt, 0.9)),
     ...listings.flatMap((b) => {
       // The page 404s unless the city matches, so a listing with no city has no URL.

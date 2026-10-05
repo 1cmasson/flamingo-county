@@ -1,3 +1,4 @@
+import { Suspense } from 'react'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
@@ -18,6 +19,7 @@ import { JsonLd } from '../../../../../components/JsonLd'
 import { breadcrumbJsonLd, listingJsonLd, mediaUrl, titleCase } from '../../../../../lib/jsonld'
 import { PageShell } from '../../../../../components/PageShell'
 import { MediaSlot } from '../../../../../components/MediaSlot'
+import { FreeRidePanel } from '../../../../../components/Transit'
 import { FULL_WIDTH_SIZES } from '../../../../../lib/srcset'
 import s from '../../../../../components/chrome.module.css'
 
@@ -643,6 +645,14 @@ export default async function BusinessPage({
                 ) : null}
               </section>
             ) : null}
+
+            {/* The free way here. It may wait on a geocode, so it streams in
+                rather than holding the page; nothing renders while it waits,
+                because a placeholder for a panel that may not exist is worse
+                than a panel that arrives a moment late. */}
+            <Suspense fallback={null}>
+              <FreeRidePanel listing={listing} lang={lang} t={t} />
+            </Suspense>
 
             {d.crewLine ? (
               <section

@@ -17,6 +17,9 @@ import type { City, Media } from '../../../../payload-types'
 import { JsonLd } from '../../../../components/JsonLd'
 import { breadcrumbJsonLd, itemListJsonLd, titleCase } from '../../../../lib/jsonld'
 import { PageShell } from '../../../../components/PageShell'
+import { LineBullet } from '../../../../components/Transit'
+import tr from '../../../../components/transit.module.css'
+import { TRANSIT } from '../../../../lib/transit'
 import { BusinessCard } from '../../../../components/BusinessCard'
 import { SearchForm } from '../../../../components/SearchForm'
 import { buildSrcSet } from '../../../../lib/srcset'
@@ -260,6 +263,28 @@ export default async function CityPage({
                 {t('LIST YOUR BUSINESS')}
               </Link>
             </div>
+            {slug === 'hialeah' || slug === 'lakes' ? (
+              <Link
+                href={routes.freeRides(lang)}
+                className={tr.place}
+                style={{ alignSelf: 'flex-start', justifyContent: 'flex-start', gap: 10, maxWidth: '100%' }}
+              >
+                {slug === 'hialeah' ? (
+                  <span style={{ display: 'inline-flex' }}>
+                    {TRANSIT.routes.map((r, i) => (
+                      <span key={r.slug} style={{ marginLeft: i ? -8 : 0 }}>
+                        <LineBullet route={r} size={28} />
+                      </span>
+                    ))}
+                  </span>
+                ) : null}
+                <span style={{ fontWeight: 800, fontSize: 14, lineHeight: 1.3 }}>
+                  {slug === 'hialeah'
+                    ? t('Two free bus lines cross Hialeah. See where they stop →')
+                    : t('Getting around Miami Lakes for free →')}
+                </span>
+              </Link>
+            ) : null}
           </div>
 
           <div

@@ -196,6 +196,12 @@ export async function Nav({ lang }: { lang: Lang }) {
                 background: 'var(--grad-cream)',
               },
               {
+                href: routes.freeRides(lang),
+                label: t('FREE RIDES'),
+                shadow: 'var(--cyan)',
+                background: 'var(--grad-cream)',
+              },
+              {
                 href: routes.myWeek(lang),
                 label: t('MY WEEK'),
                 shadow: 'var(--cyan)',

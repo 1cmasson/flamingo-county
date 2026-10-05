@@ -1,0 +1,239 @@
+'use client'
+
+import type * as React from 'react'
+import { useEffect, useId, useRef, useState } from 'react'
+import type { CityMapModel } from '../lib/citymap'
+import cm from './citymap.module.css'
+
+/**
+ * Hialeah with its two free lines, animated: the city settles in, the lines
+ * draw themselves out from their first stop, the spots pop on, and then the
+ * buses run.
+ *
+ * The buses are an illustration of the timetable, not live positions — the
+ * caption says so. Their count on each line is the real one (round trip ÷
+ * minutes between buses), so a glance shows how often a bus comes, which is
+ * the thing the page is trying to say. When the city's hours say the buses
+ * aren't out, they sit parked at the end of the line instead.
+ *
+ * Motion runs only while the map is on screen: an IntersectionObserver starts
+ * the draw-in when it first appears and pauses the SMIL clock whenever it
+ * leaves. Reduced motion gets the finished map with no buses moving.
+ */
+export function CityMap({
+  model,
+  running,
+  copy,
+}: {
+  model: CityMapModel
+  running: boolean
+  copy: { title: string; status: string; note: string; spots: string; rail: string }
+}) {
+  const id = useId().replace(/:/g, '')
+  const svgRef = useRef<SVGSVGElement>(null)
+  const [play, setPlay] = useState(false)
+
+  useEffect(() => {
+    const svg = svgRef.current
+    if (!svg) return
+    svg.pauseAnimations()
+    const io = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          setPlay(true)
+          svg.unpauseAnimations()
+        } else svg.pauseAnimations()
+      },
+      { threshold: 0.25 },
+    )
+    io.observe(svg)
+    return () => io.disconnect()
+  }, [])
+
+  const { w, h } = model
+
+  return (
+    <figure style={{ margin: 0, display: 'flex', flexDirection: 'column', gap: 10 }}>
+      <div className={cm.frame}>
+        <svg
+          ref={svgRef}
+          viewBox={`0 0 ${w} ${h}`}
+          role="img"
+          aria-labelledby={`${id}-t`}
+          data-play={play ? '' : undefined}
+          className={cm.map}
+        >
+          <title id={`${id}-t`}>{copy.title}</title>
+          <defs>
+            <clipPath id={`${id}-clip`}>
+              <rect width={w} height={h} />
+            </clipPath>
+            {model.lines.map((l) => (
+              <path key={l.slug} id={`${id}-${l.slug}`} d={l.d} />
+            ))}
+          </defs>
+
+          <g clipPath={`url(#${id}-clip)`}>
+            {/* --- the ground --- */}
+            <rect width={w} height={h} fill="#eadbbd" />
+            <g className={cm.ground}>
+              {model.places.map((p) => (
+                <path
+                  key={p.name}
+                  d={p.d}
+                  fill={p.home ? '#fffaf0' : '#f5e9d0'}
+                  stroke="var(--ink)"
+                  strokeWidth={p.home ? 3 : 1.5}
+                  strokeDasharray={p.home ? undefined : '5 4'}
+                  strokeOpacity={p.home ? 1 : 0.45}
+                  strokeLinejoin="round"
+                  fillRule="evenodd"
+                />
+              ))}
+              {model.roads
+                .filter((r) => r.kind === 'secondary')
+                .map((r, i) => (
+                  <path key={`s${i}`} d={r.d} fill="none" stroke="var(--ink)" strokeOpacity={0.16} strokeWidth={1.6} strokeLinecap="round" />
+                ))}
+              {model.roads
+                .filter((r) => r.kind === 'primary')
+                .map((r, i) => (
+                  <path key={`p${i}`} d={r.d} fill="none" stroke="var(--ink)" strokeOpacity={0.3} strokeWidth={3.2} strokeLinecap="round" />
+                ))}
+              {model.places
+                .filter((p) => p.label)
+                .map((p) =>
+                  p.home ? (
+                    <text key={p.name} x={p.label![0]} y={p.label![1]} textAnchor="middle" className={cm.home}>
+                      {p.name.toUpperCase()}
+                    </text>
+                  ) : (
+                    <text key={p.name} x={p.label![0]} y={p.label![1]} textAnchor="middle" className={cm.town}>
+                      {p.name.toUpperCase()}
+                    </text>
+                  ),
+                )}
+              {/* Metrorail: an ink track with a cream dash, the railway look. */}
+              <path d={model.rail} fill="none" stroke="var(--ink)" strokeWidth={5} strokeLinecap="round" strokeLinejoin="round" />
+              <path d={model.rail} fill="none" stroke="var(--cream)" strokeWidth={1.8} strokeDasharray="5 5" />
+            </g>
+
+            {/* --- the lines, drawn out from the first stop --- */}
+            {model.lines.map((l, i) => (
+              <g key={l.slug} style={{ '--delay': `${i * 280}ms` } as React.CSSProperties}>
+                <path d={l.d} pathLength={1} className={cm.draw} fill="none" stroke="var(--ink)" strokeWidth={11} strokeLinejoin="round" strokeLinecap="round" />
+                <path d={l.d} pathLength={1} className={cm.draw} fill="none" stroke={l.color} strokeWidth={5.5} strokeLinejoin="round" strokeLinecap="round" />
+              </g>
+            ))}
+
+            {model.transfer ? (
+              <g className={cm.pop} style={{ '--i': 0 } as React.CSSProperties}>
+                <circle cx={model.transfer[0]} cy={model.transfer[1]} r={11} fill="var(--cream)" stroke="var(--ink)" strokeWidth={3} />
+                <circle cx={model.transfer[0]} cy={model.transfer[1]} r={5} fill="var(--ink)" />
+              </g>
+            ) : null}
+
+            {/* --- the buses --- */}
+            {running ? (
+              <g className={`${cm.buses} ${cm.moving}`}>
+                {model.lines.flatMap((l) =>
+                  Array.from({ length: l.buses }, (_, i) => (
+                    <g key={`${l.slug}-${i}`}>
+                      <Bus color={l.color} />
+                      <animateMotion
+                        dur={`${l.cycle}s`}
+                        begin={`-${((l.cycle / l.buses) * i).toFixed(2)}s`}
+                        repeatCount="indefinite"
+                        keyPoints="0;1;0"
+                        keyTimes="0;0.5;1"
+                        calcMode="linear"
+                        rotate="auto"
+                      >
+                        <mpath href={`#${id}-${l.slug}`} />
+                      </animateMotion>
+                    </g>
+                  )),
+                )}
+              </g>
+            ) : (
+              <g className={cm.buses}>
+                {model.lines.map((l) => (
+                  <g key={l.slug} transform={`translate(${l.start[0] + 14} ${l.start[1] + 16})`}>
+                    <Bus color={l.color} />
+                  </g>
+                ))}
+              </g>
+            )}
+
+            {/* --- the spots: links, labelled on hover and focus --- */}
+            {model.spots.map((s, i) => {
+              const right = s.x > w * 0.62
+              const label = s.name.length > 26 ? `${s.name.slice(0, 25)}…` : s.name
+              const lw = label.length * 6.6 + 16
+              return (
+                <a key={s.href} href={s.href} className={cm.spot} aria-label={s.name}>
+                  <g className={cm.pop} style={{ '--i': i + 1 } as React.CSSProperties}>
+                    <circle cx={s.x} cy={s.y} r={14} fill="transparent" />
+                    <circle cx={s.x} cy={s.y} r={7} fill="var(--yellow)" stroke="var(--ink)" strokeWidth={3} />
+                  </g>
+                  <g className={cm.tag} transform={`translate(${right ? s.x - 12 - lw : s.x + 12} ${s.y - 12})`}>
+                    <rect width={lw} height={24} fill="var(--ink)" />
+                    <text x={8} y={16} className={cm.tagText}>
+                      {label}
+                    </text>
+                  </g>
+                </a>
+              )
+            })}
+
+            {/* --- line bullets at the first stop --- */}
+            {model.lines.map((l) => (
+              <g key={`b-${l.slug}`} className={cm.pop} style={{ '--i': 0 } as React.CSSProperties}>
+                <circle cx={l.start[0]} cy={l.start[1]} r={13} fill={l.color} stroke="var(--ink)" strokeWidth={3} />
+                <text x={l.start[0]} y={l.start[1] + 5.5} textAnchor="middle" className={cm.bullet} fill={l.ink}>
+                  {l.name[0]}
+                </text>
+              </g>
+            ))}
+          </g>
+        </svg>
+
+        <div className={cm.status} data-live={running ? '' : undefined}>
+          <span className={cm.statusDot} />
+          {copy.status}
+        </div>
+      </div>
+
+      <figcaption style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px 14px', fontSize: 12, fontWeight: 800 }}>
+        {model.lines.map((l) => (
+          <span key={l.slug} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <span aria-hidden="true" style={{ width: 22, height: 7, background: l.color, border: '2px solid var(--cream)' }} />
+            {l.name}
+          </span>
+        ))}
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span aria-hidden="true" style={{ width: 12, height: 12, borderRadius: '50%', background: 'var(--yellow)', border: '2px solid var(--cream)' }} />
+          {copy.spots}
+        </span>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span
+            aria-hidden="true"
+            style={{ width: 22, height: 5, background: 'repeating-linear-gradient(90deg, var(--cream) 0 5px, transparent 5px 9px)', border: '1px solid var(--cream)' }}
+          />
+          {copy.rail}
+        </span>
+        <span style={{ flexBasis: '100%', fontWeight: 600, color: '#c9ced4' }}>{copy.note}</span>
+      </figcaption>
+    </figure>
+  )
+}
+
+/** A bus, centred on its own origin so animateMotion can steer it. */
+function Bus({ color }: { color: string }) {
+  return (
+    <g>
+      <rect x={-11} y={-7} width={22} height={14} rx={4} fill={color} stroke="var(--ink)" strokeWidth={2.5} />
+      <rect x={-6.5} y={-3} width={13} height={3.5} rx={1} fill="var(--cream)" />
+    </g>
+  )
+}

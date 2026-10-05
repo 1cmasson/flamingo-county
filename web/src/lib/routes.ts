@@ -26,6 +26,8 @@ export const routes = {
   listYourSpot: (lang: Lang) => `/${lang}/list-your-spot`,
   about: (lang: Lang) => `/${lang}/about`,
   privacy: (lang: Lang) => `/${lang}/privacy`,
+  freeRides: (lang: Lang) => `/${lang}/free-rides`,
+  freeRoute: (lang: Lang, route: string) => `/${lang}/free-rides/${route}`,
 } as const
 
 /** Append query params, skipping empties — filters keep living in the query. */
