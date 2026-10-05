@@ -1,6 +1,7 @@
 import { getPayload } from 'payload'
 import config from '../../../payload.config'
-import { isBot, parseTrackedLink } from '../../../lib/tracking'
+import { parseTrackedLink } from '../../../lib/tracking'
+import { notAReader } from '../../../lib/visits'
 
 /**
  * Count a click on a `/go/...` link, then send the visitor on. See
@@ -19,7 +20,8 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string[] 
   const link = parseTrackedLink(slug, new URL(req.url).searchParams.get('to'))
   if (!link) return redirect('/')
 
-  if (!isBot(req.headers.get('user-agent'))) {
+  // Same rule as the visit counter: no bots, no owner, no platform link checkers.
+  if (!notAReader(req.headers)) {
     try {
       const payload = await getPayload({ config })
       let draft: number | undefined
