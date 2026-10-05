@@ -177,3 +177,37 @@
     display: none;
   }
 }
+
+/* --- live buses ---
+   Positions arrive every ~15s; each bus glides to its new spot over a few
+   seconds instead of jumping, with a symmetric curve because it is movement
+   across the map, not something entering it. */
+.liveBus {
+  transition: transform 2.6s cubic-bezier(0.65, 0, 0.35, 1);
+}
+.statusDotLive {
+  position: relative;
+}
+.statusDotLive::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  border: 2px solid #19c26b;
+  animation: livePing 1.8s cubic-bezier(0.23, 1, 0.32, 1) infinite;
+  animation-play-state: running;
+}
+@keyframes livePing {
+  to {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .liveBus {
+    transition: none;
+  }
+  .statusDotLive::after {
+    display: none;
+  }
+}

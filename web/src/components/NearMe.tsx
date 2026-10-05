@@ -13,6 +13,7 @@ import {
   type LatLng,
   type TransitRoute,
 } from '../lib/transit'
+import { NextBus, type NextBusCopy } from './LiveTransit'
 import tr from './transit.module.css'
 
 /**
@@ -117,11 +118,13 @@ function Bullet({ route, size = 28 }: { route: TransitRoute; size?: number }) {
 
 export function NearMe({
   copy,
+  nextBus,
   places,
   only,
   routeHref,
 }: {
   copy: NearMeCopy
+  nextBus: NextBusCopy
   places: NearMePlace[]
   /** On a route page, answer for that line only. */
   only?: TransitRoute['slug']
@@ -391,6 +394,7 @@ export function NearMe({
                             {copy.toStop} <strong style={{ fontWeight: 800 }}>{a.stopName}</strong>
                           </div>
                         </div>
+                        <NextBus stops={a.etaIds} route={a.route.slug} copy={nextBus} />
                         {walk > 15 ? (
                           <p style={{ margin: 0, fontSize: 13, fontWeight: 600, lineHeight: 1.45 }}>
                             {copy.longWalk}{' '}

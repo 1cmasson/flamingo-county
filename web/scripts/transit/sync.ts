@@ -27,6 +27,19 @@ import { createInterface } from 'node:readline'
 
 const FEED_URL = 'https://www.miamidade.gov/transit/googletransit/current/google_transit.zip'
 const OUT = join(import.meta.dirname, '../../src/data/transit/hialeah.json')
+const ETA_OUT = join(import.meta.dirname, '../../src/data/transit/hialeah-eta.json')
+
+/**
+ * Hialeah's own schedule, from ETA Transit Systems — the vendor behind the
+ * city's ETA SPOT tracker. Its live feeds (position_updates.pb,
+ * trip_updates.pb) speak in this file's trip and stop numbers, so the live
+ * layer (src/lib/live.ts) needs it to turn "trip 106 is 11 min late" into
+ * "the next Marlin at your stop is in 7 min". Linked from nowhere public:
+ * it sits beside the live feeds in ETA's bucket.
+ */
+const ETA_BASE = 'https://s3.amazonaws.com/etatransit.gtfs/hialeahtransit.etaspot.net'
+/** How far one of our poles can be from ETA's pin for the same stop. */
+const ETA_MATCH_METERS = 60
 
 const ROUTES = [
   { shortName: 'HIAFLA', slug: 'flamingo', name: 'Flamingo' },
@@ -364,6 +377,91 @@ async function main() {
     .filter(near)
     .filter((_, i, arr) => i === 0 || i === arr.length - 1 || i % 3 === 0)
     .map(([la, lo]) => [Number(la.toFixed(5)), Number(lo.toFixed(5))])
+
+  // --- ETA's schedule: link each of our poles to ETA's stop number ---------
+  const etaDir = mkdtempSync(join(tmpdir(), 'eta-gtfs-'))
+  const etaZip = join(etaDir, 'eta.zip')
+  const etaArg = process.argv.indexOf('--eta-zip')
+  if (etaArg > -1) execFileSync('cp', [process.argv[etaArg + 1], etaZip])
+  else {
+    console.log(`Downloading ${ETA_BASE}/gtfs.zip`)
+    const res = await fetch(`${ETA_BASE}/gtfs.zip`)
+    if (!res.ok) throw new Error(`ETA schedule download failed: ${res.status}`)
+    writeFileSync(etaZip, Buffer.from(await res.arrayBuffer()))
+  }
+  execFileSync('unzip', ['-o', '-q', etaZip, '-d', etaDir])
+  const etaRoutes = readCsv(etaDir, 'routes.txt')
+  const etaTrips = readCsv(etaDir, 'trips.txt')
+  const etaStops = new Map(readCsv(etaDir, 'stops.txt').map((x) => [x.stop_id, x]))
+  const etaCal = readCsv(etaDir, 'calendar.txt')
+  const etaSlug = new Map(
+    etaRoutes.map((r) => [r.route_id, ROUTES.find((x) => x.name.toLowerCase() === r.route_long_name.trim().toLowerCase())?.slug]),
+  )
+  for (const r of ROUTES) {
+    if (![...etaSlug.values()].includes(r.slug)) throw new Error(`ETA's schedule has no ${r.name} route — renamed?`)
+  }
+  const etaTimes = new Map<string, { seq: number; stop: string; secs: number }[]>()
+  for (const row of readCsv(etaDir, 'stop_times.txt')) {
+    const [h, m, sec] = row.arrival_time.split(':').map(Number)
+    const list = etaTimes.get(row.trip_id) ?? []
+    list.push({ seq: Number(row.stop_sequence), stop: row.stop_id, secs: h * 3600 + m * 60 + (sec || 0) })
+    etaTimes.set(row.trip_id, list)
+  }
+  const routeStops = new Map<string, Set<string>>()
+  const tripsOut: Record<string, { route: string; service: string; seq0: number; stops: number[]; secs: number[] }> = {}
+  for (const t of etaTrips) {
+    const slug = etaSlug.get(t.route_id)
+    const times = (etaTimes.get(t.trip_id) ?? []).sort((a, b) => a.seq - b.seq)
+    if (!slug || !times.length) continue
+    const set = routeStops.get(slug) ?? new Set()
+    times.forEach((x) => set.add(x.stop))
+    routeStops.set(slug, set)
+    tripsOut[t.trip_id] = {
+      route: slug,
+      service: t.service_id,
+      seq0: times[0].seq,
+      stops: times.map((x) => Number(x.stop)),
+      secs: times.map((x) => x.secs),
+    }
+  }
+  let linked = 0
+  let unlinked = 0
+  for (const r of out) {
+    const candidates = [...(routeStops.get(r.slug) ?? [])].map((id) => {
+      const x = etaStops.get(id)!
+      return { id, at: [Number(x.stop_lat), Number(x.stop_lon)] as [number, number] }
+    })
+    for (const st of r.stations as unknown as { points: [number, number][]; eta?: (number | null)[] }[]) {
+      st.eta = st.points.map((p) => {
+        let best: string | null = null
+        let bestD = ETA_MATCH_METERS
+        for (const c of candidates) {
+          const d = meters(p, c.at)
+          if (d <= bestD) {
+            bestD = d
+            best = c.id
+          }
+        }
+        if (best) linked++
+        else unlinked++
+        return best ? Number(best) : null
+      })
+    }
+  }
+  console.log(`ETA: ${Object.keys(tripsOut).length} trips; ${linked} of our poles linked to ETA stops, ${unlinked} not`)
+  const days = (flag: (c: Record<string, string>) => boolean) => etaCal.filter(flag).map((c) => c.service_id)
+  writeFileSync(
+    ETA_OUT,
+    JSON.stringify({
+      source: { name: 'ETA Transit Systems (Hialeah Transit System)', url: ETA_BASE, fetchedAt: new Date().toISOString().slice(0, 10) },
+      services: {
+        weekday: days((c) => c.monday === '1' && c.friday === '1'),
+        saturday: days((c) => c.saturday === '1' && c.monday === '0'),
+      },
+      stops: Object.fromEntries([...etaStops.values()].map((x) => [x.stop_id, x.stop_name])),
+      trips: tripsOut,
+    }) + '\n',
+  )
 
   const data = {
     rail,

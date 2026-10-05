@@ -48,6 +48,8 @@ export type CityMapModel = {
   lines: CityMapLine[]
   spots: { x: number; y: number; name: string; href: string; route: TransitRoute['slug'] }[]
   transfer: [number, number] | null
+  /** The projection, so the browser can place live buses on the same map. */
+  proj: { minX: number; minY: number; k: number; scale: number; pad: number }
 }
 
 /** Real minutes → animation seconds. A 90-minute line runs out and back in 90s. */
@@ -120,5 +122,6 @@ export function cityMap(places: PlaceOnLine[], lang: Lang): CityMapModel {
     lines,
     spots,
     transfer: transferStation ? at(transferStation.points[0]) : null,
+    proj: { minX, minY, k, scale, pad: PAD },
   }
 }

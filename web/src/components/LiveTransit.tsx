@@ -1,0 +1,203 @@
+'use client'
+
+import type * as React from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import type { Arrival, LiveSnapshot } from '../lib/live'
+import tr from './transit.module.css'
+
+/**
+ * The live layer's browser half: everything here polls the site's own
+ * /api/transit endpoints (never ETA directly) and only while someone can see
+ * it — a hidden tab stops asking.
+ */
+
+const fill = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (_, k) => String(v[k] ?? ''))
+
+const subscribeVisibility = (cb: () => void) => {
+  document.addEventListener('visibilitychange', cb)
+  return () => document.removeEventListener('visibilitychange', cb)
+}
+function usePageVisible() {
+  return useSyncExternalStore(subscribeVisibility, () => document.visibilityState === 'visible', () => true)
+}
+
+/** GET `url` now and every `everyMs` while the page is visible. `null` until the first answer. */
+export function usePoll<T>(url: string | null, everyMs: number): { data: T | null; at: number | null; failed: boolean } {
+  const visible = usePageVisible()
+  const [state, setState] = useState<{ data: T | null; at: number | null; failed: boolean }>({ data: null, at: null, failed: false })
+  useEffect(() => {
+    if (!url || !visible) return
+    let alive = true
+    const run = async () => {
+      try {
+        const res = await fetch(url, { cache: 'no-store' })
+        if (!res.ok) throw new Error(String(res.status))
+        const data = (await res.json()) as T
+        if (alive) setState({ data, at: Date.now(), failed: false })
+      } catch {
+        if (alive) setState((s) => ({ ...s, failed: true }))
+      }
+    }
+    run()
+    const t = setInterval(run, everyMs)
+    return () => {
+      alive = false
+      clearInterval(t)
+    }
+  }, [url, visible, everyMs])
+  return state
+}
+
+/** Seconds since `at`, ticking once a second. */
+export function useAgo(at: number | null): number | null {
+  const [now, setNow] = useState(() => Date.now())
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(t)
+  }, [])
+  return at === null ? null : Math.max(0, Math.round((now - at) / 1000))
+}
+
+/* ------------------------------------------------------------- next bus */
+
+export type NextBusCopy = Record<
+  'next' | 'arriving' | 'min' | 'live' | 'scheduled' | 'late' | 'early' | 'onTime' | 'then' | 'none' | 'at',
+  string
+>
+
+/**
+ * "Next bus · 7 MIN · live, 13 min late · then 46 min". A live time is a bus
+ * on the road with its delay folded in; a scheduled one is the timetable and
+ * says so. Nothing due inside three hours renders the quiet "none" line.
+ */
+export function NextBus({
+  stops,
+  route,
+  copy,
+  tone = 'light',
+}: {
+  stops: number[]
+  route: string
+  copy: NextBusCopy
+  tone?: 'light' | 'dark'
+}) {
+  const url = stops.length ? `/api/transit/arrivals?stops=${stops.join(',')}` : null
+  const { data } = usePoll<{ arrivals: Arrival[] }>(url, 30_000)
+  if (!url || !data) return null
+  const list = data.arrivals.filter((a) => a.route === route)
+  const muted = tone === 'dark' ? '#c9ced4' : '#4a4f55'
+
+  if (!list.length) {
+    return <div style={{ fontSize: 13, fontWeight: 600, color: muted }}>{copy.none}</div>
+  }
+  const [first, ...rest] = list
+  const status = first.live
+    ? first.delayMin >= 2
+      ? fill(copy.late, { n: first.delayMin })
+      : first.delayMin <= -2
+        ? fill(copy.early, { n: -first.delayMin })
+        : copy.onTime
+    : copy.scheduled
+
+  return (
+    <div className={tr.reveal} style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
+        <span style={{ fontWeight: 800, fontSize: 11, letterSpacing: '1.4px' }}>{copy.next}</span>
+        <span style={{ fontFamily: 'var(--display)', fontSize: 28, lineHeight: 1 }}>
+          {first.minutes <= 0 ? copy.arriving : fill(copy.min, { n: first.minutes })}
+        </span>
+      </div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 12, fontWeight: 800 }}>
+        {first.live ? (
+          <>
+            <span className={`${tr.dot} ${tr.dotLive}`} />
+            <span>{copy.live}</span>
+            <span style={{ color: muted }}>·</span>
+          </>
+        ) : null}
+        <span style={{ color: first.live && first.delayMin >= 2 ? (tone === 'dark' ? 'var(--yellow)' : 'var(--magenta)') : undefined }}>
+          {status}
+        </span>
+        {rest[0] ? <span style={{ color: muted, fontWeight: 600 }}>· {fill(copy.then, { n: rest[0].minutes })}</span> : null}
+      </div>
+      {/* Which pole: a stop is both sides of the street, and ETA's names say
+          the direction ("W 29th St & W 5th Ave (EB)"). */}
+      {first.stop ? (
+        <div style={{ flexBasis: '100%', fontSize: 12, fontWeight: 600, color: muted }}>{fill(copy.at, { stop: first.stop })}</div>
+      ) : null}
+    </div>
+  )
+}
+
+/* ---------------------------------------------------- buses on the strip */
+
+export type StripLiveCopy = Record<'many' | 'one' | 'none' | 'near' | 'late' | 'onTime' | 'updated' | 'marker' | 'offline', string>
+
+/**
+ * "3 buses on the Marlin right now", each a link to the stop it's at — and the
+ * strip itself lights those stops up. The strip is server-rendered, so this
+ * marks rows by attribute rather than re-rendering them: `data-bus` on the row
+ * (or on the folded run that holds it), which transit.module.css draws.
+ */
+export function StripLive({ route, name, copy }: { route: string; name: string; copy: StripLiveCopy }) {
+  const { data, failed } = usePoll<LiveSnapshot>('/api/transit/live', 15_000)
+  // Age of the data itself, not of our last fetch: a frozen feed fetched a
+  // second ago is still old.
+  const ago = useAgo(data?.updatedAt ?? null)
+  const marked = useRef<Element[]>([])
+  const buses = (data?.vehicles ?? []).filter((v) => v.route === route)
+
+  useEffect(() => {
+    marked.current.forEach((el) => el.removeAttribute('data-bus'))
+    marked.current = []
+    for (const b of buses) {
+      if (!b.stationId) continue
+      const el = document.getElementById(`stop-${b.stationId}`)
+      if (!el) continue
+      // A stop folded away inside "more stops" marks the fold instead.
+      const fold = el.closest('details')
+      const target = fold && !fold.open ? (fold.closest('li') ?? el) : el
+      target.setAttribute('data-bus', copy.marker)
+      marked.current.push(target)
+    }
+  })
+
+  if (!data) return null
+  if (!data.ok || failed) {
+    return <p style={{ margin: '0 0 16px', fontSize: 13, fontWeight: 600 }}>{copy.offline}</p>
+  }
+  return (
+    <div
+      className={tr.reveal}
+      style={{ margin: '0 0 18px', border: '3px solid var(--ink)', background: 'var(--cream)', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}
+    >
+      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 10px', justifyContent: 'space-between' }}>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 800, fontSize: 14 }}>
+          <span className={`${tr.dot} ${buses.length ? tr.dotLive : ''}`} style={buses.length ? undefined : ({ '--dot': '#9aa1a8' } as React.CSSProperties)} />
+          {buses.length === 0 ? fill(copy.none, { name }) : fill(buses.length === 1 ? copy.one : copy.many, { n: buses.length, name })}
+        </span>
+        {ago !== null ? <span style={{ fontSize: 11, fontWeight: 800, color: '#5b6168' }}>{fill(copy.updated, { s: ago })}</span> : null}
+      </div>
+      {buses.length ? (
+        <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {buses.map((b) => (
+            <li key={b.id}>
+              <a
+                href={b.stationId ? `#stop-${b.stationId}` : undefined}
+                className={tr.place}
+                // Plain flowing text, not the card's flex row: on a phone the
+                // delay should wrap with the sentence, not stack beside it.
+                style={{ display: 'block', padding: '5px 9px 4px', fontSize: 12, fontWeight: 800, lineHeight: 1.35, boxShadow: '3px 3px 0 var(--ink)' }}
+              >
+                {fill(copy.near, { stop: b.next ?? '—' })}
+                <span style={{ color: b.delayMin >= 2 ? 'var(--magenta)' : '#5b6168', fontWeight: 800, whiteSpace: 'nowrap' }}>
+                  {b.delayMin >= 2 ? fill(copy.late, { n: b.delayMin }) : copy.onTime}
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+    </div>
+  )
+}

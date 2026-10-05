@@ -3,6 +3,8 @@
 import type * as React from 'react'
 import { useEffect, useId, useRef, useState } from 'react'
 import type { CityMapModel } from '../lib/citymap'
+import type { LiveSnapshot } from '../lib/live'
+import { useAgo, usePoll } from './LiveTransit'
 import cm from './citymap.module.css'
 
 /**
@@ -27,7 +29,18 @@ export function CityMap({
 }: {
   model: CityMapModel
   running: boolean
-  copy: { title: string; status: string; note: string; spots: string; rail: string }
+  copy: {
+    title: string
+    status: string
+    note: string
+    spots: string
+    rail: string
+    liveStatus: string
+    liveNote: string
+    busTitle: string
+    late: string
+    onTime: string
+  }
 }) {
   const id = useId().replace(/:/g, '')
   const svgRef = useRef<SVGSVGElement>(null)
@@ -49,6 +62,17 @@ export function CityMap({
     io.observe(svg)
     return () => io.disconnect()
   }, [])
+
+  // Live positions once the map has been seen; the illustration until (and
+  // unless) the feed answers with buses on the road.
+  const { data: liveData } = usePoll<LiveSnapshot>(play ? '/api/transit/live' : null, 15_000)
+  const ago = useAgo(liveData?.updatedAt ?? null)
+  const live = liveData?.ok && liveData.vehicles.length ? liveData.vehicles : null
+  const project = (lat: number, lng: number): [number, number] => {
+    const p = model.proj
+    return [p.pad + (lng * p.k - p.minX) * p.scale, p.pad + (-lat - p.minY) * p.scale]
+  }
+  const fillIn = (s: string, v: Record<string, string | number>) => s.replace(/\{(\w+)\}/g, (_, k) => String(v[k] ?? ''))
 
   const { w, h } = model
 
@@ -134,7 +158,30 @@ export function CityMap({
             ) : null}
 
             {/* --- the buses --- */}
-            {running ? (
+            {live ? (
+              <g className={cm.buses}>
+                {live.map((b) => {
+                  const [x, y] = project(b.lat, b.lng)
+                  const line = model.lines.find((l) => l.slug === b.route)
+                  return (
+                    <g key={b.id} className={cm.liveBus} style={{ transform: `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)` }}>
+                      <title>
+                        {fillIn(copy.busTitle, {
+                          name: line?.name ?? '',
+                          stop: b.next ?? '—',
+                          delay: b.delayMin >= 2 ? fillIn(copy.late, { n: b.delayMin }) : copy.onTime,
+                        })}
+                      </title>
+                      {/* Bearing is compass degrees from north; the bus is drawn facing east. */}
+                      <g transform={`rotate(${b.bearing - 90})`}>
+                        <Bus color={line?.color ?? 'var(--yellow)'} />
+                      </g>
+                      {b.delayMin >= 2 ? <circle r={4} cx={10} cy={-9} fill="var(--magenta)" stroke="var(--cream)" strokeWidth={1.5} /> : null}
+                    </g>
+                  )
+                })}
+              </g>
+            ) : running ? (
               <g className={`${cm.buses} ${cm.moving}`}>
                 {model.lines.flatMap((l) =>
                   Array.from({ length: l.buses }, (_, i) => (
@@ -198,9 +245,9 @@ export function CityMap({
           </g>
         </svg>
 
-        <div className={cm.status} data-live={running ? '' : undefined}>
-          <span className={cm.statusDot} />
-          {copy.status}
+        <div className={cm.status} data-live={running || live ? '' : undefined}>
+          <span className={`${cm.statusDot} ${live ? cm.statusDotLive : ''}`} />
+          {live ? fillIn(copy.liveStatus, { n: live.length, s: ago ?? 0 }) : copy.status}
         </div>
       </div>
 
@@ -222,7 +269,7 @@ export function CityMap({
           />
           {copy.rail}
         </span>
-        <span style={{ flexBasis: '100%', fontWeight: 600, color: '#c9ced4' }}>{copy.note}</span>
+        <span style={{ flexBasis: '100%', fontWeight: 600, color: '#c9ced4' }}>{live ? copy.liveNote : copy.note}</span>
       </figcaption>
     </figure>
   )
