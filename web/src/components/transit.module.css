@@ -367,3 +367,39 @@
 .btn:disabled {
   opacity: 0.85;
 }
+
+/* --- live buses on the strip (StripLive sets data-bus) --- */
+
+.row[data-bus] .node {
+  background: var(--yellow);
+  box-shadow:
+    0 0 0 3px var(--cream),
+    0 0 0 6px var(--ink);
+}
+/* A pill under the minutes: "BUS" / "GUAGUA". */
+.row[data-bus]::after {
+  content: attr(data-bus);
+  position: absolute;
+  left: 0;
+  top: 42px;
+  width: 52px;
+  text-align: center;
+  background: var(--ink);
+  color: var(--yellow);
+  font-family: var(--body);
+  font-weight: 800;
+  font-size: 9px;
+  letter-spacing: 1px;
+  line-height: 1;
+  padding: 4px 0 3px;
+  animation: busIn 300ms cubic-bezier(0.23, 1, 0.32, 1) both;
+}
+.gap[data-bus]::after {
+  top: 12px;
+}
+@keyframes busIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+}

@@ -30,6 +30,8 @@ export type Station = {
   points: LatLng[]
   /** The pole name of each of those points, in the same order. */
   names: string[]
+  /** ETA's stop number for each point, where one is within 60 m — the key into the live feed. */
+  eta: (number | null)[]
   transfers: string[]
   landmark?: string
 }
@@ -173,6 +175,11 @@ export function walkMinutes(m: number): number {
 /** About a ten-minute walk. Further than that, the bus isn't the answer. */
 export const MAX_WALK_METERS = 600
 
+/** The station's ETA stop numbers, both sides of the street, deduplicated. */
+export function etaIdsFor(station: Station): number[] {
+  return [...new Set((station.eta ?? []).filter((x): x is number => x !== null))]
+}
+
 export type NearestStop = {
   route: TransitRoute
   /** Where on the strip: the station this stop is drawn as. */
@@ -180,6 +187,8 @@ export type NearestStop = {
   station: Station
   /** The physical stop actually nearest — what the walk time is measured to. */
   stopName: string
+  /** Every ETA stop this station stands for, for asking the live feed when the next bus comes. */
+  etaIds: number[]
   meters: number
 }
 
@@ -192,7 +201,7 @@ export function nearestStops(at: LatLng, maxMeters: number = MAX_WALK_METERS): N
       station.points.forEach((p, k) => {
         const d = meters(at, p)
         if (d <= maxMeters && (!best || d < best.meters)) {
-          best = { route, index, station, stopName: station.names[k] ?? station.name, meters: d }
+          best = { route, index, station, stopName: station.names[k] ?? station.name, etaIds: etaIdsFor(station), meters: d }
         }
       })
     })

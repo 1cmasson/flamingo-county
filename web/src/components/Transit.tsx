@@ -22,6 +22,7 @@ import {
   type TransitRoute,
 } from '../lib/transit'
 import type { NearMeCopy, NearMePlace } from './NearMe'
+import { NextBus, type NextBusCopy, type StripLiveCopy } from './LiveTransit'
 import tr from './transit.module.css'
 
 type T = (s: string) => string
@@ -320,6 +321,11 @@ export async function FreeRidePanel({ listing, lang, t }: { listing: Listing; la
           ) : null}
         </div>
 
+        {/* Live: the next bus at this pole (either side of the street), from
+            the city's tracker. Polls on its own; renders nothing until it
+            has an answer, so the panel never waits on it. */}
+        <NextBus stops={main.etaIds} route={route.slug} copy={nextBusCopy(t)} />
+
         <a
           href={walkHref}
           target="_blank"
@@ -570,4 +576,35 @@ export async function directionsHref(to: [number, number]): Promise<string> {
   return /iphone|ipad|ipod|macintosh/i.test(ua)
     ? `https://maps.apple.com/?daddr=${d}&dirflg=w`
     : `https://www.google.com/maps/dir/?api=1&destination=${d}&travelmode=walking`
+}
+
+/* ------------------------------------------------------------ live copy */
+
+export function nextBusCopy(t: T): NextBusCopy {
+  return {
+    next: t('NEXT BUS'),
+    arriving: t('ARRIVING'),
+    min: t('{n} MIN'),
+    live: t('live'),
+    scheduled: t('scheduled'),
+    late: t('{n} min late'),
+    early: t('{n} min early'),
+    onTime: t('on time'),
+    then: t('then {n} min'),
+    none: t('No bus due here in the next 3 hours.'),
+  }
+}
+
+export function stripLiveCopy(t: T): StripLiveCopy {
+  return {
+    many: t('{n} buses on the {name} right now'),
+    one: t('1 bus on the {name} right now'),
+    none: t('No {name} buses on the road right now'),
+    near: t('Next stop: {stop}'),
+    late: t(' · {n} min late'),
+    onTime: t(' · on time'),
+    updated: t('updated {s}s ago'),
+    marker: t('BUS'),
+    offline: t('Live bus positions are unavailable right now. Hours and frequency below still apply.'),
+  }
 }

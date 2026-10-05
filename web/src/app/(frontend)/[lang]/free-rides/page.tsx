@@ -21,6 +21,7 @@ import {
   LineBullet,
   serviceStatusText,
   nearMeCopy,
+  nextBusCopy,
   nearMePlaces,
   routeHrefs,
   PrimaryButton,
@@ -175,12 +176,17 @@ export default async function FreeRidesPage({ params }: { params: Promise<{ lang
               note: t('Buses move to show how often they come, not where they are right now. Tap a dot to open the spot.'),
               spots: t('Flamingo County spots'),
               rail: 'Metrorail',
+              liveStatus: t('LIVE · {n} BUSES · {s}S AGO'),
+              liveNote: t('Live positions from the City of Hialeah’s ETA SPOT tracker, every 15 seconds. Tap a dot to open the spot.'),
+              busTitle: t('{name} bus · next stop {stop}{delay}'),
+              late: t(' · {n} min late'),
+              onTime: t(' · on time'),
             }}
           />
         </header>
 
         {/* --- From wherever the visitor is --- */}
-        <NearMe copy={nearMeCopy(t)} places={nearMePlaces(places, lang)} routeHref={routeHrefs(lang)} />
+        <NearMe copy={nearMeCopy(t)} nextBus={nextBusCopy(t)} places={nearMePlaces(places, lang)} routeHref={routeHrefs(lang)} />
 
         {/* --- The two lines --- */}
         <div

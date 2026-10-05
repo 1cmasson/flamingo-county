@@ -16,11 +16,14 @@ import {
   ends,
   fill,
   nearMeCopy,
+  nextBusCopy,
+  stripLiveCopy,
   nearMePlaces,
   routeHrefs,
   trackLiveHref,
 } from '../../../../../components/Transit'
 import { NearMe } from '../../../../../components/NearMe'
+import { StripLive } from '../../../../../components/LiveTransit'
 import { StopHighlight } from '../../../../../components/StopHighlight'
 import tr from '../../../../../components/transit.module.css'
 import s from '../../../../../components/chrome.module.css'
@@ -158,6 +161,7 @@ export default async function FreeRoutePage({ params }: { params: Promise<{ lang
 
         <NearMe
           copy={nearMeCopy(t)}
+          nextBus={nextBusCopy(t)}
           places={nearMePlaces(mine, lang)}
           only={route.slug}
           routeHref={routeHrefs(lang)}
@@ -190,6 +194,7 @@ export default async function FreeRoutePage({ params }: { params: Promise<{ lang
                 from,
               })}
             </p>
+            <StripLive route={route.slug} name={route.name} copy={stripLiveCopy(t)} />
             <RouteStrip route={route} places={places} lang={lang} t={t} />
           </section>
 

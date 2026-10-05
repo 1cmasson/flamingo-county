@@ -172,7 +172,7 @@
  "source": {
   "name": "Miami-Dade Transit GTFS",
   "url": "https://www.miamidade.gov/transit/googletransit/current/google_transit.zip",
-  "fetchedAt": "2026-10-02",
+  "fetchedAt": "2026-10-05",
   "serviceEnds": "2027-12-31"
  },
  "routes": [
@@ -205,7 +205,11 @@
       "NW 97th Ave & W 112th St"
      ],
      "transfers": [],
-     "landmark": "Aquabella"
+     "landmark": "Aquabella",
+     "eta": [
+      220,
+      null
+     ]
     },
     {
      "id": "11561",
@@ -220,7 +224,10 @@
      "names": [
       "NW 102nd Ave & W 108th St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      222
+     ]
     },
     {
      "id": "11562",
@@ -235,7 +242,10 @@
      "names": [
       "W 108th St & NW 97th Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      223
+     ]
     },
     {
      "id": "11566",
@@ -250,7 +260,10 @@
      "names": [
       "W 80th St & W 33rd Ln"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null
+     ]
     },
     {
      "id": "10636",
@@ -265,7 +278,10 @@
      "names": [
       "W 76 St & W 32 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      225
+     ]
     },
     {
      "id": "10640",
@@ -280,7 +296,10 @@
      "names": [
       "W 76 St & W 29 Wy"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      210
+     ]
     },
     {
      "id": "2262",
@@ -310,7 +329,13 @@
       "W 28 Ave & W 71 Pl",
       "W 28 Ave & W 73 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      230,
+      207,
+      230,
+      229
+     ]
     },
     {
      "id": "10611",
@@ -325,7 +350,10 @@
      "names": [
       "W 68 St & W 26 Dr"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      232
+     ]
     },
     {
      "id": "11319",
@@ -345,7 +373,11 @@
       "W 68 St & W 24 Ave",
       "W 68 St & W 24 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      206,
+      206
+     ]
     },
     {
      "id": "9819",
@@ -360,7 +392,10 @@
      "names": [
       "W 68 St & W 22 Ct (E/N)"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      201
+     ]
     },
     {
      "id": "11565",
@@ -376,7 +411,10 @@
       "Social Security Administration"
      ],
      "transfers": [],
-     "landmark": "Social Security Administration"
+     "landmark": "Social Security Administration",
+     "eta": [
+      202
+     ]
     },
     {
      "id": "1008",
@@ -392,7 +430,10 @@
       "Palmetto General Hospital"
      ],
      "transfers": [],
-     "landmark": "Palmetto General Hospital"
+     "landmark": "Palmetto General Hospital",
+     "eta": [
+      204
+     ]
     },
     {
      "id": "9820",
@@ -407,7 +448,10 @@
      "names": [
       "W 68 St & W 21 Ct (W/F)"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      205
+     ]
     },
     {
      "id": "9817",
@@ -427,7 +471,11 @@
       "W 24 Ave & W 68 St (S/F)",
       "W 24 Ave & W 68 St (N/N)"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      233,
+      233
+     ]
     },
     {
      "id": "9815",
@@ -447,7 +495,11 @@
       "W 24 Ave & opp. #6445 (S/N)",
       "W 24 Ave (#6445) (N/F)"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null,
+      null
+     ]
     },
     {
      "id": "9813",
@@ -472,7 +524,12 @@
       "W 24 Ave & W 60 St",
       "W 24 Ave (#6207) (N/F)"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      235,
+      196,
+      197
+     ]
     },
     {
      "id": "11395",
@@ -492,7 +549,11 @@
       "W 60 St & W 22 Ln",
       "W 60 St & W 22 Ln (Buckey Dent Park)"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      237,
+      195
+     ]
     },
     {
      "id": "11556",
@@ -512,7 +573,11 @@
       "W 60th St & W 19th Ave",
       "W 60th St & W 19th Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      239,
+      193
+     ]
     },
     {
      "id": "11396",
@@ -532,7 +597,11 @@
       "W 60 St & W 18 Ave",
       "W 60 St & W 18 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      240,
+      192
+     ]
     },
     {
      "id": "2416",
@@ -552,7 +621,11 @@
       "W 60 St & W 16 Ave",
       "W 60 St & W 16 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      241,
+      191
+     ]
     },
     {
      "id": "2235",
@@ -567,7 +640,10 @@
      "names": [
       "W 16 Ave & W 60 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      242
+     ]
     },
     {
      "id": "2236",
@@ -592,7 +668,12 @@
       "W 16 Ave & W 56 St",
       "W 16 Ave & W 58 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      243,
+      189,
+      190
+     ]
     },
     {
      "id": "2237",
@@ -612,7 +693,11 @@
       "W 16 Ave & W 54 St",
       "W 16 Ave & W 54 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      244,
+      188
+     ]
     },
     {
      "id": "2238",
@@ -627,7 +712,10 @@
      "names": [
       "W 16 Ave & W 53 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      245
+     ]
     },
     {
      "id": "2239",
@@ -647,7 +735,11 @@
       "W 16 Ave & 5000 Block",
       "W 16 Ave & 5100 Block"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null,
+      187
+     ]
     },
     {
      "id": "1009",
@@ -667,7 +759,11 @@
       "W 16 Ave & 49 St",
       "W 16 Ave & 49 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      247,
+      186
+     ]
     },
     {
      "id": "2240",
@@ -687,7 +783,11 @@
       "W 16 Ave & W 46 St",
       "W 16 Ave & W 46 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      248,
+      185
+     ]
     },
     {
      "id": "2241",
@@ -712,7 +812,12 @@
       "W 16 Ave & W 44 Pl",
       "W 16 Ave & W 44 Pl"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      249,
+      184,
+      249
+     ]
     },
     {
      "id": "2242",
@@ -732,7 +837,11 @@
       "W 16 Ave & W 42 St",
       "W 16 Ave & W 42 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      250,
+      183
+     ]
     },
     {
      "id": "2243",
@@ -752,7 +861,11 @@
       "W 16 Ave & W 39 Pl",
       "W 16 Ave & W 39 Pl"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      252,
+      182
+     ]
     },
     {
      "id": "11551",
@@ -768,7 +881,10 @@
       "Florida National University"
      ],
      "transfers": [],
-     "landmark": "Florida National University"
+     "landmark": "Florida National University",
+     "eta": [
+      175
+     ]
     },
     {
      "id": "11552",
@@ -783,7 +899,10 @@
      "names": [
       "W 44th Pl & W 18th Ct"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      176
+     ]
     },
     {
      "id": "11553",
@@ -799,7 +918,10 @@
       "San Lazaro Roman Catholic Church"
      ],
      "transfers": [],
-     "landmark": "San Lazaro Roman Catholic Church"
+     "landmark": "San Lazaro Roman Catholic Church",
+     "eta": [
+      177
+     ]
     },
     {
      "id": "11554",
@@ -814,7 +936,10 @@
      "names": [
       "W 18th Ave & W 39th St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      179
+     ]
     },
     {
      "id": "2215",
@@ -844,7 +969,13 @@
       "W 12 Ave & W 35 St",
       "W 12 Ave & W 37 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      256,
+      168,
+      169,
+      null
+     ]
     },
     {
      "id": "2216",
@@ -864,7 +995,11 @@
       "W 12 Ave & W 31 St",
       "W 12 Ave & W 32 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      257,
+      null
+     ]
     },
     {
      "id": "2217",
@@ -884,7 +1019,11 @@
       "W 12 Ave & W 29 St",
       "W 12 Ave & W 30 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      258,
+      167
+     ]
     },
     {
      "id": "2218",
@@ -899,7 +1038,10 @@
      "names": [
       "W 12 Ave & W 28 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null
+     ]
     },
     {
      "id": "11550",
@@ -915,7 +1057,10 @@
       "Daisy and Rosy's Garden"
      ],
      "transfers": [],
-     "landmark": "Daisy and Rosy's Garden"
+     "landmark": "Daisy and Rosy's Garden",
+     "eta": [
+      165
+     ]
     },
     {
      "id": "10229",
@@ -930,7 +1075,10 @@
      "names": [
       "W 29 St & W 12 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      167
+     ]
     },
     {
      "id": "2350",
@@ -955,7 +1103,12 @@
       "W 29 St & W 10 Ave",
       "W 29 St & W 11 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      259,
+      163,
+      164
+     ]
     },
     {
      "id": "2351",
@@ -975,7 +1128,11 @@
       "W 29 St & W 9 Ave",
       "W 29 St & W 9 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      260,
+      162
+     ]
     },
     {
      "id": "2352",
@@ -995,7 +1152,11 @@
       "W 29 St & W 8 Ave",
       "W 29 St & W 8 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      261,
+      161
+     ]
     },
     {
      "id": "2353",
@@ -1010,7 +1171,10 @@
      "names": [
       "W 29 St & W 7 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      262
+     ]
     },
     {
      "id": "2354",
@@ -1030,7 +1194,11 @@
       "W 29 St & W 5 Ave",
       "W 29 St & W 6 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      264,
+      160
+     ]
     },
     {
      "id": "2355",
@@ -1050,7 +1218,11 @@
       "W 29 St & W 4 Ave",
       "W 29 St & W 4 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      158,
+      158
+     ]
     },
     {
      "id": "2356",
@@ -1065,7 +1237,10 @@
      "names": [
       "W 29 St & W 3 Ct"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      265
+     ]
     },
     {
      "id": "2357",
@@ -1085,7 +1260,11 @@
       "W 29 St & W 2 Ave",
       "W 29 St & W 2 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      266,
+      157
+     ]
     },
     {
      "id": "2358",
@@ -1105,7 +1284,11 @@
       "W 29 St & Palm Ave",
       "W 29 St & Palm Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      267,
+      156
+     ]
     },
     {
      "id": "2082",
@@ -1125,7 +1308,11 @@
       "Palm Ave & W 28 St",
       "Palm Ave & W 29 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      120,
+      null
+     ]
     },
     {
      "id": "2083",
@@ -1150,7 +1337,12 @@
       "Palm Ave & E 25 St",
       "Palm Ave & E 27 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      121,
+      38,
+      155
+     ]
     },
     {
      "id": "2084",
@@ -1170,7 +1362,11 @@
       "Palm Ave & W 23 St",
       "Palm Ave & E 22 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      122,
+      37
+     ]
     },
     {
      "id": "220",
@@ -1192,6 +1388,10 @@
      ],
      "transfers": [
       "Metrorail · Hialeah"
+     ],
+     "eta": [
+      36,
+      35
      ]
     },
     {
@@ -1212,7 +1412,11 @@
       "E 21 St & E 3 Ave",
       "E 21 St & E 3 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      268,
+      null
+     ]
     },
     {
      "id": "2048",
@@ -1232,7 +1436,11 @@
       "E 4 Ave & E 20 St",
       "E 21 St & E 4 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      269,
+      153
+     ]
     },
     {
      "id": "2049",
@@ -1252,7 +1460,11 @@
       "E 4 Ave & E 19 St",
       "E 4 Ave & E 19 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      270,
+      152
+     ]
     },
     {
      "id": "2050",
@@ -1272,7 +1484,11 @@
       "E 4 Ave & E 17 St",
       "E 4 Ave & E 17 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      271,
+      151
+     ]
     },
     {
      "id": "2051",
@@ -1292,7 +1508,11 @@
       "E 4 Ave & E 15 St",
       "E 4 Ave & E 14 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null,
+      null
+     ]
     },
     {
      "id": "2052",
@@ -1312,7 +1532,11 @@
       "E 4 Ave & E 13 St",
       "E 4 Ave & E 13 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      272,
+      150
+     ]
     },
     {
      "id": "2053",
@@ -1332,7 +1556,11 @@
       "E 4 Ave & E 11 St",
       "E 4 Ave & E 11 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      273,
+      149
+     ]
     },
     {
      "id": "2054",
@@ -1352,7 +1580,11 @@
       "E 4 Ave & E 9 St",
       "E 4 Ave & E 9 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      274,
+      148
+     ]
     },
     {
      "id": "2055",
@@ -1372,7 +1604,11 @@
       "E 4 Ave & E 7 St",
       "E 4 Ave & E 7 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      275,
+      147
+     ]
     },
     {
      "id": "2056",
@@ -1387,7 +1623,10 @@
      "names": [
       "E 4 Ave & E 6 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null
+     ]
     },
     {
      "id": "2057",
@@ -1407,7 +1646,11 @@
       "E 4 Ave & E 4 St",
       "E 4 Ave & E 4 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      276,
+      146
+     ]
     },
     {
      "id": "10615",
@@ -1422,7 +1665,10 @@
      "names": [
       "E 4 Ave & Hialeah Dr"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      144
+     ]
     },
     {
      "id": "2290",
@@ -1437,7 +1683,10 @@
      "names": [
       "Hialeah Dr & E 5 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null
+     ]
     },
     {
      "id": "1339",
@@ -1452,7 +1701,10 @@
      "names": [
       "Hialeah Dr & E 4 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null
+     ]
     },
     {
      "id": "399",
@@ -1472,7 +1724,11 @@
       "Hialeah Dr & E 4 Ave",
       "E 4 Ave & E 2 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      277,
+      145
+     ]
     },
     {
      "id": "9469",
@@ -1487,7 +1743,10 @@
      "names": [
       "Hialeah Dr & E 3 Ave (W/F)"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      278
+     ]
     },
     {
      "id": "10214",
@@ -1502,7 +1761,10 @@
      "names": [
       "E 2 Ave & Hialeah Dr"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      285
+     ]
     },
     {
      "id": "10226",
@@ -1517,7 +1779,10 @@
      "names": [
       "E 2 Ave & Hialeah Dr"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      284
+     ]
     },
     {
      "id": "10228",
@@ -1532,7 +1797,10 @@
      "names": [
       "E 3 St & E 1 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      281
+     ]
     },
     {
      "id": "10616",
@@ -1548,7 +1816,10 @@
       "Palm Ave & W 5 St (City Hall)"
      ],
      "transfers": [],
-     "landmark": "City Hall"
+     "landmark": "City Hall",
+     "eta": [
+      282
+     ]
     },
     {
      "id": "11348",
@@ -1563,7 +1834,10 @@
      "names": [
       "E 1 Ave & 5 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      280
+     ]
     },
     {
      "id": "2294",
@@ -1578,7 +1852,10 @@
      "names": [
       "E 3 St & E 1 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      281
+     ]
     },
     {
      "id": "10227",
@@ -1593,7 +1870,10 @@
      "names": [
       "E 2 Ave & Hialeah Dr"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      284
+     ]
     },
     {
      "id": "9465",
@@ -1608,7 +1888,10 @@
      "names": [
       "Hialeah Dr & Eucalyptus Dr (E/F)"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      285
+     ]
     },
     {
      "id": "388",
@@ -1628,7 +1911,11 @@
       "Hialeah Dr & E 4 Ave",
       "Hialeah Dr & E 4 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      277,
+      277
+     ]
     }
    ]
   },
@@ -1655,7 +1942,10 @@
      "names": [
       "NW 138 St (#10990)"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      81
+     ]
     },
     {
      "id": "10663",
@@ -1670,7 +1960,10 @@
      "names": [
       "NW 138 St (#10820)"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      82
+     ]
     },
     {
      "id": "10664",
@@ -1685,7 +1978,10 @@
      "names": [
       "NW 107 Ave (#13480)"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null
+     ]
     },
     {
      "id": "10665",
@@ -1705,7 +2001,11 @@
       "NW 107 Ave (#13090)",
       "W Okeechobee Rd (#12963)"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null,
+      null
+     ]
     },
     {
      "id": "10666",
@@ -1725,7 +2025,11 @@
       "W Okeechobee Rd (#12531)",
       "W Okeechobee Rd (#12531)"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null,
+      null
+     ]
     },
     {
      "id": "10667",
@@ -1750,7 +2054,12 @@
       "W Okeechobee Rd (#12401)",
       "Frontage Rd (Okech) & NW 124 St Court"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null,
+      null,
+      null
+     ]
     },
     {
      "id": "2468",
@@ -1765,7 +2074,10 @@
      "names": [
       "NW 122 St & Frontage Rd (Okech)"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      84
+     ]
     },
     {
      "id": "2469",
@@ -1780,7 +2092,10 @@
      "names": [
       "NW 122 St & NW 98 Pl"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null
+     ]
     },
     {
      "id": "10634",
@@ -1800,7 +2115,11 @@
       "W 68 St & W 36 Ave",
       "NW 122 St & NW 97 Ct"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      85,
+      79
+     ]
     },
     {
      "id": "2470",
@@ -1815,7 +2134,10 @@
      "names": [
       "W 68 St & W 36 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      85
+     ]
     },
     {
      "id": "2471",
@@ -1830,7 +2152,10 @@
      "names": [
       "W 68 St & Hialeah Gardens Bd"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null
+     ]
     },
     {
      "id": "10655",
@@ -1845,7 +2170,10 @@
      "names": [
       "W 68 St & NW 93 Ct"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      86
+     ]
     },
     {
      "id": "10633",
@@ -1860,7 +2188,10 @@
      "names": [
       "W 68 St & W 32 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      77
+     ]
     },
     {
      "id": "10671",
@@ -1880,7 +2211,11 @@
       "NW 122 St (#8920)",
       "W 68 St & W 30 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null,
+      null
+     ]
     },
     {
      "id": "2263",
@@ -1910,7 +2245,13 @@
       "W 28 Ave & W 68 St",
       "W 68 St #8752"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      89,
+      75,
+      89,
+      76
+     ]
     },
     {
      "id": "2265",
@@ -1935,7 +2276,12 @@
       "W 28 Ave (#5619)",
       "NW 87 Ave #5751"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      91,
+      91,
+      73
+     ]
     },
     {
      "id": "2266",
@@ -1955,7 +2301,11 @@
       "W 28 Ave & W 54 St",
       "W 28 Ave & W 54 Pl"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      72,
+      null
+     ]
     },
     {
      "id": "2267",
@@ -1975,7 +2325,11 @@
       "W 28 Ave & W 52 St",
       "W 28 Ave & W 52 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      92,
+      92
+     ]
     },
     {
      "id": "253",
@@ -1995,7 +2349,11 @@
       "NW 87 Ave & 103 St",
       "Frontage Rd (Okech) & NW 87 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      93,
+      71
+     ]
     },
     {
      "id": "2480",
@@ -2015,7 +2373,11 @@
       "Frontage Rd (Okech) & opp. #9911",
       "Frontage Rd (Okech) (#9911)"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      94,
+      94
+     ]
     },
     {
      "id": "10672",
@@ -2035,7 +2397,11 @@
       "W Okeechobee Rd (#9811)",
       "W Okeechobee Rd #9811"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      70,
+      70
+     ]
     },
     {
      "id": "2458",
@@ -2050,7 +2416,10 @@
      "names": [
       "NW 95 St & opp. #8001"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      95
+     ]
     },
     {
      "id": "1197",
@@ -2065,7 +2434,10 @@
      "names": [
       "#9300 Walmart & NW 77 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      68
+     ]
     },
     {
      "id": "2456",
@@ -2085,7 +2457,11 @@
       "NW 79 Ave (#9605)",
       "NW 79 Ave (#9550)"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      67,
+      null
+     ]
     },
     {
      "id": "9879",
@@ -2105,7 +2481,11 @@
       "NW 79 Ave & NW 98 St",
       "NW 79 Ave & NW 98 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      96,
+      96
+     ]
     },
     {
      "id": "2457",
@@ -2125,7 +2505,11 @@
       "NW 79 Ave (#9905)",
       "NW 79 Ave (#9960)"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null,
+      null
+     ]
     },
     {
      "id": "10673",
@@ -2145,7 +2529,11 @@
       "NW 79 Ave & #10147",
       "NW 79 Ave #10146"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      290,
+      65
+     ]
     },
     {
      "id": "2467",
@@ -2165,7 +2553,11 @@
       "NW 103 St & NW 77 Ave",
       "NW 103 St & NW 77 Ct"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      97,
+      97
+     ]
     },
     {
      "id": "2373",
@@ -2180,7 +2572,10 @@
      "names": [
       "W 49 St & W 19 Ct"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      98
+     ]
     },
     {
      "id": "10674",
@@ -2195,7 +2590,10 @@
      "names": [
       "W 49 St & #1810"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null
+     ]
     },
     {
      "id": "384",
@@ -2215,7 +2613,11 @@
       "W 49 St & 17 Ct Hialeah",
       "W 49 St & 17 Ct Westland Mall"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      99,
+      64
+     ]
     },
     {
      "id": "2374",
@@ -2235,7 +2637,11 @@
       "W 49 St & W 16 Ave",
       "W 49 St & W 16 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      101,
+      null
+     ]
     },
     {
      "id": "2375",
@@ -2255,7 +2661,11 @@
       "W 49 St & W 14 Ln",
       "W 49 St & W 14 La"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      100,
+      62
+     ]
     },
     {
      "id": "2376",
@@ -2275,7 +2685,11 @@
       "W 49 St & W 13 Ln",
       "W 49 St & W 13 La"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      102,
+      61
+     ]
     },
     {
      "id": "2377",
@@ -2295,7 +2709,11 @@
       "W 49 St & W 12 Ave",
       "W 49 St & W 12 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      103,
+      60
+     ]
     },
     {
      "id": "2378",
@@ -2315,7 +2733,11 @@
       "W 49 St & W 10 Ave",
       "W 49 St & W 10 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      104,
+      59
+     ]
     },
     {
      "id": "2379",
@@ -2335,7 +2757,11 @@
       "W 49 St & # 950 (Approx)",
       "W 49 St & # 901"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      105,
+      58
+     ]
     },
     {
      "id": "257",
@@ -2355,7 +2781,11 @@
       "W 49 St & 8 Ave Hialeah",
       "W 49 St & 8 Ave Hialeah"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      106,
+      57
+     ]
     },
     {
      "id": "2380",
@@ -2375,7 +2805,11 @@
       "W 49 St & W 8 Ave",
       "W 49 St & # 775 (5)"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      107,
+      56
+     ]
     },
     {
      "id": "2381",
@@ -2395,7 +2829,11 @@
       "W 49 St & W 6 Ave",
       "W 49 St & W 6 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      108,
+      55
+     ]
     },
     {
      "id": "2382",
@@ -2410,7 +2848,10 @@
      "names": [
       "W 49 St & W 6 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null
+     ]
     },
     {
      "id": "2448",
@@ -2425,7 +2866,10 @@
      "names": [
       "W 78 Pl & W 4 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      53
+     ]
     },
     {
      "id": "2449",
@@ -2440,7 +2884,10 @@
      "names": [
       "W 78 Rd & W 2 Ct"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null
+     ]
     },
     {
      "id": "2121",
@@ -2455,7 +2902,10 @@
      "names": [
       "W 2 Ct & opp. #7575"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null
+     ]
     },
     {
      "id": "2383",
@@ -2485,7 +2935,13 @@
       "W 49 St & W 4 Ave",
       "W 49 St & W 4 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null,
+      110,
+      286,
+      54
+     ]
     },
     {
      "id": "2384",
@@ -2505,7 +2961,11 @@
       "W 49 St & W 2 Ave",
       "W 49 St & W 2 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      49,
+      49
+     ]
     },
     {
      "id": "258",
@@ -2525,7 +2985,11 @@
       "W 49 St & Palm Ave Hialeah",
       "W 49 St & W 1 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      111,
+      48
+     ]
     },
     {
      "id": "2073",
@@ -2545,7 +3009,11 @@
       "Palm Ave & W 4800",
       "Palm Ave & # 4735"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      112,
+      47
+     ]
     },
     {
      "id": "2074",
@@ -2565,7 +3033,11 @@
       "Palm Ave & # 4500 (Approx)",
       "Palm Ave & E 45 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      113,
+      46
+     ]
     },
     {
      "id": "2075",
@@ -2585,7 +3057,11 @@
       "Palm Ave & W 43 St",
       "Palm Ave & E 43 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      45,
+      45
+     ]
     },
     {
      "id": "2076",
@@ -2605,7 +3081,11 @@
       "Palm Ave & W 41 St",
       "Palm Ave & E 41 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      44,
+      44
+     ]
     },
     {
      "id": "2077",
@@ -2630,7 +3110,12 @@
       "Palm Ave & E 38 St",
       "Palm Ave & E 39 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      115,
+      null,
+      43
+     ]
     },
     {
      "id": "2078",
@@ -2650,7 +3135,11 @@
       "Palm Ave & W 37 St",
       "Palm Ave & E 36 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      116,
+      42
+     ]
     },
     {
      "id": "2079",
@@ -2670,7 +3159,11 @@
       "Palm Ave & W 34 St",
       "Palm Ave & E 34 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      117,
+      41
+     ]
     },
     {
      "id": "2080",
@@ -2690,7 +3183,11 @@
       "Palm Ave & W 32 St",
       "Palm Ave & E 32 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      40,
+      40
+     ]
     },
     {
      "id": "2081",
@@ -2705,7 +3202,10 @@
      "names": [
       "Palm Ave & W 30 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      119
+     ]
     },
     {
      "id": "2082",
@@ -2725,7 +3225,11 @@
       "Palm Ave & W 28 St",
       "Palm Ave & W 29 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      120,
+      null
+     ]
     },
     {
      "id": "2083",
@@ -2750,7 +3254,12 @@
       "Palm Ave & E 25 St",
       "Palm Ave & E 27 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      121,
+      38,
+      155
+     ]
     },
     {
      "id": "2084",
@@ -2770,7 +3279,11 @@
       "Palm Ave & W 23 St",
       "Palm Ave & E 22 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      122,
+      37
+     ]
     },
     {
      "id": "220",
@@ -2792,6 +3305,10 @@
      ],
      "transfers": [
       "Metrorail · Hialeah"
+     ],
+     "eta": [
+      36,
+      35
      ]
     },
     {
@@ -2812,7 +3329,11 @@
       "E 21 St & E 3 Ave",
       "E 21 St & E 3 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null,
+      null
+     ]
     },
     {
      "id": "2008",
@@ -2832,7 +3353,11 @@
       "E 4 Ave & E 21 St",
       "E 21 St & E 4 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null,
+      34
+     ]
     },
     {
      "id": "2009",
@@ -2852,7 +3377,11 @@
       "E 4 Ave & E 23 St",
       "E 4 Ave & E 23 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      123,
+      123
+     ]
     },
     {
      "id": "2010",
@@ -2867,7 +3396,10 @@
      "names": [
       "E 4 Ave & E 25 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      124
+     ]
     },
     {
      "id": "2011",
@@ -2882,7 +3414,10 @@
      "names": [
       "E 4 Ave & E 27 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      24
+     ]
     },
     {
      "id": "2012",
@@ -2897,7 +3432,10 @@
      "names": [
       "E 4 Ave & E 29 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      126
+     ]
     },
     {
      "id": "2013",
@@ -2912,7 +3450,10 @@
      "names": [
       "E 4 Ave & E 31 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null
+     ]
     },
     {
      "id": "10645",
@@ -2927,7 +3468,10 @@
      "names": [
       "E 32 St & E 3 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      26
+     ]
     },
     {
      "id": "10646",
@@ -2942,7 +3486,10 @@
      "names": [
       "E 32 St & E 2 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      27
+     ]
     },
     {
      "id": "10676",
@@ -2958,7 +3505,10 @@
       "Hialeah Park and Casino Entrance"
      ],
      "transfers": [],
-     "landmark": "Hialeah Park and Casino Entrance"
+     "landmark": "Hialeah Park and Casino Entrance",
+     "eta": [
+      null
+     ]
     },
     {
      "id": "2371",
@@ -2973,7 +3523,10 @@
      "names": [
       "E 32 St & E 2 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      27
+     ]
     },
     {
      "id": "678",
@@ -2988,7 +3541,10 @@
      "names": [
       "E 32 St & E 2 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      29
+     ]
     },
     {
      "id": "2372",
@@ -3003,7 +3559,10 @@
      "names": [
       "E 32 St & E 4 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      30
+     ]
     },
     {
      "id": "2044",
@@ -3018,7 +3577,10 @@
      "names": [
       "E 4 Ave & E 31 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      25
+     ]
     },
     {
      "id": "2045",
@@ -3033,7 +3595,10 @@
      "names": [
       "E 4 Ave & E 29 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      31
+     ]
     },
     {
      "id": "2046",
@@ -3048,7 +3613,10 @@
      "names": [
       "E 4 Ave & E 27 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      32
+     ]
     },
     {
      "id": "2335",
@@ -3068,7 +3636,11 @@
       "E 25 St & E 4 Ave",
       "E 25 St & E 5 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      127,
+      22
+     ]
     },
     {
      "id": "2336",
@@ -3088,7 +3660,11 @@
       "E 25 St & E 6 Ave",
       "E 25 St & E 6 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      128,
+      128
+     ]
     },
     {
      "id": "2337",
@@ -3108,7 +3684,11 @@
       "E 25 St & E 7 Ave",
       "E 25 St & E 7 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      129,
+      129
+     ]
     },
     {
      "id": "1946",
@@ -3133,7 +3713,12 @@
       "E 8 Ave & E 27 St",
       "E 25 St & E 8 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      131,
+      18,
+      20
+     ]
     },
     {
      "id": "1947",
@@ -3153,7 +3738,11 @@
       "E 8 Ave & E 29 St",
       "E 8 Ave & E 29 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      132,
+      17
+     ]
     },
     {
      "id": "1948",
@@ -3173,7 +3762,11 @@
       "E 8 Ave & E 31 St",
       "E 8 Ave & E 31 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      133,
+      null
+     ]
     },
     {
      "id": "1949",
@@ -3193,7 +3786,11 @@
       "E 8 Ave & E 33 St",
       "E 8 Ave & E 33 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      15,
+      15
+     ]
     },
     {
      "id": "1950",
@@ -3213,7 +3810,11 @@
       "E 8 Ave & E 35 St",
       "E 8 Ave & E 35 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      14,
+      14
+     ]
     },
     {
      "id": "1951",
@@ -3233,7 +3834,11 @@
       "E 8 Ave & E 37 St",
       "E 8 Ave & E 37 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      134,
+      134
+     ]
     },
     {
      "id": "1952",
@@ -3253,7 +3858,11 @@
       "E 8 Ave & E 39 Pl",
       "E 8 Ave & E 39 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      135,
+      13
+     ]
     },
     {
      "id": "1953",
@@ -3273,7 +3882,11 @@
       "E 8 Ave & E 41 St",
       "E 8 Ave & E 41 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      136,
+      12
+     ]
     },
     {
      "id": "1954",
@@ -3293,7 +3906,11 @@
       "E 8 Ave & E 43 St",
       "E 8 Ave & E 43 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null,
+      null
+     ]
     },
     {
      "id": "1955",
@@ -3313,7 +3930,11 @@
       "E 8 Ave & E 45 St",
       "E 8 Ave & E 45 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      137,
+      10
+     ]
     },
     {
      "id": "1956",
@@ -3333,7 +3954,11 @@
       "E 8 Ave & E 47 St",
       "E 8 Ave & E 47 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      138,
+      9
+     ]
     },
     {
      "id": "355",
@@ -3353,7 +3978,11 @@
       "E 8 Ave & 49 St",
       "E 8 Ave & 49 St Hialeah"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      139,
+      5
+     ]
     },
     {
      "id": "1957",
@@ -3373,7 +4002,11 @@
       "E 8 Ave & E 51 St",
       "E 8 Ave & E 51 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      7,
+      7
+     ]
     },
     {
      "id": "1958",
@@ -3393,7 +4026,11 @@
       "E 8 Ave & E 53 St",
       "E 8 Ave & E 53 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      140,
+      4
+     ]
     },
     {
      "id": "1959",
@@ -3418,7 +4055,12 @@
       "E 8 Ave & E 57 St",
       "E 8 Ave & E 55 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      142,
+      6,
+      3
+     ]
     },
     {
      "id": "1960",
@@ -3438,7 +4080,11 @@
       "E 8 Ave & # 6101",
       "E 8 Ave & # 5900 (Approx)"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      2,
+      2
+     ]
     },
     {
      "id": "1961",
@@ -3453,7 +4099,10 @@
      "names": [
       "NW 42 Ave & NW 42/37 Ave Connector"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null
+     ]
     },
     {
      "id": "1962",
@@ -3468,7 +4117,10 @@
      "names": [
       "E 8 Ave & E 65 St"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null
+     ]
     },
     {
      "id": "2426",
@@ -3483,7 +4135,10 @@
      "names": [
       "E 65 St & E 8 Ave"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      null
+     ]
     },
     {
      "id": "1963",
@@ -3498,7 +4153,10 @@
      "names": [
       "NW 42/37 Ave (Connector & Gratigny Dr)"
      ],
-     "transfers": []
+     "transfers": [],
+     "eta": [
+      1
+     ]
     }
    ]
   }
