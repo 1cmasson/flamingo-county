@@ -123,6 +123,7 @@ async function create(
   let cover: Media | number | null | undefined
   let deadline: Date | null = null
   let event: Event | null = null
+  let eventEn: Event | null = null
 
   if (collection === 'events') {
     const ev = { es: es as Event, en: en as Event }
@@ -131,10 +132,15 @@ async function create(
     pagePath = routes.event('es', ev.en.slug)
     cover = ev.en.image
     deadline = postDeadline(ev.en, now)
-    // The card is in Spanish, but unlike the caption it falls back to the
-    // English for a field with no translation: a card with no title is worse
-    // than one with an English title.
-    event = (await payload.findByID({ collection, id, locale: 'es', depth: 2, overrideAccess: true })) as Event
+    // Two cards, a carousel: Spanish first (the audience is Spanish-first),
+    // then English. Unlike the caption, each card falls back to the other
+    // language for a field with no translation: a card with no title is worse
+    // than one with a borrowed title.
+    ;[event, eventEn] = (await Promise.all(
+      (['es', 'en'] as const).map((locale) =>
+        payload.findByID({ collection, id, locale, depth: 2, overrideAccess: true }),
+      ),
+    )) as [Event, Event]
   } else {
     const st = { es: es as Story, en: en as Story }
     body = (excerpts) => bilingual((l) => storyLines(st[l], excerpts))
@@ -151,9 +157,22 @@ async function create(
   // the credit printed on it); a story's cover photo. A card that cannot be
   // drawn falls back to the photo itself.
   const label = `${collection} #${id}`
-  const media = event
-    ? ((await cardImage(payload, event, label, slug)) ?? (await copyCover(payload, cover, label, slug)))
-    : await copyCover(payload, cover, label, slug)
+  // Spanish card, then English card; the English one only when the Spanish
+  // one was drawn, so a carousel never opens in English.
+  const cards: number[] = []
+  if (event) {
+    const es = await cardImage(payload, event, 'es', label, slug)
+    if (es) {
+      cards.push(es)
+      const enCard = eventEn ? await cardImage(payload, eventEn, 'en', label, slug) : null
+      if (enCard) cards.push(enCard)
+    }
+  }
+  if (!cards.length) {
+    const photo = await copyCover(payload, cover, label, slug)
+    if (photo) cards.push(photo)
+  }
+  const media = cards[0] ?? null
   // The photo's credit goes in the caption wherever the photo is in the post.
   const coverDoc: Media | null =
     cover && typeof cover !== 'object'
@@ -171,7 +190,7 @@ async function create(
       status: 'pending',
       caption: caption(body, '', credit),
       platforms,
-      media: media ? [media] : [],
+      media: cards,
       scheduledFor: scheduledFor.toISOString(),
       pillar: collection === 'events' ? 'event' : 'story',
       language: 'both',
@@ -428,23 +447,36 @@ async function copyCover(
 }
 
 /**
- * An event's generated card, Instagram's 4:5, in Spanish (the audience is
- * Spanish-first), stored in `hq-media` as a JPEG the same way as a copied
- * photo. Drawn from the published event's own fields only, with its photo
+ * An event's generated card, Instagram's 4:5, in one language (the draft takes
+ * the Spanish one, then the English one, as a carousel), stored in `hq-media`
+ * as a JPEG the same way as a copied photo. Drawn from the published event's own fields only, with its photo
  * framed on it when it has one. Null if it cannot be drawn; the draft then
  * takes the bare photo, or goes to Facebook as text.
  */
-async function cardImage(payload: Payload, ev: Event, label: string, slug: string): Promise<number | null> {
+async function cardImage(
+  payload: Payload,
+  ev: Event,
+  lang: 'es' | 'en',
+  label: string,
+  slug: string,
+): Promise<number | null> {
   try {
     // Loaded on demand: the renderer pulls in next/og, which the Payload CLI
     // (migrations, the seed) has no use for.
     const { renderEventCard } = await import('./eventCard')
-    const png = await renderEventCard(ev, 'es', 'social')
+    const png = await renderEventCard(ev, lang, 'social')
     const jpeg = await sharp(Buffer.from(png)).flatten({ background: '#ffffff' }).jpeg({ quality: 88 }).toBuffer()
     const created = await payload.create({
       collection: 'hq-media',
-      data: { note: `Generated card for ${label} (${ev.image ? 'with its photo' : 'no photo'}), made when it was published` },
-      file: { data: jpeg, mimetype: 'image/jpeg', name: `${slug.slice(0, 60)}-card-${Date.now()}.jpg`, size: jpeg.length },
+      data: {
+        note: `Generated ${lang.toUpperCase()} card for ${label} (${ev.image ? 'with its photo' : 'no photo'}), made when it was published`,
+      },
+      file: {
+        data: jpeg,
+        mimetype: 'image/jpeg',
+        name: `${slug.slice(0, 60)}-card-${lang}-${Date.now()}.jpg`,
+        size: jpeg.length,
+      },
       overrideAccess: true,
     })
     return created.id
