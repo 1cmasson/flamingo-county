@@ -1,5 +1,9 @@
 # HQ handoff: finishing Flamingo HQ, with several agents at once
 
+> **Latest state (2026-10-05): read `web/GROWTH-HANDOFF.md` first.** It covers what shipped since
+> round 1 (#47–#62), the growth loop, the owner's decisions, and the next tasks. This file remains the
+> reference for how round 1 was built and for the rules for parallel agents.
+
 Written 2026-10-01 for whoever picks this up next, human or agent. Read this, then
 `web/HQ.md` (how HQ works and how it was set up). For the site's answer-engine work,
 see `web/AEO-HANDOFF.md`; it is a separate track.
