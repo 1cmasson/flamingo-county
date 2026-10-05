@@ -80,10 +80,10 @@ export type Season = {
       licenseUrl: string
     }
     /**
-     * How each event tagged with the season dresses its hero on the event
-     * page: the palette in place of the city's colour, and a chip naming the
-     * season. Other sizes (the board, link previews, the social poster) keep
-     * the city's design for now.
+     * How each event tagged with the season dresses its cards: the palette
+     * in place of the city's colour, and a chip naming the season, on the
+     * event page's hero, its link preview and its social poster. The events
+     * board's tile keeps the city's design.
      */
     event?: {
       theme: SeasonCardTheme
