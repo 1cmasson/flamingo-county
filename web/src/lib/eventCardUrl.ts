@@ -7,7 +7,9 @@ import type { Lang } from '../i18n'
  *
  * An event with a photo gets it framed on the `link`, `social` and `card`
  * sizes in place of the mascot's arch, with its credit printed on it; the
- * event page's hero shows the photo itself.
+ * event page's hero shows the photo itself. An event without one whose venue
+ * matches a drawn scene (lib/eventSetting.ts) stands on it at every size: the
+ * portrait art on `social`, the wide art on `link`, `page` and `card`.
  *
  * - `link`: Open Graph / X, 1200×630, the full design.
  * - `social`: Instagram's 4:5, 1080×1350, the same design stacked: text on
@@ -34,7 +36,7 @@ export function isEventCardSize(v: string | null | undefined): v is EventCardSiz
  * Bump when the card's design or its art changes (fonts, a mascot), so every
  * cached card is fetched again. The event's own `updatedAt` covers its fields.
  */
-export const EVENT_CARD_VERSION = '4'
+export const EVENT_CARD_VERSION = '5'
 
 /**
  * The card's path. `v` is a cache key only: the route always draws the event

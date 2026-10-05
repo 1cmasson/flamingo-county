@@ -1,4 +1,4 @@
-import { readFile } from 'node:fs/promises'
+import { access, readFile } from 'node:fs/promises'
 import { basename, join, resolve } from 'node:path'
 import { ImageResponse } from 'next/og'
 import sharp from 'sharp'
@@ -21,9 +21,16 @@ import { sceneCreditText, type Season, type SeasonCardTheme } from './seasons'
  * with a cream offset shadow, the date on an ink ticket, then time · place,
  * and the city's mascot standing in a cream arch on the right.
  *
- * The social poster can instead stand on a drawn scene (`eventSetting`): the
- * scene replaces the colour and halftone, the mascot stands in it without the
- * arch, and the small text sits on cream strips so it reads over the drawing.
+ * An event with no photo can instead stand on a drawn scene (`eventSetting`):
+ *
+ * - The social poster draws the portrait scene in place of the colour and
+ *   halftone. The mascot stands in it without the arch, and the small text
+ *   sits on cream strips so it reads over the drawing.
+ * - The wide sizes (`link`, `page`, `card`) draw the wide version of the same
+ *   scene (`settings-wide/`) across the whole card. The city's colour and its
+ *   dots stay under the text on the left and end in a halftone fade into the
+ *   drawing, so the type is design C's exactly, on its own ground
+ *   (`WIDE_LAYOUTS`).
  *
  * The seasonal guides (lib/seasons.ts, /es/halloween) reuse the same layout
  * with their own copy and palette: `renderSeasonCard`, `SEASON_THEMES`.
@@ -167,6 +174,8 @@ type Assets = {
   mascots: Record<string, Mascot>
   /** Scene art as data URIs; a missing file is left out and the card is drawn flat. */
   settings: Partial<Record<EventSetting, string>>
+  /** The wide scenes' files, cropped per size when drawn; a missing one is left out. */
+  wide: Partial<Record<EventSetting, string>>
 }
 
 const ASSET_DIR = join(process.cwd(), 'src/assets/og')
@@ -200,7 +209,17 @@ function loadAssets(): Promise<Assets> {
           console.error(`[og] no scene art for ${slug}:`, err instanceof Error ? err.message : err)
         }
       }
-      return { luckiest, archivo, mascots, settings }
+      const wide: Partial<Record<EventSetting, string>> = {}
+      for (const slug of EVENT_SETTINGS) {
+        const file = join(ASSET_DIR, `settings-wide/${slug}.jpg`)
+        try {
+          await access(file)
+          wide[slug] = file
+        } catch (err) {
+          console.error(`[og] no wide scene art for ${slug}:`, err instanceof Error ? err.message : err)
+        }
+      }
+      return { luckiest, archivo, mascots, settings, wide }
     })().catch((err) => {
       assets = null
       throw err
@@ -542,6 +561,106 @@ const SCENE_LAYOUTS: Record<EventCardSize, SceneLayout> = {
   },
 }
 
+/** The sizes that draw a wide scene; `social` draws the portrait one. */
+export type WideSize = 'link' | 'page' | 'card'
+export const isWideSize = (s: EventCardSize): s is WideSize => s === 'link' || s === 'page' || s === 'card'
+
+type WideLayout = Layout & {
+  /**
+   * The city's colour under the text: solid (with its dots) to `solid` px
+   * from the left edge, then a halftone ramp gone by `clear`. The text column ends inside the
+   * solid part, so the type is on design C's own ground, never on the drawing.
+   */
+  fade: { solid: number; clear: number }
+  /** Where the 16:9 art is anchored across, 0–100, for this shape. */
+  focalX: number
+  /** The mascot standing in the scene, without its arch: its centre and height. */
+  mascot?: { center: number; height: number }
+}
+
+const WIDE_LAYOUTS: Record<WideSize, WideLayout> = {
+  link: {
+    // The text on the left as with a photo; the scene owns the right half.
+    col: { left: 56, top: 36, bottom: 84, width: 560 },
+    title: { max: 112, lines: 3 },
+    chip: 22,
+    ticket: { max: 42, maxW: 560 },
+    meta: { size: 28, maxW: 560 },
+    gap: { chips: 20, title: 24, meta: 14 },
+    brand: { left: 56, bottom: 44, size: 22 },
+    fade: { solid: 640, clear: 840 },
+    focalX: 50,
+    mascot: { center: 1040, height: 470 },
+  },
+  page: {
+    // No mascot or brand: the page stands its own mascot in the right 28%.
+    col: { left: 60, top: 40, bottom: 40, width: 580 },
+    title: { max: 120, lines: 3 },
+    chip: 22,
+    ticket: { max: 44, maxW: 580 },
+    meta: { size: 30, maxW: 580 },
+    gap: { chips: 20, title: 26, meta: 16 },
+    fade: { solid: 660, clear: 860 },
+    focalX: 50,
+  },
+  card: {
+    col: { left: 40, top: 34, bottom: 34, width: 480 },
+    title: { max: 100, lines: 3 },
+    chip: 22,
+    ticket: { max: 40, maxW: 480 },
+    meta: { size: 26, maxW: 480 },
+    gap: { chips: 18, title: 22, meta: 14 },
+    fade: { solid: 540, clear: 690 },
+    // 4:3 loses a quarter of the width: give up the calm left, which the
+    // colour covers anyway.
+    focalX: 70,
+    mascot: { center: 848, height: 420 },
+  },
+}
+
+/**
+ * The city's colour with its white dots, ending in a halftone ramp: dots of
+ * the colour, shrinking to nothing across the fade, as a comic prints a
+ * fade. A smooth gradient would mix the colour into the drawing (yellow over
+ * a blue sky turns green); dots never do. One SVG.
+ */
+function wideGround(w: number, h: number, bg: string, theme: CardTheme, fade: WideLayout['fade']): string {
+  const STEP = 16
+  const span = fade.clear - fade.solid
+  let dots = ''
+  for (let y = 0, row = 0; y <= h + STEP; y += STEP * 0.866, row++) {
+    for (let x = fade.solid + (row % 2 ? STEP / 2 : 0); x < fade.clear; x += STEP) {
+      // Overlapping at the solid edge (r > STEP / 1.7 covers the gaps), then
+      // shrinking as the square root, so the colour thins evenly to the eye.
+      const r = STEP * 0.78 * Math.sqrt(Math.max(0, 1 - (x - fade.solid) / span))
+      if (r > 0.6) dots += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(2)}"/>`
+    }
+  }
+  const svg =
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">` +
+    `<defs><pattern id="d" width="22" height="22" patternUnits="userSpaceOnUse">` +
+    `<circle cx="11" cy="11" r="3.2" fill="${theme.dot}" fill-opacity="${theme.dotOpacity}"/></pattern></defs>` +
+    `<rect width="${fade.solid}" height="${h}" fill="${bg}"/>` +
+    `<g fill="${bg}">${dots}</g>` +
+    `<rect width="${fade.solid}" height="${h}" fill="url(#d)"/></svg>`
+  return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`
+}
+
+/** Wide scenes cropped to a size, by `setting|size`: twelve scenes, three sizes. */
+const wideCrops = new Map<string, Promise<string>>()
+
+function wideScene(file: string, setting: EventSetting, size: WideSize): Promise<string> {
+  const key = `${setting}|${size}`
+  let crop = wideCrops.get(key)
+  if (!crop) {
+    const { width, height } = EVENT_CARD_SIZES[size]
+    crop = cropToBox(file, width, height, WIDE_LAYOUTS[size].focalX, 50)
+    crop.catch(() => wideCrops.delete(key))
+    wideCrops.set(key, crop)
+  }
+  return crop
+}
+
 /**
  * `file` cropped to exactly `w`×`h` around its focal point, as a JPEG data
  * URI: scaled to cover the box, then cut so the focal point is as near the
@@ -749,6 +868,7 @@ function Card({
   mascot,
   theme,
   backdrop: backdropIn,
+  wide: wideIn,
   photo,
   scene,
   photoMascot = false,
@@ -759,6 +879,8 @@ function Card({
   theme: CardTheme
   /** A drawn scene (data URI) in place of the colour and halftone. */
   backdrop?: string
+  /** A wide scene cropped to this size (data URI), under the city colour's fade (`WIDE_LAYOUTS`). */
+  wide?: string
   /** The event's photo in a frame where the arch stood (`PHOTO_LAYOUTS`). */
   photo?: DrawnPhoto
   /** A season's scene behind everything (`SCENE_LAYOUTS`). */
@@ -771,7 +893,8 @@ function Card({
   const S = scene && !P ? SCENE_LAYOUTS[size] : undefined
   // The event's own photo wins over a generic drawn setting.
   const backdrop = P || S ? undefined : backdropIn
-  const L: Layout = P ?? S ?? LAYOUTS[size]
+  const Wd = wideIn && !P && !S && !backdrop && isWideSize(size) ? WIDE_LAYOUTS[size] : undefined
+  const L: Layout = P ?? S ?? Wd ?? LAYOUTS[size]
   const colH = H - L.col.top - L.col.bottom
   const smallMascot = P && photoMascot && mascot ? mascot : undefined
   const smallMascotH = P ? Math.round(P.frame.height * 0.55) : 0
@@ -803,6 +926,9 @@ function Card({
   const mascotH = L.mascotH ?? 0
   const mascotW = mascot ? Math.round((mascot.width / mascot.height) * mascotH) : 0
   const archCenter = arch ? W - arch.right - arch.width / 2 : 0
+  // Over a wide scene the mascot stands in the drawing, without an arch.
+  const wideMascotH = Wd?.mascot && mascot ? Wd.mascot.height : 0
+  const wideMascotW = wideMascotH && mascot ? Math.round((mascot.width / mascot.height) * wideMascotH) : 0
 
   const ticket = (
     <div
@@ -861,6 +987,19 @@ function Card({
       {backdrop ? (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={backdrop} width={W} height={H} alt="" style={{ position: 'absolute', left: 0, top: 0, objectFit: 'cover' }} />
+      ) : Wd && wideIn ? (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={wideIn} width={W} height={H} alt="" style={{ position: 'absolute', left: 0, top: 0 }} />
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={wideGround(W, H, theme.bg ?? d.bg, theme, Wd.fade)}
+            width={W}
+            height={H}
+            alt=""
+            style={{ position: 'absolute', left: 0, top: 0 }}
+          />
+        </>
       ) : S && scene ? (
         <>
           {S.box ? (
@@ -979,6 +1118,16 @@ function Card({
           style={{ position: 'absolute', left: Math.round(archCenter - mascotW / 2), bottom: -4 }}
         />
       ) : null}
+      {Wd?.mascot && mascot && wideMascotH ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={mascot.src}
+          width={wideMascotW}
+          height={wideMascotH}
+          alt=""
+          style={{ position: 'absolute', left: Math.round(Wd.mascot.center - wideMascotW / 2), bottom: -4 }}
+        />
+      ) : null}
 
       {L.brand ? (
         <div
@@ -1038,7 +1187,10 @@ async function drawCard(
   const a = await loadAssets()
   // The page card has no mascot: the page draws its own over the right side.
   const mascot = size === 'page' ? undefined : a.mascots[mascotSlug]
-  const backdrop = setting ? a.settings[setting] : undefined
+  // The poster draws the portrait scene, the wide sizes its wide version.
+  const backdrop = setting && size === 'social' ? a.settings[setting] : undefined
+  const wideFile = setting && isWideSize(size) ? a.wide[setting] : undefined
+  const wide = wideFile && setting && isWideSize(size) ? await wideScene(wideFile, setting, size) : undefined
   const drawn =
     pic && box
       ? { src: await cropToBox(pic.file, box.w, box.h, box.fx ?? pic.focalX ?? 50, box.fy ?? pic.focalY ?? 50), credit: pic.credit }
@@ -1051,6 +1203,7 @@ async function drawCard(
       mascot={mascot}
       theme={theme}
       backdrop={backdrop}
+      wide={wide}
       photo={pic?.mode === 'frame' ? drawn : undefined}
       scene={pic?.mode === 'scene' ? drawn : undefined}
       photoMascot={opts.photoMascot}
@@ -1083,13 +1236,31 @@ export async function renderEventCard(
   opts: { photoMascot?: boolean } = {},
 ): Promise<ArrayBuffer> {
   const d = eventCardData(ev, lang, today)
-  // An event with a photo draws it at the link, card and social sizes; the
-  // page hero shows the photo itself, so `page` stays the plain card.
-  const picture = isPhotoSize(size) ? eventCardPicture(ev, lang) : null
-  // Without one, only the social poster has room for a drawn setting; the
-  // wide sizes stay flat.
-  const setting = size === 'social' && !picture ? eventSetting(ev) : null
+  const bg = eventCardBackground(ev, lang, size)
+  // The page hero shows an event's photo itself, so its `page` card (never
+  // asked for by the site) stays the plain one.
+  const picture = bg.kind === 'photo' && isPhotoSize(size) ? bg.picture : null
+  const setting = bg.kind === 'scene' ? bg.setting : null
   return drawCard(d, size, DESIGN_C, 'c', d.citySlug, setting, { picture, photoMascot: opts.photoMascot })
+}
+
+/** What an event's card is drawn on, at a size. */
+export type CardBackground =
+  | { kind: 'photo'; picture: CardPicture }
+  | { kind: 'scene'; setting: EventSetting; art: 'portrait' | 'wide' }
+  | { kind: 'flat' }
+
+/**
+ * The event's own photo wins at every size; without one, the scene
+ * `eventSetting` picks (the poster's portrait art, the wide art at `link`,
+ * `page` and `card`); without a scene, the city's flat colour.
+ */
+export function eventCardBackground(ev: Event, lang: Lang, size: EventCardSize): CardBackground {
+  const picture = eventCardPicture(ev, lang)
+  if (picture) return { kind: 'photo', picture }
+  const setting = eventSetting(ev)
+  if (!setting) return { kind: 'flat' }
+  return { kind: 'scene', setting, art: size === 'social' ? 'portrait' : 'wide' }
 }
 
 /**

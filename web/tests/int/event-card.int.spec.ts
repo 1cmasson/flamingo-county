@@ -8,7 +8,7 @@ import config from '@/payload.config'
 
 import { GET } from '@/app/api/og/event/[slug]/route'
 import { eventDateLine } from '@/lib/dates'
-import { eventCardData, renderEventCard } from '@/lib/eventCard'
+import { eventCardBackground, eventCardData, renderEventCard } from '@/lib/eventCard'
 import { eventCardUrl } from '@/lib/eventCardUrl'
 import { EVENT_SETTINGS, eventSetting } from '@/lib/eventSetting'
 import { eventSource, eventVenue } from '@/lib/eventVenue'
@@ -101,7 +101,7 @@ describe('what the card and the event page say', () => {
   })
 
   it('versions the card URL with the event and the design', () => {
-    expect(eventCardUrl(base, 'es', 'link')).toMatch(/^\/api\/og\/event\/sabor-fest\?lang=es&size=link&v=4\.[a-z0-9]+$/)
+    expect(eventCardUrl(base, 'es', 'link')).toMatch(/^\/api\/og\/event\/sabor-fest\?lang=es&size=link&v=5\.[a-z0-9]+$/)
     expect(eventCardUrl({ ...base, updatedAt: '2026-10-02T10:00:00.000Z' }, 'es', 'link')).not.toBe(eventCardUrl(base, 'es', 'link'))
   })
 })
@@ -183,6 +183,65 @@ describe('eventSetting: the scene behind the social poster', () => {
     // A drawn scene does not compress like a flat colour with dots.
     expect(scene.length).toBeGreaterThan(plain.length * 1.5)
   }, 30000)
+})
+
+describe('the wide scenes: link, page and card', () => {
+  const hialeah = { id: 2, slug: 'hialeah', name: 'HIALEAH' }
+  const elsewhere = { id: 4, slug: 'doral', name: 'DORAL' }
+  const community = { id: 7, slug: 'church', label: 'COMUNIDAD' }
+  const at = (place: string, city: object, extra: object = {}) =>
+    ({ id: 1, slug: 'x', title: 'Cuentos de Halloween', date: day('2026-10-24'), timeLabel: '10 AM', venueType: 'place', place, city, kind: community, ...extra }) as unknown as Event
+  const photo = {
+    image: { id: 5, filename: 'venue.jpg', mimeType: 'image/jpeg', updatedAt: '2026-10-01T10:00:00.000Z', sizes: {} },
+  }
+  const WIDE = ['link', 'page', 'card'] as const
+
+  it('draws the wide art at link, page and card, and the portrait art on the poster', () => {
+    const ev = at('Biblioteca JFK', hialeah)
+    for (const size of WIDE) {
+      expect(eventCardBackground(ev, 'es', size), size).toEqual({ kind: 'scene', setting: 'library', art: 'wide' })
+    }
+    expect(eventCardBackground(ev, 'es', 'social')).toEqual({ kind: 'scene', setting: 'library', art: 'portrait' })
+  })
+
+  it("follows the event's own setting and the city's default", () => {
+    expect(eventCardBackground(at('Sapphire', hialeah, { setting: 'park' }), 'es', 'card')).toMatchObject({ setting: 'park', art: 'wide' })
+    expect(eventCardBackground(at('Sapphire', hialeah), 'es', 'link')).toMatchObject({ setting: 'hialeah-gateway', art: 'wide' })
+  })
+
+  it('stays flat with no scene: set to None, or outside the three cities', () => {
+    for (const size of [...WIDE, 'social'] as const) {
+      expect(eventCardBackground(at('Biblioteca JFK', hialeah, { setting: 'flat' }), 'es', size)).toEqual({ kind: 'flat' })
+      expect(eventCardBackground(at('Somewhere', elsewhere), 'es', size)).toEqual({ kind: 'flat' })
+    }
+  })
+
+  it("lets the event's photo win over any scene, at every size", () => {
+    for (const size of [...WIDE, 'social'] as const) {
+      const bg = eventCardBackground(at('Biblioteca JFK', hialeah, { setting: 'park', ...photo }), 'es', size)
+      expect(bg.kind, size).toBe('photo')
+    }
+  })
+
+  it('has wide art bundled for every scene it can pick', async () => {
+    const { existsSync } = await import('node:fs')
+    const { join } = await import('node:path')
+    for (const s of EVENT_SETTINGS) {
+      expect(existsSync(join(process.cwd(), 'src/assets/og/settings-wide', `${s}.jpg`)), s).toBe(true)
+    }
+  })
+
+  it('draws the wide sizes over the scene, and flat without one', async () => {
+    const ev = at('Biblioteca JFK', hialeah)
+    const none = at('Biblioteca JFK', hialeah, { setting: 'flat' })
+    for (const size of WIDE) {
+      const scene = Buffer.from(await renderEventCard(ev, 'es', size, '2026-10-05'))
+      const plain = Buffer.from(await renderEventCard(none, 'es', size, '2026-10-05'))
+      expect(scene.subarray(1, 4).toString()).toBe('PNG')
+      // A drawn scene does not compress like a flat colour with dots.
+      expect(scene.length, size).toBeGreaterThan(plain.length * 1.5)
+    }
+  }, 60000)
 })
 
 describe('the card route', () => {
