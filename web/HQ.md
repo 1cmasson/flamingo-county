@@ -186,7 +186,11 @@ fetches stats live and keeps none:
   to `hq-social-stats`. Measuring every post at the same ages is what makes them
   comparable. Postiz answers `[]` until a post is live and matched, so an empty
   reply is retried hourly for 48 hours, then skipped. A gap is never stored as
-  zeros.
+  zeros. Before that, each run reads every scheduled post's time back from
+  Postiz: a post dragged to another day in the Postiz calendar is followed
+  (`publishAt` and `scheduledFor` move with it), so it is measured from when it
+  really went out and the brief lists it on the right day. Postiz's public API
+  cannot move a post, so moving one is done in Postiz, not here.
 - **Account snapshots.** Once a day, in the 6 AM Miami hour before the brief,
   each account's last seven days are saved. The brief's **Socials** section
   reads the latest one.
@@ -470,16 +474,25 @@ preview arrives in Telegram for Approve / Reject like any other draft:
   cover photo is re-encoded as a JPEG. Either way the picture goes into HQ
   media for Facebook and Instagram. A story with no cover is Facebook text
   only. A credited photo adds a last line to the caption (see *Venue photos*).
-  An event with no photo has a poster that stands on a drawn scene when the
-  venue suggests one (`src/lib/eventSetting.ts`): a library, a restaurant, a
-  festival street, or Miami Lakes' Main Street plaza, which is also the default
-  for any Miami Lakes event. The scenes are generic places, never a real
-  business, locked in the brand kit and bundled under
-  `src/assets/og/settings/`. Anything else gets the flat city-colour poster.
-  The wide sizes are always flat.
+  An event with no photo has a poster that stands on a drawn scene
+  (`src/lib/eventSetting.ts`). The event's **Setting** field (sidebar) picks
+  one, or "None" for the flat city-colour poster. Left empty, the venue's name
+  picks it (biblioteca/library, city hall, museo/arts/teatro,
+  iglesia/church, salón de fiestas/ballroom, bar/lounge, restaurante/café,
+  parque/park, calle/street), then a listing's category (restaurants, bars),
+  then the city: Main Street plaza for Miami Lakes, the city gateway for
+  Hialeah, a Calle Ocho street for Little Havana. Hialeah Park (the racetrack)
+  is not a park. The scenes are generic places, never a real business; the
+  three real public places have blank signs and no artwork. Locked in the
+  brand kit, bundled under `src/assets/og/settings/`. The wide sizes are
+  always flat.
 - **Time.** The next 11:30 or 19:00 Miami slot at least 30 minutes away,
   skipping any slot within 3 hours of another pending, approved or scheduled
-  draft. An event's post never goes out after the event starts: if the first
+  draft. An event more than 3 days out is posted in its last 72 hours: the
+  first free slot from then to the start, or if those are all taken, the
+  nearest free one before (up to two weeks). So a class on the 31st published
+  on the 5th goes out the week of the 31st, and dates published together each
+  get their own week. An event's post never goes out after the event starts: if the first
   free slot is too late, the first slot at all; if even that is too late, it
   posts as soon as you approve. A run that has already started (an exhibit)
   can post until the evening of its last day. Drafts are written one at a

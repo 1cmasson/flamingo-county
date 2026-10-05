@@ -809,6 +809,26 @@ export interface Event {
    */
   organizerUrl?: string | null;
   /**
+   * Poster scene. Leave empty and the site picks one from the venue (library, park, church…) or the city. Only for an event without its own photo.
+   */
+  setting?:
+    | (
+        | 'main-street-lakes'
+        | 'hialeah-gateway'
+        | 'calle-ocho'
+        | 'library'
+        | 'restaurant'
+        | 'street-festival'
+        | 'arts-center'
+        | 'banquet-hall'
+        | 'park'
+        | 'church'
+        | 'city-hall'
+        | 'bar'
+        | 'flat'
+      )
+    | null;
+  /**
    * Search and answer engines read this. A cancelled event stays up marked cancelled rather than disappearing, so nobody turns up to it.
    */
   eventStatus: 'scheduled' | 'postponed' | 'rescheduled' | 'cancelled';
@@ -1508,7 +1528,7 @@ export interface PayloadMcpApiKey {
      */
     hqSendTelegram?: boolean | null;
     /**
-     * Download a public https JPEG, PNG or MP4 (up to 50 MB) into HQ media and return its id, for the `media` field of an hq-social-drafts document. The first media id on a draft is the cover shown in Telegram. Instagram and TikTok drafts need at least one.
+     * Download a public https JPEG, PNG or MP4 (up to 50 MB) into HQ media (a PNG is stored as JPEG, which Instagram requires) and return its id, for the `media` field of an hq-social-drafts document. The first media id on a draft is the cover shown in Telegram. Instagram and TikTok drafts need at least one.
      */
     hqAddDraftMediaFromUrl?: boolean | null;
     /**
@@ -2144,6 +2164,7 @@ export interface EventsSelect<T extends boolean = true> {
   organizer?: T;
   organizerName?: T;
   organizerUrl?: T;
+  setting?: T;
   eventStatus?: T;
   startTime?: T;
   endTime?: T;

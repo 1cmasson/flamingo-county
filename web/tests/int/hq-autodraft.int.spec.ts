@@ -6,7 +6,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
 
-import { draftForPublished, pickPostTime, postDeadline } from '@/lib/autoDraft'
+import { draftForPublished, pickPostTime, postDeadline, postWindowStart } from '@/lib/autoDraft'
 import { HQ_INTERNAL } from '@/lib/hq'
 import type { Event, HqSocialDraft, Story } from '@/payload-types'
 
@@ -94,6 +94,45 @@ describe('pickPostTime: when an auto-draft goes out', () => {
     const now = new Date('2026-11-01T00:10:00-04:00')
     expect(iso(pickPostTime(now, [], null))).toBe('2026-11-01T16:30:00.000Z')
     expect(iso(pickPostTime(new Date('2026-11-01T12:00:00-05:00'), [], null))).toBe('2026-11-02T00:00:00.000Z')
+  })
+})
+
+describe('an event is announced in the days before it', () => {
+  const ev = (day: number, startTime: string) => ({ date: `2026-10-${String(day).padStart(2, '0')}T12:00:00.000Z`, endDate: null, startTime })
+
+  it('opens the window 72 hours before the start, and not for one already near or under way', () => {
+    const now = oct(5, '11:55')
+    expect(iso(postWindowStart(ev(31, '10:00'), now)!)).toBe(iso(oct(28, '10:00')))
+    expect(postWindowStart(ev(7, '10:00'), now)).toBeNull()
+    expect(postWindowStart({ date: '2026-09-18T12:00:00.000Z', startTime: null }, now)).toBeNull()
+  })
+
+  it('posts a far event the week of it, not today', () => {
+    const now = oct(5, '11:55')
+    const e = ev(31, '10:00')
+    expect(iso(pickPostTime(now, [], postDeadline(e, now), postWindowStart(e, now)))).toBe(iso(oct(28, '11:30')))
+  })
+
+  it('goes earlier, not later, when the window is full', () => {
+    const now = oct(5, '11:55')
+    const e = ev(10, '10:00') // window Oct 7 10:00 to Oct 10 10:00
+    const busy = [oct(7, '11:30'), oct(7, '19:00'), oct(8, '11:30'), oct(8, '19:00'), oct(9, '11:30'), oct(9, '19:00')]
+    expect(iso(pickPostTime(now, busy, postDeadline(e, now), postWindowStart(e, now)))).toBe(iso(oct(6, '19:00')))
+  })
+
+  it('spreads the October library classes out however they are published (the Oct 5 pile-up)', () => {
+    const now = oct(5, '11:55')
+    // Published furthest first, as on Oct 5: the far ones used to take the near slots.
+    const classes = [31, 24, 17, 10].flatMap((d) => [ev(d, '12:00'), ev(d, '10:00')])
+    const busy: Date[] = []
+    for (const e of classes) {
+      const at = pickPostTime(now, busy, postDeadline(e, now), postWindowStart(e, now))
+      const opens = postWindowStart(e, now)!
+      expect(at.getTime()).toBeGreaterThanOrEqual(opens.getTime())
+      expect(at.getTime()).toBeLessThanOrEqual(postDeadline(e, now).getTime())
+      for (const b of busy) expect(Math.abs(b.getTime() - at.getTime())).toBeGreaterThanOrEqual(3 * 3_600_000)
+      busy.push(at)
+    }
   })
 })
 
@@ -303,6 +342,23 @@ describe('auto-drafting a social post when a page goes live', () => {
     expect(typeof media === 'object' && media).toMatchObject({ mimeType: 'image/jpeg', width: 1080, height: 1350 })
   })
 
+  it('attaches a two-card carousel: the Spanish card first, then the English one', async () => {
+    fakeTelegram()
+    const card = vi.spyOn(await import('@/lib/eventCard'), 'renderEventCard')
+    const ev = await draftEvent('2099-03-14', { image: null })
+    await publish('events', ev.id)
+    const [d] = await draftsFor('events', ev.id)
+    expect(d.media).toHaveLength(2)
+    const [first, second] = (d.media ?? []).map((m) => (typeof m === 'object' ? m : null))
+    expect(first).toMatchObject({ mimeType: 'image/jpeg', width: 1080, height: 1350 })
+    expect(second).toMatchObject({ mimeType: 'image/jpeg', width: 1080, height: 1350 })
+    expect(first?.note).toMatch(/ES card/)
+    expect(second?.note).toMatch(/EN card/)
+    const langs = card.mock.calls.filter(([e]) => e.id === ev.id).map(([, lang]) => lang)
+    expect(langs).toEqual(['es', 'en'])
+    card.mockRestore()
+  })
+
   it('draws the card for an event written only in English, with the English title', async () => {
     fakeTelegram()
     const card = vi.spyOn(await import('@/lib/eventCard'), 'renderEventCard')
@@ -340,7 +396,8 @@ describe('auto-drafting a social post when a page goes live', () => {
 
   it('schedules a draft written at 00:10 Miami time for 11:30 that morning', async () => {
     fakeTelegram()
-    const ev = await draftEvent('2099-03-14')
+    // Two days out, so its 72-hour window is already open and the morning slot is the first free one.
+    const ev = await draftEvent('2099-03-03')
     // Published, its real-time draft dropped, then drafted again as if the
     // clock read 00:10 on a day with nothing else waiting near it.
     await publish('events', ev.id)

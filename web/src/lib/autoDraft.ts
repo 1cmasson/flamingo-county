@@ -122,7 +122,9 @@ async function create(
   let pagePath: string
   let cover: Media | number | null | undefined
   let deadline: Date | null = null
+  let notBefore: Date | null = null
   let event: Event | null = null
+  let eventEn: Event | null = null
 
   if (collection === 'events') {
     const ev = { es: es as Event, en: en as Event }
@@ -131,10 +133,16 @@ async function create(
     pagePath = routes.event('es', ev.en.slug)
     cover = ev.en.image
     deadline = postDeadline(ev.en, now)
-    // The card is in Spanish, but unlike the caption it falls back to the
-    // English for a field with no translation: a card with no title is worse
-    // than one with an English title.
-    event = (await payload.findByID({ collection, id, locale: 'es', depth: 2, overrideAccess: true })) as Event
+    notBefore = postWindowStart(ev.en, now)
+    // Two cards, a carousel: Spanish first (the audience is Spanish-first),
+    // then English. Unlike the caption, each card falls back to the other
+    // language for a field with no translation: a card with no title is worse
+    // than one with a borrowed title.
+    ;[event, eventEn] = (await Promise.all(
+      (['es', 'en'] as const).map((locale) =>
+        payload.findByID({ collection, id, locale, depth: 2, overrideAccess: true }),
+      ),
+    )) as [Event, Event]
   } else {
     const st = { es: es as Story, en: en as Story }
     body = (excerpts) => bilingual((l) => storyLines(st[l], excerpts))
@@ -151,9 +159,22 @@ async function create(
   // the credit printed on it); a story's cover photo. A card that cannot be
   // drawn falls back to the photo itself.
   const label = `${collection} #${id}`
-  const media = event
-    ? ((await cardImage(payload, event, label, slug)) ?? (await copyCover(payload, cover, label, slug)))
-    : await copyCover(payload, cover, label, slug)
+  // Spanish card, then English card; the English one only when the Spanish
+  // one was drawn, so a carousel never opens in English.
+  const cards: number[] = []
+  if (event) {
+    const es = await cardImage(payload, event, 'es', label, slug)
+    if (es) {
+      cards.push(es)
+      const enCard = eventEn ? await cardImage(payload, eventEn, 'en', label, slug) : null
+      if (enCard) cards.push(enCard)
+    }
+  }
+  if (!cards.length) {
+    const photo = await copyCover(payload, cover, label, slug)
+    if (photo) cards.push(photo)
+  }
+  const media = cards[0] ?? null
   // The photo's credit goes in the caption wherever the photo is in the post.
   const coverDoc: Media | null =
     cover && typeof cover !== 'object'
@@ -163,7 +184,7 @@ async function create(
   // Instagram and TikTok need media; a still goes to Facebook and Instagram.
   // TikTok is left to the owner, since it wants video.
   const platforms: Platform[] = media ? ['facebook', 'instagram'] : ['facebook']
-  const scheduledFor = pickPostTime(now, await busyTimes(payload, now), deadline)
+  const scheduledFor = pickPostTime(now, await busyTimes(payload, now), deadline, notBefore)
 
   const draft = await payload.create({
     collection: 'hq-social-drafts',
@@ -171,7 +192,7 @@ async function create(
       status: 'pending',
       caption: caption(body, '', credit),
       platforms,
-      media: media ? [media] : [],
+      media: cards,
       scheduledFor: scheduledFor.toISOString(),
       pillar: collection === 'events' ? 'event' : 'story',
       language: 'both',
@@ -313,19 +334,32 @@ export const POST_SLOTS = ['11:30', '19:00'] as const
 const MIN_LEAD_MS = 30 * 60_000
 /** Two posts closer together than this would bury each other. */
 const MIN_GAP_MS = 3 * 60 * 60_000
-/** How far ahead slots are looked for. */
+/** How far ahead slots are looked for, at least: further when an event's window is later. */
 const HORIZON_DAYS = 21
+/** An event is announced in the days just before it, not as soon as it is published. */
+export const EVENT_LEAD_MS = 72 * 60 * 60_000
+const DAY_MS = 24 * 60 * 60_000
+/** The most days of slots ever listed at once: an event years out must not list them all. */
+const MAX_SPAN_DAYS = 120
+/** How far back from an event's window a full window may spill. */
+const SPILL_DAYS = 14
 
-/** Every posting slot at least 30 minutes after `now`, in order, for three weeks. */
-export function postSlots(now: Date): Date[] {
-  const earliest = now.getTime() + MIN_LEAD_MS
+/**
+ * Every posting slot at least 30 minutes after `now` (and not before `from`),
+ * in order: three weeks of them, or through `until` when that is later, but
+ * never more than 120 days.
+ */
+export function postSlots(now: Date, until?: Date | null, from?: Date | null): Date[] {
+  const earliest = Math.max(now.getTime() + MIN_LEAD_MS, from?.getTime() ?? 0)
+  const wanted = until ? Math.ceil((until.getTime() - earliest) / DAY_MS) + 1 : 0
+  const days = Math.min(MAX_SPAN_DAYS, Math.max(from ? wanted : HORIZON_DAYS, wanted))
   const out: Date[] = []
   // Day by day in Miami's calendar, each slot through `miamiInstant`, so a DST
   // change moves the UTC instant and never the wall-clock time.
-  for (let i = 0, day = todayISO(now); i <= HORIZON_DAYS; i++, day = addDays(day, 1)) {
+  for (let i = 0, day = todayISO(new Date(earliest)); i <= days; i++, day = addDays(day, 1)) {
     for (const at of POST_SLOTS) {
       const slot = miamiInstant(day, at)
-      if (slot.getTime() >= earliest) out.push(slot)
+      if (slot.getTime() >= earliest && (!from || !until || slot.getTime() <= until.getTime())) out.push(slot)
     }
   }
   return out
@@ -339,11 +373,28 @@ export function postSlots(now: Date): Date[] {
  * scheduled). For an event, never after `deadline` (see `postDeadline`): if
  * the first free slot is too late, the first slot at all, spacing or not; if
  * even that is too late, now, which posts as soon as it is approved.
+ *
+ * With `notBefore` (an event's window, see `postWindowStart`) the free slot is
+ * looked for from there to the deadline first, then backwards from it, so a
+ * post for the 31st published on the 5th goes out the week of the 31st, and
+ * events published together each get their own week instead of the far ones
+ * taking the near slots.
  */
-export function pickPostTime(now: Date, busy: Date[], deadline: Date | null): Date {
-  const slots = postSlots(now)
-  const free = slots.find((s) => busy.every((b) => Math.abs(b.getTime() - s.getTime()) >= MIN_GAP_MS))
+export function pickPostTime(now: Date, busy: Date[], deadline: Date | null, notBefore?: Date | null): Date {
+  const isFree = (s: Date) => busy.every((b) => Math.abs(b.getTime() - s.getTime()) >= MIN_GAP_MS)
   const inTime = (s: Date | undefined): s is Date => !!s && (!deadline || s.getTime() <= deadline.getTime())
+  if (notBefore && notBefore.getTime() > now.getTime()) {
+    const inWindow = postSlots(now, deadline, notBefore).find((s) => inTime(s) && isFree(s))
+    if (inWindow) return inWindow
+    const spill = new Date(notBefore.getTime() - SPILL_DAYS * DAY_MS)
+    const before = postSlots(now, notBefore, spill)
+      .filter((s) => s.getTime() < notBefore.getTime())
+      .reverse()
+      .find(isFree)
+    if (before) return before
+  }
+  const slots = postSlots(now, deadline)
+  const free = slots.find(isFree)
   if (inTime(free)) return free
   if (inTime(slots[0])) return slots[0]
   return now
@@ -362,6 +413,17 @@ export function postDeadline(ev: Pick<Event, 'date' | 'endDate' | 'startTime'>, 
   if (starts.getTime() > now.getTime()) return starts
   const last = eventRunEnd({ date: ev.date, endDate: ev.endDate })
   return last > first ? miamiInstant(last, POST_SLOTS[1]) : starts
+}
+
+/**
+ * Where an event's posting window opens: 72 hours before it starts. Null for
+ * one already under way (an exhibit), which is worth posting about straight
+ * away, and for one starting sooner than that.
+ */
+export function postWindowStart(ev: Pick<Event, 'date' | 'startTime'>, now: Date): Date | null {
+  const starts = miamiInstant(dateOnly(ev.date), ev.startTime || POST_SLOTS[0])
+  const opens = new Date(starts.getTime() - EVENT_LEAD_MS)
+  return opens.getTime() > now.getTime() ? opens : null
 }
 
 /** The times of drafts already waiting to go out, near enough to matter. */
@@ -428,23 +490,36 @@ async function copyCover(
 }
 
 /**
- * An event's generated card, Instagram's 4:5, in Spanish (the audience is
- * Spanish-first), stored in `hq-media` as a JPEG the same way as a copied
- * photo. Drawn from the published event's own fields only, with its photo
+ * An event's generated card, Instagram's 4:5, in one language (the draft takes
+ * the Spanish one, then the English one, as a carousel), stored in `hq-media`
+ * as a JPEG the same way as a copied photo. Drawn from the published event's own fields only, with its photo
  * framed on it when it has one. Null if it cannot be drawn; the draft then
  * takes the bare photo, or goes to Facebook as text.
  */
-async function cardImage(payload: Payload, ev: Event, label: string, slug: string): Promise<number | null> {
+async function cardImage(
+  payload: Payload,
+  ev: Event,
+  lang: 'es' | 'en',
+  label: string,
+  slug: string,
+): Promise<number | null> {
   try {
     // Loaded on demand: the renderer pulls in next/og, which the Payload CLI
     // (migrations, the seed) has no use for.
     const { renderEventCard } = await import('./eventCard')
-    const png = await renderEventCard(ev, 'es', 'social')
+    const png = await renderEventCard(ev, lang, 'social')
     const jpeg = await sharp(Buffer.from(png)).flatten({ background: '#ffffff' }).jpeg({ quality: 88 }).toBuffer()
     const created = await payload.create({
       collection: 'hq-media',
-      data: { note: `Generated card for ${label} (${ev.image ? 'with its photo' : 'no photo'}), made when it was published` },
-      file: { data: jpeg, mimetype: 'image/jpeg', name: `${slug.slice(0, 60)}-card-${Date.now()}.jpg`, size: jpeg.length },
+      data: {
+        note: `Generated ${lang.toUpperCase()} card for ${label} (${ev.image ? 'with its photo' : 'no photo'}), made when it was published`,
+      },
+      file: {
+        data: jpeg,
+        mimetype: 'image/jpeg',
+        name: `${slug.slice(0, 60)}-card-${lang}-${Date.now()}.jpg`,
+        size: jpeg.length,
+      },
       overrideAccess: true,
     })
     return created.id
