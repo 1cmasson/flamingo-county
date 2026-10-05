@@ -179,7 +179,7 @@ export function isStaff(headers: Headers): boolean {
 /**
  * Data-centre towns, as Cloudflare's `cf-ipcity` names them. Meta checks
  * every link posted to Facebook with a real browser from these, seconds after
- * the post goes out, and its user agent names no bot: on Oct 2 they were 7
+ * the post goes out, and its user agent names no bot: on Oct 2 they were 9
  * of the 12 "facebook" visits. Nobody here is our reader, and the audience
  * is Miami-Dade, so a town on this list is never counted.
  */
