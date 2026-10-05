@@ -286,6 +286,7 @@ never posted unseen: you get the current version to approve instead.
 | `hqRequestPublish` / `hqPublishStatus` | Ask you to publish a site draft (you tap Publish in Telegram), and check the answer. |
 | `hqSendTelegram` | Sends one plain-text message to your Telegram chat, headed "Claude", when you ask Claude to hand something over. It goes only to you (no chat id parameter), is escaped, refused rather than trimmed when too long, has no buttons, and is limited to 10 per 10 minutes. |
 | `hqAddDraftMediaFromUrl` | Downloads a public https JPEG, PNG or MP4 into HQ media for a draft. It refuses private and loopback hosts and doesn't follow redirects, so the server can't be pointed at itself. |
+| `hqAddDraftMediaFromUpload` | Adds a JPEG, PNG or MP4 sent straight from the caller's computer (base64) into HQ media, for a finished video that is on no public link. Checked by its real bytes (a mislabelled file or a .mov is refused), up to 50 MB, a PNG is stored as JPEG, and sending the same file twice returns the stored one. The file goes over the authenticated MCP connection only; it is never put on a public address. Nothing is posted. |
 | `hqAddSiteMediaFromUrl` | Imports a licensed venue photo into the public site's media, with its credit, licence and source, for an event's `image`. See *Venue photos*. |
 
 ### Venue photos
@@ -634,3 +635,16 @@ you may have edited it since. The caption rules mirror the Studio gate in the po
 **Not built yet:** video. HQ downloads draft media from a public https URL, and a story's videos
 are local files, so they need somewhere to be hosted until they are approved. Until then only text
 posts (Facebook) are imported.
+
+### Sending a finished video to HQ
+
+A video made on the owner's computer reaches a draft in two steps, neither of which publishes anything:
+
+1. `hqAddDraftMediaFromUpload` stores the file in `hq-media` and returns its id. In the content repo,
+   `scripts/hq_upload.py FILE --delivery` makes a smaller delivery copy (Telegram previews are limited to 50 MB, and
+   the upload to 50 MB) and sends it with the key from the Claude config.
+2. The draft's `media` field takes that id (as for any media). The owner sees the video in Telegram with Approve and
+   Reject, exactly as for a photo, and Approve uploads it to Postiz.
+
+Instagram and TikTok drafts need the video attached, so this is the step that unblocks them.
+

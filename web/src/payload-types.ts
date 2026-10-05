@@ -1536,6 +1536,10 @@ export interface PayloadMcpApiKey {
      */
     hqAddSiteMediaFromUrl?: boolean | null;
     /**
+     * Add a photo or video from the caller's own computer to HQ media and return its id, for the `media` field of an hq-social-drafts document. Use it when the file is not on a public URL, for example a finished video. Send the file as base64 in `dataBase64` and its type in `mimeType`: JPEG, PNG or MP4 (H.264; not .mov), up to 50 MB (about 67 MB of base64). The file is checked by its real bytes. Sending the same file again returns the stored one. Instagram and TikTok drafts need at least one media. Nothing is posted by this tool.
+     */
+    hqAddDraftMediaFromUpload?: boolean | null;
+    /**
      * Ask the owner to publish the current draft of a site document (events, weekly-events, stories, spotlights, listings). Save the draft first with the create/update tool and draft: true — drafts are never visible on the site. The owner sees exactly what changes against the live page in Telegram and taps Publish or Reject. If you edit the draft again before they tap, they are shown the new version instead. Publishes nothing by itself.
      */
     hqRequestPublish?: boolean | null;
@@ -2544,6 +2548,7 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         hqSendTelegram?: T;
         hqAddDraftMediaFromUrl?: T;
         hqAddSiteMediaFromUrl?: T;
+        hqAddDraftMediaFromUpload?: T;
         hqRequestPublish?: T;
         hqPublishStatus?: T;
       };

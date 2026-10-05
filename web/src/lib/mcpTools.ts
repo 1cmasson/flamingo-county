@@ -1,3 +1,4 @@
+import { createHash } from 'crypto'
 import { lookup } from 'dns/promises'
 import { isIP } from 'net'
 import type { MCPPluginConfig } from '@payloadcms/plugin-mcp'
@@ -472,23 +473,91 @@ export async function addMediaFromUrl(req: PayloadRequest, rawUrl: string, note?
     typesLabel: 'JPEG, PNG or MP4',
     limit: MEDIA_LIMIT,
   })
-  // Instagram takes JPEG only, and a PNG (the event poster, a screenshot)
-  // would fail there at approval time. Re-encoded here, flattened on white.
-  let file = data
-  let mimetype = type
-  if (type === 'image/png') {
-    file = await sharp(data).flatten({ background: '#ffffff' }).jpeg({ quality: 88 }).toBuffer()
+  return storeHqMedia(req, { data, type, stem: fileStem(url), note: note ?? `From ${url.hostname}` })
+}
+
+/**
+ * Put bytes into `hq-media`. Instagram takes JPEG only, and a PNG (the event
+ * poster, a screenshot) would fail there at approval time, so it is
+ * re-encoded here, flattened on white. Shared by the URL and upload tools.
+ */
+async function storeHqMedia(req: PayloadRequest, args: { data: Buffer; type: string; stem: string; note: string }) {
+  let file = args.data
+  let mimetype = args.type
+  if (mimetype === 'image/png') {
+    file = await sharp(file).flatten({ background: '#ffffff' }).jpeg({ quality: 88 }).toBuffer()
     mimetype = 'image/jpeg'
   }
   const ext = mimetype === 'video/mp4' ? 'mp4' : 'jpg'
   const doc = await req.payload.create({
     collection: 'hq-media',
-    data: { note: note ?? `From ${url.hostname}` },
-    file: { data: file, mimetype, name: `${fileStem(url)}-${Date.now()}.${ext}`, size: file.length },
+    data: { note: args.note },
+    file: { data: file, mimetype, name: `${args.stem}-${Date.now()}.${ext}`, size: file.length },
     req,
     overrideAccess: false,
   })
   return { id: doc.id, filename: doc.filename, mimeType: doc.mimeType, filesize: doc.filesize }
+}
+
+/**
+ * What a file really is, from its first bytes. A declared type alone is not
+ * trusted: a mislabelled file would only fail later, at approval time.
+ * QuickTime (.mov) shares MP4's container but Postiz accepts only MP4.
+ */
+export function sniffMediaType(b: Buffer): string | null {
+  if (b.length > 3 && b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff) return 'image/jpeg'
+  if (b.length > 8 && b.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return 'image/png'
+  if (b.length > 12 && b.subarray(4, 8).toString('latin1') === 'ftyp') {
+    return b.subarray(8, 12).toString('latin1') === 'qt  ' ? 'video/quicktime' : 'video/mp4'
+  }
+  return null
+}
+
+/** Base64 in, checked bytes out: size first (before decoding), then the declared type against the real one. */
+export function decodeUpload(
+  args: { dataBase64: string; mimeType: string },
+  limit: number = MEDIA_LIMIT,
+): { data: Buffer; type: string } {
+  const b64 = args.dataBase64.replace(/\s+/g, '')
+  if (b64.length > Math.ceil((limit * 4) / 3) + 8) throw new Error(`Larger than ${Math.round(limit / 1024 / 1024)} MB.`)
+  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(b64)) throw new Error('dataBase64 is not valid base64.')
+  const data = Buffer.from(b64, 'base64')
+  if (data.length > limit) throw new Error(`Larger than ${Math.round(limit / 1024 / 1024)} MB.`)
+  const real = sniffMediaType(data)
+  if (real === 'video/quicktime') throw new Error('That is a QuickTime (.mov) file. Export it as MP4 (H.264) first.')
+  if (!real || !MEDIA_TYPES.includes(real)) throw new Error('Not a JPEG, PNG or MP4 file.')
+  if (real !== args.mimeType) throw new Error(`Declared ${args.mimeType} but the file is ${real}.`)
+  return { data, type: real }
+}
+
+/**
+ * Add a file sent from the caller's own computer to `hq-media`: for a finished
+ * video that is not on any public URL. Authenticated by the MCP key like every
+ * tool, so the file is never exposed. A file already stored (same bytes) is
+ * returned, not stored twice, so a retry is safe.
+ */
+export async function addMediaFromUpload(
+  req: PayloadRequest,
+  args: { filename: string; mimeType: string; dataBase64: string; note?: string },
+) {
+  const { data, type } = decodeUpload(args)
+  const hash = createHash('sha256').update(data).digest('hex').slice(0, 16)
+  const tag = `[sha256 ${hash}]`
+  const found = await req.payload.find({
+    collection: 'hq-media',
+    where: { note: { contains: tag } },
+    limit: 1,
+    depth: 0,
+    req,
+    overrideAccess: false,
+  })
+  if (found.docs[0]) {
+    const d = found.docs[0]
+    return { id: d.id, filename: d.filename, mimeType: d.mimeType, filesize: d.filesize, existing: true }
+  }
+  const stem = args.filename.replace(/\.[^.]*$/, '').replace(/[^\w-]+/g, '-').slice(0, 60) || 'upload'
+  const note = `${args.note ? `${args.note.slice(0, 160)} ` : 'Uploaded from the owner\'s computer '}${tag}`
+  return { ...(await storeHqMedia(req, { data, type, stem, note })), existing: false }
 }
 
 /* ------------------------------------------------------------------------ */
@@ -783,6 +852,30 @@ export const hqMcpTools: McpTool[] = [
     },
     handler: (args: Record<string, unknown>, req: PayloadRequest) =>
       guard(async () => text(JSON.stringify(await addSiteMediaFromUrl(req, args as unknown as SiteMediaArgs)))),
+  },
+  {
+    name: 'hqAddDraftMediaFromUpload',
+    description:
+      "Add a photo or video from the caller's own computer to HQ media and return its id, for the `media` field of an hq-social-drafts document. Use it when the file is not on a public URL, for example a finished video. Send the file as base64 in `dataBase64` and its type in `mimeType`: JPEG, PNG or MP4 (H.264; not .mov), up to 50 MB (about 67 MB of base64). The file is checked by its real bytes. Sending the same file again returns the stored one. Instagram and TikTok drafts need at least one media. Nothing is posted by this tool.",
+    parameters: {
+      filename: z.string().min(1).max(120).describe('The file name, for example six-inches-en.mp4'),
+      mimeType: z.enum(['image/jpeg', 'image/png', 'video/mp4']).describe('The type of the file'),
+      dataBase64: z.string().min(16).max(70_000_000).describe('The file, base64-encoded'),
+      note: z.string().max(200).optional().describe('Optional note, e.g. what it is'),
+    },
+    handler: (args: Record<string, unknown>, req: PayloadRequest) =>
+      guard(async () =>
+        text(
+          JSON.stringify(
+            await addMediaFromUpload(req, {
+              filename: String(args.filename),
+              mimeType: String(args.mimeType),
+              dataBase64: String(args.dataBase64),
+              note: args.note as string | undefined,
+            }),
+          ),
+        ),
+      ),
   },
   {
     name: 'hqRequestPublish',

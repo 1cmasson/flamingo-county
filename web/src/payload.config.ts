@@ -179,7 +179,7 @@ export default buildConfig({
         },
         'hq-media': {
           enabled: { find: true },
-          description: 'Draft photos/videos. Add new ones with the hqAddDraftMediaFromUrl tool.',
+          description: 'Draft photos/videos. Add new ones with the hqAddDraftMediaFromUrl tool (a public link) or hqAddDraftMediaFromUpload (a file from the owner\'s computer).',
         },
         'hq-social-stats': {
           enabled: { find: true },
