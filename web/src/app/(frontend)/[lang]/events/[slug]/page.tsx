@@ -17,6 +17,7 @@ import { FULL_WIDTH_SIZES } from '../../../../../lib/srcset'
 import { EventActions } from '../../../../../components/EventActions'
 import { eventActionStrings, eventStatusLabel, eventVenue } from '../../../../../components/EventCard'
 import { EVENT_CARD_SIZES, eventCardUrl } from '../../../../../lib/eventCardUrl'
+import { getSeason } from '../../../../../lib/seasons'
 import { EventSource } from '../../../../../components/EventSource'
 import s from '../../../../../components/chrome.module.css'
 
@@ -118,6 +119,8 @@ export default async function EventPage({
    */
   const hasPhoto = !!rel<Media>(ev.image)?.url
   const heroCard = hasPhoto ? null : eventCardUrl(ev, lang, 'page')
+  // A seasonal event's hero card is drawn in its season's palette (lib/seasons.ts).
+  const seasonGround = heroCard ? getSeason(ev.season)?.card.event?.ground : undefined
   // The hero strip crops the photo (object-fit: cover), so the credit says so.
   const credit = hasPhoto ? photoCredit(ev.image, lang as Lang, { cropped: true }) : null
 
@@ -187,8 +190,8 @@ export default async function EventPage({
                 : { height: 'clamp(190px,40vw,320px)' }),
               borderBottom: '4px solid var(--ink)',
               overflow: 'hidden',
-              // The city's colour behind the card while it loads.
-              background: hasPhoto ? 'var(--ink)' : (city?.accent ?? kind?.bg ?? 'var(--grad-pink)'),
+              // The card's own ground behind it while it loads: the season's, else the city's colour.
+              background: hasPhoto ? 'var(--ink)' : (seasonGround ?? city?.accent ?? kind?.bg ?? 'var(--grad-pink)'),
             }}
           >
             {heroCard ? (
