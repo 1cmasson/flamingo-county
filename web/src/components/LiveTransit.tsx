@@ -1,7 +1,7 @@
 'use client'
 
 import type * as React from 'react'
-import { useEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useState, useSyncExternalStore } from 'react'
 import { createPortal } from 'react-dom'
 import type { Arrival, LiveSnapshot, LiveVehicle, Toward } from '../lib/live'
 import { ROUTE_STYLE, TRANSIT, formatClock, meters, miamiClock, towardName, type LatLng, type TransitRoute } from '../lib/transit'
@@ -176,7 +176,14 @@ export function StripLive({ route, name, copy }: { route: string; name: string; 
     for (const b of buses) {
       if (!b.nextStationId) continue
       // Coming down the strip, it's drawn above its next stop; coming up, below.
-      const way = b.toward === 'start' ? 'start' : 'end'
+      let way = b.toward === 'start' ? 'start' : 'end'
+      // Except at either end, where that would put it off the end of the
+      // line: a bus at the last stop about to turn back is drawn above it,
+      // one leaving the first stop below it.
+      const row = document.getElementById(`stop-${b.nextStationId}`)
+      const list = row?.parentElement
+      if (row && list && row === list.lastElementChild) way = 'end'
+      if (row && list && row === list.firstElementChild) way = 'start'
       const el = document.querySelector(`[data-bus-slot~="${CSS.escape(b.nextStationId)}"][data-way="${way}"]`)
       if (!el) continue
       out.set(el, [...(out.get(el) ?? []), b])
@@ -185,6 +192,20 @@ export function StripLive({ route, name, copy }: { route: string; name: string; 
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setSlots([...out].map(([el, list]) => ({ el, buses: list })))
   }, [buses])
+
+  // The rail stops at the last stop's dot, which a bus card above it pushes
+  // down: tell the CSS where the dot really is, whenever cards come or go.
+  useLayoutEffect(() => {
+    const strip = document.querySelector(`[data-strip="${CSS.escape(route)}"]`)
+    const last = strip?.lastElementChild as HTMLElement | null | undefined
+    const node = last?.querySelector<HTMLElement>(':scope > span:nth-of-type(2)')
+    if (!last || !node) return
+    const place = () => last.style.setProperty('--node-y', `${node.offsetTop + node.offsetHeight / 2}px`)
+    place()
+    const ro = new ResizeObserver(place)
+    ro.observe(last)
+    return () => ro.disconnect()
+  }, [slots, route])
 
   if (!data) return null
   if (!data.ok || failed) {
@@ -421,7 +442,7 @@ export function LeaveTimes({
 
 /* ------------------------------------------------- buses, said in words */
 
-export type BusWordsCopy = Record<'sentence' | 'noToward' | 'late' | 'onTime' | 'nextIn' | 'arriving', string> & { places: Record<string, string> }
+export type BusWordsCopy = Record<'sentence' | 'noToward' | 'late' | 'onTime' | 'nextIn' | 'arriving' | 'next', string> & { places: Record<string, string> }
 
 /** "Flamingo bus, going toward City Hall. Next stop: W 49 St & W 12 Ave · in ~3 min. 8 min late." */
 export function busSentence(v: LiveVehicle, copy: BusWordsCopy): string {
@@ -431,7 +452,12 @@ export function busSentence(v: LiveVehicle, copy: BusWordsCopy): string {
     v.toward && route
       ? fill(copy.sentence, { name: route.name, place: towardName(route, v.toward, copy.places) })
       : fill(copy.noToward, { name: route?.name ?? '' })
-  const next = v.nextInMin === null ? '' : ` ${v.nextInMin <= 0 ? fill(copy.arriving, { stop }) : fill(copy.nextIn, { stop, n: v.nextInMin })}.`
+  const next =
+    v.nextInMin === null
+      ? stop === '—'
+        ? ''
+        : ` ${fill(copy.next, { stop })}.`
+      : ` ${v.nextInMin <= 0 ? fill(copy.arriving, { stop }) : fill(copy.nextIn, { stop, n: v.nextInMin })}.`
   return `${base}${next} ${v.delayMin >= 2 ? fill(copy.late, { n: v.delayMin }) : copy.onTime}`
 }
 

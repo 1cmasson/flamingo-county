@@ -331,7 +331,12 @@ export function arrivalsFrom(feed: Feed | null, stopIds: number[], nowDate: Date
         const toward = towardAt(trip, i)
         if (ways.has(String(toward))) continue
         const delay = delayFor(v.tripId, trip.seq0 + i, feed) ?? 0
-        const minutes = Math.round((trip.secs[i] + delay - nowS) / 60)
+        const raw = Math.round((trip.secs[i] + delay - nowS) / 60)
+        // Behind its timetable with no delay reported, the stop the bus is
+        // heading to right now is "arriving" — it hasn't passed it. Further
+        // stops with a time already gone are ones we can't time, so skip them.
+        // (The strip's nextStation says the same about that first stop.)
+        const minutes = i === v.seq - trip.seq0 ? Math.max(0, raw) : raw
         if (minutes < 0) continue
         if (minutes > HORIZON_MIN) break
         ways.add(String(toward))
