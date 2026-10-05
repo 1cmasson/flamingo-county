@@ -8,6 +8,7 @@ import type { City, Event, EventKind } from '../payload-types'
 import { ARCHIVO_800, LUCKIEST_GUY } from './cardMetrics'
 import { EVENT_CARD_SIZES, type EventCardSize } from './eventCardUrl'
 import { eventDateLine, todayISO } from './dates'
+import { EVENT_SETTINGS, eventSetting, type EventSetting } from './eventSetting'
 import { eventVenue } from './eventVenue'
 import type { Season, SeasonCardTheme } from './seasons'
 
@@ -17,6 +18,10 @@ import type { Season, SeasonCardTheme } from './seasons'
  * a white halftone, the city and kind as chips, the title huge in Luckiest Guy
  * with a cream offset shadow, the date on an ink ticket, then time · place,
  * and the city's mascot standing in a cream arch on the right.
+ *
+ * The social poster can instead stand on a drawn scene (`eventSetting`): the
+ * scene replaces the colour and halftone, the mascot stands in it without the
+ * arch, and the small text sits on cream strips so it reads over the drawing.
  *
  * The seasonal guides (lib/seasons.ts, /es/halloween) reuse the same layout
  * with their own copy and palette: `renderSeasonCard`, `SEASON_THEMES`.
@@ -154,7 +159,13 @@ export function eventCardData(ev: Event, lang: Lang, today: string = todayISO())
 /* ------------------------------------------------------------------------ */
 
 type Mascot = { src: string; width: number; height: number }
-type Assets = { luckiest: Buffer; archivo: Buffer; mascots: Record<string, Mascot> }
+type Assets = {
+  luckiest: Buffer
+  archivo: Buffer
+  mascots: Record<string, Mascot>
+  /** Scene art as data URIs; a missing file is left out and the card is drawn flat. */
+  settings: Partial<Record<EventSetting, string>>
+}
 
 const ASSET_DIR = join(process.cwd(), 'src/assets/og')
 let assets: Promise<Assets> | null = null
@@ -178,7 +189,16 @@ function loadAssets(): Promise<Assets> {
           height: png.readUInt32BE(20),
         }
       }
-      return { luckiest, archivo, mascots }
+      const settings: Partial<Record<EventSetting, string>> = {}
+      for (const slug of EVENT_SETTINGS) {
+        try {
+          const jpg = await readFile(join(ASSET_DIR, `settings/${slug}.jpg`))
+          settings[slug] = `data:image/jpeg;base64,${jpg.toString('base64')}`
+        } catch (err) {
+          console.error(`[og] no scene art for ${slug}:`, err instanceof Error ? err.message : err)
+        }
+      }
+      return { luckiest, archivo, mascots, settings }
     })().catch((err) => {
       assets = null
       throw err
@@ -399,11 +419,14 @@ function Card({
   size,
   mascot,
   theme,
+  backdrop,
 }: {
   d: EventCardData
   size: EventCardSize
   mascot?: Mascot
   theme: CardTheme
+  /** A drawn scene (data URI) in place of the colour and halftone. */
+  backdrop?: string
 }) {
   const { width: W, height: H } = EVENT_CARD_SIZES[size]
   const L = LAYOUTS[size]
@@ -416,8 +439,10 @@ function Card({
 
   // Time · place on one line where it fits; a long one shrinks a little, then
   // breaks between its parts rather than inside a name.
-  const metaSize = d.meta ? fitLine(d.meta, L.meta.maxW, L.meta.size, Math.round(L.meta.size * 0.8), ARCHIVO_800) : 0
-  const metaRows = d.meta ? breakAtSeparators(d.meta.split(' · '), L.meta.maxW, metaSize) : []
+  // Over a scene each row sits on a cream strip, whose padding takes width.
+  const metaW = backdrop ? L.meta.maxW - 24 : L.meta.maxW
+  const metaSize = d.meta ? fitLine(d.meta, metaW, L.meta.size, Math.round(L.meta.size * 0.8), ARCHIVO_800) : 0
+  const metaRows = d.meta ? breakAtSeparators(d.meta.split(' · '), metaW, metaSize) : []
   const metaH = d.meta ? L.gap.meta + metaRows.length * metaSize * 1.2 : 0
 
   const chipsH = L.chip * 1.2 + Math.round(L.chip * 0.32) * 2 + 6
@@ -427,6 +452,8 @@ function Card({
   const title = d.title ? fitTitle(d.title, L.col.width - 8, titleRoom, L.title.max, L.title.lines) : null
 
   const arch = mascot ? L.arch : undefined
+  // Over a scene the mascot stands in it, so the arch goes.
+  const showArch = !!arch && !backdrop
   const mascotH = L.mascotH ?? 0
   const mascotW = mascot ? Math.round((mascot.width / mascot.height) * mascotH) : 0
   const archCenter = arch ? W - arch.right - arch.width / 2 : 0
@@ -461,6 +488,7 @@ function Card({
             fontSize: metaSize,
             lineHeight: 1.2,
             color: theme.text,
+            ...(backdrop ? { background: CREAM, padding: '4px 12px', marginTop: i ? 6 : 0 } : {}),
           }}
         >
           {row}
@@ -482,8 +510,13 @@ function Card({
         color: theme.text,
       }}
     >
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={halftone(W, H, theme)} width={W} height={H} alt="" style={{ position: 'absolute', left: 0, top: 0 }} />
+      {backdrop ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={backdrop} width={W} height={H} alt="" style={{ position: 'absolute', left: 0, top: 0, objectFit: 'cover' }} />
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={halftone(W, H, theme)} width={W} height={H} alt="" style={{ position: 'absolute', left: 0, top: 0 }} />
+      )}
       <div
         style={{
           position: 'absolute',
@@ -529,7 +562,7 @@ function Card({
         {meta}
       </div>
 
-      {arch && mascot ? (
+      {showArch && arch && mascot ? (
         <div
           style={{
             position: 'absolute',
@@ -566,6 +599,7 @@ function Card({
             fontSize: L.brand.size,
             letterSpacing: '0.12em',
             color: theme.text,
+            ...(backdrop ? { background: CREAM, padding: '8px 14px 6px', marginLeft: -14 } : {}),
           }}
         >
           FLAMINGOCOUNTY.COM
@@ -593,16 +627,18 @@ async function drawCard(
   theme: CardTheme,
   themeName: string,
   mascotSlug: string,
+  setting: EventSetting | null = null,
 ): Promise<ArrayBuffer> {
-  const key = `${size}|${themeName}|${mascotSlug}|${JSON.stringify(d)}`
+  const key = `${size}|${themeName}|${mascotSlug}|${setting ?? ''}|${JSON.stringify(d)}`
   const hit = cache.get(key)
   if (hit) return hit
 
   const a = await loadAssets()
   // The page card has no mascot: the page draws its own over the right side.
   const mascot = size === 'page' ? undefined : a.mascots[mascotSlug]
+  const backdrop = setting ? a.settings[setting] : undefined
   const { width, height } = EVENT_CARD_SIZES[size]
-  const res = new ImageResponse(<Card d={d} size={size} mascot={mascot} theme={theme} />, {
+  const res = new ImageResponse(<Card d={d} size={size} mascot={mascot} theme={theme} backdrop={backdrop} />, {
     width,
     height,
     fonts: [
@@ -627,7 +663,9 @@ export async function renderEventCard(
   today: string = todayISO(),
 ): Promise<ArrayBuffer> {
   const d = eventCardData(ev, lang, today)
-  return drawCard(d, size, DESIGN_C, 'c', d.citySlug)
+  // Only the social poster has room for a scene; the wide sizes stay flat.
+  const setting = size === 'social' ? eventSetting(ev) : null
+  return drawCard(d, size, DESIGN_C, 'c', d.citySlug, setting)
 }
 
 /**
