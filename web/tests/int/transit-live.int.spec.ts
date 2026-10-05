@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest'
-import { ETA_SCHEDULE, arrivalsFrom, feedHealthy, snapshotFrom, type Feed } from '@/lib/live'
-import { TRANSIT, etaIdsFor } from '@/lib/transit'
+import { ETA_SCHEDULE, arrivalsFrom, feedHealthy, snapshotFrom, towardAt, type Feed } from '@/lib/live'
+import { TRANSIT, etaIdsFor, towardName } from '@/lib/transit'
 
 /** A wall-clock time in Miami. October is EDT, UTC−4. */
 const miami = (iso: string) => new Date(`${iso}-04:00`)
@@ -129,5 +129,49 @@ describe('feed health — never a confident "no bus" from bad data', () => {
     const feed = feedWith({ seqIndex: STOP_INDEX - 5, delay: 0, ts: t })
     const live = arrivalsFrom(feed, [stop], now).find((a) => a.live)!
     expect(live.stop).toBe(ETA_SCHEDULE.stops[String(stop)])
+  })
+})
+
+describe('which way a bus is going', () => {
+  // ETA's trips are loops, so direction comes from the next of our stations
+  // the trip reaches, not from where the trip ends.
+  for (const route of TRANSIT.routes) {
+    const first = route.stations[0]
+    const last = route.stations.at(-1)!
+    const visits = (station: typeof first) =>
+      Object.values(ETA_SCHEDULE.trips)
+        .filter((t) => t.route === route.slug)
+        .flatMap((t) => t.stops.flatMap((id, i) => ((station.eta ?? []).includes(id) ? [towardAt(t, i)] : [])))
+
+    it(`${route.name}: leaving its first stop, every bus heads for its end`, () => {
+      const seen = visits(first)
+      expect(seen.length).toBeGreaterThan(0)
+      expect(new Set(seen)).toEqual(new Set(['end']))
+    })
+
+    it(`${route.name}: at its last stop, the only way left is back`, () => {
+      const seen = visits(last)
+      if (!seen.length) return // the end pole isn't one ETA serves
+      expect(new Set(seen)).toEqual(new Set(['start']))
+    })
+  }
+
+  it('names each direction by a place a rider knows, translated when asked', () => {
+    const flamingo = TRANSIT.routes.find((r) => r.slug === 'flamingo')!
+    expect(towardName(flamingo, 'end')).toBe('City Hall')
+    expect(towardName(flamingo, 'end', { 'City Hall': 'la Alcaldía' })).toBe('la Alcaldía')
+  })
+
+  it('every arrival carries its direction and pole; a live one names its bus', () => {
+    const now = miami(at(trip.secs[STOP_INDEX] - 600))
+    const feed = feedWith({ seqIndex: STOP_INDEX - 5, delay: 0, ts: now.getTime() / 1000 })
+    const arrivals = arrivalsFrom(feed, [stop], now, 8)
+    expect(arrivals.length).toBeGreaterThan(0)
+    for (const a of arrivals) {
+      expect(a.stopId).toBe(stop)
+      expect(['start', 'end']).toContain(a.toward)
+    }
+    expect(arrivals.find((a) => a.live)?.vehicleId).toBe('bus-1')
+    expect(arrivals.filter((a) => !a.live).every((a) => a.vehicleId === null)).toBe(true)
   })
 })

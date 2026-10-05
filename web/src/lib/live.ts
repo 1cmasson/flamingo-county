@@ -1,6 +1,6 @@
 import GtfsRealtimeBindings from 'gtfs-realtime-bindings'
 import eta from '../data/transit/hialeah-eta.json'
-import { getRoute, meters, miamiClock, serviceStatus, type TransitRoute } from './transit'
+import { TRANSIT, getRoute, meters, miamiClock, serviceStatus, type TransitRoute } from './transit'
 
 /**
  * Hialeah's buses, live.
@@ -90,6 +90,52 @@ export function liveFeed(now: number = Date.now()): Promise<Feed | null> {
   return cached.feed
 }
 
+/**
+ * Which way a bus is going, as one of our line's two ends. ETA's trips are
+ * mostly loops (out and back as one trip), so a trip's last stop says nothing;
+ * what does is the next of OUR stations the trip reaches after this point —
+ * further down our strip means toward its end, back up means toward its start.
+ */
+export type Toward = 'start' | 'end'
+
+/** ETA stop number → index of our station on each line. */
+const STATION_OF: Record<string, Map<number, number>> = Object.fromEntries(
+  TRANSIT.routes.map((r) => {
+    const m = new Map<number, number>()
+    r.stations.forEach((st, i) => (st.eta ?? []).forEach((id) => id !== null && m.set(id, i)))
+    return [r.slug, m]
+  }),
+)
+
+/** The furthest of our stations ETA serves, per line — its end, for this purpose. */
+const LAST_STATION: Record<string, number> = Object.fromEntries(
+  Object.entries(STATION_OF).map(([slug, m]) => [slug, Math.max(-1, ...m.values())]),
+)
+
+export function towardAt(trip: Pick<EtaTrip, 'route' | 'stops'>, i: number): Toward | null {
+  const of = STATION_OF[trip.route]
+  if (!of) return null
+  // Where the bus is: this stop if it's one of ours, else the last of ours behind it.
+  let here: number | undefined
+  for (let k = i; k >= 0 && here === undefined; k--) here = of.get(trip.stops[k])
+  // At either end of the line there's only one way left to go.
+  const last = LAST_STATION[trip.route]
+  if (here === 0) return 'end'
+  if (here !== undefined && here === last) return 'start'
+  for (let k = i + 1; k < trip.stops.length; k++) {
+    const next = of.get(trip.stops[k])
+    if (next === undefined || next === here) continue
+    if (here === undefined) here = next
+    else return next > here ? 'end' : 'start'
+  }
+  // The trip's last stretch: compare with where it came from instead.
+  for (let k = i - 1; k >= 0; k--) {
+    const prev = of.get(trip.stops[k])
+    if (prev !== undefined && here !== undefined && prev !== here) return here > prev ? 'end' : 'start'
+  }
+  return null
+}
+
 export type LiveVehicle = {
   id: string
   route: TransitRoute['slug']
@@ -101,6 +147,7 @@ export type LiveVehicle = {
   next: string | null
   /** The station on our strip the bus is nearest, so a line page can mark it. */
   stationId: string | null
+  toward: Toward | null
 }
 
 /** Our nearest station to a bus, on its own line, if it's close enough to say so. */
@@ -186,6 +233,7 @@ export function snapshotFrom(feed: Feed | null, now: number): LiveSnapshot {
         delayMin: delay === null ? 0 : Math.round(delay / 60),
         next: nextStop ? (ETA.stops[String(nextStop)] ?? null) : null,
         stationId: nearestStation(trip.route, v.lat, v.lng),
+        toward: towardAt(trip, Math.max(0, v.seq - trip.seq0)),
       },
     ]
   })
@@ -201,6 +249,11 @@ export type Arrival = {
   delayMin: number
   /** ETA's name for the pole the bus stops at — it carries the direction (EB, NB…). */
   stop: string
+  /** ETA's number for that pole, so a page can send the rider to the right side of the street. */
+  stopId: number
+  toward: Toward | null
+  /** The bus on the road, for a live arrival — the same id the map's bus has. */
+  vehicleId: string | null
 }
 
 /**
@@ -235,7 +288,16 @@ export function arrivalsFrom(feed: Feed | null, stopIds: number[], nowDate: Date
         const delay = delayFor(v.tripId, trip.seq0 + i, feed) ?? 0
         const minutes = Math.round((trip.secs[i] + delay - nowS) / 60)
         if (minutes >= 0 && minutes <= HORIZON_MIN) {
-          out.push({ route: trip.route, minutes, live: true, delayMin: Math.round(delay / 60), stop: ETA.stops[String(trip.stops[i])] ?? '' })
+          out.push({
+            route: trip.route,
+            minutes,
+            live: true,
+            delayMin: Math.round(delay / 60),
+            stop: ETA.stops[String(trip.stops[i])] ?? '',
+            stopId: trip.stops[i],
+            toward: towardAt(trip, i),
+            vehicleId: v.id,
+          })
           break
         }
       }
@@ -252,7 +314,18 @@ export function arrivalsFrom(feed: Feed | null, stopIds: number[], nowDate: Date
     const i = trip.stops.findIndex((s, k) => want.has(s) && trip.secs[k] >= nowS)
     if (i < 0) continue
     const minutes = Math.round((trip.secs[i] - nowS) / 60)
-    if (minutes <= HORIZON_MIN) out.push({ route: trip.route, minutes, live: false, delayMin: 0, stop: ETA.stops[String(trip.stops[i])] ?? '' })
+    if (minutes <= HORIZON_MIN) {
+      out.push({
+        route: trip.route,
+        minutes,
+        live: false,
+        delayMin: 0,
+        stop: ETA.stops[String(trip.stops[i])] ?? '',
+        stopId: trip.stops[i],
+        toward: towardAt(trip, i),
+        vehicleId: null,
+      })
+    }
   }
 
   return out.sort((a, b) => a.minutes - b.minutes).slice(0, limit)

@@ -15,7 +15,8 @@ export async function GET(req: NextRequest) {
     .filter((n) => Number.isInteger(n) && n > 0)
     .slice(0, 8)
   if (!stops.length) return NextResponse.json({ error: 'stops required' }, { status: 400 })
-  const arrivals = await nextArrivals(stops)
+  // Enough to have the next two each way: a stop is served in both directions.
+  const arrivals = await nextArrivals(stops, new Date(), 8)
   return NextResponse.json(
     { arrivals },
     { headers: { 'Cache-Control': 'public, max-age=10, s-maxage=15, stale-while-revalidate=30' } },

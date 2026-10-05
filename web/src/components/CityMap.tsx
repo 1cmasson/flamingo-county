@@ -173,10 +173,12 @@ export function CityMap({
                         })}
                       </title>
                       {/* Bearing is compass degrees from north; the bus is drawn facing east. */}
-                      <g transform={`rotate(${b.bearing - 90})`}>
+                      {/* Drawn larger than the illustration's buses: on a phone the
+                          whole city is 330px wide, and these are the ones to find. */}
+                      <g transform={`scale(1.7) rotate(${b.bearing - 90})`}>
                         <Bus color={line?.color ?? 'var(--yellow)'} />
                       </g>
-                      {b.delayMin >= 2 ? <circle r={4} cx={10} cy={-9} fill="var(--magenta)" stroke="var(--cream)" strokeWidth={1.5} /> : null}
+                      {b.delayMin >= 2 ? <circle r={6} cx={17} cy={-15} fill="var(--magenta)" stroke="var(--cream)" strokeWidth={2} /> : null}
                     </g>
                   )
                 })}

@@ -65,3 +65,6 @@ shots/
 *.local.mjs
 /hq-media
 scripts/aeo/results/
+
+# MapLibre browser build, copied by scripts/vendor-maplibre.mjs
+/public/vendor/maplibre/

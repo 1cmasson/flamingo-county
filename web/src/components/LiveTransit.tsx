@@ -2,7 +2,8 @@
 
 import type * as React from 'react'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
-import type { Arrival, LiveSnapshot } from '../lib/live'
+import type { Arrival, LiveSnapshot, LiveVehicle, Toward } from '../lib/live'
+import { TRANSIT, formatClock, meters, miamiClock, towardName, type LatLng, type TransitRoute } from '../lib/transit'
 import tr from './transit.module.css'
 
 /**
@@ -198,6 +199,213 @@ export function StripLive({ route, name, copy }: { route: string; name: string; 
           ))}
         </ul>
       ) : null}
+    </div>
+  )
+}
+
+/* ------------------------------------------------------- when to leave */
+
+export type LeaveCopy = Record<
+  | 'toward'
+  | 'leaveIn'
+  | 'leaveNow'
+  | 'busAt'
+  | 'tooClose'
+  | 'nextOne'
+  | 'live'
+  | 'scheduled'
+  | 'late'
+  | 'early'
+  | 'onTime'
+  | 'none'
+  | 'otherSide'
+  | 'walkThere'
+  | 'showBus'
+  | 'checking',
+  string
+> & { places: Record<string, string> }
+
+type Direction = { key: string; toward: Toward | null; list: Arrival[] }
+
+/**
+ * The answer a rider actually wants: "leave in 6 minutes". For each way the
+ * line goes from this stop, the first bus they can still walk to in time —
+ * its clock time, whether it's tracked live, how late — and, when the bus
+ * that way stops on the other side of the street, a word about that.
+ *
+ * Leaving time is arrival minus the walk. A bus due sooner than the walk is
+ * named too, so nobody wonders why the board says 3 and we say 44.
+ */
+export function LeaveTimes({
+  route,
+  stops,
+  walk,
+  nearestPole,
+  poles,
+  lang,
+  copy,
+  walkHref,
+  onShowBus,
+  onFirstLive,
+}: {
+  route: TransitRoute
+  stops: number[]
+  /** Minutes on foot to the nearest pole. */
+  walk: number
+  nearestPole: LatLng
+  /** ETA stop number → where that pole stands and what it's called. */
+  poles: Record<number, { at: LatLng; name: string }>
+  lang: 'en' | 'es'
+  copy: LeaveCopy
+  walkHref: (to: LatLng) => string
+  onShowBus?: (id: string) => void
+  /** Told the first live bus a rider could catch, so the map can point at it. */
+  onFirstLive?: (id: string | null) => void
+}) {
+  const url = stops.length ? `/api/transit/arrivals?stops=${stops.join(',')}` : null
+  const { data, at: fetchedAt } = usePoll<{ arrivals: Arrival[] }>(url, 30_000)
+  const list = (data?.arrivals ?? []).filter((a) => a.route === route.slug)
+
+  const dirs: Direction[] = []
+  for (const a of list) {
+    const key = a.toward ?? 'any'
+    let d = dirs.find((x) => x.key === key)
+    if (!d) dirs.push((d = { key, toward: a.toward, list: [] }))
+    d.list.push(a)
+  }
+  // The same order every refresh: toward the line's start, then its end.
+  dirs.sort((a, b) => a.key.localeCompare(b.key) * -1)
+
+  const firstLive = dirs.map((d) => d.list.find((a) => a.minutes >= walk)).find((a) => a?.live)?.vehicleId ?? null
+  useEffect(() => {
+    if (data) onFirstLive?.(firstLive)
+  }, [data, firstLive, onFirstLive])
+
+  if (!url) return null
+  if (!data) {
+    return (
+      <p role="status" style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>
+        {copy.checking}
+      </p>
+    )
+  }
+  if (!list.length) return <p style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{copy.none}</p>
+
+  // Minutes are counted from when the server answered, so the clock is too.
+  // "1:11 p. m." must not break across lines between its parts.
+  const clock = (min: number) => formatClock(miamiClock(new Date((fetchedAt ?? 0) + min * 60_000)).min, lang).replace(/ /g, '\u00a0')
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+      {dirs.map((d) => {
+        const catchable = d.list.find((a) => a.minutes >= walk)
+        const missed = d.list.find((a) => a.minutes < walk)
+        const after = catchable ? d.list[d.list.indexOf(catchable) + 1] : undefined
+        const show = catchable ?? d.list[0]
+        const leave = catchable ? catchable.minutes - walk : null
+        const pole = poles[show.stopId]
+        const across = pole && meters(pole.at, nearestPole) > 20
+        const status = show.live
+          ? show.delayMin >= 2
+            ? fill(copy.late, { n: show.delayMin })
+            : show.delayMin <= -2
+              ? fill(copy.early, { n: -show.delayMin })
+              : copy.onTime
+          : copy.scheduled
+        return (
+          <div key={d.key} className={tr.reveal} style={{ border: '3px solid var(--ink)', background: '#fff', padding: '12px 12px 14px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {d.toward ? (
+              <div style={{ fontWeight: 800, fontSize: 14, letterSpacing: '0.8px', textTransform: 'uppercase' }}>
+                {fill(copy.toward, { place: towardName(route, d.toward, copy.places) })}
+              </div>
+            ) : null}
+            <div style={{ fontFamily: 'var(--display)', fontSize: 'clamp(30px,8vw,36px)', lineHeight: 1, paddingTop: 2 }}>
+              {leave === null ? fill(copy.busAt, { time: clock(show.minutes), n: show.minutes }) : leave <= 1 ? copy.leaveNow : fill(copy.leaveIn, { n: leave })}
+            </div>
+            {leave !== null ? (
+              <div style={{ fontSize: 17, fontWeight: 700, lineHeight: 1.35 }}>{fill(copy.busAt, { time: clock(show.minutes), n: show.minutes })}</div>
+            ) : null}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', fontSize: 15, fontWeight: 800 }}>
+              {show.live ? <span className={`${tr.dot} ${tr.dotLive}`} /> : null}
+              {show.live ? <span>{copy.live} ·</span> : null}
+              <span style={{ color: show.live && show.delayMin >= 2 ? 'var(--magenta)' : undefined }}>{status}</span>
+            </div>
+            {missed && catchable && missed !== catchable ? (
+              <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.4, color: '#3d4248' }}>{fill(copy.tooClose, { n: missed.minutes, walk })}</div>
+            ) : null}
+            {after ? <div style={{ fontSize: 15, fontWeight: 600, color: '#3d4248' }}>{fill(copy.nextOne, { time: clock(after.minutes) })}</div> : null}
+            {across ? (
+              <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.4 }}>
+                {fill(copy.otherSide, { stop: pole.name })}{' '}
+                <a href={walkHref(pole.at)} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 800, textDecoration: 'underline', whiteSpace: 'nowrap' }}>
+                  {copy.walkThere}
+                </a>
+              </div>
+            ) : null}
+            {show.live && show.vehicleId && onShowBus ? (
+              <button
+                type="button"
+                onClick={() => onShowBus(show.vehicleId!)}
+                className={tr.btn}
+                style={{ alignSelf: 'flex-start', marginTop: 4, minHeight: 44, font: 'inherit', fontWeight: 800, fontSize: 15, padding: '8px 12px', border: '3px solid var(--ink)', background: 'var(--cream)', color: 'var(--ink)', cursor: 'pointer' }}
+              >
+                {copy.showBus}
+              </button>
+            ) : null}
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
+/* ------------------------------------------------- buses, said in words */
+
+export type BusWordsCopy = Record<'sentence' | 'noToward' | 'late' | 'onTime', string> & { places: Record<string, string> }
+
+/** "Flamingo bus, going toward City Hall. Next stop: W 49 St & W 12 Ave. 8 min late." */
+export function busSentence(v: LiveVehicle, copy: BusWordsCopy): string {
+  const route = TRANSIT.routes.find((r) => r.slug === v.route)
+  const base = v.toward && route
+    ? fill(copy.sentence, { name: route.name, place: towardName(route, v.toward, copy.places), stop: v.next ?? '—' })
+    : fill(copy.noToward, { name: route?.name ?? '', stop: v.next ?? '—' })
+  return `${base} ${v.delayMin >= 2 ? fill(copy.late, { n: v.delayMin }) : copy.onTime}`
+}
+
+export type BusesNowCopy = BusWordsCopy & Record<'heading' | 'none' | 'offline' | 'updated' | 'count' | 'one', string>
+
+/**
+ * Every bus on the road right now, one sentence each, grouped by line — the
+ * map's buses for someone who'd rather read than squint at a map.
+ */
+export function BusesNow({ copy }: { copy: BusesNowCopy }) {
+  const { data, failed } = usePoll<LiveSnapshot>('/api/transit/live', 15_000)
+  const ago = useAgo(data?.updatedAt ?? null)
+  if (!data) return null
+  if (!data.ok || failed) return <p style={{ margin: 0, fontSize: 16, fontWeight: 700 }}>{copy.offline}</p>
+  return (
+    <div role="region" aria-label={copy.heading} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+      {TRANSIT.routes.map((r) => {
+        const buses = data.vehicles.filter((v) => v.route === r.slug)
+        return (
+          <div key={r.slug} style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontWeight: 800, fontSize: 16 }}>
+              <span className={`${tr.dot} ${buses.length ? tr.dotLive : ''}`} style={buses.length ? undefined : ({ '--dot': '#9aa1a8' } as React.CSSProperties)} />
+              {fill(buses.length === 0 ? copy.none : buses.length === 1 ? copy.one : copy.count, { n: buses.length, name: r.name })}
+            </div>
+            {buses.length ? (
+              <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                {buses.map((b) => (
+                  <li key={b.id} style={{ background: 'var(--cream)', border: '2px solid var(--ink)', borderLeft: `8px solid ${r.slug === 'flamingo' ? 'var(--pink)' : 'var(--cyan)'}`, padding: '8px 10px', fontSize: 16, fontWeight: 600, lineHeight: 1.4 }}>
+                    {busSentence(b, copy)}
+                  </li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
+        )
+      })}
+      {ago !== null ? <div style={{ fontSize: 13, fontWeight: 700, color: '#3d4248' }}>{fill(copy.updated, { s: ago })}</div> : null}
     </div>
   )
 }

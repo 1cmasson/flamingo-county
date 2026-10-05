@@ -175,6 +175,35 @@ export function walkMinutes(m: number): number {
 /** About a ten-minute walk. Further than that, the bus isn't the answer. */
 export const MAX_WALK_METERS = 600
 
+/** "Aquabella ↔ Hialeah Dr & E 4 Ave" — the line's two ends, as a rider reads them. */
+export function lineEnds(route: TransitRoute): [string, string] {
+  const a = route.stations[0]
+  const b = route.stations.at(-1)!
+  // "NW 138 St (#10990)" → "NW 138 St": the parenthetical is an address
+  // the rider doesn't need in a headline.
+  const short = (x: string) => x.replace(/\s*\((#|Connector).*\)$/i, '')
+  return [a.landmark ?? short(a.name), b.landmark ?? short(b.name)]
+}
+
+/**
+ * What a rider reads as "which way": the place each direction is headed. The
+ * ends' own names are corners nobody waits for ("NW 42/37 Ave"), so each line
+ * names a place at or near its end that is on the line — Flamingo ends two
+ * minutes past City Hall, Marlin's last stops are on E 65 St.
+ */
+const TOWARD: Record<TransitRoute['slug'], [string, string]> = {
+  flamingo: ['Aquabella', 'City Hall'],
+  marlin: ['NW 138 St', 'E 65 St'],
+}
+
+/** Every direction name, for the pages to translate ("City Hall" → "la Alcaldía"). */
+export const TOWARD_PLACES = [...new Set(Object.values(TOWARD).flat())]
+
+export function towardName(route: TransitRoute, toward: 'start' | 'end', names: Record<string, string> = {}): string {
+  const place = (TOWARD[route.slug] ?? lineEnds(route))[toward === 'start' ? 0 : 1]
+  return names[place] ?? place
+}
+
 /** The station's ETA stop numbers, both sides of the street, deduplicated. */
 export function etaIdsFor(station: Station): number[] {
   return [...new Set((station.eta ?? []).filter((x): x is number => x !== null))]

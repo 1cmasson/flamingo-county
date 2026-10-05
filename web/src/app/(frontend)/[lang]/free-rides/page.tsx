@@ -21,7 +21,10 @@ import {
   LineBullet,
   serviceStatusText,
   nearMeCopy,
-  nextBusCopy,
+  leaveCopy,
+  rideMapCopy,
+  busWordsCopy,
+  busesNowCopy,
   nearMePlaces,
   routeHrefs,
   PrimaryButton,
@@ -32,6 +35,7 @@ import {
   fill,
 } from '../../../../components/Transit'
 import { NearMe } from '../../../../components/NearMe'
+import { BusesNow } from '../../../../components/LiveTransit'
 import { CityMap } from '../../../../components/CityMap'
 import { cityMap } from '../../../../lib/citymap'
 import tr from '../../../../components/transit.module.css'
@@ -138,6 +142,28 @@ export default async function FreeRidesPage({ params }: { params: Promise<{ lang
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
               <ServiceStatusChip lang={lang} t={t} />
             </div>
+            {/* The one thing most visitors came to do, before anything else. */}
+            <a
+              href="#near-me"
+              className={tr.btn}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                minHeight: 58,
+                background: 'var(--yellow)',
+                color: 'var(--ink)',
+                border: '4px solid var(--ink)',
+                boxShadow: '4px 4px 0 var(--pink)',
+                fontFamily: 'var(--display)',
+                fontSize: 21,
+                lineHeight: 1.1,
+                padding: '14px 16px 11px',
+                textAlign: 'center',
+              }}
+            >
+              {t('FIND MY STOP & NEXT BUS ↓')}
+            </a>
             <nav
               aria-label={t('The lines')}
               style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 4 }}
@@ -186,7 +212,15 @@ export default async function FreeRidesPage({ params }: { params: Promise<{ lang
         </header>
 
         {/* --- From wherever the visitor is --- */}
-        <NearMe copy={nearMeCopy(t)} nextBus={nextBusCopy(t)} places={nearMePlaces(places, lang)} routeHref={routeHrefs(lang)} />
+        <NearMe
+          copy={nearMeCopy(t)}
+          leave={leaveCopy(t)}
+          mapCopy={rideMapCopy(t)}
+          busWords={busWordsCopy(t)}
+          lang={lang}
+          places={nearMePlaces(places, lang)}
+          routeHref={routeHrefs(lang)}
+        />
 
         {/* --- The two lines --- */}
         <div
@@ -317,23 +351,32 @@ export default async function FreeRidesPage({ params }: { params: Promise<{ lang
               {t('WHEN THEY RUN')}
             </h2>
             <HoursLines lang={lang} t={t} />
-            <p
+            <p style={{ margin: 0, fontSize: 15, fontWeight: 600, lineHeight: 1.5, color: '#c9ced4' }}>
+              {t('Both lines, both directions. Hours are the City of Hialeah’s.')}
+            </p>
+            {/* For anyone who would rather ask a person than read a page. */}
+            <a
+              href={`tel:${CITY_TRANSIT_PHONE.replace(/[^\d]/g, '')}`}
+              className={tr.btn}
               style={{
-                margin: 0,
-                fontSize: 13,
-                fontWeight: 600,
-                lineHeight: 1.5,
-                color: '#c9ced4',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 10,
+                minHeight: 56,
+                background: 'var(--cream)',
+                color: 'var(--ink)',
+                border: '4px solid var(--ink)',
+                boxShadow: '4px 4px 0 var(--cyan)',
+                fontWeight: 800,
+                fontSize: 18,
+                padding: '10px 14px',
+                textAlign: 'center',
               }}
             >
-              {t('Both lines, both directions. Hours are the City of Hialeah’s.')} {t('Questions:')}{' '}
-              <a
-                href={`tel:${CITY_TRANSIT_PHONE.replace(/[^\d]/g, '')}`}
-                style={{ color: 'var(--cyan)', fontWeight: 800 }}
-              >
-                {CITY_TRANSIT_PHONE}
-              </a>
-            </p>
+              <span aria-hidden="true">📞</span>
+              {fill(t('Call Hialeah Transit · {phone}'), { phone: CITY_TRANSIT_PHONE })}
+            </a>
           </section>
 
           <section
@@ -356,23 +399,14 @@ export default async function FreeRidesPage({ params }: { params: Promise<{ lang
             >
               {t('WHERE IS MY BUS?')}
             </h2>
-            <p
-              style={{
-                margin: 0,
-                fontSize: 15,
-                fontWeight: 600,
-                lineHeight: 1.5,
-                textWrap: 'pretty',
-              }}
-            >
-              {t(
-                'Hialeah tracks its buses live in the free ETA SPOT app. Open it, pick “Hialeah Transit System”, then your line.',
-              )}
+            <BusesNow copy={busesNowCopy(t)} />
+            <p style={{ margin: 0, fontSize: 15, fontWeight: 600, lineHeight: 1.5, textWrap: 'pretty' }}>
+              {t('Prefer an app? The city’s free ETA SPOT app shows the same buses: pick “Hialeah Transit System”, then your line.')}
             </p>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-              <PrimaryButton href={LINKS.etaSpotIos} external>
+              <SecondaryButton href={LINKS.etaSpotIos} external>
                 {t('ETA SPOT · iPhone')}
-              </PrimaryButton>
+              </SecondaryButton>
               <SecondaryButton href={LINKS.etaSpotAndroid} external>
                 {t('ETA SPOT · Android')}
               </SecondaryButton>

@@ -248,6 +248,62 @@ export const ES_OVERRIDES: Record<string, string> = {
     'Freebee da viajes gratis cuando los pidas por Hialeah y Miami Lakes; resérvalo en la app.',
   'Walking directions to the stop ↗': 'Cómo llegar caminando a la parada ↗',
 
+  // Free rides: where are you, when to leave, the street map
+  'Find your stop, how to walk there, and when to leave to catch the bus.':
+    'Encuentra tu parada, cómo llegar caminando y a qué hora salir para coger la guagua.',
+  'TAP MY SPOT ON A MAP': 'MARCAR MI LUGAR EN UN MAPA',
+  'HIDE THE MAP': 'ESCONDER EL MAPA',
+  'Or type an address or a bus stop': 'O escribe una dirección o una parada',
+  'Like 1201 W 44th Pl or Palm Ave': 'Como 1201 W 44th Pl o Palm Ave',
+  'Your exact location stays on your phone. The map loads streets from OpenFreeMap; a typed address is looked up with the US Census Bureau.':
+    'Tu ubicación exacta se queda en tu teléfono. El mapa carga las calles de OpenFreeMap; una dirección escrita se busca con la Oficina del Censo de EE. UU.',
+  'Your phone is not sharing your location with this site. You can tap your spot on a map instead, or turn location on:':
+    'Tu teléfono no le está dando tu ubicación a este sitio. Puedes marcar tu lugar en un mapa, o encender la ubicación:',
+  'iPhone: open Settings → Privacy & Security → Location Services → Safari Websites → choose “While Using the App”.':
+    'iPhone: abre Configuración → Privacidad y seguridad → Localización → Sitios web de Safari → escoge “Al usar la app”.',
+  'Android: tap the icon left of the web address → Permissions → Location → Allow.':
+    'Android: toca el ícono a la izquierda de la dirección web → Permisos → Ubicación → Permitir.',
+  'We couldn’t get your location. Try again, tap your spot on a map, or type an address.':
+    'No pudimos encontrar tu ubicación. Prueba otra vez, marca tu lugar en un mapa o escribe una dirección.',
+  'We couldn’t find that address in Hialeah. Try adding the ZIP code, or tap your spot on a map.':
+    'No encontramos esa dirección en Hialeah. Prueba con el código postal, o marca tu lugar en un mapa.',
+  'the spot you tapped': 'el lugar que marcaste',
+  Change: 'Cambiar',
+  'YOUR STOP': 'TU PARADA',
+  'about {mi} mi': 'unas {mi} millas',
+  'See this stop on the line →': 'Ver esta parada en la ruta →',
+  'The closest free bus stop is a {n}-minute walk (about {mi} mi).':
+    'La parada de guagua gratis más cercana está a {n} minutos caminando (unas {mi} millas).',
+  'Toward {place}': 'Hacia {place}',
+  'LEAVE IN {n} MIN': 'SAL EN {n} MIN',
+  'LEAVE NOW': 'SAL YA',
+  'Bus comes at {time} · in {n} min': 'La guagua llega a las {time} · en {n} min',
+  'One comes in {n} min, but the walk is {walk} min.': 'Viene una en {n} min, pero la caminata es de {walk} min.',
+  'Next one after that: {time}': 'La siguiente: a las {time}',
+  'Tracked live': 'En vivo',
+  'From the timetable — not tracked yet': 'Según el horario; todavía no se ve en vivo',
+  'This bus stops across the street, at {stop}.': 'Esta guagua para enfrente, en {stop}.',
+  'Walk there ↗': 'Cómo llegar ↗',
+  'Show this bus on the map': 'Ver esta guagua en el mapa',
+  'Checking when the bus comes…': 'Buscando cuándo viene la guagua…',
+  'Street map of the free bus lines. Tap it to set your spot.': 'Mapa de calles de las rutas de guagua gratis. Tócalo para marcar tu lugar.',
+  'Tap the map where you are': 'Toca el mapa donde estás',
+  You: 'Tú',
+  'Your stop': 'Tu parada',
+  'YOUR BUS': 'TU GUAGUA',
+  'Loading the map…': 'Cargando el mapa…',
+  'The map didn’t load. Everything below still works.': 'El mapa no cargó. Todo lo de abajo sigue funcionando.',
+  '{name} bus going toward {place}. Next stop: {stop}.': 'Guagua {name} hacia {place}. Próxima parada: {stop}.',
+  '{name} bus. Next stop: {stop}.': 'Guagua {name}. Próxima parada: {stop}.',
+  '{n} min late.': '{n} min tarde.',
+  'On time.': 'A tiempo.',
+  'Buses on the road right now': 'Guaguas en la calle ahora mismo',
+  'City Hall': 'la Alcaldía',
+  'Call Hialeah Transit · {phone}': 'Llama a Hialeah Transit · {phone}',
+  'FIND MY STOP & NEXT BUS ↓': 'MI PARADA Y LA PRÓXIMA GUAGUA ↓',
+  'Prefer an app? The city’s free ETA SPOT app shows the same buses: pick “Hialeah Transit System”, then your line.':
+    '¿Prefieres una app? La app gratis ETA SPOT de la ciudad muestra las mismas guaguas: escoge “Hialeah Transit System” y después tu ruta.',
+
   // --- Metadata ----------------------------------------------------------
   'A directory of the restaurants and bars the locals actually vouch for.':
     'Un directorio de los restaurantes y bares que la gente de aquí de verdad respalda.',

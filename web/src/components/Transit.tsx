@@ -10,11 +10,13 @@ import {
   FREEBEE_PHONE,
   LINKS,
   ROUTE_STYLE,
+  TOWARD_PLACES,
   TRANSIT,
   diagram,
   formatClock,
   formatHeadway,
   headwayToday,
+  lineEnds,
   miamiClock,
   serviceStatus,
   walkMinutes,
@@ -22,7 +24,8 @@ import {
   type TransitRoute,
 } from '../lib/transit'
 import type { NearMeCopy, NearMePlace } from './NearMe'
-import { NextBus, type NextBusCopy, type StripLiveCopy } from './LiveTransit'
+import { NextBus, type BusWordsCopy, type BusesNowCopy, type LeaveCopy, type NextBusCopy, type StripLiveCopy } from './LiveTransit'
+import type { RideMapCopy } from './RideMap'
 import tr from './transit.module.css'
 
 type T = (s: string) => string
@@ -510,14 +513,7 @@ export function RouteStrip({
 }
 
 /** "Aquabella ↔ Hialeah Dr & E 4 Ave" — the line's two ends. */
-export function ends(route: TransitRoute): [string, string] {
-  const a = route.stations[0]
-  const b = route.stations.at(-1)!
-  // "NW 138 St (#10990)" → "NW 138 St": the parenthetical is an address
-  // the rider doesn't need in a headline.
-  const short = (x: string) => x.replace(/\s*\((#|Connector).*\)$/i, '')
-  return [a.landmark ?? short(a.name), b.landmark ?? short(b.name)]
-}
+export const ends = lineEnds
 
 /* ------------------------------------------------------- where are you? */
 
@@ -525,32 +521,96 @@ export function ends(route: TransitRoute): [string, string] {
 export function nearMeCopy(t: T): NearMeCopy {
   return {
     title: t('WHERE ARE YOU?'),
-    lead: t('Find your nearest free stop, how to walk there, and the spots you can ride to from it.'),
+    lead: t('Find your stop, how to walk there, and when to leave to catch the bus.'),
     useLocation: t('USE MY LOCATION'),
     locating: t('FINDING YOU…'),
-    placeholder: t('An address or a stop, like 1201 W 44th Pl or Palm Ave'),
+    pickOnMap: t('TAP MY SPOT ON A MAP'),
+    hideMap: t('HIDE THE MAP'),
+    typeLabel: t('Or type an address or a bus stop'),
+    placeholder: t('Like 1201 W 44th Pl or Palm Ave'),
     find: t('FIND'),
     finding: t('…'),
     stopsMatching: t('STOPS THAT MATCH'),
-    privacy: t('Your location stays on your phone. A typed address is looked up with the US Census Bureau’s free address service.'),
-    denied: t('Location is turned off for this site. Type an address or a stop instead.'),
-    unavailable: t('We couldn’t get your location. Try again, or type an address or a stop.'),
+    privacy: t('Your exact location stays on your phone. The map loads streets from OpenFreeMap; a typed address is looked up with the US Census Bureau.'),
+    denied: t('Your phone is not sharing your location with this site. You can tap your spot on a map instead, or turn location on:'),
+    deniedIphone: t('iPhone: open Settings → Privacy & Security → Location Services → Safari Websites → choose “While Using the App”.'),
+    deniedAndroid: t('Android: tap the icon left of the web address → Permissions → Location → Allow.'),
+    unavailable: t('We couldn’t get your location. Try again, tap your spot on a map, or type an address.'),
     noNumber: t('Type a street address with its number, like 1201 W 44th Pl — or pick a stop from the list.'),
-    notFound: t('We couldn’t find that address in Hialeah. Try adding the ZIP code, or type a street to pick a stop.'),
+    notFound: t('We couldn’t find that address in Hialeah. Try adding the ZIP code, or tap your spot on a map.'),
     showingFor: t('Showing free rides near'),
     yourLocation: t('your location'),
-    clear: t('Clear'),
-    walk: t('{n} MIN WALK'),
-    toStop: t('to the stop at'),
+    pickedSpot: t('the spot you tapped'),
+    change: t('Change'),
+    yourStop: t('YOUR STOP'),
+    walk: t('{n} min walk'),
+    distance: t('about {mi} mi'),
     directions: t('WALKING DIRECTIONS ↗'),
-    seeStop: t('SEE IT ON THE LINE'),
+    seeStop: t('See this stop on the line →'),
     rideTo: t('RIDE TO'),
     ride: t('~{n} min ride'),
     walkFromStop: t('{n} min walk'),
-    longWalk: t('That’s a long walk. Freebee gives free rides around Hialeah.'),
-    tooFar: t('No free bus stop within a half-hour walk of there.'),
+    far: t('The closest free bus stop is a {n}-minute walk (about {mi} mi).'),
     freebee: t('Freebee runs free on-demand rides around Hialeah and Miami Lakes — book one in the app.'),
     line: t('{name} BUS'),
+  }
+}
+
+const towardPlaces = (t: T) => Object.fromEntries(TOWARD_PLACES.map((p) => [p, t(p)]))
+
+export function leaveCopy(t: T): LeaveCopy {
+  return {
+    toward: t('Toward {place}'),
+    leaveIn: t('LEAVE IN {n} MIN'),
+    leaveNow: t('LEAVE NOW'),
+    busAt: t('Bus comes at {time} · in {n} min'),
+    tooClose: t('One comes in {n} min, but the walk is {walk} min.'),
+    nextOne: t('Next one after that: {time}'),
+    live: t('Tracked live'),
+    scheduled: t('From the timetable — not tracked yet'),
+    late: t('{n} min late'),
+    early: t('{n} min early'),
+    onTime: t('on time'),
+    none: t('No bus due here in the next 3 hours.'),
+    otherSide: t('This bus stops across the street, at {stop}.'),
+    walkThere: t('Walk there ↗'),
+    showBus: t('Show this bus on the map'),
+    checking: t('Checking when the bus comes…'),
+    places: towardPlaces(t),
+  }
+}
+
+export function rideMapCopy(t: T): RideMapCopy {
+  return {
+    label: t('Street map of the free bus lines. Tap it to set your spot.'),
+    tapHint: t('Tap the map where you are'),
+    you: t('You'),
+    yourStop: t('Your stop'),
+    yourBus: t('YOUR BUS'),
+    loading: t('Loading the map…'),
+    failed: t('The map didn’t load. Everything below still works.'),
+  }
+}
+
+export function busWordsCopy(t: T): BusWordsCopy {
+  return {
+    sentence: t('{name} bus going toward {place}. Next stop: {stop}.'),
+    noToward: t('{name} bus. Next stop: {stop}.'),
+    late: t('{n} min late.'),
+    onTime: t('On time.'),
+    places: towardPlaces(t),
+  }
+}
+
+export function busesNowCopy(t: T): BusesNowCopy {
+  return {
+    ...busWordsCopy(t),
+    heading: t('Buses on the road right now'),
+    count: t('{n} buses on the {name} right now'),
+    one: t('1 bus on the {name} right now'),
+    none: t('No {name} buses on the road right now'),
+    offline: t('Live bus positions are unavailable right now. Hours and frequency below still apply.'),
+    updated: t('updated {s}s ago'),
   }
 }
 
