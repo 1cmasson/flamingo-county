@@ -120,6 +120,7 @@ export default function RideMap({ only, origin, target, vehicles, yourBus, descr
 
         m.on('load', () => {
           if (!alive || !m) return
+          inkAndSand(m)
           m.addSource('lines', {
             type: 'geojson',
             data: {
@@ -288,6 +289,48 @@ export default function RideMap({ only, origin, target, vehicles, yourBus, descr
       ) : null}
     </div>
   )
+}
+
+/**
+ * OpenFreeMap's streets, recoloured to match the drawn city map: sand ground,
+ * cream streets with ink edges, ink labels. The street names stay — they're
+ * how someone finds their own block — but it reads as the same design as the
+ * map at the top of the page.
+ */
+function inkAndSand(m: ML.Map) {
+  const set = (id: string, prop: Parameters<ML.Map['setPaintProperty']>[1], value: string | number) => {
+    try {
+      m.setPaintProperty(id, prop, value)
+    } catch {}
+  }
+  for (const layer of m.getStyle().layers ?? []) {
+    const id = layer.id
+    const hide = () => m.setLayoutProperty(id, 'visibility', 'none')
+    if (layer.type === 'background') set(id, 'background-color', '#eadbbd')
+    else if (layer.type === 'raster' || layer.type === 'fill-extrusion') hide()
+    else if (layer.type === 'fill') {
+      if (id === 'water') set(id, 'fill-color', '#b9d8d3')
+      else if (id === 'building') {
+        set(id, 'fill-color', '#dcc79f')
+        set(id, 'fill-outline-color', 'rgba(12,15,20,0.18)')
+      } else if (id === 'road_area_pattern') hide()
+      else if (/park|grass|wood|wetland|pitch|cemetery/.test(id)) set(id, 'fill-color', '#dfd3a6')
+      else set(id, 'fill-color', '#e6d6b4')
+    } else if (layer.type === 'line') {
+      if (/rail/.test(id)) set(id, 'line-color', 'rgba(12,15,20,0.45)')
+      else if (/casing/.test(id)) set(id, 'line-color', 'rgba(12,15,20,0.4)')
+      else if (/^(road|bridge|tunnel)_/.test(id)) set(id, 'line-color', '#fffaf0')
+      else if (/waterway/.test(id)) set(id, 'line-color', '#9fc8c2')
+      else if (/boundary/.test(id)) set(id, 'line-color', 'rgba(12,15,20,0.3)')
+      else if (id === 'park_outline') hide()
+      else set(id, 'line-color', '#d8c8a4')
+    } else if (layer.type === 'symbol') {
+      if (/one_way/.test(id)) hide()
+      set(id, 'text-color', INK)
+      set(id, 'text-halo-color', CREAM)
+      set(id, 'text-halo-width', 1.6)
+    }
+  }
 }
 
 /** A teardrop pin with a word under it: "You", "Your stop". */

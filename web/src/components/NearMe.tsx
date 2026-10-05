@@ -592,8 +592,9 @@ export function NearMe({
                       />
 
                       {rides.length ? (
-                        <div>
-                          <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: '1.2px', margin: '2px 0 8px' }}>{copy.rideTo}</div>
+                        // Folded: the card's job is "when do I leave"; where to go is a second question.
+                        <details className={tr.moreSpots}>
+                          <summary>{fill(copy.rideTo, { n: rides.length })}</summary>
                           <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
                             {rides.map((p) => (
                               <li key={p.href}>
@@ -608,7 +609,7 @@ export function NearMe({
                               </li>
                             ))}
                           </ul>
-                        </div>
+                        </details>
                       ) : null}
 
                       <Link

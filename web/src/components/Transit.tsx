@@ -413,6 +413,7 @@ export function RouteStrip({
         if (it.kind === 'gap') {
           return (
             <li key={`gap-${it.stations[0].index}`} className={`${tr.row} ${tr.gap}`}>
+              <BusSlot ids={it.stations.map((x) => x.station.id)} way="end" />
               <span />
               <span />
               <div className={tr.body}>
@@ -433,6 +434,7 @@ export function RouteStrip({
                   </ol>
                 </details>
               </div>
+              <BusSlot ids={it.stations.map((x) => x.station.id)} way="start" />
             </li>
           )
         }
@@ -447,6 +449,7 @@ export function RouteStrip({
         const first = index === 0
         return (
           <li key={station.id} id={`stop-${station.id}`} className={tr.row}>
+            <BusSlot ids={[station.id]} way="end" />
             <span className={tr.minutes} aria-hidden={first ? undefined : true}>
               {first ? (
                 <small style={{ fontSize: 10 }}>{t('START')}</small>
@@ -505,11 +508,20 @@ export function RouteStrip({
                 </div>
               ) : null}
             </div>
+            <BusSlot ids={[station.id]} way="start" />
           </li>
         )
       })}
     </ol>
   )
+}
+
+/**
+ * Where StripLive draws a bus: above a stop for a bus coming down the strip
+ * toward it, below for one coming up. Empty — and so invisible — until then.
+ */
+function BusSlot({ ids, way }: { ids: string[]; way: 'start' | 'end' }) {
+  return <div className={tr.busSlot} data-bus-slot={ids.join(' ')} data-way={way} />
 }
 
 /** "Aquabella ↔ Hialeah Dr & E 4 Ave" — the line's two ends. */
@@ -547,7 +559,7 @@ export function nearMeCopy(t: T): NearMeCopy {
     distance: t('about {mi} mi'),
     directions: t('WALKING DIRECTIONS ↗'),
     seeStop: t('See this stop on the line →'),
-    rideTo: t('RIDE TO'),
+    rideTo: t('Places you can ride to ({n})'),
     ride: t('~{n} min ride'),
     walkFromStop: t('{n} min walk'),
     far: t('The closest free bus stop is a {n}-minute walk (about {mi} mi).'),
@@ -603,8 +615,10 @@ export function rideMapCopy(t: T): RideMapCopy {
 
 export function busWordsCopy(t: T): BusWordsCopy {
   return {
-    sentence: t('{name} bus going toward {place}. Next stop: {stop}.'),
-    noToward: t('{name} bus. Next stop: {stop}.'),
+    sentence: t('{name} bus going toward {place}.'),
+    noToward: t('{name} bus.'),
+    nextIn: t('Next stop: {stop} · in ~{n} min'),
+    arriving: t('Arriving at {stop} now'),
     late: t('{n} min late.'),
     onTime: t('On time.'),
     places: towardPlaces(t),
@@ -670,11 +684,14 @@ export function stripLiveCopy(t: T): StripLiveCopy {
     many: t('{n} buses on the {name} right now'),
     one: t('1 bus on the {name} right now'),
     none: t('No {name} buses on the road right now'),
-    near: t('Next stop: {stop}'),
-    late: t(' · {n} min late'),
-    onTime: t(' · on time'),
     updated: t('updated {s}s ago'),
-    marker: t('BUS'),
     offline: t('Live bus positions are unavailable right now. Hours and frequency below still apply.'),
+    toward: t('Toward {place}'),
+    nextIn: t('Next stop: {stop} · in ~{n} min'),
+    arriving: t('Arriving at {stop} now'),
+    late: t('{n} min late'),
+    onTime: t('on time'),
+    bus: t('BUS'),
+    places: towardPlaces(t),
   }
 }

@@ -1,0 +1,59 @@
+/**
+ * The free-rides hub's top: the headline, "Where are you?" and the drawn map.
+ *
+ * In the HTML they come in the phone's order — headline, the task, then the
+ * map — because that's what a rider on a phone needs and what a screen reader
+ * should hear. On a wide screen the map moves up beside the headline, the two
+ * reading as one dark block, and "Where are you?" runs full width under them.
+ */
+
+.top {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(18px, 3vw, 26px);
+}
+
+.hero,
+.map {
+  background: var(--ink);
+  color: var(--cream);
+  border: 4px solid var(--ink);
+  box-shadow: 9px 9px 0 var(--cream);
+  padding: clamp(20px, 4.5vw, 40px);
+  min-width: 0;
+}
+.hero {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Under the hero on a phone the second sentence is one too many. */
+@media (max-width: 620px) {
+  .heroMore {
+    display: none;
+  }
+}
+
+@media (min-width: 901px) {
+  .top {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-areas:
+      'hero map'
+      'near near';
+    column-gap: 0;
+  }
+  .hero {
+    grid-area: hero;
+    border-right: 0;
+    justify-content: center;
+  }
+  .map {
+    grid-area: map;
+    border-left: 0;
+    padding-left: clamp(10px, 2vw, 20px);
+  }
+  .near {
+    grid-area: near;
+  }
+}

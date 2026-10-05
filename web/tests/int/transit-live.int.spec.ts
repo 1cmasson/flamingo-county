@@ -195,3 +195,20 @@ describe('a looped trip is the next bus both ways', () => {
     expect(arrivals.every((a) => a.route === 'flamingo')).toBe(true)
   })
 })
+
+describe('where each bus stops next', () => {
+  it('names the next of our stations and how many minutes away, delay included', () => {
+    const now = miami(at(trip.secs[STOP_INDEX] - 600))
+    const feed = feedWith({ seqIndex: STOP_INDEX, delay: 120, ts: now.getTime() / 1000 })
+    const [v] = snapshotFrom(feed, now.getTime()).vehicles
+    expect(v.nextStationId).not.toBeNull()
+    expect(v.nextStop).toBeTruthy()
+    // Due at STOP_INDEX in 10 minutes, running 2 late — if that stop is one of ours.
+    const flamingo = TRANSIT.routes.find((r) => r.slug === 'flamingo')!
+    const ours = flamingo.stations.find((s) => (s.eta ?? []).includes(trip.stops[STOP_INDEX]))
+    if (ours) {
+      expect(v.nextStationId).toBe(ours.id)
+      expect(v.nextInMin).toBe(12)
+    }
+  })
+})
