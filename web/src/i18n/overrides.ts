@@ -56,6 +56,13 @@ export const ES_OVERRIDES: Record<string, string> = {
   // The event page's source line: who puts the event on.
   'More info:': 'Más info:',
   'Organized by': 'Organiza:',
+  // The breadcrumb's middle step (event pages and the seasonal guides).
+  Events: 'Eventos',
+
+  // --- Seasonal guides (lib/seasons.ts holds each guide's own copy) -------
+  'SEASONAL GUIDE': 'GUÍA DE TEMPORADA',
+  'IN THE GUIDE': 'EN LA GUÍA',
+  'SEE ALL EVENTS →': 'VER TODOS LOS EVENTOS →',
 
   // --- Ticker ------------------------------------------------------------
   'NOW ON THE LISTING': 'AHORA EN EL DIRECTORIO',

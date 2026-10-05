@@ -2,6 +2,7 @@ import { autoDraftHook } from '../lib/autoDraft'
 import { indexNowHooks } from '../lib/indexnow'
 import type { CollectionConfig } from 'payload'
 import { draftVersions, hhmm, mcpDraftsOnly, noPrice, publishedRead, slugField } from '../fields/shared'
+import { SEASON_OPTIONS } from '../lib/seasons'
 
 const indexNow = indexNowHooks('events')
 
@@ -207,6 +208,21 @@ export const Events: CollectionConfig = {
           },
         },
       ],
+    },
+    {
+      /**
+       * Which seasonal guide lists the event (/es/halloween, ...). The guide
+       * shows every published event with its season that has not finished;
+       * lib/seasons.ts holds the guides themselves. Not localized: an event
+       * is a Halloween event in both languages.
+       */
+      name: 'season',
+      type: 'select',
+      options: SEASON_OPTIONS,
+      admin: {
+        position: 'sidebar',
+        description: 'Which seasonal guide lists it. Leave empty for an ordinary event.',
+      },
     },
     {
       name: 'star',

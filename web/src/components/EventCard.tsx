@@ -2,12 +2,13 @@ import Link from 'next/link'
 import type { Event, EventKind, Media } from '../payload-types'
 import { rel } from '../lib/data'
 import { routes } from '../lib/routes'
-import { dateOnly, shortWeekday } from '../lib/dates'
+import { dateOnly, eventDateLine, shortWeekday } from '../lib/dates'
 import { eventCardUrl, EVENT_CARD_SIZES } from '../lib/eventCardUrl'
 import { eventVenue } from '../lib/eventVenue'
 import type { Lang } from '../i18n'
 import { MediaSlot } from './MediaSlot'
 import { EventActions } from './EventActions'
+import { EventSource } from './EventSource'
 import s from './chrome.module.css'
 
 export { eventVenue }
@@ -59,10 +60,17 @@ export function EventCard({
   lang,
   ev,
   t,
+  guide = false,
 }: {
   lang: Lang
   ev: Event
   t: (s: string) => string
+  /**
+   * The seasonal guides' fuller card: the date line and the city in text, and
+   * the source link. The board leaves them off: its day headings carry the
+   * date and the generated picture the city.
+   */
+  guide?: boolean
 }) {
   const kind = rel<EventKind>(ev.kind)
   const { listing, city, name, hood } = eventVenue(ev)
@@ -209,22 +217,40 @@ export function EventCard({
           ) : (
             name
           )}
-          {hood ? ` · ${hood}` : ''}
+          {/* No leading separator when the venue has no name in this language. */}
+          {hood ? `${name ? ' · ' : ''}${hood}` : ''}
+          {guide && city?.name ? `${name || hood ? ' · ' : ''}${city.name}` : ''}
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, alignItems: 'center' }}>
-          <div
-            style={{
-              background: 'var(--ink)',
-              color: 'var(--cream)',
-              fontWeight: 800,
-              fontSize: 11,
-              letterSpacing: '1.3px',
-              padding: '6px 9px',
-            }}
-          >
-            {ev.timeLabel}
-          </div>
+          {guide ? (
+            <div
+              style={{
+                background: 'var(--yellow)',
+                border: '2px solid var(--ink)',
+                fontWeight: 800,
+                fontSize: 11,
+                letterSpacing: '1px',
+                padding: '5px 8px',
+              }}
+            >
+              {eventDateLine(ev, lang)}
+            </div>
+          ) : null}
+          {ev.timeLabel ? (
+            <div
+              style={{
+                background: 'var(--ink)',
+                color: 'var(--cream)',
+                fontWeight: 800,
+                fontSize: 11,
+                letterSpacing: '1.3px',
+                padding: '6px 9px',
+              }}
+            >
+              {ev.timeLabel}
+            </div>
+          ) : null}
           {eventStatusLabel(ev, t) ? (
             <div
               style={{
@@ -267,6 +293,8 @@ export function EventCard({
             {ev.note}
           </p>
         ) : null}
+
+        {guide ? <EventSource ev={ev} lang={lang} t={t} fontSize={12} /> : null}
 
         <EventActions
           slug={ev.slug}
