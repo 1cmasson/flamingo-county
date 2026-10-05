@@ -105,7 +105,7 @@ describe('draft buttons', () => {
     )
     expect(text).toContain('⚠️ Within 3 h of draft #18 (Thu, Oct 8, 7:00 PM): 🎃 Halloween en Hialeah 2026: la guía &lt;b&gt;')
     expect(text).not.toContain('NEXTLINE')
-    expect(draftPreviewText({ id: 7, caption: 'x', platforms: [], scheduledFor: '2026-10-08T23:00:00Z' } as HqSocialDraft, 0)).not.toContain('⚠️')
+    expect(draftPreviewText({ id: 7, caption: 'x', platforms: ['facebook'], scheduledFor: '2026-10-08T23:00:00Z' } as HqSocialDraft, 0)).not.toContain('⚠️')
   })
 })
 
