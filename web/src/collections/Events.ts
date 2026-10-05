@@ -3,6 +3,7 @@ import { indexNowHooks } from '../lib/indexnow'
 import type { CollectionConfig } from 'payload'
 import { draftVersions, hhmm, mcpDraftsOnly, noPrice, publishedRead, slugField } from '../fields/shared'
 import { SEASON_OPTIONS } from '../lib/seasons'
+import { EVENT_SETTING_LABELS, EVENT_SETTINGS, FLAT_SETTING } from '../lib/eventSetting'
 
 const indexNow = indexNowHooks('events')
 
@@ -151,6 +152,24 @@ export const Events: CollectionConfig = {
           },
         },
       ],
+    },
+    {
+      /**
+       * The drawn scene behind the social poster, when the venue's name does
+       * not say it (lib/eventSetting.ts). Empty lets the site pick; an
+       * event's own photo wins over any scene.
+       */
+      name: 'setting',
+      type: 'select',
+      options: [
+        ...EVENT_SETTINGS.map((value) => ({ label: EVENT_SETTING_LABELS[value], value })),
+        { label: 'None: the flat city-colour poster', value: FLAT_SETTING },
+      ],
+      admin: {
+        position: 'sidebar',
+        description:
+          'Poster scene. Leave empty and the site picks one from the venue (library, park, church…) or the city. Only for an event without its own photo.',
+      },
     },
     {
       name: 'eventStatus',
