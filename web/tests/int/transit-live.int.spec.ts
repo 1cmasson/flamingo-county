@@ -228,3 +228,23 @@ describe('a late bus with no delay reported', () => {
     expect(live?.minutes).toBe(0)
   })
 })
+
+describe('which way, inside the little loops', () => {
+  it('agrees with every one-direction pole on every pass of every trip', () => {
+    // Round Westland Mall or Palmetto General the bus doubles back on itself,
+    // so "is the next station further down the strip?" gets it wrong there.
+    // Before or after the loop's far end doesn't.
+    const ways = new Map<number, string>()
+    for (const r of TRANSIT.routes) r.stations.forEach((s) => s.eta.forEach((id, k) => id !== null && ways.set(id, s.poleWays?.[k] ?? 'both')))
+    let passes = 0
+    for (const t of Object.values(ETA_SCHEDULE.trips)) {
+      t.stops.forEach((id, i) => {
+        const w = ways.get(id)
+        if (!w || w === 'both') return
+        passes++
+        expect(towardAt(t, i), `trip stop ${id}`).toBe(w)
+      })
+    }
+    expect(passes).toBeGreaterThan(1000)
+  })
+})

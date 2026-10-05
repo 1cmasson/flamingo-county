@@ -476,7 +476,7 @@ function LineCard({
   spots: number
 }) {
   const st = ROUTE_STYLE[route.slug]
-  const [from, to] = ends(route)
+  const [from, to] = ends(route, t)
   const headway = headwayToday(route)
 
   return (

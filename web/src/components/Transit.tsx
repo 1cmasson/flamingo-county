@@ -282,7 +282,7 @@ export async function FreeRidePanel({ listing, lang, t }: { listing: Listing; la
   const headway = headwayToday(route)
   const live = await trackLiveHref(lang, route)
   const stopHref = `${routes.freeRoute(lang, route.slug)}#stop-${main.station.id}`
-  const pole = main.station.points[main.station.names.indexOf(main.stopName)] ?? main.station.points[0]
+  const pole = main.station.points[main.pole] ?? main.station.points[0]
   const walkHref = await directionsHref(pole)
 
   return (
@@ -534,8 +534,11 @@ function BusSlot({ ids, way }: { ids: string[]; way: 'start' | 'end' }) {
   return <div className={tr.busSlot} data-bus-slot={ids.join(' ')} data-way={way} />
 }
 
-/** "Aquabella ↔ Hialeah Dr & E 4 Ave" — the line's two ends. */
-export const ends = lineEnds
+/** "Aquabella ⇄ City Hall" — the line's two ends, in the page's language. */
+export function ends(route: TransitRoute, t: T): [string, string] {
+  const [a, b] = lineEnds(route)
+  return [t(a), t(b)]
+}
 
 /* ------------------------------------------------------- where are you? */
 

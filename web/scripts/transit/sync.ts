@@ -28,6 +28,7 @@ import { createReadStream, mkdtempSync, readFileSync, writeFileSync } from 'node
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createInterface } from 'node:readline'
+import { legAt } from '../../src/lib/transit'
 
 const FEED_URL = 'https://www.miamidade.gov/transit/googletransit/current/google_transit.zip'
 const OUT = join(import.meta.dirname, '../../src/data/transit/hialeah.json')
@@ -232,6 +233,7 @@ type CityStation = {
   landmark?: string
   /** Which way(s) buses stop here, as strip directions. */
   ways: Set<'start' | 'end'>
+  poleWays?: ('start' | 'end' | 'both')[]
 }
 
 /**
@@ -272,7 +274,13 @@ function cityLine(
   master.ids.forEach((id, i) => {
     if (meters(home, at(id)) > meters(home, at(master.ids[turn]))) turn = i
   })
-  const back = master.ids.slice(turn).map((id, i) => ({ id, secs: master.secs[turn + i] }))
+  // A stop the leg back passes twice (round a downtown block and past it
+  // again) is one station, where the bus first reaches it.
+  const seenBack = new Set<string>()
+  const back = master.ids
+    .slice(turn)
+    .map((id, i) => ({ id, secs: master.secs[turn + i] }))
+    .filter(({ id }) => !seenBack.has(id) && seenBack.add(id))
   const out = master.ids.slice(0, turn + 1).reverse()
 
   const stations: CityStation[] = back.map(({ id, secs }) => {
@@ -365,6 +373,32 @@ function cityLine(
     best.eta.push(Number(id))
     joined++
   }
+
+  // Which way each pole's buses go, from every trip that passes it — so a
+  // stop the first-of-the-day or last-of-the-day trip serves counts too.
+  const indexOf = new Map(line.flatMap((st, k) => st.eta.map((id) => [id!, k] as [number, number])))
+  const turnIds = new Set(line[0].eta.map(Number))
+  const legs = new Map<number, Set<'start' | 'end'>>()
+  for (const t of trips) {
+    const stops = (etaTimes.get(t.trip_id) ?? []).slice().sort((a, b) => a.seq - b.seq).map((x) => Number(x.stop))
+    stops.forEach((id, i) => {
+      const leg = legAt(stops, i, turnIds, (x) => indexOf.get(x))
+      if (!leg) return
+      const set = legs.get(id) ?? new Set()
+      set.add(leg)
+      legs.set(id, set)
+    })
+  }
+  line.forEach((st, k) => {
+    // Both ends are a turn: one way in, the other way out.
+    const end = k === 0 || k === line.length - 1
+    st.poleWays = st.eta.map((id) => {
+      const set = legs.get(Number(id))
+      return end || !set || set.size !== 1 ? 'both' : [...set][0]
+    })
+    const one = new Set(st.poleWays)
+    st.ways = one.size === 1 && !one.has('both') ? new Set([...one] as ('start' | 'end')[]) : new Set(['start', 'end'])
+  })
 
   const oneWay = line.filter((s) => s.ways.size === 1).length
   console.log(

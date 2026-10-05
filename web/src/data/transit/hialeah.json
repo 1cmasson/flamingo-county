@@ -682,6 +682,9 @@
       222
      ],
      "transfers": [],
+     "poleWays": [
+      "both"
+     ],
      "min": 0,
      "points": [
       [
@@ -701,6 +704,9 @@
      ],
      "transfers": [],
      "landmark": "Boeing",
+     "poleWays": [
+      "start"
+     ],
      "min": 1,
      "points": [
       [
@@ -721,6 +727,9 @@
      ],
      "transfers": [],
      "landmark": "Aquabella",
+     "poleWays": [
+      "start"
+     ],
      "min": 1,
      "points": [
       [
@@ -741,6 +750,9 @@
      ],
      "transfers": [],
      "landmark": "Atlantico at Aquabella",
+     "poleWays": [
+      "start"
+     ],
      "min": 2,
      "points": [
       [
@@ -760,6 +772,9 @@
       218
      ],
      "transfers": [],
+     "poleWays": [
+      "start"
+     ],
      "min": 2,
      "points": [
       [
@@ -779,6 +794,9 @@
       217
      ],
      "transfers": [],
+     "poleWays": [
+      "start"
+     ],
      "min": 3,
      "points": [
       [
@@ -798,6 +816,9 @@
       216
      ],
      "transfers": [],
+     "poleWays": [
+      "start"
+     ],
      "min": 3,
      "points": [
       [
@@ -817,6 +838,9 @@
       215
      ],
      "transfers": [],
+     "poleWays": [
+      "start"
+     ],
      "min": 4,
      "points": [
       [
@@ -836,6 +860,9 @@
       214
      ],
      "transfers": [],
+     "poleWays": [
+      "start"
+     ],
      "min": 4,
      "points": [
       [
@@ -855,6 +882,9 @@
       213
      ],
      "transfers": [],
+     "poleWays": [
+      "start"
+     ],
      "min": 5,
      "points": [
       [
@@ -875,6 +905,9 @@
      ],
      "transfers": [],
      "landmark": "Hialeah Park at the Annex",
+     "poleWays": [
+      "end"
+     ],
      "min": 5,
      "points": [
       [
@@ -894,6 +927,9 @@
       289
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 6,
      "points": [
       [
@@ -913,6 +949,9 @@
       224
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 15,
      "points": [
       [
@@ -934,6 +973,10 @@
       212
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 16,
      "points": [
       [
@@ -958,6 +1001,10 @@
       211
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 16,
      "points": [
       [
@@ -982,6 +1029,10 @@
       210
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 17,
      "points": [
       [
@@ -1006,6 +1057,10 @@
       209
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 17,
      "points": [
       [
@@ -1028,6 +1083,9 @@
       229
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 18,
      "points": [
       [
@@ -1049,6 +1107,10 @@
       208
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 19,
      "points": [
       [
@@ -1073,6 +1135,10 @@
       207
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 20,
      "points": [
       [
@@ -1095,6 +1161,9 @@
       232
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 22,
      "points": [
       [
@@ -1116,6 +1185,10 @@
       206
      ],
      "transfers": [],
+     "poleWays": [
+      "both",
+      "start"
+     ],
      "min": 24,
      "points": [
       [
@@ -1138,6 +1211,9 @@
       201
      ],
      "transfers": [],
+     "poleWays": [
+      "both"
+     ],
      "min": 26,
      "points": [
       [
@@ -1156,6 +1232,9 @@
       202
      ],
      "transfers": [],
+     "poleWays": [
+      "both"
+     ],
      "min": 29,
      "points": [
       [
@@ -1174,6 +1253,9 @@
       203
      ],
      "transfers": [],
+     "poleWays": [
+      "both"
+     ],
      "min": 31,
      "points": [
       [
@@ -1193,6 +1275,9 @@
      ],
      "transfers": [],
      "landmark": "Palmetto General Hospital",
+     "poleWays": [
+      "both"
+     ],
      "min": 35,
      "points": [
       [
@@ -1211,6 +1296,9 @@
       205
      ],
      "transfers": [],
+     "poleWays": [
+      "both"
+     ],
      "min": 36,
      "points": [
       [
@@ -1231,6 +1319,10 @@
       199
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 37,
      "points": [
       [
@@ -1255,6 +1347,10 @@
       198
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 39,
      "points": [
       [
@@ -1279,6 +1375,10 @@
       197
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 42,
      "points": [
       [
@@ -1303,6 +1403,10 @@
       196
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 43,
      "points": [
       [
@@ -1327,6 +1431,10 @@
       195
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 43,
      "points": [
       [
@@ -1351,6 +1459,10 @@
       194
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 44,
      "points": [
       [
@@ -1375,6 +1487,10 @@
       193
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 45,
      "points": [
       [
@@ -1399,6 +1515,10 @@
       192
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 45,
      "points": [
       [
@@ -1423,6 +1543,10 @@
       191
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 46,
      "points": [
       [
@@ -1445,6 +1569,9 @@
       242
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 47,
      "points": [
       [
@@ -1468,6 +1595,11 @@
       189
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start",
+      "start"
+     ],
      "min": 47,
      "points": [
       [
@@ -1496,6 +1628,10 @@
       188
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 48,
      "points": [
       [
@@ -1521,6 +1657,10 @@
      ],
      "transfers": [],
      "landmark": "Westland Mall",
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 49,
      "points": [
       [
@@ -1545,6 +1685,10 @@
       186
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 50,
      "points": [
       [
@@ -1567,6 +1711,9 @@
       247
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 51,
      "points": [
       [
@@ -1588,6 +1735,10 @@
       185
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 52,
      "points": [
       [
@@ -1612,6 +1763,10 @@
       184
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 53,
      "points": [
       [
@@ -1636,6 +1791,10 @@
       183
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 54,
      "points": [
       [
@@ -1658,6 +1817,9 @@
       251
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 55,
      "points": [
       [
@@ -1681,6 +1843,11 @@
       181
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start",
+      "start"
+     ],
      "min": 56,
      "points": [
       [
@@ -1707,6 +1874,9 @@
       172
      ],
      "transfers": [],
+     "poleWays": [
+      "both"
+     ],
      "min": 57,
      "points": [
       [
@@ -1726,6 +1896,9 @@
      ],
      "transfers": [],
      "landmark": "Westland Hialeah Senior High School",
+     "poleWays": [
+      "both"
+     ],
      "min": 58,
      "points": [
       [
@@ -1744,6 +1917,9 @@
       174
      ],
      "transfers": [],
+     "poleWays": [
+      "both"
+     ],
      "min": 60,
      "points": [
       [
@@ -1763,6 +1939,9 @@
      ],
      "transfers": [],
      "landmark": "Florida National University",
+     "poleWays": [
+      "both"
+     ],
      "min": 61,
      "points": [
       [
@@ -1781,6 +1960,9 @@
       176
      ],
      "transfers": [],
+     "poleWays": [
+      "both"
+     ],
      "min": 62,
      "points": [
       [
@@ -1800,6 +1982,9 @@
      ],
      "transfers": [],
      "landmark": "San Lazaro Roman Catholic Church",
+     "poleWays": [
+      "both"
+     ],
      "min": 62,
      "points": [
       [
@@ -1818,6 +2003,9 @@
       178
      ],
      "transfers": [],
+     "poleWays": [
+      "both"
+     ],
      "min": 63,
      "points": [
       [
@@ -1836,6 +2024,9 @@
       179
      ],
      "transfers": [],
+     "poleWays": [
+      "both"
+     ],
      "min": 64,
      "points": [
       [
@@ -1854,6 +2045,9 @@
       180
      ],
      "transfers": [],
+     "poleWays": [
+      "both"
+     ],
      "min": 65,
      "points": [
       [
@@ -1874,6 +2068,10 @@
       171
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 65,
      "points": [
       [
@@ -1896,6 +2094,9 @@
       254
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 66,
      "points": [
       [
@@ -1917,6 +2118,10 @@
       170
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 67,
      "points": [
       [
@@ -1943,6 +2148,11 @@
       168
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start",
+      "start"
+     ],
      "min": 68,
      "points": [
       [
@@ -1969,6 +2179,9 @@
       257
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 68,
      "points": [
       [
@@ -1990,6 +2203,10 @@
       167
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 69,
      "points": [
       [
@@ -2012,6 +2229,9 @@
       165
      ],
      "transfers": [],
+     "poleWays": [
+      "both"
+     ],
      "min": 70,
      "points": [
       [
@@ -2032,6 +2252,10 @@
       164
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 70,
      "points": [
       [
@@ -2054,6 +2278,9 @@
       163
      ],
      "transfers": [],
+     "poleWays": [
+      "start"
+     ],
      "min": 70,
      "points": [
       [
@@ -2075,6 +2302,10 @@
       162
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 71,
      "points": [
       [
@@ -2100,6 +2331,10 @@
      ],
      "transfers": [],
      "landmark": "Walker E Library",
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 72,
      "points": [
       [
@@ -2122,6 +2357,9 @@
       262
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 72,
      "points": [
       [
@@ -2144,6 +2382,10 @@
      ],
      "transfers": [],
      "landmark": "Henry Filer Middle School",
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 73,
      "points": [
       [
@@ -2168,6 +2410,10 @@
       159
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 74,
      "points": [
       [
@@ -2192,6 +2438,10 @@
       158
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 75,
      "points": [
       [
@@ -2216,6 +2466,10 @@
       157
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 75,
      "points": [
       [
@@ -2240,6 +2494,10 @@
       156
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 76,
      "points": [
       [
@@ -2262,6 +2520,9 @@
       120
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 77,
      "points": [
       [
@@ -2285,6 +2546,11 @@
       38
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start",
+      "start"
+     ],
      "min": 78,
      "points": [
       [
@@ -2313,6 +2579,10 @@
       37
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 78,
      "points": [
       [
@@ -2340,6 +2610,10 @@
       "Metrorail · Hialeah"
      ],
      "landmark": "Hialeah Metrorail Station",
+     "poleWays": [
+      "both",
+      "start"
+     ],
      "min": 80,
      "points": [
       [
@@ -2362,6 +2636,9 @@
       268
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 81,
      "points": [
       [
@@ -2383,6 +2660,10 @@
       153
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 81,
      "points": [
       [
@@ -2407,6 +2688,10 @@
       152
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 82,
      "points": [
       [
@@ -2431,6 +2716,10 @@
       151
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 82,
      "points": [
       [
@@ -2455,6 +2744,10 @@
       150
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 83,
      "points": [
       [
@@ -2479,6 +2772,10 @@
       149
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 84,
      "points": [
       [
@@ -2503,6 +2800,10 @@
       148
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 84,
      "points": [
       [
@@ -2528,6 +2829,10 @@
      ],
      "transfers": [],
      "landmark": "Babcock Park",
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 85,
      "points": [
       [
@@ -2553,6 +2858,10 @@
      ],
      "transfers": [],
      "landmark": "Navarro Discount Pharmacy",
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 86,
      "points": [
       [
@@ -2569,20 +2878,29 @@
      "id": "277",
      "name": "Hialeah Dr & E 4th Ave",
      "names": [
-      "Hialeah Dr & E 4th Ave"
+      "Hialeah Dr & E 4th Ave",
+      "E 4th Ave & E 2nd St - Shoma Village"
      ],
      "eta": [
-      277
+      277,
+      145
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 86,
      "points": [
       [
        25.82299,
        -80.273666
+      ],
+      [
+       25.823425,
+       -80.273293
       ]
-     ],
-     "oneWay": "end"
+     ]
     },
     {
      "id": "278",
@@ -2595,6 +2913,9 @@
      ],
      "transfers": [],
      "landmark": "Faith Lutheran Church",
+     "poleWays": [
+      "end"
+     ],
      "min": 87,
      "points": [
       [
@@ -2614,6 +2935,9 @@
       279
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 87,
      "points": [
       [
@@ -2633,6 +2957,9 @@
       281
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 88,
      "points": [
       [
@@ -2653,6 +2980,9 @@
      ],
      "transfers": [],
      "landmark": "Fire Station 1",
+     "poleWays": [
+      "end"
+     ],
      "min": 89,
      "points": [
       [
@@ -2672,6 +3002,9 @@
       282
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 90,
      "points": [
       [
@@ -2691,6 +3024,9 @@
       283
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 92,
      "points": [
       [
@@ -2710,6 +3046,9 @@
       284
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 93,
      "points": [
       [
@@ -2729,6 +3068,9 @@
       285
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 95,
      "points": [
       [
@@ -2737,30 +3079,6 @@
       ]
      ],
      "oneWay": "end"
-    },
-    {
-     "id": "277",
-     "name": "Hialeah Dr & E 4th Ave",
-     "names": [
-      "Hialeah Dr & E 4th Ave",
-      "E 4th Ave & E 2nd St - Shoma Village"
-     ],
-     "eta": [
-      277,
-      145
-     ],
-     "transfers": [],
-     "min": 97,
-     "points": [
-      [
-       25.82299,
-       -80.273666
-      ],
-      [
-       25.823425,
-       -80.273293
-      ]
-     ]
     },
     {
      "id": "144",
@@ -2773,6 +3091,9 @@
      ],
      "transfers": [],
      "landmark": "Walgreens",
+     "poleWays": [
+      "both"
+     ],
      "min": 100,
      "points": [
       [
@@ -3294,6 +3615,9 @@
      ],
      "transfers": [],
      "landmark": "NW 138th - Home Depot",
+     "poleWays": [
+      "both"
+     ],
      "min": 0,
      "points": [
       [
@@ -3313,6 +3637,9 @@
      ],
      "transfers": [],
      "landmark": "Adrian Fish Market",
+     "poleWays": [
+      "start"
+     ],
      "min": 3,
      "points": [
       [
@@ -3332,6 +3659,9 @@
       82
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 6,
      "points": [
       [
@@ -3351,6 +3681,9 @@
       83
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 7,
      "points": [
       [
@@ -3370,6 +3703,9 @@
       84
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 9,
      "points": [
       [
@@ -3391,6 +3727,10 @@
       79
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 10,
      "points": [
       [
@@ -3415,6 +3755,10 @@
       78
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 11,
      "points": [
       [
@@ -3439,6 +3783,10 @@
       77
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 13,
      "points": [
       [
@@ -3463,6 +3811,10 @@
       76
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 16,
      "points": [
       [
@@ -3485,6 +3837,9 @@
       75
      ],
      "transfers": [],
+     "poleWays": [
+      "start"
+     ],
      "min": 17,
      "points": [
       [
@@ -3504,6 +3859,9 @@
       89
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 17,
      "points": [
       [
@@ -3525,6 +3883,10 @@
       74
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 19,
      "points": [
       [
@@ -3547,6 +3909,9 @@
       73
      ],
      "transfers": [],
+     "poleWays": [
+      "start"
+     ],
      "min": 20,
      "points": [
       [
@@ -3566,6 +3931,9 @@
       91
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 21,
      "points": [
       [
@@ -3587,6 +3955,10 @@
       72
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 22,
      "points": [
       [
@@ -3609,6 +3981,9 @@
       93
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 24,
      "points": [
       [
@@ -3631,6 +4006,10 @@
      ],
      "transfers": [],
      "landmark": "La Rivieiera Apartments",
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 25,
      "points": [
       [
@@ -3654,6 +4033,9 @@
      ],
      "transfers": [],
      "landmark": "Okeechobee APTO.",
+     "poleWays": [
+      "start"
+     ],
      "min": 25,
      "points": [
       [
@@ -3674,6 +4056,9 @@
      ],
      "transfers": [],
      "landmark": "Signature HealthCARE Center of Waterford",
+     "poleWays": [
+      "end"
+     ],
      "min": 26,
      "points": [
       [
@@ -3695,6 +4080,10 @@
       69
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 27,
      "points": [
       [
@@ -3718,6 +4107,9 @@
      ],
      "transfers": [],
      "landmark": "Walmart",
+     "poleWays": [
+      "both"
+     ],
      "min": 31,
      "points": [
       [
@@ -3736,6 +4128,9 @@
       67
      ],
      "transfers": [],
+     "poleWays": [
+      "start"
+     ],
      "min": 31,
      "points": [
       [
@@ -3757,6 +4152,10 @@
       66
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 32,
      "points": [
       [
@@ -3782,6 +4181,10 @@
      ],
      "transfers": [],
      "landmark": "Wawa",
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 32,
      "points": [
       [
@@ -3804,6 +4207,9 @@
       97
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 33,
      "points": [
       [
@@ -3823,6 +4229,9 @@
       98
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 34,
      "points": [
       [
@@ -3844,6 +4253,10 @@
       64
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 35,
      "points": [
       [
@@ -3866,6 +4279,9 @@
       101
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 38,
      "points": [
       [
@@ -3887,6 +4303,10 @@
       62
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 39,
      "points": [
       [
@@ -3911,6 +4331,10 @@
       61
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 40,
      "points": [
       [
@@ -3935,6 +4359,10 @@
       60
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 41,
      "points": [
       [
@@ -3959,6 +4387,10 @@
       59
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 42,
      "points": [
       [
@@ -3983,6 +4415,10 @@
       58
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 43,
      "points": [
       [
@@ -4007,6 +4443,10 @@
       57
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 46,
      "points": [
       [
@@ -4032,6 +4472,10 @@
      ],
      "transfers": [],
      "landmark": "Palm Springs Mile Plaza",
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 48,
      "points": [
       [
@@ -4056,6 +4500,10 @@
       55
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 51,
      "points": [
       [
@@ -4080,6 +4528,10 @@
       54
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 53,
      "points": [
       [
@@ -4102,6 +4554,9 @@
       52
      ],
      "transfers": [],
+     "poleWays": [
+      "start"
+     ],
      "min": 53,
      "points": [
       [
@@ -4121,6 +4576,9 @@
       53
      ],
      "transfers": [],
+     "poleWays": [
+      "start"
+     ],
      "min": 54,
      "points": [
       [
@@ -4140,6 +4598,9 @@
       51
      ],
      "transfers": [],
+     "poleWays": [
+      "start"
+     ],
      "min": 55,
      "points": [
       [
@@ -4159,6 +4620,9 @@
       50
      ],
      "transfers": [],
+     "poleWays": [
+      "start"
+     ],
      "min": 55,
      "points": [
       [
@@ -4179,6 +4643,9 @@
      ],
      "transfers": [],
      "landmark": "Family Dollar",
+     "poleWays": [
+      "start"
+     ],
      "min": 56,
      "points": [
       [
@@ -4198,6 +4665,9 @@
       287
      ],
      "transfers": [],
+     "poleWays": [
+      "start"
+     ],
      "min": 56,
      "points": [
       [
@@ -4217,6 +4687,9 @@
       286
      ],
      "transfers": [],
+     "poleWays": [
+      "start"
+     ],
      "min": 57,
      "points": [
       [
@@ -4236,6 +4709,9 @@
       49
      ],
      "transfers": [],
+     "poleWays": [
+      "start"
+     ],
      "min": 57,
      "points": [
       [
@@ -4255,6 +4731,9 @@
       110
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 58,
      "points": [
       [
@@ -4276,6 +4755,10 @@
       48
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 59,
      "points": [
       [
@@ -4300,6 +4783,10 @@
       47
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 60,
      "points": [
       [
@@ -4324,6 +4811,10 @@
       46
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 61,
      "points": [
       [
@@ -4346,6 +4837,9 @@
       45
      ],
      "transfers": [],
+     "poleWays": [
+      "start"
+     ],
      "min": 61,
      "points": [
       [
@@ -4367,6 +4861,10 @@
       44
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 62,
      "points": [
       [
@@ -4391,6 +4889,10 @@
       43
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 63,
      "points": [
       [
@@ -4415,6 +4917,10 @@
       42
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 64,
      "points": [
       [
@@ -4439,6 +4945,10 @@
       41
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 65,
      "points": [
       [
@@ -4463,6 +4973,10 @@
       40
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 66,
      "points": [
       [
@@ -4485,6 +4999,9 @@
       119
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 67,
      "points": [
       [
@@ -4504,6 +5021,9 @@
       120
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 68,
      "points": [
       [
@@ -4527,6 +5047,11 @@
       38
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start",
+      "start"
+     ],
      "min": 69,
      "points": [
       [
@@ -4555,6 +5080,10 @@
       37
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 71,
      "points": [
       [
@@ -4582,6 +5111,10 @@
       "Metrorail · Hialeah"
      ],
      "landmark": "Hialeah Metrorail Station",
+     "poleWays": [
+      "both",
+      "start"
+     ],
      "min": 73,
      "points": [
       [
@@ -4604,6 +5137,9 @@
       34
      ],
      "transfers": [],
+     "poleWays": [
+      "start"
+     ],
      "min": 73,
      "points": [
       [
@@ -4625,6 +5161,10 @@
       33
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 74,
      "points": [
       [
@@ -4647,6 +5187,9 @@
       124
      ],
      "transfers": [],
+     "poleWays": [
+      "both"
+     ],
      "min": 75,
      "points": [
       [
@@ -4665,6 +5208,9 @@
       24
      ],
      "transfers": [],
+     "poleWays": [
+      "both"
+     ],
      "min": 76,
      "points": [
       [
@@ -4683,6 +5229,9 @@
       126
      ],
      "transfers": [],
+     "poleWays": [
+      "both"
+     ],
      "min": 77,
      "points": [
       [
@@ -4701,6 +5250,9 @@
       26
      ],
      "transfers": [],
+     "poleWays": [
+      "both"
+     ],
      "min": 78,
      "points": [
       [
@@ -4719,6 +5271,9 @@
       27
      ],
      "transfers": [],
+     "poleWays": [
+      "both"
+     ],
      "min": 79,
      "points": [
       [
@@ -4738,6 +5293,9 @@
      ],
      "transfers": [],
      "landmark": "Hialeah Park Casino",
+     "poleWays": [
+      "both"
+     ],
      "min": 81,
      "points": [
       [
@@ -4756,6 +5314,9 @@
       29
      ],
      "transfers": [],
+     "poleWays": [
+      "both"
+     ],
      "min": 81,
      "points": [
       [
@@ -4774,6 +5335,9 @@
       30
      ],
      "transfers": [],
+     "poleWays": [
+      "both"
+     ],
      "min": 82,
      "points": [
       [
@@ -4792,6 +5356,9 @@
       25
      ],
      "transfers": [],
+     "poleWays": [
+      "both"
+     ],
      "min": 83,
      "points": [
       [
@@ -4810,6 +5377,9 @@
       31
      ],
      "transfers": [],
+     "poleWays": [
+      "both"
+     ],
      "min": 83,
      "points": [
       [
@@ -4828,6 +5398,9 @@
       32
      ],
      "transfers": [],
+     "poleWays": [
+      "both"
+     ],
      "min": 84,
      "points": [
       [
@@ -4848,6 +5421,10 @@
       22
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 85,
      "points": [
       [
@@ -4872,6 +5449,10 @@
       21
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 85,
      "points": [
       [
@@ -4894,6 +5475,9 @@
       129
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 86,
      "points": [
       [
@@ -4919,6 +5503,12 @@
       18
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start",
+      "start",
+      "start"
+     ],
      "min": 87,
      "points": [
       [
@@ -4951,6 +5541,10 @@
       17
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 87,
      "points": [
       [
@@ -4975,6 +5569,10 @@
       16
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 88,
      "points": [
       [
@@ -4997,6 +5595,9 @@
       15
      ],
      "transfers": [],
+     "poleWays": [
+      "start"
+     ],
      "min": 88,
      "points": [
       [
@@ -5017,6 +5618,9 @@
      ],
      "transfers": [],
      "landmark": "Bright Park",
+     "poleWays": [
+      "start"
+     ],
      "min": 88,
      "points": [
       [
@@ -5036,6 +5640,9 @@
       134
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 89,
      "points": [
       [
@@ -5057,6 +5664,10 @@
       13
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 89,
      "points": [
       [
@@ -5083,6 +5694,11 @@
       11
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start",
+      "start"
+     ],
      "min": 90,
      "points": [
       [
@@ -5111,6 +5727,10 @@
       10
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 91,
      "points": [
       [
@@ -5135,6 +5755,10 @@
       9
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 91,
      "points": [
       [
@@ -5159,6 +5783,10 @@
       5
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 92,
      "points": [
       [
@@ -5181,6 +5809,9 @@
       7
      ],
      "transfers": [],
+     "poleWays": [
+      "start"
+     ],
      "min": 92,
      "points": [
       [
@@ -5202,6 +5833,10 @@
       4
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 92,
      "points": [
       [
@@ -5226,6 +5861,10 @@
       3
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 93,
      "points": [
       [
@@ -5248,6 +5887,9 @@
       142
      ],
      "transfers": [],
+     "poleWays": [
+      "end"
+     ],
      "min": 94,
      "points": [
       [
@@ -5269,6 +5911,10 @@
       6
      ],
      "transfers": [],
+     "poleWays": [
+      "end",
+      "start"
+     ],
      "min": 94,
      "points": [
       [
@@ -5291,6 +5937,9 @@
       2
      ],
      "transfers": [],
+     "poleWays": [
+      "start"
+     ],
      "min": 95,
      "points": [
       [
@@ -5311,6 +5960,9 @@
      ],
      "transfers": [],
      "landmark": "ABC",
+     "poleWays": [
+      "both"
+     ],
      "min": 96,
      "points": [
       [

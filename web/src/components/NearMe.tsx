@@ -12,6 +12,7 @@ import {
   TRANSIT,
   nearestServing,
   nearestStops,
+  rideBetween,
   walkMinutes,
   type LatLng,
   type NearestStop,
@@ -125,7 +126,7 @@ function otherWay(a: NearestStop, from: LatLng): { name: string; walk: number; a
 }
 
 /** The pole a stop answer is measured to. */
-const poleOf = (a: NearestStop): LatLng => a.station.points[a.station.names.indexOf(a.stopName)] ?? a.station.points[0]
+const poleOf = (a: NearestStop): LatLng => a.station.points[a.pole] ?? a.station.points[0]
 
 /** ETA stop number → its pole, for "the bus that way stops across the street". */
 function polesOf(a: NearestStop): Record<number, { at: LatLng; name: string }> {
@@ -556,7 +557,7 @@ export function NearMe({
                 const at = poleOf(a)
                 const rides = places
                   .filter((p) => p.route === a.route.slug)
-                  .map((p) => ({ ...p, ride: Math.abs(a.route.stations[p.index].min - a.station.min) }))
+                  .map((p) => ({ ...p, ride: rideBetween(a.route, a.index, p.index) }))
                   .sort((x, y) => x.ride - y.ride)
                   .slice(0, 5)
                 return (

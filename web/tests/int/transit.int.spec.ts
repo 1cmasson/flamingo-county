@@ -8,6 +8,7 @@ import {
   headwayToday,
   nearestServing,
   nearestStops,
+  rideBetween,
   serviceStatus,
   walkMinutes,
 } from '@/lib/transit'
@@ -180,9 +181,35 @@ describe('the lines as the city runs them', () => {
     }
   })
 
-  it('point a rider at a one-way stop to the nearest stop the other way', () => {
-    const oneWay = flamingo.stations.find((s) => s.oneWay === 'end')!
-    const other = nearestServing(flamingo, oneWay.points[0], 'start')!
-    expect(other.station.oneWay).not.toBe('end')
+  it('point a rider at a one-way stop to a pole the other way’s buses really use', () => {
+    // Pole by pole: the stop across the street from a one-way stop is often
+    // a pole for the same direction, and sending a rider there strands them.
+    for (const r of [flamingo, marlin]) {
+      for (const st of r.stations.filter((s) => s.oneWay)) {
+        const way = st.oneWay === 'start' ? 'end' : 'start'
+        for (const p of st.points) {
+          const other = nearestServing(r, p, way)!
+          expect(['both', way], `${st.name} → ${other.stopName}`).toContain(other.station.poleWays?.[other.pole])
+        }
+      }
+    }
+  })
+
+  it('list each stop once, even where the bus rounds a block and passes it again', () => {
+    for (const r of [flamingo, marlin]) {
+      const ids = r.stations.map((s) => s.id)
+      expect(new Set(ids).size).toBe(ids.length)
+    }
+  })
+
+  it('count a ride from a one-way stop the long way round when it has to be', () => {
+    const k = flamingo.stations.findIndex((s) => s.oneWay === 'end')
+    const st = flamingo.stations[k]
+    // Toward the end: a later stop is a direct ride…
+    const later = flamingo.stations.findIndex((s, i) => i > k && s.min > st.min)
+    expect(rideBetween(flamingo, k, later)).toBe(flamingo.stations[later].min - st.min)
+    // …an earlier one means riding to the end of the line and back.
+    const earlier = flamingo.stations.findIndex((s) => s.min < st.min)
+    expect(rideBetween(flamingo, k, earlier)).toBeGreaterThan(flamingo.rideMinutes - st.min)
   })
 })
