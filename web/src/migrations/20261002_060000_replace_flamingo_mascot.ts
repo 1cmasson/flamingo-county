@@ -2,7 +2,7 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
-import type { MigrateDownArgs, MigrateUpArgs } from '@payloadcms/db-sqlite'
+import { sql, type MigrateDownArgs, type MigrateUpArgs } from '@payloadcms/db-sqlite'
 
 /**
  * Data only, no schema: swap the Hialeah flamingo's picture for the clean
@@ -45,18 +45,29 @@ function sourceFile(): string | null {
   return candidates.find((p) => fs.existsSync(p)) ?? null
 }
 
-export async function up({ payload, req }: MigrateUpArgs): Promise<void> {
-  const { docs } = await payload.find({
-    collection: 'media',
-    where: { filename: { like: 'flamingo-hialeah' } },
-    limit: 50,
-    depth: 0,
-    overrideAccess: true,
-    req,
-  })
+export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
+  // Plain SQL, not payload.find: Payload selects every column the CURRENT
+  // config declares, and on a fresh database (CI, a new environment) this
+  // migration runs before later ones add their media columns (license, …), so
+  // a Payload read here would fail with "no such column". An empty database
+  // has no flamingo, so it stops at the first query.
+  const rows = (await db.all(
+    sql`SELECT id, filename, width, height FROM media WHERE filename LIKE '%flamingo-hialeah%' LIMIT 50`,
+  )) as { id: number; filename: string | null; width: number | null; height: number | null }[]
+  const docs = rows.map((r) => ({ id: r.id, filename: r.filename, width: r.width, height: r.height }))
   const targets = docs.filter((d) => d.filename && FLAMINGO.test(d.filename))
   if (!targets.length) {
     payload.logger.info('[migrate] flamingo mascot: no media doc to replace')
+    return
+  }
+
+  // payload.update reads and writes every column the current config declares.
+  // A database that has the old flamingo but not yet the later media columns
+  // (an old backup migrated in one go) cannot take it, so skip with a warning:
+  // the seed's own file is already the cutout, and this can be re-run by hand.
+  const cols = (await db.all(sql`PRAGMA table_info(media)`)) as { name: string }[]
+  if (!cols.some((c) => c.name === 'license')) {
+    payload.logger.warn('[migrate] flamingo mascot: media lacks columns from later migrations; skipped, replace it after migrating')
     return
   }
 
