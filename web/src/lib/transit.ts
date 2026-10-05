@@ -46,6 +46,8 @@ export type Station = {
    * back — but nobody should wait here for it.
    */
   oneWay?: 'start' | 'end'
+  /** Which way each pole's buses are going, in the same order as `points`. */
+  poleWays?: ('start' | 'end' | 'both')[]
 }
 
 export type TransitRoute = {
@@ -226,6 +228,8 @@ export type NearestStop = {
   station: Station
   /** The physical stop actually nearest — what the walk time is measured to. */
   stopName: string
+  /** Which of the station's poles that is: two poles can share a name (one each way). */
+  pole: number
   /** Every ETA stop this station stands for, for asking the live feed when the next bus comes. */
   etaIds: number[]
   meters: number
@@ -240,7 +244,7 @@ export function nearestStops(at: LatLng, maxMeters: number = MAX_WALK_METERS): N
       station.points.forEach((p, k) => {
         const d = meters(at, p)
         if (d <= maxMeters && (!best || d < best.meters)) {
-          best = { route, index, station, stopName: station.names[k] ?? station.name, etaIds: etaIdsFor(station), meters: d }
+          best = { route, index, station, stopName: station.names[k] ?? station.name, pole: k, etaIds: etaIdsFor(station), meters: d }
         }
       })
     })
@@ -250,21 +254,66 @@ export function nearestStops(at: LatLng, maxMeters: number = MAX_WALK_METERS): N
 }
 
 /**
+ * Which way a bus is going at stop `i` of a trip, from the city's schedule.
+ *
+ * Each line is a loop out to its far end and back. A trip that reaches the far
+ * end (its first station, `turn`) is on the leg out — toward the strip's start
+ * — before it, and on the leg back after. A trip that never gets there runs one
+ * leg only, and which way it moves along the strip says which. Unlike reading
+ * the next station's index, this holds inside the little loops a line makes
+ * around a mall or a hospital, where the bus doubles back on itself.
+ */
+export function legAt(
+  stops: number[],
+  i: number,
+  turn: Set<number>,
+  indexOf: (id: number) => number | undefined,
+): 'start' | 'end' | null {
+  const t = stops.findIndex((s) => turn.has(s))
+  if (t > -1) return i < t ? 'start' : 'end'
+  let first: number | undefined
+  let last: number | undefined
+  for (const s of stops) {
+    const k = indexOf(s)
+    if (k === undefined) continue
+    first ??= k
+    last = k
+  }
+  if (first === undefined || last === undefined || first === last) return null
+  return last > first ? 'end' : 'start'
+}
+
+/**
  * The closest stop on `route` that buses going `way` stop at — for when the
- * nearest stop of all is served the other way only.
+ * nearest stop of all is served the other way only. Pole by pole: across the
+ * street from a one-way stop is often a pole for the same direction.
  */
 export function nearestServing(route: TransitRoute, at: LatLng, way: 'start' | 'end'): NearestStop | null {
   let best: NearestStop | null = null
   route.stations.forEach((station, index) => {
-    if (station.oneWay && station.oneWay !== way) return
     station.points.forEach((p, k) => {
+      const serves = station.poleWays?.[k] ?? station.oneWay ?? 'both'
+      if (serves !== 'both' && serves !== way) return
       const d = meters(at, p)
       if (!best || d < best.meters) {
-        best = { route, index, station, stopName: station.names[k] ?? station.name, etaIds: etaIdsFor(station), meters: d }
+        best = { route, index, station, stopName: station.names[k] ?? station.name, pole: k, etaIds: etaIdsFor(station), meters: d }
       }
     })
   })
   return best
+}
+
+/**
+ * Ride minutes from one station to another. From a stop served one way only,
+ * a place the other way is round the end of the loop: out to the end and back.
+ */
+export function rideBetween(route: TransitRoute, from: number, to: number): number {
+  const a = route.stations[from]
+  const b = route.stations[to]
+  const direct = Math.abs(b.min - a.min)
+  if (a.oneWay === 'end') return b.min >= a.min ? direct : route.rideMinutes - a.min + (route.rideMinutes - b.min)
+  if (a.oneWay === 'start') return b.min <= a.min ? direct : a.min + b.min
+  return direct
 }
 
 export type DiagramItem =

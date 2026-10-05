@@ -1,6 +1,6 @@
 import GtfsRealtimeBindings from 'gtfs-realtime-bindings'
 import eta from '../data/transit/hialeah-eta.json'
-import { TRANSIT, getRoute, meters, miamiClock, serviceStatus, type TransitRoute } from './transit'
+import { TRANSIT, getRoute, legAt, meters, miamiClock, serviceStatus, type TransitRoute } from './transit'
 
 /**
  * Hialeah's buses, live.
@@ -93,8 +93,8 @@ export function liveFeed(now: number = Date.now()): Promise<Feed | null> {
 /**
  * Which way a bus is going, as one of our line's two ends. ETA's trips are
  * mostly loops (out and back as one trip), so a trip's last stop says nothing;
- * what does is the next of OUR stations the trip reaches after this point —
- * further down our strip means toward its end, back up means toward its start.
+ * what does is whether this pass comes before or after the loop's far end
+ * (transit.ts `legAt`).
  */
 export type Toward = 'start' | 'end'
 
@@ -112,28 +112,19 @@ const LAST_STATION: Record<string, number> = Object.fromEntries(
   Object.entries(STATION_OF).map(([slug, m]) => [slug, Math.max(-1, ...m.values())]),
 )
 
+/** Each line's far end, where its loop turns: the first station's poles. */
+const TURN: Record<string, Set<number>> = Object.fromEntries(
+  TRANSIT.routes.map((r) => [r.slug, new Set((r.stations[0]?.eta ?? []).filter((x): x is number => x !== null))]),
+)
+
 export function towardAt(trip: Pick<EtaTrip, 'route' | 'stops'>, i: number): Toward | null {
   const of = STATION_OF[trip.route]
   if (!of) return null
-  // Where the bus is: this stop if it's one of ours, else the last of ours behind it.
-  let here: number | undefined
-  for (let k = i; k >= 0 && here === undefined; k--) here = of.get(trip.stops[k])
   // At either end of the line there's only one way left to go.
-  const last = LAST_STATION[trip.route]
+  const here = of.get(trip.stops[i])
   if (here === 0) return 'end'
-  if (here !== undefined && here === last) return 'start'
-  for (let k = i + 1; k < trip.stops.length; k++) {
-    const next = of.get(trip.stops[k])
-    if (next === undefined || next === here) continue
-    if (here === undefined) here = next
-    else return next > here ? 'end' : 'start'
-  }
-  // The trip's last stretch: compare with where it came from instead.
-  for (let k = i - 1; k >= 0; k--) {
-    const prev = of.get(trip.stops[k])
-    if (prev !== undefined && here !== undefined && prev !== here) return here > prev ? 'end' : 'start'
-  }
-  return null
+  if (here !== undefined && here === LAST_STATION[trip.route]) return 'start'
+  return legAt(trip.stops, i, TURN[trip.route] ?? new Set(), (id) => of.get(id))
 }
 
 export type LiveVehicle = {
