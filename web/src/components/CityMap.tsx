@@ -4,7 +4,7 @@ import type * as React from 'react'
 import { useEffect, useId, useRef, useState } from 'react'
 import type { CityMapModel } from '../lib/citymap'
 import type { LiveSnapshot } from '../lib/live'
-import { useAgo, usePoll } from './LiveTransit'
+import { busSentence, useAgo, usePoll, type BusWordsCopy } from './LiveTransit'
 import cm from './citymap.module.css'
 
 /**
@@ -26,9 +26,11 @@ export function CityMap({
   model,
   running,
   copy,
+  busWords,
 }: {
   model: CityMapModel
   running: boolean
+  busWords: BusWordsCopy
   copy: {
     title: string
     status: string
@@ -40,11 +42,14 @@ export function CityMap({
     busTitle: string
     late: string
     onTime: string
+    tapBus: string
+    close: string
   }
 }) {
   const id = useId().replace(/:/g, '')
   const svgRef = useRef<SVGSVGElement>(null)
   const [play, setPlay] = useState(false)
+  const [picked, setPicked] = useState<string | null>(null)
 
   useEffect(() => {
     const svg = svgRef.current
@@ -68,6 +73,7 @@ export function CityMap({
   const { data: liveData } = usePoll<LiveSnapshot>(play ? '/api/transit/live' : null, 15_000)
   const ago = useAgo(liveData?.updatedAt ?? null)
   const live = liveData?.ok && liveData.vehicles.length ? liveData.vehicles : null
+  const pickedBus = live?.find((b) => b.id === picked) ?? null
   const project = (lat: number, lng: number): [number, number] => {
     const p = model.proj
     return [p.pad + (lng * p.k - p.minX) * p.scale, p.pad + (-lat - p.minY) * p.scale]
@@ -163,22 +169,37 @@ export function CityMap({
                 {live.map((b) => {
                   const [x, y] = project(b.lat, b.lng)
                   const line = model.lines.find((l) => l.slug === b.route)
+                  const on = b.id === picked
+                  const say = busSentence(b, busWords)
                   return (
-                    <g key={b.id} className={cm.liveBus} style={{ transform: `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)` }}>
-                      <title>
-                        {fillIn(copy.busTitle, {
-                          name: line?.name ?? '',
-                          stop: b.next ?? '—',
-                          delay: b.delayMin >= 2 ? fillIn(copy.late, { n: b.delayMin }) : copy.onTime,
-                        })}
-                      </title>
-                      {/* Bearing is compass degrees from north; the bus is drawn facing east. */}
-                      {/* Drawn larger than the illustration's buses: on a phone the
-                          whole city is 330px wide, and these are the ones to find. */}
-                      <g transform={`scale(1.7) rotate(${b.bearing - 90})`}>
-                        <Bus color={line?.color ?? 'var(--yellow)'} />
+                    <g
+                      key={b.id}
+                      className={cm.liveBus}
+                      style={{ transform: `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)` }}
+                      role="button"
+                      tabIndex={0}
+                      aria-label={say}
+                      aria-pressed={on}
+                      onClick={() => setPicked(on ? null : b.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          e.preventDefault()
+                          setPicked(on ? null : b.id)
+                        }
+                      }}
+                    >
+                      {/* A thumb-sized target around a dot the eye can find:
+                          on a phone the whole city is ~330px wide. */}
+                      <circle r={30} fill="transparent" />
+                      <g transform={`rotate(${b.bearing})`}>
+                        <path d="M0,-30 L9,-19 L-9,-19 Z" fill="var(--ink)" />
                       </g>
-                      {b.delayMin >= 2 ? <circle r={6} cx={17} cy={-15} fill="var(--magenta)" stroke="var(--cream)" strokeWidth={2} /> : null}
+                      {on ? <circle r={25} fill="var(--yellow)" stroke="var(--ink)" strokeWidth={3} /> : null}
+                      <circle r={18} fill={line?.color ?? 'var(--yellow)'} stroke="var(--ink)" strokeWidth={4} />
+                      <text y={7.5} textAnchor="middle" className={cm.busLetter} fill={line?.ink ?? 'var(--ink)'}>
+                        {line?.name[0] ?? ''}
+                      </text>
+                      {b.delayMin >= 2 ? <circle r={6} cx={15} cy={-15} fill="var(--magenta)" stroke="var(--cream)" strokeWidth={2} /> : null}
                     </g>
                   )
                 })}
@@ -252,6 +273,21 @@ export function CityMap({
           {live ? fillIn(copy.liveStatus, { n: live.length, s: ago ?? 0 }) : copy.status}
         </div>
       </div>
+
+      {live ? (
+        <div aria-live="polite" className={cm.busCard} data-on={pickedBus ? '' : undefined}>
+          {pickedBus ? (
+            <>
+              <span>{busSentence(pickedBus, busWords)}</span>
+              <button type="button" onClick={() => setPicked(null)} className={cm.busCardClose}>
+                {copy.close}
+              </button>
+            </>
+          ) : (
+            <span>{copy.tapBus}</span>
+          )}
+        </div>
+      ) : null}
 
       <figcaption style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '6px 14px', fontSize: 12, fontWeight: 800 }}>
         {model.lines.map((l) => (
