@@ -6,6 +6,7 @@ import {
   formatHeadway,
   getRoute,
   headwayToday,
+  nearestServing,
   nearestStops,
   serviceStatus,
   walkMinutes,
@@ -98,10 +99,10 @@ describe('nearestStops', () => {
   it('finds the Marlin stop on Palm Ave a block away', () => {
     const [first] = nearestStops(casaMarin)
     expect(first.route.slug).toBe('marlin')
-    // Drawn at the outbound station, but the pole a rider walks to is the one
-    // across Palm Ave — and that is the name the panel must print.
-    expect(first.station.name).toBe('Palm Ave & W 41 St')
-    expect(first.stopName).toBe('Palm Ave & E 41 St')
+    // Drawn at the station named for one pole, but the pole a rider walks to
+    // is its partner up the block — and that is the name the panel must print.
+    expect(first.station.name).toBe('Palm Ave & E 41st St')
+    expect(first.stopName).toBe('Palm Ave & E 42nd St')
     expect(walkMinutes(first.meters)).toBeLessThanOrEqual(2)
   })
 
@@ -149,5 +150,39 @@ describe('geocoding guard', () => {
   it('refuses addresses with no street number', () => {
     expect(hasStreetNumber('Hialeah, FL')).toBe(false)
     expect(hasStreetNumber('4195 Palm Ave, Hialeah, FL, 33012')).toBe(true)
+  })
+})
+
+describe('the lines as the city runs them', () => {
+  const flamingo = TRANSIT.routes.find((r) => r.slug === 'flamingo')!
+  const marlin = TRANSIT.routes.find((r) => r.slug === 'marlin')!
+
+  it('include the stretches the county’s copy missed', () => {
+    // Flamingo up NW 97th Ave past Bonterra to Aquabella; Marlin on Red Rd.
+    expect(flamingo.stations.some((s) => /Bonterra/.test(s.name))).toBe(true)
+    expect(marlin.stations.some((s) => /Red Rd & W 62nd St/.test(s.name))).toBe(true)
+  })
+
+  it('draw each line along its street path, not stop to stop', () => {
+    for (const r of [flamingo, marlin]) {
+      expect(r.path.length).toBeGreaterThan(50)
+      // Small enough to ship in the page bundle.
+      expect(r.path.length).toBeLessThan(400)
+    }
+  })
+
+  it('mark the stops served one way only, and never the ends', () => {
+    for (const r of [flamingo, marlin]) {
+      expect(r.stations.some((s) => s.oneWay === 'start')).toBe(true)
+      expect(r.stations.some((s) => s.oneWay === 'end')).toBe(true)
+      expect(r.stations[0].oneWay).toBeUndefined()
+      expect(r.stations.at(-1)!.oneWay).toBeUndefined()
+    }
+  })
+
+  it('point a rider at a one-way stop to the nearest stop the other way', () => {
+    const oneWay = flamingo.stations.find((s) => s.oneWay === 'end')!
+    const other = nearestServing(flamingo, oneWay.points[0], 'start')!
+    expect(other.station.oneWay).not.toBe('end')
   })
 })

@@ -128,7 +128,7 @@ export default function RideMap({ only, origin, target, vehicles, yourBus, descr
               features: routes.map((r) => ({
                 type: 'Feature',
                 properties: { color: LINE_COLOR[r.slug] },
-                geometry: { type: 'LineString', coordinates: r.stations.map((s) => lngLat(s.points[0])) },
+                geometry: { type: 'LineString', coordinates: r.path.map(lngLat) },
               })),
             },
           })

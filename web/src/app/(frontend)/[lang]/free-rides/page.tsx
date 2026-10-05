@@ -447,7 +447,7 @@ export default async function FreeRidesPage({ params }: { params: Promise<{ lang
         >
           {fill(
             t(
-              'Live buses and arrival times: the City of Hialeah’s ETA SPOT tracker, by ETA Transit Systems. Stops and ride times: Miami-Dade Transit (updated {date}). Hours: City of Hialeah. Map: US Census Bureau.',
+              'Routes, stops, ride times and live buses: the City of Hialeah’s ETA SPOT system, by ETA Transit Systems (updated {date}). How often buses come, and Metrorail: Miami-Dade Transit. Hours: City of Hialeah. Maps: US Census Bureau, OpenStreetMap.',
             ),
             { date: TRANSIT.source.fetchedAt },
           )}{' '}

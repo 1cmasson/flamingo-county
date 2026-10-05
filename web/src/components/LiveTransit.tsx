@@ -287,7 +287,10 @@ export type LeaveCopy = Record<
   | 'checking'
   | 'oneSide'
   | 'untracked'
-  | 'unavailable',
+  | 'unavailable'
+  | 'oneWayHere'
+  | 'otherStop'
+  | 'loopBack',
   string
 > & { places: Record<string, string> }
 
@@ -314,6 +317,7 @@ export function LeaveTimes({
   onShowBus,
   onFirstLive,
   oneSide,
+  oneWay,
 }: {
   route: TransitRoute
   stops: number[]
@@ -330,6 +334,8 @@ export function LeaveTimes({
   onFirstLive?: (id: string | null) => void
   /** Buses stop on both sides of the street here, but only one side is in the city's tracker. */
   oneSide?: boolean
+  /** A stop served one way only — and where the other way's bus stops, if near. */
+  oneWay?: { way: Toward; other: { name: string; walk: number; at: LatLng } | null }
 }) {
   const url = stops.length ? `/api/transit/arrivals?stops=${stops.join(',')}&route=${route.slug}` : null
   const { data, at: fetchedAt, failed } = usePoll<{ arrivals: Arrival[] }>(url, 30_000)
@@ -361,7 +367,24 @@ export function LeaveTimes({
       </p>
     )
   }
-  const sideNote = oneSide ? <p style={{ margin: 0, fontSize: 15, fontWeight: 600, lineHeight: 1.45, color: '#3d4248' }}>{copy.oneSide}</p> : null
+  const otherWay: Toward | null = oneWay ? (oneWay.way === 'start' ? 'end' : 'start') : null
+  const sideNote = oneWay ? (
+    // The line is a loop: the other way is a stop away, or a ride round the end.
+    <div style={{ border: '3px solid var(--ink)', background: 'var(--cream)', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 15, fontWeight: 600, lineHeight: 1.45 }}>
+      <strong style={{ fontWeight: 800 }}>{fill(copy.oneWayHere, { place: towardName(route, oneWay.way, copy.places) })}</strong>
+      {oneWay.other && otherWay ? (
+        <span>
+          {fill(copy.otherStop, { place: towardName(route, otherWay, copy.places), stop: oneWay.other.name, n: oneWay.other.walk })}{' '}
+          <a href={walkHref(oneWay.other.at)} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 800, textDecoration: 'underline', whiteSpace: 'nowrap' }}>
+            {copy.walkThere}
+          </a>
+        </span>
+      ) : null}
+      <span style={{ color: '#3d4248' }}>{copy.loopBack}</span>
+    </div>
+  ) : oneSide ? (
+    <p style={{ margin: 0, fontSize: 15, fontWeight: 600, lineHeight: 1.45, color: '#3d4248' }}>{copy.oneSide}</p>
+  ) : null
   if (!list.length) {
     return (
       <>

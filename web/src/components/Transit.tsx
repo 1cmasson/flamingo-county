@@ -13,6 +13,7 @@ import {
   TOWARD_PLACES,
   TRANSIT,
   diagram,
+  towardName,
   formatClock,
   formatHeadway,
   headwayToday,
@@ -21,6 +22,7 @@ import {
   serviceStatus,
   walkMinutes,
   type NearestStop,
+  type Station,
   type TransitRoute,
 } from '../lib/transit'
 import type { NearMeCopy, NearMePlace } from './NearMe'
@@ -405,6 +407,8 @@ export function RouteStrip({
     byStation.set(p.stop.index, list)
   }
   const items = diagram(route, new Set(byStation.keys()))
+  const towardNames = towardPlaces(t)
+  const only = (s: Station) => (s.oneWay ? fill(t('ONLY TOWARD {place}'), { place: towardName(route, s.oneWay, towardNames).toUpperCase() }) : null)
   const lineVar = { '--line': ROUTE_STYLE[route.slug].color } as React.CSSProperties
 
   return (
@@ -428,7 +432,9 @@ export function RouteStrip({
                     {it.stations.map(({ station }) => (
                       <li key={station.id} id={`stop-${station.id}`}>
                         {station.name}{' '}
-                        <span style={{ fontWeight: 800, fontSize: 12, color: '#5b6168' }}>· {station.min}′</span>
+                        <span style={{ fontWeight: 800, fontSize: 12, color: '#5b6168' }}>
+                          · {station.oneWay ? `${station.oneWay === 'start' ? '▲' : '▼'} ${only(station)}` : `${station.min}′`}
+                        </span>
                       </li>
                     ))}
                   </ol>
@@ -453,6 +459,9 @@ export function RouteStrip({
             <span className={tr.minutes} aria-hidden={first ? undefined : true}>
               {first ? (
                 <small style={{ fontSize: 10 }}>{t('START')}</small>
+              ) : station.oneWay ? (
+                // A one-way stop's minutes would be the other leg's guess; its arrow says more.
+                <span title={only(station) ?? undefined}>{station.oneWay === 'start' ? '▲' : '▼'}</span>
               ) : (
                 <>
                   {station.min}
@@ -475,6 +484,7 @@ export function RouteStrip({
               {station.landmark && station.landmark !== station.name ? (
                 <div style={{ fontSize: 13, fontWeight: 600, marginTop: 3 }}>{station.name}</div>
               ) : null}
+              {station.oneWay ? <div className={tr.oneWay}>{only(station)}</div> : null}
               {station.transfers.map((x) => (
                 <div key={x} className={tr.transfer}>
                   <span aria-hidden="true">⇄</span>
@@ -592,6 +602,9 @@ export function leaveCopy(t: T): LeaveCopy {
     oneSide: t('Buses going the other way stop across the street. The city’s tracker doesn’t show their times at that pole.'),
     untracked: t('The city’s tracker doesn’t list this stop, so we can’t show bus times here. The bus still stops.'),
     unavailable: t('Bus times aren’t loading right now. The buses are still running; try again in a moment.'),
+    oneWayHere: t('Only buses going toward {place} stop here.'),
+    otherStop: t('Going toward {place}? That bus stops at {stop}, a {n}-min walk.'),
+    loopBack: t('Or get on here and stay on: the line is a loop, so the bus turns at the end and comes back.'),
     places: towardPlaces(t),
   }
 }

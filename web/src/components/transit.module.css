@@ -469,3 +469,15 @@
 .moreSpots[open] summary {
   margin-bottom: 14px;
 }
+
+/* "ONLY TOWARD CITY HALL": a stop the bus serves one way only. */
+.oneWay {
+  display: inline-block;
+  margin-top: 5px;
+  border: 2px solid var(--ink);
+  background: var(--cream);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.6px;
+  padding: 3px 7px 2px;
+}

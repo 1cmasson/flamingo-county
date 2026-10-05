@@ -214,8 +214,8 @@ export function CityMap({
                         dur={`${l.cycle}s`}
                         begin={`-${((l.cycle / l.buses) * i).toFixed(2)}s`}
                         repeatCount="indefinite"
-                        keyPoints="0;1;0"
-                        keyTimes="0;0.5;1"
+                        keyPoints="0;1"
+                        keyTimes="0;1"
                         calcMode="linear"
                         rotate="auto"
                       >
