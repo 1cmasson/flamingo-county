@@ -6,7 +6,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
 
-import { eveningAfter } from '@/lib/autoDraft'
+import { draftForPublished, pickPostTime, postDeadline } from '@/lib/autoDraft'
 import { HQ_INTERNAL } from '@/lib/hq'
 import type { Event, HqSocialDraft, Story } from '@/payload-types'
 
@@ -15,9 +15,13 @@ const OWNER = '1001'
 function fakeTelegram() {
   const sent: { method: string; body: unknown }[] = []
   let messageId = 900
+  // Anything that is not Telegram goes through: the event card's renderer
+  // loads its WebAssembly with fetch.
+  const realFetch = globalThis.fetch
   vi.stubGlobal(
     'fetch',
     vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
+      if (!String(input instanceof Request ? input.url : input).includes('api.telegram.org')) return realFetch(input, init)
       const method = String(input).split('/').pop()!
       sent.push({ method, body: typeof init?.body === 'string' ? JSON.parse(init.body) : init?.body })
       return Response.json({ ok: true, result: { message_id: ++messageId } })
@@ -34,11 +38,62 @@ function fakeTelegram() {
   return { previews }
 }
 
-describe('eveningAfter', () => {
-  it('is 7 PM Miami time the next day, in summer and winter time', () => {
-    expect(eveningAfter(new Date('2026-10-01T12:00:00Z')).toISOString()).toBe('2026-10-02T23:00:00.000Z')
-    // 11 PM Miami on Dec 1 is already Dec 2 in UTC; "tomorrow" is Miami's.
-    expect(eveningAfter(new Date('2026-12-02T04:00:00Z')).toISOString()).toBe('2026-12-03T00:00:00.000Z')
+/** A Miami wall-clock time in October 2026 (EDT, UTC-4) as an instant. */
+const oct = (day: number, hhmm: string) => new Date(`2026-10-${String(day).padStart(2, '0')}T${hhmm}:00-04:00`)
+const iso = (d: Date) => d.toISOString()
+
+describe('pickPostTime: when an auto-draft goes out', () => {
+  const farEvent = postDeadline({ date: '2026-12-31T12:00:00.000Z', endDate: null, startTime: '20:00' }, oct(2, '00:10'))
+
+  it('a publish at 00:10 Miami lands at 11:30 the same day, not at midnight', () => {
+    expect(iso(pickPostTime(oct(2, '00:10'), [], farEvent))).toBe(iso(oct(2, '11:30')))
+  })
+
+  it('takes the evening slot after the morning one has gone, and needs 30 minutes of notice', () => {
+    expect(iso(pickPostTime(oct(2, '11:05'), [], farEvent))).toBe(iso(oct(2, '19:00')))
+    expect(iso(pickPostTime(oct(2, '18:35'), [], farEvent))).toBe(iso(oct(3, '11:30')))
+    // A story has no deadline at all.
+    expect(iso(pickPostTime(oct(2, '00:10'), [], null))).toBe(iso(oct(2, '11:30')))
+  })
+
+  it('skips a slot within 3 hours of another waiting draft', () => {
+    expect(iso(pickPostTime(oct(2, '00:10'), [oct(2, '11:30')], farEvent))).toBe(iso(oct(2, '19:00')))
+    // 13:00 is 1.5 hours from 11:30; 19:00 is six hours clear of it.
+    expect(iso(pickPostTime(oct(2, '00:10'), [oct(2, '13:00')], farEvent))).toBe(iso(oct(2, '19:00')))
+    expect(iso(pickPostTime(oct(2, '00:10'), [oct(2, '11:30'), oct(2, '19:00')], farEvent))).toBe(iso(oct(3, '11:30')))
+  })
+
+  it('never schedules after the event starts', () => {
+    const now = oct(2, '10:00')
+    // Starts at noon: the 11:30 slot is free and before it.
+    const noon = postDeadline({ date: '2026-10-02T12:00:00.000Z', endDate: null, startTime: '12:00' }, now)
+    expect(iso(pickPostTime(now, [], noon))).toBe(iso(oct(2, '11:30')))
+    // 11:30 is crowded, but 19:00 is after the start: 11:30 anyway, spacing or not.
+    expect(iso(pickPostTime(now, [oct(2, '11:00')], noon))).toBe(iso(oct(2, '11:30')))
+    // Starts at 13:00 and it is 11:15: the next slot (19:00) is too late, so it goes out on approval.
+    const late = oct(2, '11:15')
+    const one = postDeadline({ date: '2026-10-02T12:00:00.000Z', endDate: null, startTime: '13:00' }, late)
+    expect(iso(pickPostTime(late, [], one))).toBe(iso(late))
+  })
+
+  it('an event with no clock may still go out on the morning of its day', () => {
+    const sat = postDeadline({ date: '2026-10-03T12:00:00.000Z', endDate: null, startTime: null }, oct(2, '20:00'))
+    expect(iso(sat)).toBe(iso(oct(3, '11:30')))
+    expect(iso(pickPostTime(oct(2, '20:00'), [], sat))).toBe(iso(oct(3, '11:30')))
+  })
+
+  it('a run that has already started is announced while it lasts, not at once', () => {
+    const now = oct(2, '00:10')
+    const exhibit = postDeadline({ date: '2026-09-18T12:00:00.000Z', endDate: '2026-10-19T12:00:00.000Z', startTime: null }, now)
+    expect(iso(exhibit)).toBe(iso(oct(19, '19:00')))
+    expect(iso(pickPostTime(now, [], exhibit))).toBe(iso(oct(2, '11:30')))
+  })
+
+  it('keeps Miami wall-clock times across the end of daylight time', () => {
+    // 1 November 2026: EDT until 2 AM, EST after. 11:30 EST is 16:30 UTC.
+    const now = new Date('2026-11-01T00:10:00-04:00')
+    expect(iso(pickPostTime(now, [], null))).toBe('2026-11-01T16:30:00.000Z')
+    expect(iso(pickPostTime(new Date('2026-11-01T12:00:00-05:00'), [], null))).toBe('2026-11-02T00:00:00.000Z')
   })
 })
 
@@ -236,6 +291,62 @@ describe('auto-drafting a social post when a page goes live', () => {
       ].join('\n'),
     )
     await vi.waitFor(() => expect(tg.previews()).toHaveLength(1))
+  })
+
+  it('gives an event with no photo its generated card, so it goes to Instagram too', async () => {
+    fakeTelegram()
+    const ev = await draftEvent('2099-03-14', { image: null })
+    await publish('events', ev.id)
+    const [d] = await draftsFor('events', ev.id)
+    expect(d.platforms).toEqual(['facebook', 'instagram'])
+    const media = d.media?.[0]
+    expect(typeof media === 'object' && media).toMatchObject({ mimeType: 'image/jpeg', width: 1080, height: 1350 })
+  })
+
+  it('draws the card for an event written only in English, with the English title', async () => {
+    fakeTelegram()
+    const card = vi.spyOn(await import('@/lib/eventCard'), 'renderEventCard')
+    const ev = (await payload.create({
+      collection: 'events',
+      data: { slug: `ad-en-only-${Date.now()}`, title: 'Domino night', date: '2099-03-14', timeLabel: '7 PM', kind, venueType: 'place', place: 'Máximo Gómez Park', city, _status: 'draft' } as never,
+      locale: 'en',
+      draft: true,
+      overrideAccess: true,
+    })) as Event
+    made.push({ collection: 'events', id: ev.id })
+    await publish('events', ev.id)
+    const [d] = await draftsFor('events', ev.id)
+    expect(d.platforms).toEqual(['facebook', 'instagram'])
+    const drawn = card.mock.calls.find(([e]) => e.id === ev.id)?.[0]
+    expect(drawn?.title).toBe('Domino night')
+    card.mockRestore()
+  })
+
+  it('spreads pages published together over different slots, 3 hours apart', async () => {
+    fakeTelegram()
+    const evs = await Promise.all([draftEvent('2099-03-14'), draftEvent('2099-03-15'), draftEvent('2099-03-16')])
+    const before = Date.now()
+    await Promise.all(evs.map((ev) => publish('events', ev.id)))
+    const times = (await Promise.all(evs.map((ev) => draftsFor('events', ev.id))))
+      .map((ds) => {
+        expect(ds).toHaveLength(1)
+        return new Date(ds[0].scheduledFor).getTime()
+      })
+      .sort((a, b) => a - b)
+    expect(times[0]).toBeGreaterThanOrEqual(before + 30 * 60_000)
+    expect(times[1] - times[0]).toBeGreaterThanOrEqual(3 * 3600_000)
+    expect(times[2] - times[1]).toBeGreaterThanOrEqual(3 * 3600_000)
+  })
+
+  it('schedules a draft written at 00:10 Miami time for 11:30 that morning', async () => {
+    fakeTelegram()
+    const ev = await draftEvent('2099-03-14')
+    // Published, its real-time draft dropped, then drafted again as if the
+    // clock read 00:10 on a day with nothing else waiting near it.
+    await publish('events', ev.id)
+    for (const d of await draftsFor('events', ev.id)) await payload.delete({ collection: 'hq-social-drafts', id: d.id, overrideAccess: true })
+    const d = await draftForPublished(payload, 'events', ev.id, new Date('2099-03-01T00:10:00-05:00'))
+    expect(d?.scheduledFor && new Date(d.scheduledFor).toISOString()).toBe(new Date('2099-03-01T11:30:00-05:00').toISOString())
   })
 
   it('drafts nothing for an event that is already over, or cancelled', async () => {

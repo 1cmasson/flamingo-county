@@ -5,7 +5,7 @@ import sharp from 'sharp'
 
 import { noPrice } from '../fields/shared'
 import type { City, Event, HqSocialDraft, Listing, Media, Story } from '../payload-types'
-import { addDays, dateOnly, eventEndDay, parseISO, todayISO, utcStamp } from './dates'
+import { addDays, dateOnly, eventEndDay, eventRunEnd, miamiInstant, parseISO, todayISO } from './dates'
 import { HQ_INTERNAL, recordEvent, sendDraftPreview } from './hq'
 import type { Platform } from './postiz'
 import { routes } from './routes'
@@ -30,11 +30,20 @@ type Lang = 'es' | 'en'
 const CAPTION_MAX = 2000
 /** A long event note or story dek is cut to this, at a word boundary. */
 const EXCERPT_MAX = 280
-/** The default posting time: the evening after the page goes live. */
-const POST_AT = '19:00'
 
 /** Two publishes of one page at the same moment must not both draft it. */
 const drafting = new Set<string>()
+
+/**
+ * Drafts are written one at a time, so that pages published together each see
+ * the others' times when picking their own slot (see `pickPostTime`).
+ */
+let queue: Promise<unknown> = Promise.resolve()
+function oneAtATime<T>(fn: () => Promise<T>): Promise<T> {
+  const run = queue.then(fn, fn)
+  queue = run.catch(() => undefined)
+  return run
+}
 
 /** The `afterChange` hook for Events and Stories. It never fails the publish. */
 export function autoDraftHook(collection: AutoDraftSource): CollectionAfterChangeHook {
@@ -71,7 +80,7 @@ export async function draftForPublished(
   if (drafting.has(key)) return null
   drafting.add(key)
   try {
-    return await create(payload, collection, id, now)
+    return await oneAtATime(() => create(payload, collection, id, now))
   } finally {
     drafting.delete(key)
   }
@@ -85,8 +94,9 @@ async function create(
 ): Promise<HqSocialDraft | null> {
   // Each language on its own, with no fallback, so a missing translation is
   // left out instead of repeating the English under the Spanish.
+  // Depth 2 reaches a listing venue's city, which the event card draws.
   const read = (locale: Lang) =>
-    payload.findByID({ collection, id, locale, fallbackLocale: false, depth: 1, overrideAccess: true })
+    payload.findByID({ collection, id, locale, fallbackLocale: false, depth: 2, overrideAccess: true })
   const [es, en] = await Promise.all([read('es'), read('en')])
 
   // A draft already written for this page means a republish. Only drafts made
@@ -110,7 +120,8 @@ async function create(
   let body: (excerpts: boolean) => string
   let pagePath: string
   let cover: Media | number | null | undefined
-  let scheduledFor = eveningAfter(now)
+  let deadline: Date | null = null
+  let event: Event | null = null
 
   if (collection === 'events') {
     const ev = { es: es as Event, en: en as Event }
@@ -118,8 +129,11 @@ async function create(
     body = (excerpts) => bilingual((l) => eventLines(ev[l], l, excerpts))
     pagePath = routes.event('es', ev.en.slug)
     cover = ev.en.image
-    // An event on or before the default posting day goes out on approval.
-    if (dateOnly(ev.en.date) <= todayISO(scheduledFor)) scheduledFor = now
+    deadline = postDeadline(ev.en, now)
+    // The card is in Spanish, but unlike the caption it falls back to the
+    // English for a field with no translation: a card with no title is worse
+    // than one with an English title.
+    event = (await payload.findByID({ collection, id, locale: 'es', depth: 2, overrideAccess: true })) as Event
   } else {
     const st = { es: es as Story, en: en as Story }
     body = (excerpts) => bilingual((l) => storyLines(st[l], excerpts))
@@ -131,10 +145,15 @@ async function create(
   if (!body(false)) return null
 
   const title = (en as { title?: string }).title ?? ''
-  const media = await copyCover(payload, cover, `${collection} #${id}`, (en as { slug: string }).slug)
+  const slug = (en as { slug: string }).slug
+  // The page's photo, or for an event without one its generated card.
+  const media =
+    (await copyCover(payload, cover, `${collection} #${id}`, slug)) ??
+    (event ? await cardImage(payload, event, `${collection} #${id}`, slug) : null)
   // Instagram and TikTok need media; a still goes to Facebook and Instagram.
   // TikTok is left to the owner, since it wants video.
   const platforms: Platform[] = media ? ['facebook', 'instagram'] : ['facebook']
+  const scheduledFor = pickPostTime(now, await busyTimes(payload, now), deadline)
 
   const draft = await payload.create({
     collection: 'hq-social-drafts',
@@ -262,10 +281,79 @@ function caption(body: (excerpts: boolean) => string, link: string): string {
 /* When and what                                                             */
 /* ------------------------------------------------------------------------ */
 
-/** 7 PM Miami time on the day after `now`. */
-export function eveningAfter(now: Date): Date {
-  const s = utcStamp(addDays(todayISO(now), 1), POST_AT)
-  return new Date(`${s.slice(0, 4)}-${s.slice(4, 6)}-${s.slice(6, 8)}T${s.slice(9, 11)}:${s.slice(11, 13)}:${s.slice(13, 15)}Z`)
+/** The two times of day a post goes out, Miami time: late morning and evening. */
+export const POST_SLOTS = ['11:30', '19:00'] as const
+/** A slot this close to now is skipped: the owner needs time to see the draft. */
+const MIN_LEAD_MS = 30 * 60_000
+/** Two posts closer together than this would bury each other. */
+const MIN_GAP_MS = 3 * 60 * 60_000
+/** How far ahead slots are looked for. */
+const HORIZON_DAYS = 21
+
+/** Every posting slot at least 30 minutes after `now`, in order, for three weeks. */
+export function postSlots(now: Date): Date[] {
+  const earliest = now.getTime() + MIN_LEAD_MS
+  const out: Date[] = []
+  // Day by day in Miami's calendar, each slot through `miamiInstant`, so a DST
+  // change moves the UTC instant and never the wall-clock time.
+  for (let i = 0, day = todayISO(now); i <= HORIZON_DAYS; i++, day = addDays(day, 1)) {
+    for (const at of POST_SLOTS) {
+      const slot = miamiInstant(day, at)
+      if (slot.getTime() >= earliest) out.push(slot)
+    }
+  }
+  return out
+}
+
+/**
+ * When a new draft should go out, once approved.
+ *
+ * The first 11:30 or 19:00 Miami slot at least 30 minutes away that is not
+ * within 3 hours of another draft already waiting (pending, approved or
+ * scheduled). For an event, never after `deadline` (see `postDeadline`): if
+ * the first free slot is too late, the first slot at all, spacing or not; if
+ * even that is too late, now, which posts as soon as it is approved.
+ */
+export function pickPostTime(now: Date, busy: Date[], deadline: Date | null): Date {
+  const slots = postSlots(now)
+  const free = slots.find((s) => busy.every((b) => Math.abs(b.getTime() - s.getTime()) >= MIN_GAP_MS))
+  const inTime = (s: Date | undefined): s is Date => !!s && (!deadline || s.getTime() <= deadline.getTime())
+  if (inTime(free)) return free
+  if (inTime(slots[0])) return slots[0]
+  return now
+}
+
+/**
+ * The latest an event's post may go out: when it starts. That is its
+ * `startTime` on its first day, or 11:30 that day when it has no clock, so the
+ * morning slot of the day itself still counts. A run that has already started
+ * (an exhibit up for weeks) is still worth announcing while it lasts, so its
+ * limit is the evening slot of its last day instead.
+ */
+export function postDeadline(ev: Pick<Event, 'date' | 'endDate' | 'startTime'>, now: Date): Date {
+  const first = dateOnly(ev.date)
+  const starts = miamiInstant(first, ev.startTime || POST_SLOTS[0])
+  if (starts.getTime() > now.getTime()) return starts
+  const last = eventRunEnd({ date: ev.date, endDate: ev.endDate })
+  return last > first ? miamiInstant(last, POST_SLOTS[1]) : starts
+}
+
+/** The times of drafts already waiting to go out, near enough to matter. */
+async function busyTimes(payload: Payload, now: Date): Promise<Date[]> {
+  const { docs } = await payload.find({
+    collection: 'hq-social-drafts',
+    where: {
+      and: [
+        { status: { in: ['pending', 'approved', 'scheduled'] } },
+        { scheduledFor: { greater_than_equal: new Date(now.getTime() - MIN_GAP_MS).toISOString() } },
+      ],
+    },
+    select: { scheduledFor: true },
+    limit: 500,
+    depth: 0,
+    overrideAccess: true,
+  })
+  return docs.map((d) => new Date(d.scheduledFor))
 }
 
 /** An event worth announcing: not over, cancelled or postponed. */
@@ -309,6 +397,32 @@ async function copyCover(
     return created.id
   } catch (err) {
     console.error(`[hq] auto-draft: no usable photo for ${label}:`, err instanceof Error ? err.message : err)
+    return null
+  }
+}
+
+/**
+ * For an event with no photo: its generated card, Instagram's 4:5, in Spanish
+ * (the audience is Spanish-first), stored in `hq-media` as a JPEG the same way
+ * as a copied photo. Drawn from the published event's own fields only. Null if
+ * it cannot be drawn; the draft then goes to Facebook as text, as before.
+ */
+async function cardImage(payload: Payload, ev: Event, label: string, slug: string): Promise<number | null> {
+  try {
+    // Loaded on demand: the renderer pulls in next/og, which the Payload CLI
+    // (migrations, the seed) has no use for.
+    const { renderEventCard } = await import('./eventCard')
+    const png = await renderEventCard(ev, 'es', 'social')
+    const jpeg = await sharp(Buffer.from(png)).flatten({ background: '#ffffff' }).jpeg({ quality: 88 }).toBuffer()
+    const created = await payload.create({
+      collection: 'hq-media',
+      data: { note: `Generated card for ${label} (no photo), made when it was published` },
+      file: { data: jpeg, mimetype: 'image/jpeg', name: `${slug.slice(0, 60)}-card-${Date.now()}.jpg`, size: jpeg.length },
+      overrideAccess: true,
+    })
+    return created.id
+  } catch (err) {
+    console.error(`[hq] auto-draft: no card for ${label}:`, err instanceof Error ? err.message : err)
     return null
   }
 }

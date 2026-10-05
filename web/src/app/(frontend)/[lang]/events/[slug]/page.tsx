@@ -14,6 +14,8 @@ import { MediaSlot } from '../../../../../components/MediaSlot'
 import { FULL_WIDTH_SIZES } from '../../../../../lib/srcset'
 import { EventActions } from '../../../../../components/EventActions'
 import { eventActionStrings, eventStatusLabel, eventVenue } from '../../../../../components/EventCard'
+import { EVENT_CARD_SIZES, eventCardUrl } from '../../../../../lib/eventCardUrl'
+import { eventSource } from '../../../../../lib/eventVenue'
 import s from '../../../../../components/chrome.module.css'
 
 /**
@@ -48,6 +50,9 @@ export async function generateMetadata({
   if (!isLang(lang)) return {}
   const ev = await getEvent(lang, slug)
   if (!ev) return {}
+  // No photo: the generated card, so a shared link still has a picture.
+  const photo = mediaUrl(ev.image)
+  const image = photo ?? eventCardUrl(ev, lang, 'link')
   return {
     title: ev.title,
     description: ev.note ?? undefined,
@@ -55,9 +60,11 @@ export async function generateMetadata({
       title: ev.title,
       description: ev.note ?? undefined,
       url: routes.event(lang, slug),
-      image: mediaUrl(ev.image),
+      image,
+      imageSize: photo ? undefined : EVENT_CARD_SIZES.link,
+      imageAlt: photo ? undefined : ev.title,
     }),
-    twitter: twitterCard(mediaUrl(ev.image)),
+    twitter: twitterCard(image),
     alternates: {
       canonical: routes.event(lang, slug),
       languages: { en: routes.event('en', slug), es: routes.event('es', slug) },
@@ -97,6 +104,19 @@ export default async function EventPage({
    * did. `getEvent` reads at depth 3, so it arrives populated.
    */
   const venueMark = listing ? rel<Media>(listing.logo) : null
+
+  /**
+   * No photo: the generated event card fills the hero instead of an empty
+   * frame. It is the `page` card, which leaves out the mascot and its arch
+   * because this page draws its own mascot over the hero's right side, and
+   * the card's text stops short of it (860 of 1200). The card carries the
+   * city, kind and date itself, so the badges and the date flag the page
+   * puts on a photograph are left off; a status or "who gets in" label moves
+   * to the line under the title.
+   */
+  const hasPhoto = !!rel<Media>(ev.image)?.url
+  const heroCard = hasPhoto ? null : eventCardUrl(ev, lang, 'page')
+  const source = eventSource(ev, lang)
 
   const iso = dateOnly(ev.date)
   const day = parseISO(iso).getUTCDate()
@@ -157,21 +177,32 @@ export default async function EventPage({
           <div
             style={{
               position: 'relative',
-              height: 'clamp(190px,40vw,320px)',
+              // The card keeps its own 1200:630 shape, so none of it is
+              // cropped; a photograph fills the usual strip.
+              ...(heroCard
+                ? { aspectRatio: `${EVENT_CARD_SIZES.page.width} / ${EVENT_CARD_SIZES.page.height}` }
+                : { height: 'clamp(190px,40vw,320px)' }),
               borderBottom: '4px solid var(--ink)',
               overflow: 'hidden',
-              // Most events have no photo. Without one, the frame is the
-              // kind's colour — the same fallback as the board's cards — so
-              // the badges and mascot sit on something instead of an empty
-              // bordered strip.
-              background: rel<Media>(ev.image)?.url ? 'var(--ink)' : (kind?.bg ?? 'var(--grad-pink)'),
+              // The city's colour behind the card while it loads.
+              background: hasPhoto ? 'var(--ink)' : (city?.accent ?? kind?.bg ?? 'var(--grad-pink)'),
             }}
           >
-            <MediaSlot
-              media={ev.image}
-              sizes={FULL_WIDTH_SIZES}
-              priority
-            />
+            {heroCard ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={heroCard}
+                // Everything on it is also on the page, in text.
+                alt=""
+                width={EVENT_CARD_SIZES.page.width}
+                height={EVENT_CARD_SIZES.page.height}
+                fetchPriority="high"
+                style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}
+              />
+            ) : (
+              <MediaSlot media={ev.image} sizes={FULL_WIDTH_SIZES} priority />
+            )}
+            {heroCard ? null : (
             <div
               style={{
                 position: 'absolute',
@@ -264,6 +295,8 @@ export default async function EventPage({
                 </div>
               ) : null}
             </div>
+            )}
+            {heroCard ? null : (
             <div
               style={{
                 position: 'absolute',
@@ -287,7 +320,29 @@ export default async function EventPage({
                 {shortMonth(iso, lang)}
               </div>
             </div>
-            {mascot?.url ? (
+            )}
+            {mascot?.url && heroCard ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={mascot.url}
+                alt=""
+                style={{
+                  position: 'absolute',
+                  // In the right 28% the card leaves clear. The hero keeps the
+                  // card's proportions, so a share of its height scales with
+                  // it at every width, and there is no date flag to clear.
+                  right: '3%',
+                  bottom: -14,
+                  height: '72%',
+                  width: 'auto',
+                  maxWidth: '24%',
+                  objectFit: 'contain',
+                  objectPosition: 'bottom',
+                  pointerEvents: 'none',
+                  filter: 'drop-shadow(3px 3px 0 rgba(12,15,20,0.35))',
+                }}
+              />
+            ) : mascot?.url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
                 src={mascot.url}
@@ -337,18 +392,50 @@ export default async function EventPage({
               {ev.title}
             </h1>
             <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
-              <div
-                style={{
-                  background: 'var(--ink)',
-                  color: 'var(--cream)',
-                  fontWeight: 800,
-                  fontSize: 12,
-                  letterSpacing: '1.4px',
-                  padding: '7px 10px',
-                }}
-              >
-                {ev.timeLabel}
-              </div>
+              {ev.timeLabel ? (
+                <div
+                  style={{
+                    background: 'var(--ink)',
+                    color: 'var(--cream)',
+                    fontWeight: 800,
+                    fontSize: 12,
+                    letterSpacing: '1.4px',
+                    padding: '7px 10px',
+                  }}
+                >
+                  {ev.timeLabel}
+                </div>
+              ) : null}
+              {/* With the card as the hero, the labels that sat on the photo come here. */}
+              {heroCard && eventStatusLabel(ev, t) ? (
+                <div
+                  style={{
+                    background: 'var(--ink)',
+                    color: 'var(--cream)',
+                    border: '3px solid var(--ink)',
+                    fontWeight: 800,
+                    fontSize: 11,
+                    letterSpacing: '1.5px',
+                    padding: '5px 9px',
+                  }}
+                >
+                  {eventStatusLabel(ev, t)}
+                </div>
+              ) : null}
+              {heroCard && ev.freeLabel ? (
+                <div
+                  style={{
+                    background: 'var(--yellow)',
+                    border: '3px solid var(--ink)',
+                    fontWeight: 800,
+                    fontSize: 11,
+                    letterSpacing: '1.5px',
+                    padding: '5px 9px',
+                  }}
+                >
+                  {ev.freeLabel}
+                </div>
+              ) : null}
               <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: '1px' }}>
                 {listing && city ? (
                   <Link
@@ -375,6 +462,43 @@ export default async function EventPage({
                 }}
               >
                 {ev.note}
+              </p>
+            ) : null}
+            {source ? (
+              /**
+               * Where the event comes from, so a reader can check it with
+               * whoever puts it on. A listing organizer links to its page
+               * here; anything else links out to its own site.
+               */
+              <p
+                style={{
+                  margin: 0,
+                  fontWeight: 800,
+                  fontSize: 13,
+                  letterSpacing: '0.6px',
+                  overflowWrap: 'anywhere',
+                }}
+              >
+                {source.href ? t('More info:') : t('Organized by')}{' '}
+                {source.href && source.external ? (
+                  <a
+                    href={source.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'var(--magenta)', textUnderlineOffset: 3, textDecorationThickness: 2 }}
+                  >
+                    {source.name}&nbsp;↗
+                  </a>
+                ) : source.href ? (
+                  <Link
+                    href={source.href}
+                    style={{ color: 'var(--magenta)', textUnderlineOffset: 3, textDecorationThickness: 2 }}
+                  >
+                    {source.name}&nbsp;→
+                  </Link>
+                ) : (
+                  source.name
+                )}
               </p>
             ) : null}
             <EventActions
