@@ -150,11 +150,52 @@ export function draftFingerprint(draft: Pick<HqSocialDraft, 'caption' | 'media' 
     .digest('hex')
 }
 
-export function draftPreviewText(draft: HqSocialDraft, extraFiles: number): string {
+/**
+ * Two posts closer together than this bury each other. Auto-drafts keep this
+ * far apart (lib/autoDraft.ts); a hand-made draft sets its own time, so its
+ * preview warns instead.
+ */
+export const POST_GAP_MS = 3 * 60 * 60_000
+
+export type DraftClash = { id: number; scheduledFor: string; caption: string }
+
+/**
+ * Other drafts waiting to go out (pending, approved or scheduled) within
+ * `POST_GAP_MS` of this one. Several agents write drafts; this is how a
+ * double-booking shows up before the owner taps Approve.
+ */
+export async function draftClashes(payload: Payload, draft: Pick<HqSocialDraft, 'id' | 'scheduledFor'>): Promise<DraftClash[]> {
+  const at = new Date(draft.scheduledFor).getTime()
+  if (!Number.isFinite(at)) return []
+  const { docs } = await payload.find({
+    collection: 'hq-social-drafts',
+    where: {
+      and: [
+        { id: { not_equals: draft.id } },
+        { status: { in: ['pending', 'approved', 'scheduled'] } },
+        { scheduledFor: { greater_than: new Date(at - POST_GAP_MS).toISOString() } },
+        { scheduledFor: { less_than: new Date(at + POST_GAP_MS).toISOString() } },
+      ],
+    },
+    select: { scheduledFor: true, caption: true },
+    sort: 'scheduledFor',
+    limit: 10,
+    depth: 0,
+    overrideAccess: true,
+  })
+  return docs.map((d) => ({ id: d.id, scheduledFor: d.scheduledFor, caption: d.caption ?? '' }))
+}
+
+export function draftPreviewText(draft: HqSocialDraft, extraFiles: number, clashes: DraftClash[] = []): string {
   const lines = [
     `<b>📣 Social draft #${draft.id}</b>`,
     `${(draft.platforms ?? []).join(' · ')} — ${esc(miamiTime(draft.scheduledFor))}`,
   ]
+  for (const c of clashes) {
+    const first = c.caption.split('\n')[0].trim()
+    const title = first.length > 60 ? `${first.slice(0, 59).trimEnd()}…` : first
+    lines.push(`⚠️ Within 3 h of draft #${c.id} (${esc(miamiTime(c.scheduledFor))}): ${esc(title)}`)
+  }
   if (extraFiles > 0) lines.push(`<i>+${extraFiles} more file${extraFiles === 1 ? '' : 's'} (see admin)</i>`)
   // The caption goes last: `clip` can only cut safely after every tag closes.
   lines.push('', esc(draft.caption))
@@ -171,7 +212,9 @@ export async function sendDraftPreview(payload: Payload, draft: HqSocialDraft): 
   const cover = media[0]
   const keyboard = draftKeyboard(draft.id)
 
-  let text = draftPreviewText(draft, Math.max(0, media.length - 1))
+  // A failed lookup must not stop the preview: the warning is a nicety.
+  const clashes = await draftClashes(payload, draft).catch(() => [])
+  let text = draftPreviewText(draft, Math.max(0, media.length - 1), clashes)
   let messageId: number
 
   const kind = cover?.mimeType?.startsWith('video/') ? 'video' : 'photo'

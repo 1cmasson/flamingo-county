@@ -3,7 +3,7 @@ import { getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
 
 import { buildBrief, isBriefHour, metricLine, sendBrief } from '@/lib/brief'
-import { decideDraft, draftCallback, draftPreviewText, parseDraftCallback } from '@/lib/hq'
+import { decideDraft, draftCallback, draftClashes, draftPreviewText, parseDraftCallback } from '@/lib/hq'
 import { buildPostBody, isRunningCount, postIdsFrom, summarizeMetrics } from '@/lib/postiz'
 import { collectChannelStats, collectPostStats, dueCheckpoints } from '@/lib/socialStats'
 import { isBot, parseTrackedLink, safePath } from '@/lib/tracking'
@@ -95,6 +95,17 @@ describe('draft buttons', () => {
     )
     expect(text).toContain('&lt;b&gt;2x1&lt;/b&gt; &amp; more')
     expect(text).toContain('+2 more files')
+  })
+
+  it('warns about another draft within 3 hours, naming it', () => {
+    const text = draftPreviewText(
+      { id: 7, caption: 'Sabor Fest', platforms: ['facebook'], scheduledFor: '2026-10-08T23:00:00Z' } as HqSocialDraft,
+      1,
+      [{ id: 18, scheduledFor: '2026-10-08T23:00:00Z', caption: '🎃 Halloween en Hialeah 2026: la guía <b>\nNEXTLINE' }],
+    )
+    expect(text).toContain('⚠️ Within 3 h of draft #18 (Thu, Oct 8, 7:00 PM): 🎃 Halloween en Hialeah 2026: la guía &lt;b&gt;')
+    expect(text).not.toContain('NEXTLINE')
+    expect(draftPreviewText({ id: 7, caption: 'x', platforms: ['facebook'], scheduledFor: '2026-10-08T23:00:00Z' } as HqSocialDraft, 0)).not.toContain('⚠️')
   })
 })
 
@@ -519,6 +530,21 @@ describe('HQ against the database', () => {
     docs.forEach((d) => created.push({ collection: 'hq-social-stats', id: d.id }))
     return docs
   }
+
+  it('finds the drafts within 3 hours of a new one, and only those still going out', async () => {
+    fakeNetwork()
+    const at = Date.now() + 10 * 86_400_000
+    const iso = (h: number) => new Date(at + h * 3_600_000).toISOString()
+    const near = await newDraft({ scheduledFor: iso(2), caption: 'HQ-TEST near\nsecond line' })
+    const far = await newDraft({ scheduledFor: iso(3.5) })
+    const gone = await newDraft({ scheduledFor: iso(-1) })
+    await payload.update({ collection: 'hq-social-drafts', id: gone.id, data: { status: 'rejected' }, overrideAccess: true, context: { hqInternal: true } })
+    const self = await newDraft({ scheduledFor: iso(0) })
+    const clashes = await draftClashes(payload, self)
+    expect(clashes.map((c) => c.id)).toEqual([near.id])
+    expect(clashes[0].caption).toContain('HQ-TEST near')
+    expect(far.id).toBeTruthy()
+  })
 
   it('takes a post checkpoint once, and waits while Postiz has no numbers yet', async () => {
     const draft = await publishedDraft(25, [{ platform: 'facebook', postId: 'live-1' }])

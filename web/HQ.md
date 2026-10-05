@@ -16,7 +16,10 @@ only. Phase 1 has three parts:
 - **Social approvals.** A draft in `hq-social-drafts` is previewed in Telegram
   with its cover photo or video and **Approve / Reject** buttons. Approve
   uploads the files to Postiz and schedules the post on Facebook, Instagram or
-  TikTok. Nothing is posted without that tap.
+  TikTok. Nothing is posted without that tap. If another draft (pending,
+  approved or scheduled) goes out within 3 hours of it, the preview says so
+  with a ⚠️ line naming that draft: auto-drafts keep that gap themselves, but
+  a hand-made draft (from any agent) sets its own time.
 
 Everything is in the admin under **HQ**. The code is in `src/lib/{hq,brief,telegram,telegramBot,chat,postiz}.ts`,
 `src/lib/{calendar,wrap}.ts`, `src/collections/Hq*.ts`, `src/jobs/{morningBrief,eveningWrap}.ts`
