@@ -303,6 +303,23 @@ describe('auto-drafting a social post when a page goes live', () => {
     expect(typeof media === 'object' && media).toMatchObject({ mimeType: 'image/jpeg', width: 1080, height: 1350 })
   })
 
+  it('attaches a two-card carousel: the Spanish card first, then the English one', async () => {
+    fakeTelegram()
+    const card = vi.spyOn(await import('@/lib/eventCard'), 'renderEventCard')
+    const ev = await draftEvent('2099-03-14', { image: null })
+    await publish('events', ev.id)
+    const [d] = await draftsFor('events', ev.id)
+    expect(d.media).toHaveLength(2)
+    const [first, second] = (d.media ?? []).map((m) => (typeof m === 'object' ? m : null))
+    expect(first).toMatchObject({ mimeType: 'image/jpeg', width: 1080, height: 1350 })
+    expect(second).toMatchObject({ mimeType: 'image/jpeg', width: 1080, height: 1350 })
+    expect(first?.note).toMatch(/ES card/)
+    expect(second?.note).toMatch(/EN card/)
+    const langs = card.mock.calls.filter(([e]) => e.id === ev.id).map(([, lang]) => lang)
+    expect(langs).toEqual(['es', 'en'])
+    card.mockRestore()
+  })
+
   it('draws the card for an event written only in English, with the English title', async () => {
     fakeTelegram()
     const card = vi.spyOn(await import('@/lib/eventCard'), 'renderEventCard')
