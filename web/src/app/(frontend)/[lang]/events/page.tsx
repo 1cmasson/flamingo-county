@@ -25,6 +25,7 @@ import type { City, Event, EventKind, Listing } from '../../../../payload-types'
 import { PageShell } from '../../../../components/PageShell'
 import { EventCard } from '../../../../components/EventCard'
 import s from '../../../../components/chrome.module.css'
+import { allSeasons, isSeasonOpen, seasonWindow } from '../../../../lib/seasons'
 
 type Search = { view?: string; month?: string }
 
@@ -71,6 +72,7 @@ export default async function EventsPage({
   // "Finished" is the last day, not the first: a multi-day exhibit that opened
   // last month stays on the board until it closes.
   const upcoming = all.filter((ev) => isStillOn(ev, today))
+  const openSeasons = allSeasons().filter((season) => isSeasonOpen(season, today))
 
   // LIST/CALENDAR is a view mode, not a filter — it stayed when the city and
   // kind chips came off.
@@ -158,6 +160,27 @@ export default async function EventsPage({
                 'Every domino table, live band, watch party and city day worth leaving the house for. Partners post theirs — the city ones we hunt down ourselves.',
               )}
             </p>
+            {/* A seasonal guide's link, only while its season is on (lib/seasons.ts). */}
+            {openSeasons.map((season) => (
+              <Link
+                key={season.key}
+                href={routes.season(lang, season.path)}
+                className={s.chipPress}
+                style={{
+                  alignSelf: 'flex-start',
+                  textDecoration: 'none',
+                  fontFamily: 'var(--display)',
+                  fontSize: 15,
+                  lineHeight: 1,
+                  padding: '9px 12px 6px',
+                  background: season.accent,
+                  color: 'var(--ink)',
+                  border: '3px solid var(--cream)',
+                }}
+              >
+                {season.boardLink(lang, seasonWindow(season, today).year)}
+              </Link>
+            ))}
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12, minWidth: 0 }}>
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>

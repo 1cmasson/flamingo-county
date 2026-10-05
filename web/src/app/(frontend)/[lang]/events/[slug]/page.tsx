@@ -15,7 +15,7 @@ import { FULL_WIDTH_SIZES } from '../../../../../lib/srcset'
 import { EventActions } from '../../../../../components/EventActions'
 import { eventActionStrings, eventStatusLabel, eventVenue } from '../../../../../components/EventCard'
 import { EVENT_CARD_SIZES, eventCardUrl } from '../../../../../lib/eventCardUrl'
-import { eventSource } from '../../../../../lib/eventVenue'
+import { EventSource } from '../../../../../components/EventSource'
 import s from '../../../../../components/chrome.module.css'
 
 /**
@@ -116,7 +116,6 @@ export default async function EventPage({
    */
   const hasPhoto = !!rel<Media>(ev.image)?.url
   const heroCard = hasPhoto ? null : eventCardUrl(ev, lang, 'page')
-  const source = eventSource(ev, lang)
 
   const iso = dateOnly(ev.date)
   const day = parseISO(iso).getUTCDate()
@@ -464,43 +463,8 @@ export default async function EventPage({
                 {ev.note}
               </p>
             ) : null}
-            {source ? (
-              /**
-               * Where the event comes from, so a reader can check it with
-               * whoever puts it on. A listing organizer links to its page
-               * here; anything else links out to its own site.
-               */
-              <p
-                style={{
-                  margin: 0,
-                  fontWeight: 800,
-                  fontSize: 13,
-                  letterSpacing: '0.6px',
-                  overflowWrap: 'anywhere',
-                }}
-              >
-                {source.href ? t('More info:') : t('Organized by')}{' '}
-                {source.href && source.external ? (
-                  <a
-                    href={source.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    style={{ color: 'var(--magenta)', textUnderlineOffset: 3, textDecorationThickness: 2 }}
-                  >
-                    {source.name}&nbsp;↗
-                  </a>
-                ) : source.href ? (
-                  <Link
-                    href={source.href}
-                    style={{ color: 'var(--magenta)', textUnderlineOffset: 3, textDecorationThickness: 2 }}
-                  >
-                    {source.name}&nbsp;→
-                  </Link>
-                ) : (
-                  source.name
-                )}
-              </p>
-            ) : null}
+            {/* Where the event comes from, so a reader can check it with whoever puts it on. */}
+            <EventSource ev={ev} lang={lang as Lang} t={t} />
             <EventActions
               slug={ev.slug}
               going={ev.going ?? 0}

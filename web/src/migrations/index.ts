@@ -16,6 +16,7 @@ import * as migration_20261002_004829_add_hq_chat_turns from './20261002_004829_
 import * as migration_20261002_005459_add_hq_playbook from './20261002_005459_add_hq_playbook';
 import * as migration_20261002_020917_add_growth_loop from './20261002_020917_add_growth_loop';
 import * as migration_20261002_060000_replace_flamingo_mascot from './20261002_060000_replace_flamingo_mascot';
+import * as migration_20261005_145545_add_event_season from './20261005_145545_add_event_season';
 
 export const migrations = [
   {
@@ -107,5 +108,10 @@ export const migrations = [
     up: migration_20261002_060000_replace_flamingo_mascot.up,
     down: migration_20261002_060000_replace_flamingo_mascot.down,
     name: '20261002_060000_replace_flamingo_mascot',
+  },
+  {
+    up: migration_20261005_145545_add_event_season.up,
+    down: migration_20261005_145545_add_event_season.down,
+    name: '20261005_145545_add_event_season'
   },
 ];

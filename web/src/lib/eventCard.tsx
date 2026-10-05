@@ -9,6 +9,7 @@ import { ARCHIVO_800, LUCKIEST_GUY } from './cardMetrics'
 import { EVENT_CARD_SIZES, type EventCardSize } from './eventCardUrl'
 import { eventDateLine, todayISO } from './dates'
 import { eventVenue } from './eventVenue'
+import type { Season, SeasonCardTheme } from './seasons'
 
 /**
  * The event card: the picture an event with no photo gets, drawn from its own
@@ -16,6 +17,9 @@ import { eventVenue } from './eventVenue'
  * a white halftone, the city and kind as chips, the title huge in Luckiest Guy
  * with a cream offset shadow, the date on an ink ticket, then time · place,
  * and the city's mascot standing in a cream arch on the right.
+ *
+ * The seasonal guides (lib/seasons.ts, /es/halloween) reuse the same layout
+ * with their own copy and palette: `renderSeasonCard`, `SEASON_THEMES`.
  *
  * Only facts the event states are drawn, and a field that names a price is
  * dropped, as in the social captions. Callers pass published events only; the
@@ -33,6 +37,71 @@ const CREAM = '#fff6e5'
 const PINK = '#ff2e88'
 const CYAN = '#16e0f2'
 const YELLOW = '#ffd400'
+const ORANGE = '#ff7a1a'
+
+/**
+ * The colours the card is drawn in, apart from the background. Design C is
+ * the event card's; the seasonal guides' cards (lib/seasons.ts) swap the
+ * palette and keep the layout.
+ */
+export type CardTheme = {
+  /** The background, when it is not the city's colour. */
+  bg?: string
+  dot: string
+  dotOpacity: number
+  title: string
+  titleShadow: string
+  /** Time · place, the brand, and the outlined chip. */
+  text: string
+  chipBg: string
+  /** The solid chips' text, when it is not the city's own pick. */
+  chipText?: string
+  ticketBg: string
+  ticketText: string
+  archBg: string
+  archBorder: string
+}
+
+const DESIGN_C: CardTheme = {
+  dot: '#fff',
+  dotOpacity: 0.35,
+  title: INK,
+  titleShadow: CREAM,
+  text: INK,
+  chipBg: INK,
+  ticketBg: INK,
+  ticketText: CREAM,
+  archBg: CREAM,
+  archBorder: INK,
+}
+
+/**
+ * The seasonal palettes. Halloween was drawn both ways and `night` picked:
+ * the ink ground with orange dots reads as Halloween at thumbnail size,
+ * where `pumpkin` (Hialeah pink, orange ticket) reads as any Hialeah event.
+ */
+export const SEASON_THEMES: Record<SeasonCardTheme, CardTheme> = {
+  night: {
+    bg: INK,
+    dot: ORANGE,
+    dotOpacity: 0.5,
+    title: ORANGE,
+    titleShadow: CREAM,
+    text: CREAM,
+    chipBg: ORANGE,
+    chipText: INK,
+    ticketBg: YELLOW,
+    ticketText: INK,
+    archBg: CREAM,
+    archBorder: ORANGE,
+  },
+  pumpkin: {
+    ...DESIGN_C,
+    bg: PINK,
+    ticketBg: ORANGE,
+    ticketText: INK,
+  },
+}
 
 /** The city's colour, by slug; a city added later uses its own `accent`. */
 const CITY_BG: Record<string, string> = { hialeah: PINK, lakes: CYAN, havana: YELLOW }
@@ -283,16 +352,28 @@ const LAYOUTS: Record<EventCardSize, Layout> = {
  * The white dot grid over the city's colour, 22px apart. An SVG pattern drawn
  * as one image: Satori does not tile a repeating radial-gradient.
  */
-function halftone(w: number, h: number): string {
+function halftone(w: number, h: number, theme: CardTheme): string {
   const svg =
     `<svg xmlns="http://www.w3.org/2000/svg" width="${w}" height="${h}">` +
     `<defs><pattern id="d" width="22" height="22" patternUnits="userSpaceOnUse">` +
-    `<circle cx="11" cy="11" r="3.2" fill="#fff" fill-opacity="0.35"/></pattern></defs>` +
+    `<circle cx="11" cy="11" r="3.2" fill="${theme.dot}" fill-opacity="${theme.dotOpacity}"/></pattern></defs>` +
     `<rect width="${w}" height="${h}" fill="url(#d)"/></svg>`
   return `data:image/svg+xml;base64,${Buffer.from(svg).toString('base64')}`
 }
 
-function Chip({ text, size, solid, color }: { text: string; size: number; solid: boolean; color?: string }) {
+function Chip({
+  text,
+  size,
+  solid,
+  color,
+  theme,
+}: {
+  text: string
+  size: number
+  solid: boolean
+  color?: string
+  theme: CardTheme
+}) {
   return (
     <div
       style={{
@@ -303,9 +384,9 @@ function Chip({ text, size, solid, color }: { text: string; size: number; solid:
         letterSpacing: '0.08em',
         // A little more above than below: Archivo's caps sit high in the line box.
         padding: `${Math.round(size * 0.32) + 2}px ${Math.round(size * 0.64)}px ${Math.round(size * 0.32) - 2}px`,
-        background: solid ? INK : 'transparent',
-        color: solid ? (color ?? YELLOW) : INK,
-        border: solid ? 'none' : `3px solid ${INK}`,
+        background: solid ? theme.chipBg : 'transparent',
+        color: solid ? (theme.chipText ?? color ?? YELLOW) : theme.text,
+        border: solid ? 'none' : `3px solid ${theme.text}`,
       }}
     >
       {text.toLocaleUpperCase()}
@@ -313,7 +394,17 @@ function Chip({ text, size, solid, color }: { text: string; size: number; solid:
   )
 }
 
-function Card({ d, size, mascot }: { d: EventCardData; size: EventCardSize; mascot?: Mascot }) {
+function Card({
+  d,
+  size,
+  mascot,
+  theme,
+}: {
+  d: EventCardData
+  size: EventCardSize
+  mascot?: Mascot
+  theme: CardTheme
+}) {
   const { width: W, height: H } = EVENT_CARD_SIZES[size]
   const L = LAYOUTS[size]
   const colH = H - L.col.top - L.col.bottom
@@ -345,8 +436,8 @@ function Card({ d, size, mascot }: { d: EventCardData; size: EventCardSize; masc
       style={{
         display: 'flex',
         whiteSpace: 'nowrap',
-        background: INK,
-        color: CREAM,
+        background: theme.ticketBg,
+        color: theme.ticketText,
         fontFamily: 'Luckiest Guy',
         fontSize: ticketSize,
         lineHeight: 1,
@@ -369,7 +460,7 @@ function Card({ d, size, mascot }: { d: EventCardData; size: EventCardSize; masc
             fontWeight: 800,
             fontSize: metaSize,
             lineHeight: 1.2,
-            color: INK,
+            color: theme.text,
           }}
         >
           {row}
@@ -386,13 +477,13 @@ function Card({ d, size, mascot }: { d: EventCardData; size: EventCardSize; masc
         display: 'flex',
         position: 'relative',
         overflow: 'hidden',
-        backgroundColor: d.bg,
+        backgroundColor: theme.bg ?? d.bg,
         fontFamily: 'Archivo',
-        color: INK,
+        color: theme.text,
       }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={halftone(W, H)} width={W} height={H} alt="" style={{ position: 'absolute', left: 0, top: 0 }} />
+      <img src={halftone(W, H, theme)} width={W} height={H} alt="" style={{ position: 'absolute', left: 0, top: 0 }} />
       <div
         style={{
           position: 'absolute',
@@ -407,9 +498,11 @@ function Card({ d, size, mascot }: { d: EventCardData; size: EventCardSize; masc
         }}
       >
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginBottom: L.gap.chips }}>
-          {d.city ? <Chip text={d.city} size={L.chip} solid color={d.citySlug === 'lakes' ? CYAN : YELLOW} /> : null}
-          {d.kind ? <Chip text={d.kind} size={L.chip} solid={false} /> : null}
-          {d.status ? <Chip text={d.status} size={L.chip} solid color={CREAM} /> : null}
+          {d.city ? (
+            <Chip text={d.city} size={L.chip} solid color={d.citySlug === 'lakes' ? CYAN : YELLOW} theme={theme} />
+          ) : null}
+          {d.kind ? <Chip text={d.kind} size={L.chip} solid={false} theme={theme} /> : null}
+          {d.status ? <Chip text={d.status} size={L.chip} solid color={CREAM} theme={theme} /> : null}
         </div>
         {title ? (
           <div style={{ display: 'flex', flexDirection: 'column', marginBottom: L.gap.title }}>
@@ -423,8 +516,8 @@ function Card({ d, size, mascot }: { d: EventCardData; size: EventCardSize; masc
                   fontSize: title.size,
                   lineHeight: TITLE_LH,
                   letterSpacing: '0.01em',
-                  color: INK,
-                  textShadow: `5px 5px 0 ${CREAM}`,
+                  color: theme.title,
+                  textShadow: `5px 5px 0 ${theme.titleShadow}`,
                 }}
               >
                 {line}
@@ -445,8 +538,8 @@ function Card({ d, size, mascot }: { d: EventCardData; size: EventCardSize; masc
             width: arch.width,
             height: arch.height,
             borderRadius: `${arch.width / 2}px ${arch.width / 2}px 0 0`,
-            background: CREAM,
-            border: `${arch.border}px solid ${INK}`,
+            background: theme.archBg,
+            border: `${arch.border}px solid ${theme.archBorder}`,
           }}
         />
       ) : null}
@@ -472,7 +565,7 @@ function Card({ d, size, mascot }: { d: EventCardData; size: EventCardSize; masc
             fontWeight: 800,
             fontSize: L.brand.size,
             letterSpacing: '0.12em',
-            color: INK,
+            color: theme.text,
           }}
         >
           FLAMINGOCOUNTY.COM
@@ -493,25 +586,23 @@ function Card({ d, size, mascot }: { d: EventCardData; size: EventCardSize; masc
 const cache = new Map<string, ArrayBuffer>()
 const CACHE_MAX = 48
 
-/**
- * The card as PNG bytes. `today` matters to the date line only: a run that
- * has started reads "Hasta el …" rather than "Del … al …".
- */
-export async function renderEventCard(
-  ev: Event,
-  lang: Lang,
+/** Any card as PNG bytes: its data, size and palette, and whose mascot stands in the arch. */
+async function drawCard(
+  d: EventCardData,
   size: EventCardSize,
-  today: string = todayISO(),
+  theme: CardTheme,
+  themeName: string,
+  mascotSlug: string,
 ): Promise<ArrayBuffer> {
-  const d = eventCardData(ev, lang, today)
-  const key = `${size}|${JSON.stringify(d)}`
+  const key = `${size}|${themeName}|${mascotSlug}|${JSON.stringify(d)}`
   const hit = cache.get(key)
   if (hit) return hit
 
   const a = await loadAssets()
-  const mascot = size === 'page' ? undefined : a.mascots[d.citySlug]
+  // The page card has no mascot: the page draws its own over the right side.
+  const mascot = size === 'page' ? undefined : a.mascots[mascotSlug]
   const { width, height } = EVENT_CARD_SIZES[size]
-  const res = new ImageResponse(<Card d={d} size={size} mascot={mascot} />, {
+  const res = new ImageResponse(<Card d={d} size={size} mascot={mascot} theme={theme} />, {
     width,
     height,
     fonts: [
@@ -523,4 +614,51 @@ export async function renderEventCard(
   if (cache.size >= CACHE_MAX) cache.delete(cache.keys().next().value as string)
   cache.set(key, png)
   return png
+}
+
+/**
+ * The card as PNG bytes. `today` matters to the date line only: a run that
+ * has started reads "Hasta el …" rather than "Del … al …".
+ */
+export async function renderEventCard(
+  ev: Event,
+  lang: Lang,
+  size: EventCardSize,
+  today: string = todayISO(),
+): Promise<ArrayBuffer> {
+  const d = eventCardData(ev, lang, today)
+  return drawCard(d, size, DESIGN_C, 'c', d.citySlug)
+}
+
+/**
+ * What a seasonal guide's card draws: the guide's title, its city and a
+ * "guide" chip, the year on the ticket and the one-line pitch. All of it is
+ * the guide's own copy from lib/seasons.ts, nothing about any one event.
+ */
+export function seasonCardData(season: Season, lang: Lang, year: number): EventCardData {
+  return {
+    title: season.card.title[lang],
+    city: season.card.city.name,
+    citySlug: season.card.city.slug,
+    bg: CITY_BG[season.card.city.slug] ?? PINK,
+    kind: season.card.chip[lang],
+    status: '',
+    dateLine: String(year),
+    meta: season.card.line[lang],
+  }
+}
+
+/**
+ * A seasonal guide's card: the guide's hero and its og:image. `theme`
+ * overrides the season's own palette, only so the other option can be drawn
+ * for comparison; the route never passes it.
+ */
+export async function renderSeasonCard(
+  season: Season,
+  lang: Lang,
+  size: EventCardSize,
+  year: number,
+  theme: SeasonCardTheme = season.card.theme,
+): Promise<ArrayBuffer> {
+  return drawCard(seasonCardData(season, lang, year), size, SEASON_THEMES[theme], theme, season.card.mascot)
 }

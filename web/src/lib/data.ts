@@ -5,6 +5,8 @@ import type { Lang } from '../i18n'
 import type { City, Listing, Story, Event, WeeklyEvent, Spotlight, Category, EventKind } from '../payload-types'
 import { PUBLISHED } from '../fields/shared'
 import { routes } from './routes'
+import { todayISO } from './dates'
+import { seasonEvents, type SeasonKey } from './seasons'
 import { fold, matches, metaLine, prepare, squash, type Suggestion } from './search'
 
 /**
@@ -271,6 +273,25 @@ export async function getEvent(lang: Lang, slug: string): Promise<Event | null> 
     depth: 3,
   })
   return docs[0] ?? null
+}
+
+/**
+ * A seasonal guide's events: published, tagged with the season, not finished
+ * yet, by first day (lib/seasons.ts `seasonEvents`). The season is in the
+ * query and "still on" is checked here, the same `isStillOn` the board uses.
+ */
+export async function getSeasonEvents(lang: Lang, key: SeasonKey, today: string = todayISO()): Promise<Event[]> {
+  const payload = await db()
+  const { docs } = await payload.find({
+    collection: 'events',
+    where: published({ season: { equals: key } }),
+    locale: lang,
+    limit: 200,
+    sort: 'date',
+    // As getEvents: the card reaches event -> listing -> city -> mascot.
+    depth: 3,
+  })
+  return seasonEvents(docs, key, today)
 }
 
 export async function getWeeklyEvents(lang: Lang): Promise<WeeklyEvent[]> {

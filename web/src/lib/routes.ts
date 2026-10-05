@@ -22,6 +22,8 @@ export const routes = {
   eventIcs: (lang: Lang, slug: string) => `/${lang}/events/${slug}/ics`,
   stories: (lang: Lang) => `/${lang}/stories`,
   story: (lang: Lang, slug: string) => `/${lang}/stories/${slug}`,
+  /** A seasonal guide, by its `path` in lib/seasons.ts: /es/halloween. */
+  season: (lang: Lang, path: string) => `/${lang}/${path}`,
   myWeek: (lang: Lang) => `/${lang}/my-week`,
   listYourSpot: (lang: Lang) => `/${lang}/list-your-spot`,
   about: (lang: Lang) => `/${lang}/about`,

@@ -46,3 +46,15 @@ export function eventCardUrl(
   const v = `${EVENT_CARD_VERSION}.${Number.isFinite(stamp) ? stamp.toString(36) : '0'}`
   return `/api/og/event/${encodeURIComponent(ev.slug)}?lang=${lang}&size=${size}&v=${v}`
 }
+
+/** Bump when a seasonal guide's card changes design or copy (`card` in lib/seasons.ts). */
+export const SEASON_CARD_VERSION = '1'
+
+/**
+ * A seasonal guide's card: `/api/og/season/<key>`, drawn by the same renderer
+ * in the season's palette. The year on its ticket is part of `v`, so the URL
+ * changes when the season comes round again.
+ */
+export function seasonCardUrl(key: string, lang: Lang, size: EventCardSize, year: number): string {
+  return `/api/og/season/${encodeURIComponent(key)}?lang=${lang}&size=${size}&v=${SEASON_CARD_VERSION}.${year}`
+}

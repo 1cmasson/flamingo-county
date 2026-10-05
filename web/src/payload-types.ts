@@ -794,6 +794,10 @@ export interface Event {
    */
   endTime?: string | null;
   /**
+   * Which seasonal guide lists it. Leave empty for an ordinary event.
+   */
+  season?: ('halloween' | 'navidad') | null;
+  /**
    * Currently drives nothing. It marked an event as eligible for the HEADLINERS strip at the top of the events board; that strip has been removed, so no page reads this. Kept because the flag is a genuine editorial judgement and the source data carries it — not because anything is wired to it.
    */
   star?: boolean | null;
@@ -2102,6 +2106,7 @@ export interface EventsSelect<T extends boolean = true> {
   eventStatus?: T;
   startTime?: T;
   endTime?: T;
+  season?: T;
   star?: T;
   going?: T;
   freeLabel?: T;

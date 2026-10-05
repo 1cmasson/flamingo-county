@@ -277,6 +277,25 @@ export function eventJsonLd(
   })
 }
 
+/**
+ * A page that lists events (a seasonal guide): an ItemList whose entries are
+ * the full Event objects `eventJsonLd` builds, each without its own
+ * `@context` since it is nested under this one.
+ */
+export function eventListJsonLd(name: string, path: string, events: Obj[]): Obj {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name,
+    url: absUrl(path),
+    numberOfItems: events.length,
+    itemListElement: events.map((ev, i) => {
+      const { '@context': _context, ...item } = ev
+      return { '@type': 'ListItem', position: i + 1, item }
+    }),
+  }
+}
+
 export function itemListJsonLd(name: string, items: { name: string; path: string }[]): Obj {
   return {
     '@context': 'https://schema.org',
