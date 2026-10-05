@@ -150,13 +150,19 @@ export async function liveSnapshot(now: number = Date.now()): Promise<LiveSnapsh
  * - **Empty in service hours.** The city runs buses from 6 AM; a feed with
  *   none on the road then is broken, not quiet.
  */
+const warned = new WeakSet<Feed>()
+
 export function feedHealthy(feed: Feed | null, now: number): boolean {
   if (!feed) return false
   if (feed.headerTs && now / 1000 - feed.headerTs > STALE_S) return false
   const fresh = feed.vehicles.filter((v) => now / 1000 - v.ts <= STALE_S)
   const known = fresh.filter((v) => ETA.trips[v.tripId])
   if (fresh.length && known.length / fresh.length < 0.5) {
-    console.warn(`[live] ${fresh.length - known.length} of ${fresh.length} live buses are on trips missing from hialeah-eta.json — run pnpm transit:sync`)
+    // Once per fetched feed, not once per request: every page view asks.
+    if (!warned.has(feed)) {
+      warned.add(feed)
+      console.warn(`[live] ${fresh.length - known.length} of ${fresh.length} live buses are on trips missing from hialeah-eta.json — run pnpm transit:sync`)
+    }
     return false
   }
   if (!fresh.length && serviceStatus(new Date(now)).state === 'running') return false
