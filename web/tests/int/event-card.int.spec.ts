@@ -101,7 +101,7 @@ describe('what the card and the event page say', () => {
   })
 
   it('versions the card URL with the event and the design', () => {
-    expect(eventCardUrl(base, 'es', 'link')).toMatch(/^\/api\/og\/event\/sabor-fest\?lang=es&size=link&v=7\.[a-z0-9]+$/)
+    expect(eventCardUrl(base, 'es', 'link')).toMatch(/^\/api\/og\/event\/sabor-fest\?lang=es&size=link&v=8\.[a-z0-9]+$/)
     expect(eventCardUrl({ ...base, updatedAt: '2026-10-02T10:00:00.000Z' }, 'es', 'link')).not.toBe(eventCardUrl(base, 'es', 'link'))
   })
 })
@@ -243,15 +243,14 @@ describe('the wide scenes: link, page and card', () => {
     }
   }, 60000)
 
-  it("dresses a Halloween event's hero, link preview and poster in the season's palette, not the board's tile", async () => {
+  it("dresses a Halloween event's cards in the season's palette at every size", async () => {
     const plain = at('Biblioteca JFK', hialeah)
     const spooky = at('Biblioteca JFK', hialeah, { season: 'halloween' })
     const draw = async (ev: Event, size: 'page' | 'link' | 'card' | 'social') =>
       Buffer.from(await renderEventCard(ev, 'es', size, '2026-10-05'))
-    for (const size of ['page', 'link', 'social'] as const) {
+    for (const size of ['page', 'link', 'social', 'card'] as const) {
       expect((await draw(spooky, size)).equals(await draw(plain, size)), size).toBe(false)
     }
-    expect((await draw(spooky, 'card')).equals(await draw(plain, 'card'))).toBe(true)
   }, 60000)
 })
 
