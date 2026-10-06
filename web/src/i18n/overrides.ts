@@ -238,6 +238,7 @@ export const ES_OVERRIDES: Record<string, string> = {
   'your location': 'tu ubicación',
   Clear: 'Borrar',
   'WALKING DIRECTIONS ↗': 'CÓMO LLEGAR A PIE ↗',
+  'GET DIRECTIONS ↗': 'CÓMO LLEGAR ↗',
   'SEE IT ON THE LINE': 'VERLA EN LA RUTA',
   'RIDE TO': 'DE AHÍ PUEDES IR A',
   '~{n} min ride': '~{n} min en guagua',

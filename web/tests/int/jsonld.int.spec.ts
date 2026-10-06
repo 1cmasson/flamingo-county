@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { clean, titleCase, eventJsonLd, eventStart, listingJsonLd, miamiOffset, postalAddress } from '../../src/lib/jsonld'
+import { eventDirections } from '../../src/lib/eventVenue'
 import type { City, Event, Listing } from '../../src/payload-types'
 
 describe('postalAddress', () => {
@@ -201,5 +202,44 @@ describe('eventJsonLd', () => {
       { listing: club, city: hialeah, name: club.name },
     ) as any
     expect(atVenue.organizer.name).toBe(club.name)
+  })
+  it('gives the place a map: the directions link the page shows', () => {
+    const ld = eventJsonLd('en', gala, venue) as any
+    expect(ld.location.hasMap).toBe(eventDirections(gala)!.google)
+  })
+})
+
+describe('eventDirections', () => {
+  const hialeah = { id: 1, slug: 'hialeah', name: 'HIALEAH' } as unknown as City
+  const park = {
+    slug: 'trunk-or-treat',
+    venueType: 'place',
+    place: 'Milander Park',
+    placeAddress: null,
+    city: hialeah,
+  } as unknown as Event
+
+  it('sends the map to the venue by name and street address', () => {
+    const d = eventDirections({ ...park, place: 'JFK Library', placeAddress: '190 W 49th St, Hialeah, FL, 33012' } as Event)!
+    expect(d.address).toBe('190 W 49th St, Hialeah, FL, 33012')
+    const google = new URL(d.google)
+    expect(google.origin + google.pathname).toBe('https://www.google.com/maps/dir/')
+    expect(google.searchParams.get('api')).toBe('1')
+    expect(google.searchParams.get('destination')).toBe('JFK Library, 190 W 49th St, Hialeah, FL, 33012')
+    expect(new URL(d.apple).searchParams.get('daddr')).toBe('JFK Library, 190 W 49th St, Hialeah, FL, 33012')
+  })
+  it('falls back to the venue name and city with no address on file', () => {
+    const d = eventDirections(park)!
+    expect(d.address).toBeNull()
+    expect(new URL(d.google).searchParams.get('destination')).toBe('Milander Park, HIALEAH, FL')
+  })
+  it('uses a listed venue\'s own address', () => {
+    const casa = { name: 'Casa Marín Restaurant', city: hialeah, detail: { address: '4195 Palm Ave, Hialeah, FL, 33012' } }
+    const d = eventDirections({ ...park, venueType: 'listing', listing: casa, place: null } as unknown as Event)!
+    expect(d.address).toBe('4195 Palm Ave, Hialeah, FL, 33012')
+    expect(new URL(d.google).searchParams.get('destination')).toBe('Casa Marín Restaurant, 4195 Palm Ave, Hialeah, FL, 33012')
+  })
+  it('has nothing to point at without a venue name', () => {
+    expect(eventDirections({ ...park, place: null } as unknown as Event)).toBeNull()
   })
 })
