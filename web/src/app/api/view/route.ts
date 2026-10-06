@@ -1,13 +1,16 @@
 import { after } from 'next/server'
 import { getPayload } from 'payload'
 import config from '../../../payload.config'
-import { recordVisit } from '../../../lib/visits'
+import { recordVisit, selfCookie, signedInToAdmin } from '../../../lib/visits'
 
 /**
  * One page view from `components/Pageview.tsx`, stored as an `hq-visits` row
  * (lib/visits.ts). Always 204, and the write happens after the response, so a
  * visitor's page never waits on the database. Bots, staff and cross-site posts
  * are dropped inside `recordVisit`.
+ *
+ * A browser signed in to the admin is also marked "don't count" for 400 days,
+ * so the owner's laptop stays out of the numbers after signing out.
  */
 export async function POST(req: Request) {
   let body: Record<string, unknown>
@@ -34,5 +37,8 @@ export async function POST(req: Request) {
       headers,
     )
   })
-  return new Response(null, { status: 204 })
+  return new Response(null, {
+    status: 204,
+    headers: signedInToAdmin(headers) ? { 'Set-Cookie': selfCookie(true) } : {},
+  })
 }

@@ -12,8 +12,11 @@ import {
   normalizePath,
   recordVisit,
   resetVisitLimit,
+  selfCookie,
   shouldCount,
+  signedInToAdmin,
 } from '@/lib/visits'
+import { GET as markSelf } from '@/app/api/view/self/route'
 
 /**
  * The growth loop: the site's own visit counter (lib/visits.ts), the traffic
@@ -79,6 +82,37 @@ describe('visit classification', () => {
     const old = browser()
     old.delete('sec-fetch-site')
     expect(shouldCount(old)).toBe(true)
+  })
+
+  it('does not count the owner’s marked devices', () => {
+    expect(shouldCount(browser({ cookie: 'fc.lang=es; fc-self=1' }))).toBe(false)
+    expect(shouldCount(browser({ cookie: 'fc-self=1' }))).toBe(false)
+    // Only the exact mark; an emptied (unmarked) cookie counts again.
+    expect(shouldCount(browser({ cookie: 'fc-self=' }))).toBe(true)
+    expect(shouldCount(browser({ cookie: 'fc-selfie=1' }))).toBe(true)
+  })
+
+  it('does not count platforms’ link checkers in data centres', () => {
+    // Meta's checker on Oct 2: an ordinary phone browser, from Prineville, OR.
+    expect(shouldCount(browser({ 'cf-ipcity': 'Prineville' }))).toBe(false)
+    expect(shouldCount(browser({ 'cf-ipcity': 'clonee' }))).toBe(false)
+    expect(shouldCount(browser({ 'cf-ipcity': 'Boardman' }))).toBe(false)
+    expect(shouldCount(browser({ 'cf-ipcity': 'Hialeah' }))).toBe(true)
+  })
+
+  it('marks and unmarks a device at /api/view/self', async () => {
+    const on = markSelf(new Request('https://flamingocounty.com/api/view/self'))
+    expect(on.headers.get('set-cookie')).toBe(selfCookie(true))
+    expect(selfCookie(true)).toMatch(/^fc-self=1; Path=\/; Max-Age=\d+;.*HttpOnly/)
+    expect(await on.text()).toContain('ya no cuenta')
+    const off = markSelf(new Request('https://flamingocounty.com/api/view/self?off'))
+    expect(off.headers.get('set-cookie')).toMatch(/^fc-self=; Path=\/; Max-Age=0;/)
+  })
+
+  it('knows a browser signed in to the admin, which the beacon then marks', () => {
+    expect(signedInToAdmin(browser({ cookie: 'fc.lang=es; payload-token=abc' }))).toBe(true)
+    expect(signedInToAdmin(browser({ cookie: 'fc-self=1' }))).toBe(false)
+    expect(signedInToAdmin(browser())).toBe(false)
   })
 })
 
@@ -186,6 +220,8 @@ describe('growth loop', () => {
         // The week before: 2 visits.
         { path: `/es/${tag}/home`, entry: true, source: 'direct', createdAt: at(9) },
         { path: `/es/${tag}/home`, entry: true, source: 'google', createdAt: at(10) },
+        // Meta's link checker, stored before the counter dropped it: not a visit.
+        { path: `/es/${tag}/home`, entry: true, source: 'facebook', createdAt: at(2), country: 'US', region: 'OR', city: 'Prineville' },
         // Outside the 28-day window.
         { path: `/es/${tag}/old`, entry: true, source: 'google', createdAt: at(40) },
       ]

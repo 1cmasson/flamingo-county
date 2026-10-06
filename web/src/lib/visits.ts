@@ -15,9 +15,11 @@ import { isBot } from './tracking'
  * enough to answer "how many people came, from where, to which page" and
  * nothing more.
  *
- * Not counted: crawlers and link previews (`isBot`), headless and audit
- * browsers, and anyone signed in to the Payload admin — the owner checking
- * the site from their own phone would otherwise be most of the traffic.
+ * Not counted (`notAReader`): crawlers and link previews (`isBot`), headless
+ * and audit browsers, platforms' link checkers in data centres, anyone signed
+ * in to the Payload admin, and the owner's own devices (`SELF_COOKIE`) — the
+ * owner checking the site from their own phone would otherwise be most of
+ * the traffic.
  */
 
 export type VisitInput = {
@@ -150,10 +152,60 @@ const AUDIT = /lighthouse|pagespeed|gtmetrix|pingdom|uptime|monitor|playwright|p
 /** Signed in to the Payload admin: Payload's auth cookie. */
 const STAFF_COOKIE = /(?:^|;\s*)payload-token=/
 
-export function shouldCount(headers: Headers): boolean {
+/**
+ * "Don't count this device": set on the owner's own phones and laptops by
+ * opening `/api/view/self` once, and on any browser that is signed in to the
+ * admin. It holds no id, only `1`; a visitor never gets it unless they ask.
+ * Without it the owner checking their own site, signed out, outnumbered
+ * every real reader in the counter's first week.
+ */
+export const SELF_COOKIE = 'fc-self'
+const SELF = new RegExp(`(?:^|;\\s*)${SELF_COOKIE}=1(?:;|$)`)
+
+/** The Set-Cookie header that marks this device (`on`) or unmarks it. */
+export function selfCookie(on: boolean): string {
+  const age = on ? 400 * 24 * 60 * 60 : 0
+  return `${SELF_COOKIE}=${on ? 1 : ''}; Path=/; Max-Age=${age}; SameSite=Lax; Secure; HttpOnly`
+}
+
+export function signedInToAdmin(headers: Headers): boolean {
+  return STAFF_COOKIE.test(headers.get('cookie') ?? '')
+}
+
+export function isStaff(headers: Headers): boolean {
+  return signedInToAdmin(headers) || SELF.test(headers.get('cookie') ?? '')
+}
+
+/**
+ * Data-centre towns, as Cloudflare's `cf-ipcity` names them. Meta checks
+ * every link posted to Facebook with a real browser from these, seconds after
+ * the post goes out, and its user agent names no bot: on Oct 2 they were 9
+ * of the 12 "facebook" visits. Nobody here is our reader, and the audience
+ * is Miami-Dade, so a town on this list is never counted.
+ */
+const DATACENTER_CITIES = new Set(
+  [
+    // Meta
+    'Prineville', 'Clonee', 'Forest City', 'Altoona', 'Papillion', 'Los Lunas', 'Eagle Mountain', 'Lulea', 'Luleå', 'Odense',
+    // AWS
+    'Boardman', 'Ashburn',
+    // Google
+    'Council Bluffs', 'The Dalles', 'Pryor', 'Moncks Corner',
+  ].map((c) => c.toLowerCase()),
+)
+
+export function isDatacenterCity(city: string | null | undefined): boolean {
+  return Boolean(city && DATACENTER_CITIES.has(city.trim().toLowerCase()))
+}
+
+/** Not a reader: a bot, the owner or staff, or a platform's link checker. */
+export function notAReader(headers: Headers): boolean {
   const ua = headers.get('user-agent')
-  if (isBot(ua) || AUDIT.test(ua ?? '')) return false
-  if (STAFF_COOKIE.test(headers.get('cookie') ?? '')) return false
+  return isBot(ua) || AUDIT.test(ua ?? '') || isStaff(headers) || isDatacenterCity(headers.get('cf-ipcity'))
+}
+
+export function shouldCount(headers: Headers): boolean {
+  if (notAReader(headers)) return false
   // A browser's beacon from our own page says same-origin. A form or script
   // on another site posting here says cross-site; refuse it. Older browsers
   // send nothing, and are let through.

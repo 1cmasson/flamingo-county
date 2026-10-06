@@ -3,7 +3,7 @@ import type { Payload } from 'payload'
 import type { HqVisit } from '../payload-types'
 import { addDays, todayISO } from './dates'
 import { esc } from './telegram'
-import { channelOf, type Channel } from './visits'
+import { channelOf, isDatacenterCity, type Channel } from './visits'
 
 /**
  * The growth loop: what the site's own counter saw (`trafficReport`), the
@@ -78,7 +78,8 @@ export async function trafficReport(payload: Payload, days = 28, now: Date = new
   for (const v of rows.docs as HqVisit[]) {
     const d = todayISO(new Date(v.createdAt))
     const bucket = daily.get(d)
-    if (!bucket) continue
+    // Rows stored before `recordVisit` learned to drop platform link checkers.
+    if (!bucket || isDatacenterCity(v.city)) continue
     views += 1
     bucket.views += 1
     bump(pages, v.path)
@@ -109,7 +110,7 @@ export async function trafficReport(payload: Payload, days = 28, now: Date = new
     window: { from: firstDay, to: today, days },
     measuredSince,
     note:
-      'Site visit counter (hq-visits). A visit = its first page (entry); views = every page. Bots, link previews and anyone signed in to the admin are not counted. Region/city only appear once Cloudflare sends location headers. Small numbers: compare weeks, not days.',
+      'Site visit counter (hq-visits). A visit = its first page (entry); views = every page. Bots, link previews, platform link checkers in data centres, anyone signed in to the admin and devices the owner marked at /api/view/self are not counted. Until the owner marked their devices, their own signed-out browsing was counted too (likely most early "Miami Gardens" visits), so read the first days with care. Region/city only appear once Cloudflare sends location headers. Small numbers: compare weeks, not days.',
     totals: { views, visits },
     last7Days: { ...week, visitsChangePct: pct(week.visits, prevWeek.visits) },
     previous7Days: prevWeek,
