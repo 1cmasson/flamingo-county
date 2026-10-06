@@ -39,6 +39,54 @@ export async function subscribe(_prev: FormState, formData: FormData): Promise<F
   return { ok: true }
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000
+const HOUR_MS = 60 * 60 * 1000
+/** Confirmations sent across the whole site in an hour, at most. */
+const EMAILS_PER_HOUR = 20
+
+/**
+ * Whether a confirmation may go to this address. The form takes any address,
+ * so without a limit it would mail strangers from hola@ on a loop. One per
+ * address a day (the row just saved is the one) and a site-wide hourly cap;
+ * past either, the request is still saved and pinged — only the email is skipped.
+ */
+async function confirmationAllowed(
+  payload: Awaited<ReturnType<typeof getPayload>>,
+  email: string,
+): Promise<boolean> {
+  const now = Date.now()
+  const [sameAddress, lastHour] = await Promise.all([
+    payload.count({
+      collection: 'listing-requests',
+      where: {
+        and: [
+          { email: { equals: email } },
+          { createdAt: { greater_than: new Date(now - DAY_MS).toISOString() } },
+        ],
+      },
+      overrideAccess: true,
+    }),
+    payload.count({
+      collection: 'listing-requests',
+      where: {
+        and: [
+          { email: { exists: true } },
+          { createdAt: { greater_than: new Date(now - HOUR_MS).toISOString() } },
+        ],
+      },
+      overrideAccess: true,
+    }),
+  ])
+  if (sameAddress.totalDocs > 1 || lastHour.totalDocs > EMAILS_PER_HOUR) {
+    console.warn('[request] confirmation skipped (rate limit)', {
+      sameAddress: sameAddress.totalDocs,
+      lastHour: lastHour.totalDocs,
+    })
+    return false
+  }
+  return true
+}
+
 /**
  * A request from the "list your spot" hub: a listing, an event, an interview or
  * a story pitch (`kind`). Replaces the second Netlify form.
@@ -111,7 +159,7 @@ export async function sendRequest(_prev: FormState, formData: FormData): Promise
 
   // Best effort: the request is saved and the owner pinged already, so a mail
   // failure is logged, never shown — the visitor did nothing wrong.
-  if (email && emailConfigured()) {
+  if (email && emailConfigured() && (await confirmationAllowed(payload, email))) {
     try {
       await sendRequestConfirmation({
         kind,
@@ -121,7 +169,6 @@ export async function sendRequest(_prev: FormState, formData: FormData): Promise
         title: business,
         when: text('eventWhen') || undefined,
         where: text('venue') || undefined,
-        link: text('link') || undefined,
       })
     } catch (err) {
       console.error('[request] confirmation email failed', err)

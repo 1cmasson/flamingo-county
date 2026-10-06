@@ -12,6 +12,10 @@ import { esc } from './telegram'
  * It repeats what they sent back to them, so a typo in the date or the address
  * is caught by the person who knows the right answer — and it comes from hola@,
  * so "just reply to this" reaches the owner's inbox.
+ *
+ * Anyone can type any address into the form, so this must never be a way to
+ * mail strangers someone else's words: it carries no link they gave, and
+ * `sendRequest` caps it per address and per hour (`confirmationAllowed`).
  */
 const SUBJECT: Record<Lang, Record<RequestKind, string>> = {
   en: {
@@ -52,7 +56,6 @@ export type RequestSummary = {
   title: string
   when?: string
   where?: string
-  link?: string
 }
 
 /** The form's own label for the title field, per kind (keys into the copy's `f`). */
@@ -71,7 +74,6 @@ export function requestEmail(r: RequestSummary) {
     [f[TITLE_LABEL[r.kind]], r.title],
     ...(r.when ? [[f.when, r.when] as [string, string]] : []),
     ...(r.where ? [[f.where, r.where] as [string, string]] : []),
-    ...(r.link ? [['LINK', r.link] as [string, string]] : []),
   ]
   // sentP is the same promise the page made: what happens next, and when.
   const text = [
