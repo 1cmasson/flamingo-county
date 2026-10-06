@@ -109,6 +109,18 @@
 .back {
   transform: rotateY(180deg);
 }
+/* `backface-visibility` alone is not enough: on iOS Safari a face's animated
+   children (the tagline, the cast) are composited on their own layers and
+   ignore it, so they rode along onto the back of the card. The turned-away
+   face is hidden outright instead, switched at about the moment the card is
+   edge-on (the flip reaches 90° roughly 200ms into its 800ms). */
+.face {
+  transition: visibility 0s linear 200ms;
+}
+.flipper[data-flipped='true'] .front,
+.flipper:not([data-flipped='true']) .back {
+  visibility: hidden;
+}
 
 /* The cyan panel the art stands in, with the halftone dots from the print. */
 .panel {
