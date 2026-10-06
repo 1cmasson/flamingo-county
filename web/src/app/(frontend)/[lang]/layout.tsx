@@ -2,7 +2,7 @@ import React from 'react'
 import type { Metadata } from 'next'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
-import { Luckiest_Guy, Archivo } from 'next/font/google'
+import localFont from 'next/font/local'
 import { DEFAULT_LANG, isLang, LOCALES, translator } from '../../../i18n'
 import { Nav } from '../../../components/Nav'
 import { Footer } from '../../../components/Footer'
@@ -19,18 +19,28 @@ import '../globals.css'
 
 /**
  * The source loaded these from the Google Fonts CDN with a preconnect pair.
- * next/font self-hosts them instead — same faces, no third-party request and no
- * layout shift while they load.
+ * next/font serves them from this site instead: same faces, no third-party
+ * request and no layout shift while they load.
+ *
+ * The files are in `../fonts/`, not fetched by `next/font/google` at build
+ * time: that fetch failed now and then (CI on 2026-10-01, Railway's first
+ * build of #75), and a font download is no reason for a deploy to fail. They
+ * are Google's own Latin subsets, the same files `next/font/google` used, with
+ * their licences beside them. Archivo's is one variable file, declared at the
+ * three weights the site uses, as `next/font/google` declared it.
  */
-const luckiest = Luckiest_Guy({
+const luckiest = localFont({
+  src: '../fonts/luckiest-guy-latin.woff2',
   weight: '400',
-  subsets: ['latin'],
   display: 'swap',
   variable: '--font-luckiest',
 })
-const archivo = Archivo({
-  weight: ['400', '600', '800'],
-  subsets: ['latin'],
+const archivo = localFont({
+  src: [
+    { path: '../fonts/archivo-latin.woff2', weight: '400' },
+    { path: '../fonts/archivo-latin.woff2', weight: '600' },
+    { path: '../fonts/archivo-latin.woff2', weight: '800' },
+  ],
   display: 'swap',
   variable: '--font-archivo',
 })
