@@ -8,6 +8,11 @@
  */
 export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return
+  // CI's test container only (.github/workflows/lighthouse.yml). The runner
+  // writes to the database every minute, and SQLite gives a second process no
+  // wait: CI's `pnpm seed`, running beside the server, failed "database is
+  // locked" on the minute. Production never sets this.
+  if (process.env.HQ_JOBS === 'off') return
   try {
     const { getPayload } = await import('payload')
     const { default: config } = await import('./payload.config')

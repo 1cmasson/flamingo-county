@@ -31,6 +31,7 @@ jobs:
       - name: Start the container
         run: |
           docker run -d --name fc-ci -p 3000:3000 \
+            -e HQ_JOBS=off \
             -e DATABASE_URL=file:/data/content.db \
             -e MEDIA_DIR=/data/media \
             -e PAYLOAD_SECRET=ci-only-secret-not-for-prod \
