@@ -1540,6 +1540,10 @@ export interface PayloadMcpApiKey {
      */
     hqAddDraftMediaFromUpload?: boolean | null;
     /**
+     * Cancel a social draft that is scheduled but has not gone out: removes it from the Postiz calendar and marks the draft rejected. A pending draft is just rejected. Refuses a post whose time has passed. Use when the owner says to pull a post.
+     */
+    hqCancelDraft?: boolean | null;
+    /**
      * Ask the owner to publish the current draft of a site document (events, weekly-events, stories, spotlights, listings). Save the draft first with the create/update tool and draft: true — drafts are never visible on the site. The owner sees exactly what changes against the live page in Telegram and taps Publish or Reject. If you edit the draft again before they tap, they are shown the new version instead. Publishes nothing by itself.
      */
     hqRequestPublish?: boolean | null;
@@ -2549,6 +2553,7 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         hqAddDraftMediaFromUrl?: T;
         hqAddSiteMediaFromUrl?: T;
         hqAddDraftMediaFromUpload?: T;
+        hqCancelDraft?: T;
         hqRequestPublish?: T;
         hqPublishStatus?: T;
       };

@@ -8,6 +8,7 @@ import config from '@/payload.config'
 import { HQ_INTERNAL, decideDraft, draftFingerprint } from '@/lib/hq'
 import { addMediaFromUrl, htmlToText, isPrivateAddress, socialReport } from '@/lib/mcpTools'
 import type { HqSocialDraft, User } from '@/payload-types'
+import { makeHqMedia, withFbLink } from './helpers/facebook'
 
 /* ------------------------------------------------------------------------ */
 /* Pure helpers                                                              */
@@ -64,9 +65,11 @@ describe('MCP against the database', () => {
   let user: User
   let mcpReq: PayloadRequest
   const drafts: number[] = []
+  let mediaId: number
 
   beforeAll(async () => {
     payload = await getPayload({ config: await config })
+    mediaId = await makeHqMedia(payload)
     user = await payload.create({
       collection: 'users',
       data: { email: `mcp-test-${Date.now()}@example.com`, password: 'not-a-real-password-1' },
@@ -94,6 +97,7 @@ describe('MCP against the database', () => {
       await payload.delete({ collection: 'hq-social-drafts', id, overrideAccess: true }).catch(() => undefined)
     }
     await payload.delete({ collection: 'hq-events', where: { refCollection: { equals: 'hq-social-drafts' } }, overrideAccess: true })
+    if (mediaId) await payload.delete({ collection: 'hq-media', id: mediaId, overrideAccess: true }).catch(() => undefined)
     if (user) await payload.delete({ collection: 'users', id: user.id, overrideAccess: true })
   })
 
@@ -102,7 +106,8 @@ describe('MCP against the database', () => {
     const draft = await payload.create({
       collection: 'hq-social-drafts',
       data: {
-        caption: 'MCP-TEST caption',
+        caption: withFbLink('MCP-TEST caption'),
+        media: [mediaId],
         platforms: ['facebook'],
         scheduledFor: new Date(Date.now() + 86_400_000).toISOString(),
         ...data,
@@ -138,13 +143,13 @@ describe('MCP against the database', () => {
     await payload.update({
       collection: 'hq-social-drafts',
       id: draft.id,
-      data: { status: 'approved', caption: 'MCP-TEST edited by Claude' },
+      data: { status: 'approved', caption: withFbLink('MCP-TEST edited by Claude') },
       req: mcpReq,
       overrideAccess: false,
     })
     const fresh = await payload.findByID({ collection: 'hq-social-drafts', id: draft.id, overrideAccess: true })
     expect(fresh.status).toBe('pending')
-    expect(fresh.caption).toBe('MCP-TEST edited by Claude')
+    expect(fresh.caption).toBe(withFbLink('MCP-TEST edited by Claude'))
   })
 
   it('re-previews a pending draft that is edited, and approves only what was shown', async () => {
@@ -155,12 +160,15 @@ describe('MCP against the database', () => {
     await payload.update({
       collection: 'hq-social-drafts',
       id: draft.id,
-      data: { caption: 'MCP-TEST second version' },
+      data: { caption: withFbLink('MCP-TEST second version') },
       req: mcpReq,
       overrideAccess: false,
     })
     await vi.waitFor(() => expect(net.telegram().length).toBeGreaterThan(before))
-    expect(JSON.stringify(net.telegram().at(-1)!.body)).toContain('MCP-TEST second version')
+    // With a photo the preview goes out as multipart form data, not JSON.
+    const sent = net.telegram().at(-1)!.body
+    const text = sent instanceof FormData ? JSON.stringify([...sent.entries()].filter(([, v]) => typeof v === 'string')) : JSON.stringify(sent)
+    expect(text).toContain('MCP-TEST second version')
   })
 
   it('refuses to approve content the owner has not seen', async () => {

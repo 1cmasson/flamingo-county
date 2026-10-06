@@ -9,6 +9,7 @@ import { addDays, todayISO, utcStamp } from '@/lib/dates'
 import { HQ_INTERNAL } from '@/lib/hq'
 import { hqMcpTools, weeklyReviewContext } from '@/lib/mcpTools'
 import type { User } from '@/payload-types'
+import { makeHqMedia, withFbLink } from './helpers/facebook'
 
 /**
  * The weekly social review: `hqWeeklyReviewContext` (what the routine reads) and the
@@ -131,10 +132,13 @@ describe('weekly social review', () => {
       story = s.id
       cleanup.push(['stories', s.id])
 
+      const fbMedia = await makeHqMedia(payload)
+      cleanup.push(['hq-media', fbMedia])
       const d = await payload.create({
         collection: 'hq-social-drafts',
         data: {
           caption: `WR-TEST pending ${tag}`,
+          media: [fbMedia],
           platforms: ['facebook'],
           scheduledFor: `${miamiDay(2)}T15:30:00.000Z`,
           pillar: 'event',
@@ -313,13 +317,16 @@ describe('weekly social review', () => {
     })
 
     it('creates a pending draft the way the routine does, with a Miami-offset time stored as UTC', async () => {
+      const fbMedia = await makeHqMedia(payload)
+      cleanup.push(['hq-media', fbMedia])
       const day = miamiDay(2)
       const utcHour = Number(utcStamp(day, '11:30').slice(9, 11)) // 15 in EDT, 16 in EST
       const offset = utcHour - 11 === 4 ? '-04:00' : '-05:00'
       const res = await rpc('tools/call', {
         name: 'createHqSocialDrafts',
         arguments: {
-          caption: 'WR-TEST routine draft',
+          caption: withFbLink('WR-TEST routine draft'),
+          media: [fbMedia],
           platforms: ['facebook'],
           scheduledFor: `${day}T11:30:00${offset}`,
           pillar: 'event',
@@ -329,7 +336,7 @@ describe('weekly social review', () => {
       expect(res.result.isError).toBeFalsy()
       const { docs } = await payload.find({
         collection: 'hq-social-drafts',
-        where: { caption: { equals: 'WR-TEST routine draft' } },
+        where: { caption: { equals: withFbLink('WR-TEST routine draft') } },
         overrideAccess: true,
       })
       expect(docs).toHaveLength(1)

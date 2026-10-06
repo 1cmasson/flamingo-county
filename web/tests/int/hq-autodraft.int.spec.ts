@@ -294,7 +294,7 @@ describe('auto-drafting a social post when a page goes live', () => {
     await vi.waitFor(() => expect(tg.previews()).toHaveLength(1))
   })
 
-  it('makes a text-only Facebook draft for a page with no photo', async () => {
+  it('makes no draft for a story with no photo: Facebook posts are never text only', async () => {
     const tg = fakeTelegram()
     const story = (await payload.create({
       collection: 'stories',
@@ -305,31 +305,10 @@ describe('auto-drafting a social post when a page goes live', () => {
     })) as Story
     made.push({ collection: 'stories', id: story.id })
     await payload.update({ collection: 'stories', id: story.id, data: { title: 'El último torcedor' } as never, locale: 'es', draft: true, overrideAccess: true })
-    // A draft left by a deleted page whose id SQLite has handed on to this one.
-    const stale = await payload.create({
-      collection: 'hq-social-drafts',
-      data: { caption: 'old', platforms: ['facebook'], scheduledFor: '2020-01-01T00:00:00Z', sourceCollection: 'stories', sourceId: String(story.id), createdAt: '2020-01-01T00:00:00.000Z' },
-      overrideAccess: true,
-      context: { [HQ_INTERNAL]: true },
-    })
 
     await publish('stories', story.id)
-    const [d, ...rest] = (await draftsFor('stories', story.id)).filter((x) => x.id !== stale.id)
-    await payload.delete({ collection: 'hq-social-drafts', id: stale.id, overrideAccess: true })
-    expect(rest).toHaveLength(0)
-    expect(d).toMatchObject({ status: 'pending', pillar: 'story', language: 'both', platforms: ['facebook'], media: [] })
-    // No Spanish dek was written, so none is shown — the English is not repeated under it.
-    expect(d.caption).toBe(
-      [
-        'El último torcedor',
-        '',
-        'The last cigar roller',
-        'Forty years at one bench.',
-        '',
-        `👉 https://flamingocounty.com/go/fb/${d.id}?to=/es/stories/${story.slug}`,
-      ].join('\n'),
-    )
-    await vi.waitFor(() => expect(tg.previews()).toHaveLength(1))
+    expect(await draftsFor('stories', story.id)).toHaveLength(0)
+    expect(tg.previews()).toHaveLength(0)
   })
 
   it('gives an event with no photo its generated card, so it goes to Instagram too', async () => {

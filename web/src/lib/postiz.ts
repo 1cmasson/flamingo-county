@@ -13,14 +13,38 @@
  * - Instagram requires `post_type` and at least one attachment.
  * - TikTok requires every one of its toggles and an attachment. `DIRECT_POST`
  *   publishes; `UPLOAD` only drops the file in the TikTok app's inbox.
- * - Facebook requires nothing and allows text-only posts.
+ * - Facebook would allow text-only posts, but we never send one: see
+ *   `facebookProblem` (a photo or video, and a flamingocounty.com link).
  */
 
 export const PLATFORMS = ['facebook', 'instagram', 'tiktok'] as const
 export type Platform = (typeof PLATFORMS)[number]
 
-/** Platforms that reject a post without a photo or video. */
-export const NEEDS_MEDIA: readonly Platform[] = ['instagram', 'tiktok']
+/**
+ * Platforms that need a photo or video. Instagram and TikTok reject a post
+ * without one. Facebook accepts it, but the owner's rule is that a Facebook
+ * post is never text only.
+ */
+export const NEEDS_MEDIA: readonly Platform[] = ['facebook', 'instagram', 'tiktok']
+
+/**
+ * The standing Facebook rule: every Facebook post carries a photo or video and
+ * a flamingocounty.com link. Returns what is missing, or null when it holds.
+ * The link is checked only when `checkLink` is set, because a draft is
+ * created before its own tracking link can be written into it.
+ */
+export function facebookProblem(
+  platforms: readonly string[] | null | undefined,
+  mediaCount: number,
+  caption: string | null | undefined,
+  checkLink = true,
+): string | null {
+  if (!platforms?.includes('facebook')) return null
+  const missing: string[] = []
+  if (!mediaCount) missing.push('a photo or video')
+  if (checkLink && !/(^|[\s/.])flamingocounty\.com\b/i.test(caption ?? '')) missing.push('a flamingocounty.com link')
+  return missing.length ? `Facebook posts are never text only: this one is missing ${missing.join(' and ')}.` : null
+}
 
 /** TikTok caps the title at 90 characters; the caption itself can run to 2000. */
 const TIKTOK_TITLE_LIMIT = 90
@@ -149,6 +173,16 @@ export async function createPost(body: ReturnType<typeof buildPostBody>): Promis
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   })
+}
+
+/**
+ * Remove a scheduled post from the Postiz calendar by its post id. Postiz
+ * drops the whole group the post was created in, so deleting one id cancels
+ * every channel of that draft. A post that has already gone out stays up on
+ * the social account; this only cancels what has not published.
+ */
+export async function deletePost(postId: string): Promise<void> {
+  await postiz(`/posts/${encodeURIComponent(postId)}`, { method: 'DELETE' })
 }
 
 /* ------------------------------------------------------------------------ */

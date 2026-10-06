@@ -3,6 +3,7 @@ import { mkdtempSync, rmSync } from 'fs'
 import { tmpdir } from 'os'
 import path from 'path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { makeHqMedia } from './helpers/facebook'
 import { sqliteAdapter } from '@payloadcms/db-sqlite'
 import { getPayload, type CollectionSlug, type Payload } from 'payload'
 import config from '@/payload.config'
@@ -90,6 +91,9 @@ describe('HQ dashboard with data', () => {
   beforeAll(async () => {
     payload = await getPayload({ config: await config })
     const iso = (offset: number) => new Date(now.getTime() + offset).toISOString()
+    // Facebook drafts must carry a photo.
+    const mediaId = await makeHqMedia(payload)
+    created.push({ collection: 'hq-media', id: mediaId })
 
     ids.request = (
       await make('listing-requests', {
@@ -118,6 +122,7 @@ describe('HQ dashboard with data', () => {
       await make('hq-social-drafts', {
         caption: 'DASH-TEST pending post',
         platforms: ['facebook'],
+        media: [mediaId],
         scheduledFor: iso(2 * DAY),
         status: 'pending',
       })
@@ -126,6 +131,7 @@ describe('HQ dashboard with data', () => {
       await make('hq-social-drafts', {
         caption: 'DASH-TEST scheduled post',
         platforms: ['facebook'],
+        media: [mediaId],
         scheduledFor: iso(2 * DAY),
         status: 'scheduled',
       })
@@ -134,6 +140,7 @@ describe('HQ dashboard with data', () => {
       await make('hq-social-drafts', {
         caption: 'DASH-TEST far-off post',
         platforms: ['facebook'],
+        media: [mediaId],
         scheduledFor: iso(10 * DAY),
         status: 'scheduled',
       })
@@ -142,6 +149,7 @@ describe('HQ dashboard with data', () => {
       await make('hq-social-drafts', {
         caption: 'DASH-TEST posted',
         platforms: ['facebook'],
+        media: [mediaId],
         scheduledFor: iso(-2 * DAY),
         publishAt: iso(-2 * DAY),
         status: 'scheduled',
@@ -222,7 +230,7 @@ describe('HQ dashboard with data', () => {
     expect(d.drafts.items.find((p) => p.id === ids.pending)).toMatchObject({
       caption: 'DASH-TEST pending post',
       platforms: ['facebook'],
-      cover: null,
+      cover: { url: expect.any(String), video: false },
       href: `/collections/hq-social-drafts/${ids.pending}`,
     })
 

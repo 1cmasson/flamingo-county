@@ -10,9 +10,12 @@ import {
   buildPostBody,
   connectedChannels,
   createPost,
+  deletePost,
+  findPostIds,
   postIdsFrom,
   uploadMedia,
   type Platform,
+  facebookProblem,
 } from './postiz'
 import {
   FILE_UPLOAD_LIMIT,
@@ -307,6 +310,9 @@ async function decide(payload: Payload, id: number, action: DraftAction): Promis
     return `Draft #${id} changed since that preview, so nothing was posted. The current version is below — approve that one.`
   }
 
+  const rule = facebookProblem(draft.platforms, Array.isArray(draft.media) ? draft.media.length : 0, draft.caption)
+  if (rule) return `🚫 Draft #${id} was not posted. ${rule} Edit it in the admin and approve the new preview.`
+
   await setDraft(payload, id, { status: 'approved', error: null })
   try {
     const platforms = (draft.platforms ?? []) as Platform[]
@@ -353,4 +359,47 @@ async function decide(payload: Payload, id: number, action: DraftAction): Promis
     })
     return `⚠️ Draft #${id} failed: ${esc(message)}\nSet it back to Pending in the admin to try again.`
   }
+}
+
+
+/**
+ * Cancel a post that is still waiting to go out: remove it from the Postiz
+ * calendar, then mark the draft rejected so it cannot be sent again by
+ * accident. Refuses a post that has already gone out, since Postiz cannot
+ * take it back. If Postiz fails, the draft is left as it was, so the owner can
+ * see it is still scheduled.
+ */
+export async function cancelDraft(payload: Payload, id: number, now: Date = new Date()): Promise<string> {
+  const draft = await payload
+    .findByID({ collection: 'hq-social-drafts', id, depth: 0, overrideAccess: true })
+    .catch(() => null)
+  if (!draft) throw new Error(`Draft #${id} does not exist.`)
+  if (draft.status === 'pending') {
+    await setDraft(payload, id, { status: 'rejected' })
+    return `Draft #${id} was only pending; it is rejected and nothing was ever sent to Postiz.`
+  }
+  if (draft.status !== 'scheduled') throw new Error(`Draft #${id} is ${draft.status}, so there is nothing to cancel.`)
+  if (draft.publishAt && new Date(draft.publishAt).getTime() <= now.getTime()) {
+    throw new Error(`Draft #${id} was due ${miamiTime(draft.publishAt)}, so it has probably gone out. Remove it on the social account.`)
+  }
+
+  const platforms = (draft.platforms ?? []) as Platform[]
+  let posts = (draft.postizPosts ?? []).filter((p) => p.postId)
+  if (!posts.length && draft.publishAt) {
+    posts = await findPostIds(await connectedChannels(), platforms, new Date(draft.publishAt))
+  }
+  if (!posts.length) throw new Error(`Could not find draft #${id}'s post in Postiz. Delete it in the Postiz calendar.`)
+
+  // One call per distinct id: the posts of one draft share a group.
+  for (const postId of [...new Set(posts.map((p) => String(p.postId)))]) {
+    await deletePost(postId)
+  }
+  await setDraft(payload, id, { status: 'rejected', error: 'Cancelled after scheduling.' })
+  await recordEvent(payload, {
+    type: 'social.cancelled',
+    summary: `Cancelled scheduled draft #${id} (${platforms.join(', ')})`,
+    refCollection: 'hq-social-drafts',
+    refId: id,
+  })
+  return `Draft #${id} is removed from Postiz and marked rejected.`
 }
