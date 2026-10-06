@@ -5,6 +5,7 @@ import { HEADLINE } from './brief'
 import { miamiTime } from './hq'
 import { socialReport } from './mcpTools'
 import { PLATFORMS, isRunningCount, type MetricSummary } from './postiz'
+import { KIND_LABEL, isRequestKind } from './requestKinds'
 
 /**
  * Everything the HQ dashboard (`/admin/hq`, components/hq/HqDashboard.tsx)
@@ -35,7 +36,7 @@ export type HqDashboardData = {
   listingRequests: {
     count: number
     href: string
-    items: { id: number; business: string; at: string; href: string }[]
+    items: { id: number; business: string; kind: string; at: string; href: string }[]
   }
   tasks: {
     count: number
@@ -164,7 +165,7 @@ export async function loadHqDashboard(
       payload.find({
         collection: 'listing-requests',
         where: { status: { equals: 'new' } },
-        select: { business: true, createdAt: true },
+        select: { business: true, kind: true, createdAt: true },
         sort: '-createdAt',
         limit: LIST.requests,
         ...common,
@@ -257,6 +258,7 @@ export async function loadHqDashboard(
       items: requests.docs.map((r) => ({
         id: r.id,
         business: clip(r.business, 80),
+        kind: KIND_LABEL[isRequestKind(r.kind) ? r.kind : 'listing'],
         at: miamiTime(r.createdAt),
         href: doc('listing-requests', r.id),
       })),

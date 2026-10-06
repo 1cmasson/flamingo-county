@@ -3,9 +3,19 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { isLang, translator, type Lang } from '../../../../i18n'
 import { routes } from '../../../../lib/routes'
-import { getCategories, getCities, getListYourSpotPage, getSiteSettings } from '../../../../lib/data'
+import { getCategories, getCities, getListYourSpotPage } from '../../../../lib/data'
 import { PageShell } from '../../../../components/PageShell'
-import { ListingRequestForm } from '../../../../components/ListingRequestForm'
+import { RequestHub } from '../../../../components/RequestHub'
+import { isRequestKind } from '../../../../lib/requestKinds'
+
+/**
+ * The page used to be one form for one thing — claim a listing. It is now the
+ * place to ask for any of four (see `RequestHub`), so the hero speaks to all of
+ * them and the listing perks move below the forms, under their own heading.
+ */
+const TITLE = 'GET ON FLAMINGO COUNTY.'
+const LEDE =
+  'List your business, put your event on the board, sit down for an interview or tip us off to a story. Pick one below — we read every request ourselves.'
 
 /** Perk icons ship as static SVGs; the CMS stores which one, by name. */
 const ICON = (name?: string | null) => `/assets/icons/${name ?? 'map-pin'}.svg`
@@ -33,10 +43,8 @@ export async function generateMetadata({
   if (!isLang(lang)) return {}
   const t = translator(lang)
   return {
-    title: t('GET FOUND BY YOUR OWN NEIGHBORHOOD.'),
-    description: t(
-      'Your listing on your own city page, a full story page, your service list, and rotation into the Friday spotlight.',
-    ),
+    title: t(TITLE),
+    description: t(LEDE),
     alternates: {
       canonical: routes.listYourSpot(lang),
       languages: { en: routes.listYourSpot('en'), es: routes.listYourSpot('es') },
@@ -46,16 +54,20 @@ export async function generateMetadata({
 
 export default async function ListYourSpotPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ lang: string }>
+  searchParams: Promise<{ type?: string | string[] }>
 }) {
   const { lang } = await params
   if (!isLang(lang)) notFound()
   const t = translator(lang as Lang)
+  // `?type=event` opens straight on that form; anything else opens on the four choices.
+  const { type } = await searchParams
+  const initialKind = isRequestKind(type) ? type : null
 
-  const [page, settings, cities, categories] = await Promise.all([
+  const [page, cities, categories] = await Promise.all([
     getListYourSpotPage(lang),
-    getSiteSettings(lang),
     getCities(lang),
     getCategories(lang),
   ])
@@ -107,7 +119,7 @@ export default async function ListYourSpotPage({
                 lineHeight: 0.92,
               }}
             >
-              {t('GET FOUND BY YOUR OWN NEIGHBORHOOD.')}
+              {t(TITLE)}
             </h1>
             <p
               style={{
@@ -119,14 +131,36 @@ export default async function ListYourSpotPage({
                 textWrap: 'pretty',
               }}
             >
-              {t(
-                'Your listing on your own city page, a full story page, your service list, and rotation into the Friday spotlight.',
-              )}
+              {t(LEDE)}
             </p>
           </div>
         </header>
 
+        <RequestHub
+          lang={lang}
+          initialKind={initialKind}
+          // City names are not localized on the record — they are proper
+          // nouns — but the dictionary does carry them. The value stays the slug.
+          cities={cities.map((c) => ({ slug: c.slug, label: t(c.name ?? c.slug) }))}
+          categories={categories.map((c) => ({ slug: c.slug, label: c.label ?? c.slug }))}
+        />
+
         {/* --- Perks --- */}
+        <h2
+          style={{
+            alignSelf: 'flex-start',
+            margin: '12px 0 -4px',
+            background: 'var(--ink)',
+            color: 'var(--yellow)',
+            fontFamily: 'var(--display)',
+            fontSize: 'clamp(20px,4.4vw,26px)',
+            fontWeight: 400,
+            lineHeight: 1,
+            padding: '8px 12px 5px',
+          }}
+        >
+          {t('WHAT A LISTING GETS YOU')}
+        </h2>
         <div
           style={{
             display: 'grid',
@@ -227,7 +261,7 @@ export default async function ListYourSpotPage({
             }}
           >
             {t(
-              'Our AI receptionist answers your phone in English or Spanish, takes reservations and texts you the details. Tell us in the form below if you want in.',
+              'Our AI receptionist answers your phone in English or Spanish, takes reservations and texts you the details. Add your business above and tell us you want in.',
             )}
           </p>
           <Image
@@ -254,58 +288,6 @@ export default async function ListYourSpotPage({
           />
         </section>
 
-        {/* --- The form --- */}
-        <section
-          style={{
-            background: 'var(--grad-cream)',
-            border: '4px solid var(--ink)',
-            boxShadow: '8px 8px 0 var(--ink)',
-            padding: 'clamp(16px,3.5vw,24px)',
-          }}
-        >
-          <h2
-            style={{
-              display: 'inline-block',
-              margin: '0 0 16px',
-              background: 'var(--ink)',
-              color: 'var(--yellow)',
-              fontFamily: 'var(--display)',
-              fontSize: 22,
-              fontWeight: 400,
-              padding: '7px 12px 4px',
-            }}
-          >
-            {t('CLAIM YOUR LISTING')}
-          </h2>
-          <ListingRequestForm
-            lang={lang}
-            // City names are not localized on the record — they are proper
-            // nouns — but the dictionary does carry them, and the source ran
-            // this select's labels through it. The value stays the slug either way.
-            cities={cities.map((c) => ({ slug: c.slug, label: t(c.name ?? c.slug) }))}
-            categories={categories.map((c) => ({ slug: c.slug, label: c.label ?? c.slug }))}
-            t={{
-              biz: t('BUSINESS NAME'),
-              owner: t('OWNER'),
-              city: t('CITY'),
-              category: t('CATEGORY'),
-              phone: t('PHONE OR EMAIL'),
-              story: t('TELL US THE STORY (WE WRITE THE PAGE FOR YOU)'),
-              phName: t('Your name'),
-              phStory: t('Opened in 1994 by my abuela…'),
-              submit: t('CLAIM YOUR LISTING'),
-              error:
-                lang === 'es'
-                  ? 'FALTA EL NOMBRE DEL NEGOCIO O EL TELÉFONO'
-                  : 'BUSINESS NAME AND PHONE ARE REQUIRED',
-              sentH: lang === 'es' ? '¡RECIBIDO! TE ESCRIBIMOS.' : 'GOT IT — WE’LL BE IN TOUCH.',
-              sentP:
-                lang === 'es'
-                  ? 'Te llamamos o te escribimos en un par de días para hacerte las fotos y la entrevista.'
-                  : 'We’ll call or write within a couple of days to set up the photos and the interview.',
-            }}
-          />
-        </section>
       </main>
     </PageShell>
   )

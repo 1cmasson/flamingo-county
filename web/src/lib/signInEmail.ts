@@ -1,7 +1,8 @@
 import type { Lang } from '../i18n'
+import { sendEmail } from './resend'
 
 /**
- * The sign-in code email, sent through Resend's HTTP API (no SDK — one POST).
+ * The sign-in code email, sent through Resend (lib/resend.ts).
  *
  * Without RESEND_API_KEY, outside production, the code is printed to the server
  * log instead, so dev and the e2e suite sign in without sending anything.
@@ -9,8 +10,6 @@ import type { Lang } from '../i18n'
  * The code goes in the subject line: it shows in the phone's notification, so
  * someone switching over from Instagram never has to open the email.
  */
-const FROM = process.env.AUTH_EMAIL_FROM || 'Flamingo County <hola@flamingocounty.com>'
-
 function copy(lang: Lang, code: string) {
   return lang === 'es'
     ? {
@@ -61,10 +60,5 @@ export async function sendSignInCode(email: string, code: string, lang: Lang): P
     return
   }
   const c = copy(lang, code)
-  const res = await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: FROM, to: [email], subject: c.subject, text: c.text, html: html(c, code) }),
-  })
-  if (!res.ok) throw new Error(`Resend ${res.status}: ${await res.text()}`)
+  await sendEmail({ to: email, subject: c.subject, text: c.text, html: html(c, code) })
 }

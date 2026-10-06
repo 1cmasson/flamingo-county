@@ -3,6 +3,9 @@
 import { getPayload } from 'payload'
 import config from '../payload.config'
 import type { Lang } from '../i18n'
+import { isRequestKind, type RequestKind } from '../lib/requestKinds'
+import { sendRequestConfirmation } from '../lib/requestEmail'
+import { emailConfigured } from '../lib/resend'
 
 export type FormState = { ok: boolean; error?: string }
 
@@ -36,23 +39,85 @@ export async function subscribe(_prev: FormState, formData: FormData): Promise<F
   return { ok: true }
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000
+const HOUR_MS = 60 * 60 * 1000
+/** Confirmations sent across the whole site in an hour, at most. */
+const EMAILS_PER_HOUR = 20
+
 /**
- * "List your spot" submission. Replaces the second Netlify form.
- *
- * The old form validated only that business and phone were non-empty; kept as
- * is, because tightening it here would silently reject people the current site
- * accepts.
+ * Whether a confirmation may go to this address. The form takes any address,
+ * so without a limit it would mail strangers from hola@ on a loop. One per
+ * address a day (the row just saved is the one) and a site-wide hourly cap;
+ * past either, the request is still saved and pinged — only the email is skipped.
  */
-export async function requestListing(_prev: FormState, formData: FormData): Promise<FormState> {
+async function confirmationAllowed(
+  payload: Awaited<ReturnType<typeof getPayload>>,
+  email: string,
+): Promise<boolean> {
+  const now = Date.now()
+  const [sameAddress, lastHour] = await Promise.all([
+    payload.count({
+      collection: 'listing-requests',
+      where: {
+        and: [
+          { email: { equals: email } },
+          { createdAt: { greater_than: new Date(now - DAY_MS).toISOString() } },
+        ],
+      },
+      overrideAccess: true,
+    }),
+    payload.count({
+      collection: 'listing-requests',
+      where: {
+        and: [
+          { email: { exists: true } },
+          { createdAt: { greater_than: new Date(now - HOUR_MS).toISOString() } },
+        ],
+      },
+      overrideAccess: true,
+    }),
+  ])
+  if (sameAddress.totalDocs > 1 || lastHour.totalDocs > EMAILS_PER_HOUR) {
+    console.warn('[request] confirmation skipped (rate limit)', {
+      sameAddress: sameAddress.totalDocs,
+      lastHour: lastHour.totalDocs,
+    })
+    return false
+  }
+  return true
+}
+
+/**
+ * A request from the "list your spot" hub: a listing, an event, an interview or
+ * a story pitch (`kind`). Replaces the second Netlify form.
+ *
+ * Every kind needs a name and a way to reach the person. Interviews and story
+ * pitches are nothing without the story, so those require it too. A listing
+ * still requires only what the old form did — tightening it would silently
+ * reject people the site used to accept.
+ */
+export async function sendRequest(_prev: FormState, formData: FormData): Promise<FormState> {
   if (String(formData.get('bot-field') ?? '')) return { ok: true }
 
-  const business = String(formData.get('business') ?? '').trim()
-  const phone = String(formData.get('phone') ?? '').trim()
-  if (!business || !phone) return { ok: false, error: 'missing-required' }
+  const rawKind = formData.get('kind')
+  const kind: RequestKind = isRequestKind(rawKind) ? rawKind : 'listing'
+  const text = (name: string) => String(formData.get(name) ?? '').trim()
 
-  const email = String(formData.get('email') ?? '').trim()
+  const business = text('business')
+  const phone = text('phone')
+  const story = text('story')
+  if (!business || !phone) return { ok: false, error: 'missing-required' }
+  if ((kind === 'interview' || kind === 'story') && !story) return { ok: false, error: 'missing-required' }
+  if (kind === 'event' && !text('eventWhen')) return { ok: false, error: 'missing-required' }
+
+  // The form has one "phone or email" box, saved as `phone` either way (it is
+  // the required column). When it is an email, it goes in `email` too, so the
+  // admin can tell them apart and the visitor gets a confirmation.
+  const email = text('email') || (EMAIL.test(phone) ? phone : '')
+  const lang: Lang = text('lang') === 'en' ? 'en' : 'es'
   const citySlug = String(formData.get('city') ?? '').trim()
-  const categorySlug = String(formData.get('category') ?? '').trim()
+  // Only a listing has a category; ignore one smuggled in on another kind.
+  const categorySlug = kind === 'listing' ? text('category') : ''
 
   const payload = await getPayload({ config })
 
@@ -76,16 +141,38 @@ export async function requestListing(_prev: FormState, formData: FormData): Prom
   await payload.create({
     collection: 'listing-requests',
     data: {
+      kind,
       business,
       phone,
-      owner: String(formData.get('owner') ?? '').trim() || undefined,
+      owner: text('owner') || undefined,
       email: email || undefined,
-      story: String(formData.get('story') ?? '').trim() || undefined,
+      story: story || undefined,
+      eventWhen: text('eventWhen') || undefined,
+      venue: text('venue') || undefined,
+      link: text('link') || undefined,
       city: cityId,
       category: categoryId,
-      lang: String(formData.get('lang') ?? 'es') as Lang,
+      lang,
       status: 'new',
     },
   })
+
+  // Best effort: the request is saved and the owner pinged already, so a mail
+  // failure is logged, never shown — the visitor did nothing wrong.
+  if (email && emailConfigured() && (await confirmationAllowed(payload, email))) {
+    try {
+      await sendRequestConfirmation({
+        kind,
+        lang,
+        to: email,
+        name: text('owner') || undefined,
+        title: business,
+        when: text('eventWhen') || undefined,
+        where: text('venue') || undefined,
+      })
+    } catch (err) {
+      console.error('[request] confirmation email failed', err)
+    }
+  }
   return { ok: true }
 }

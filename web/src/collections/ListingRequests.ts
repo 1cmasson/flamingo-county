@@ -1,9 +1,19 @@
 import type { CollectionConfig } from 'payload'
 import { recordEvent } from '../lib/hq'
 import { esc } from '../lib/telegram'
+import { KIND_LABEL, type RequestKind } from '../lib/requestKinds'
+
+const KIND_EMOJI: Record<RequestKind, string> = {
+  listing: '🦩',
+  event: '📅',
+  interview: '🎙️',
+  story: '📰',
+}
 
 /**
- * "List your spot" submissions — a business owner asking to be added.
+ * "List your spot" submissions — a business owner asking to be added, and,
+ * since the page became a request hub, events, interviews and story pitches too
+ * (`kind`). Rows from before `kind` existed are listings, which is its default.
  *
  * Same story as Subscribers: this replaces the Netlify Forms path, which does
  * not survive the move to Railway. Field names match the old `list-your-spot`
@@ -24,7 +34,7 @@ export const ListingRequests: CollectionConfig = {
   },
   admin: {
     useAsTitle: 'business',
-    defaultColumns: ['business', 'owner', 'city', 'status', 'createdAt'],
+    defaultColumns: ['business', 'kind', 'owner', 'city', 'status', 'createdAt'],
     group: 'Inbox',
   },
   hooks: {
@@ -32,20 +42,25 @@ export const ListingRequests: CollectionConfig = {
     afterChange: [
       async ({ doc, operation, req }) => {
         if (operation !== 'create') return doc
+        const kind: RequestKind = doc.kind ?? 'listing'
+        const label = KIND_LABEL[kind]
         const lines = [
-          `<b>🦩 New listing request</b>`,
+          `<b>${KIND_EMOJI[kind]} New ${label.toLowerCase()}</b>`,
           `<b>${esc(doc.business)}</b>${doc.owner ? ` — ${esc(doc.owner)}` : ''}`,
           `📞 ${esc(doc.phone)}${doc.email ? ` · ✉️ ${esc(doc.email)}` : ''}`,
         ]
+        if (doc.eventWhen) lines.push(`🗓️ ${esc(doc.eventWhen)}`)
+        if (doc.venue) lines.push(`📍 ${esc(doc.venue)}`)
+        if (doc.link) lines.push(`🔗 ${esc(doc.link)}`)
         if (doc.story) lines.push('', esc(doc.story))
         await recordEvent(
           req.payload,
           {
             type: 'listing_request.created',
-            summary: `Listing request: ${doc.business}`,
+            summary: `${label}: ${doc.business}`,
             refCollection: 'listing-requests',
             refId: doc.id,
-            data: { lang: doc.lang },
+            data: { lang: doc.lang, kind },
           },
           { req, ping: lines.join('\n') },
         )
@@ -66,7 +81,28 @@ export const ListingRequests: CollectionConfig = {
       ],
       admin: { position: 'sidebar' },
     },
-    { name: 'business', type: 'text', required: true },
+    {
+      name: 'kind',
+      type: 'select',
+      defaultValue: 'listing',
+      index: true,
+      options: [
+        { label: 'Add a listing', value: 'listing' },
+        { label: 'Add an event', value: 'event' },
+        { label: 'Interview request', value: 'interview' },
+        { label: 'Story pitch', value: 'story' },
+      ],
+      admin: { position: 'sidebar' },
+    },
+    {
+      // Named for the original form. It holds whatever the request is *called*:
+      // the business, the event, the interviewee's business, or the story's one line.
+      name: 'business',
+      type: 'text',
+      required: true,
+      label: 'Name / title',
+      admin: { description: 'The business, the event name, or the story in one line.' },
+    },
     { name: 'owner', type: 'text' },
     {
       type: 'row',
@@ -82,7 +118,15 @@ export const ListingRequests: CollectionConfig = {
         { name: 'category', type: 'relationship', relationTo: 'categories' },
       ],
     },
-    { name: 'story', type: 'textarea', admin: { description: 'What they told us about the place.' } },
+    {
+      type: 'row',
+      fields: [
+        { name: 'eventWhen', type: 'text', label: 'When', admin: { description: 'As they wrote it.' } },
+        { name: 'venue', type: 'text', label: 'Where' },
+      ],
+    },
+    { name: 'link', type: 'text', admin: { description: 'Flyer, tickets, Instagram or a source.' } },
+    { name: 'story', type: 'textarea', admin: { description: 'What they told us.' } },
     {
       name: 'lang',
       type: 'select',

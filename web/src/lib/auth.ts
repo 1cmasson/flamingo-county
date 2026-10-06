@@ -64,6 +64,22 @@ export function createAuth<P extends BetterAuthPlugin[] = []>(extraPlugins: P = 
       // cache it in a signed cookie rather than hit auth.db per request.
       cookieCache: { enabled: true, maxAge: 5 * 60 },
     },
+    databaseHooks: {
+      user: {
+        create: {
+          // Tell the owner someone joined. Lazy import for the same reason as
+          // afterDelete below, and never throws: a failed ping must not fail a sign-up.
+          after: async (user) => {
+            try {
+              const { announceMember } = await import('./members')
+              await announceMember(user)
+            } catch (err) {
+              console.error('[auth] new-member ping failed', err)
+            }
+          },
+        },
+      },
+    },
     user: {
       deleteUser: {
         enabled: true,

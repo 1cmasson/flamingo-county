@@ -162,12 +162,12 @@ export async function HqDashboard({ initPageResult, params, searchParams }: Admi
 
           <Section
             count={d.listingRequests.count}
-            empty="No new listing requests."
+            empty="No new requests."
             href={at(d.listingRequests.href)}
-            title="Listing requests"
+            title="Requests"
           >
             {d.listingRequests.items.map((r) => (
-              <Row href={at(r.href)} key={r.id} meta={r.at}>
+              <Row href={at(r.href)} key={r.id} meta={`${r.kind} · ${r.at}`}>
                 {r.business}
               </Row>
             ))}
