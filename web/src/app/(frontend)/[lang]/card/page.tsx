@@ -45,6 +45,13 @@ export async function generateMetadata({
   }
 }
 
+/**
+ * Cities with an animated backdrop: each city's hero photo, animated with FAL
+ * (Kling image-to-video, static camera) and played forward-then-back so it
+ * loops without a seam. Files in public/assets/cities/: <slug>.mp4 + <slug>.jpg.
+ */
+const CITY_LOOPS = new Set(['hialeah', 'lakes', 'havana'])
+
 const word = (text: string, from = 0) =>
   [...text].map((ch, i) => (
     <span key={i} style={{ ['--i' as string]: from + i }}>
@@ -416,6 +423,19 @@ export default async function CardPage({ params }: { params: Promise<{ lang: str
                     ['--d' as string]: `${i * 0.4}s`,
                   }}
                 >
+                  {CITY_LOOPS.has(city.slug) ? (
+                    <video
+                      className={s.cityLoop}
+                      src={`/assets/cities/${city.slug}.mp4`}
+                      poster={`/assets/cities/${city.slug}.jpg`}
+                      autoPlay
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                      aria-hidden="true"
+                    />
+                  ) : null}
                   <span
                     style={{ position: 'relative', zIndex: 1, display: 'block', maxWidth: '60%' }}
                   >
@@ -425,6 +445,7 @@ export default async function CardPage({ params }: { params: Promise<{ lang: str
                         fontFamily: 'var(--display)',
                         fontSize: 24,
                         lineHeight: 1,
+                        textShadow: '2px 2px 0 var(--cream)',
                       }}
                     >
                       {t(city.name ?? city.slug)}
