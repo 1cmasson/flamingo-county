@@ -44,14 +44,10 @@ export function twitterCard(image?: string) {
   }
 }
 
-/**
- * The accounts, as the owner gave them. Facebook was confirmed by the owner
- * (2026-10-06); Instagram and TikTok are the @flamingocounty handles Postiz
- * posts as — confirm before relying on them elsewhere.
- */
+/** The accounts, all three confirmed by the owner (2026-10-06). Note the dot in the handle. */
 export const SOCIAL = {
-  instagram: 'https://www.instagram.com/flamingocounty/',
-  tiktok: 'https://www.tiktok.com/@flamingocounty',
+  instagram: 'https://www.instagram.com/flamingo.county/',
+  tiktok: 'https://www.tiktok.com/@flamingo.county',
   facebook: 'https://www.facebook.com/flamingocounty.mia',
 } as const
 
