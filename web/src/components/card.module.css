@@ -1,0 +1,566 @@
+/**
+ * The business card page. Everything moves in CSS; the only script is the
+ * card flip. Three rules hold throughout:
+ *
+ * - Under prefers-reduced-motion every animation and transition is off (the
+ *   block at the bottom), and the page is complete without them.
+ * - Scroll reveals use `animation-timeline: view()` inside @supports, so a
+ *   browser without it simply shows the content — nothing starts hidden.
+ * - Nothing loops forever except slow ambient motion (the rays, the bob), and
+ *   the attention pulses stop after a few beats.
+ */
+
+/* --- The hero stage ------------------------------------------------------- */
+
+.stage {
+  position: relative;
+  display: grid;
+  place-items: center;
+  padding: clamp(18px, 5vw, 40px) 0 clamp(10px, 3vw, 24px);
+  isolation: isolate;
+}
+
+/* The sunburst behind the card. A conic gradient, masked to fade at the edge. */
+.rays {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  width: 170vmax;
+  height: 170vmax;
+  margin: -85vmax 0 0 -85vmax;
+  z-index: -1;
+  background: repeating-conic-gradient(from 0deg, rgba(255, 212, 0, 0.55) 0deg 7deg, transparent 7deg 18deg);
+  mask-image: radial-gradient(circle, #000 0, #000 14%, transparent 34%);
+  animation: spin 70s linear infinite;
+  pointer-events: none;
+}
+@keyframes spin {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+/* --- The card itself ------------------------------------------------------ */
+
+.cardButton {
+  all: unset;
+  display: block;
+  cursor: pointer;
+  width: min(100%, 520px);
+  perspective: 1400px;
+  -webkit-tap-highlight-color: transparent;
+  animation: deal 1100ms cubic-bezier(0.2, 0.9, 0.25, 1.15) both;
+}
+.cardButton:focus-visible .face {
+  outline: 4px solid var(--ink);
+  outline-offset: 6px;
+}
+/* The card is dealt onto the table: drops in spinning, lands with a bounce. */
+@keyframes deal {
+  0% {
+    opacity: 0;
+    transform: translateY(-60px) rotate(-14deg) scale(0.7);
+  }
+  60% {
+    opacity: 1;
+    transform: translateY(8px) rotate(3deg) scale(1.03);
+  }
+  100% {
+    transform: translateY(0) rotate(-2deg) scale(1);
+  }
+}
+
+.flipper {
+  position: relative;
+  /* The card's text is sized against the card (cqw), not the screen, so it
+     keeps the printed proportions at any width. */
+  container-type: inline-size;
+  aspect-ratio: 3.5 / 2;
+  transform-style: preserve-3d;
+  transition: transform 800ms cubic-bezier(0.3, 1.3, 0.4, 1);
+}
+.flipper[data-flipped='true'] {
+  transform: rotateY(180deg);
+}
+@media (hover: hover) {
+  .cardButton:hover .flipper:not([data-flipped='true']) {
+    transform: rotateY(-8deg) rotateX(4deg);
+  }
+  .cardButton:hover .flipper[data-flipped='true'] {
+    transform: rotateY(172deg) rotateX(4deg);
+  }
+}
+
+.face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  background: #fff;
+  border: 4px solid var(--ink);
+  border-radius: 16px;
+  box-shadow: 10px 10px 0 var(--ink);
+  overflow: hidden;
+  display: grid;
+  grid-template-columns: 0.95fr 1.05fr;
+  align-items: center;
+  gap: 4%;
+  padding: 5%;
+}
+.back {
+  transform: rotateY(180deg);
+}
+
+/* The cyan panel the art stands in, with the halftone dots from the print. */
+.panel {
+  position: relative;
+  height: 100%;
+  border: 3px solid var(--ink);
+  border-radius: 12px;
+  background-color: var(--cyan);
+  background-image: radial-gradient(rgba(12, 15, 20, 0.12) 1.2px, transparent 1.4px);
+  background-size: 9px 9px;
+  overflow: visible;
+}
+
+/* The three mascots, standing in a row, popping up one after another. */
+.trio {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 122%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.trio img {
+  height: 100%;
+  width: auto;
+  margin: 0 -10%;
+  transform-origin: 50% 100%;
+  animation: popUp 700ms cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+.trio img:nth-child(1) {
+  animation-delay: 650ms;
+}
+.trio img:nth-child(2) {
+  animation-delay: 800ms;
+  position: relative;
+  z-index: 1;
+}
+.trio img:nth-child(3) {
+  animation-delay: 950ms;
+}
+@keyframes popUp {
+  0% {
+    transform: translateY(40%) scale(0.6);
+    opacity: 0;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+/* The portrait is a full-length cutout; the card shows him waist-up, so it
+   hangs from the top of a clipped panel at nearly twice the panel's height. */
+.panelClip {
+  overflow: hidden;
+}
+.portrait {
+  position: absolute;
+  inset: 7% 0 auto 0;
+  height: 185%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+.portrait img {
+  height: 100%;
+  width: auto;
+}
+
+.wordmark {
+  font-family: var(--display);
+  font-size: 8.6cqw;
+  line-height: 0.9;
+  color: var(--pink);
+  text-shadow: 3px 3px 0 var(--ink);
+  -webkit-text-stroke: 1.5px var(--ink);
+}
+/* Each letter of the wordmark drops in on its own beat (--i is its index). */
+.wordmark span {
+  display: inline-block;
+  animation: letter 520ms cubic-bezier(0.2, 1.5, 0.4, 1) both;
+  animation-delay: calc(700ms + var(--i) * 45ms);
+}
+@keyframes letter {
+  0% {
+    transform: translateY(-70%) rotate(-12deg);
+    opacity: 0;
+  }
+  100% {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.tagline {
+  display: inline-block;
+  margin-top: 8%;
+  background: var(--yellow);
+  border: 3px solid var(--ink);
+  border-radius: 6px;
+  box-shadow: 3px 3px 0 var(--ink);
+  padding: 4% 6%;
+  font-weight: 800;
+  font-size: 2.35cqw;
+  letter-spacing: 0.08em;
+  line-height: 1.3;
+  animation: stamp 500ms cubic-bezier(0.2, 1.6, 0.4, 1) 1500ms both;
+}
+@keyframes stamp {
+  0% {
+    transform: scale(1.8) rotate(-8deg);
+    opacity: 0;
+  }
+  100% {
+    transform: rotate(-2deg);
+    opacity: 1;
+  }
+}
+
+.name {
+  font-family: var(--display);
+  font-size: 9.4cqw;
+  line-height: 0.92;
+}
+.role {
+  margin-top: 6%;
+  color: var(--magenta);
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  font-size: 2.7cqw;
+}
+.contact {
+  margin-top: 10%;
+  font-weight: 700;
+  font-size: 2.75cqw;
+  line-height: 1.5;
+}
+
+/* "Tap the card" — a little bouncing hint that stops after a few hops. */
+.hint {
+  margin-top: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--ink);
+  color: var(--yellow);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  padding: 7px 12px;
+  animation: hop 900ms ease-in-out 2200ms 4 both;
+}
+@keyframes hop {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-6px);
+  }
+}
+
+/* --- Sections ------------------------------------------------------------- */
+
+.tab {
+  display: inline-block;
+  background: var(--ink);
+  color: var(--yellow);
+  font-family: var(--display);
+  font-size: clamp(20px, 5vw, 28px);
+  line-height: 1;
+  padding: 9px 13px 6px;
+}
+
+/* The two big asks. Sticker-ish: tilted, chunky shadow, wiggle on hover. */
+.bigAsk {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 14px;
+  align-items: center;
+  text-decoration: none;
+  color: var(--ink);
+  border: 4px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 8px 8px 0 var(--ink);
+  padding: clamp(16px, 4vw, 22px);
+  overflow: hidden;
+  transition:
+    transform 180ms cubic-bezier(0.2, 0.8, 0.25, 1),
+    box-shadow 180ms cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+.bigAsk:nth-child(odd) {
+  transform: rotate(-1deg);
+}
+.bigAsk:nth-child(even) {
+  transform: rotate(0.8deg);
+}
+@media (hover: hover) {
+  .bigAsk:hover {
+    transform: rotate(0deg) translate(-2px, -2px) scale(1.01);
+    box-shadow: 11px 11px 0 var(--ink);
+    color: var(--ink);
+  }
+}
+.bigAsk:active {
+  transform: translate(4px, 4px);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+
+.askIcon {
+  width: 58px;
+  height: 58px;
+  border-radius: 12px;
+  background: var(--ink);
+  display: grid;
+  place-items: center;
+}
+.askIcon img {
+  width: 30px;
+  height: 30px;
+}
+
+/* The interview card's mic "goes live" a few times to draw the eye. */
+.live {
+  animation: live 1.6s ease-out 1.8s 3;
+}
+@keyframes live {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 46, 136, 0.75);
+  }
+  100% {
+    box-shadow: 0 0 0 18px rgba(255, 46, 136, 0);
+  }
+}
+
+.askH {
+  display: block;
+  font-family: var(--display);
+  font-size: clamp(22px, 6.2vw, 32px);
+  line-height: 1;
+}
+.askP {
+  margin: 6px 0 0;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.45;
+}
+.go {
+  display: inline-block;
+  margin-top: 10px;
+  background: var(--ink);
+  color: var(--cream);
+  font-family: var(--display);
+  font-size: 15px;
+  padding: 7px 12px 5px;
+  border-radius: 6px;
+}
+.go::after {
+  content: ' →';
+  display: inline-block;
+  transition: transform 160ms ease;
+}
+@media (hover: hover) {
+  .bigAsk:hover .go::after {
+    transform: translateX(4px);
+  }
+}
+
+/* Confetti on the birthday card: a few dots that fall a few times and stop. */
+.confetti {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.confetti i {
+  position: absolute;
+  top: -10px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid var(--ink);
+  animation: fall 2.4s linear var(--d) 3 both;
+}
+@keyframes fall {
+  0% {
+    transform: translateY(0) rotate(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(240px) rotate(540deg);
+    opacity: 0;
+  }
+}
+
+/* The free-rides tile: a little bus drives along a dashed road. */
+.road {
+  position: relative;
+  height: 34px;
+  margin-top: 12px;
+  border-top: 3px dashed var(--ink);
+  overflow: hidden;
+}
+.bus {
+  position: absolute;
+  top: 4px;
+  left: -60px;
+  font-size: 24px;
+  line-height: 1;
+  animation: drive 6s linear infinite;
+}
+@keyframes drive {
+  to {
+    transform: translateX(calc(100cqw + 120px));
+  }
+}
+.roadWrap {
+  container-type: inline-size;
+}
+
+/* City tiles: the mascot leans out of the tile on hover. */
+.city {
+  position: relative;
+  display: block;
+  text-decoration: none;
+  color: var(--ink);
+  border: 4px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 6px 6px 0 var(--ink);
+  min-height: 150px;
+  padding: 14px;
+  overflow: hidden;
+  transition: transform 180ms ease;
+}
+.city img {
+  position: absolute;
+  right: -4%;
+  bottom: -6%;
+  height: 118%;
+  width: auto;
+  transform-origin: 50% 100%;
+  animation: bob 3.4s ease-in-out infinite;
+  animation-delay: var(--d);
+  transition: transform 220ms cubic-bezier(0.2, 1.4, 0.4, 1);
+}
+@keyframes bob {
+  0%,
+  100% {
+    translate: 0 0;
+  }
+  50% {
+    translate: 0 -5px;
+  }
+}
+@media (hover: hover) {
+  .city:hover {
+    transform: translate(-2px, -2px);
+    color: var(--ink);
+  }
+  .city:hover img {
+    transform: rotate(-6deg) scale(1.06);
+  }
+}
+
+/* Follow buttons. */
+.social {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  text-decoration: none;
+  color: var(--ink);
+  background: #fff;
+  border: 4px solid var(--ink);
+  border-radius: 12px;
+  box-shadow: 5px 5px 0 var(--pink);
+  padding: 14px 12px;
+  font-family: var(--display);
+  font-size: 18px;
+  transition: transform 160ms ease, box-shadow 160ms ease;
+}
+@media (hover: hover) {
+  .social:hover {
+    transform: translate(-2px, -2px) rotate(-1.5deg);
+    box-shadow: 8px 8px 0 var(--pink);
+    color: var(--ink);
+  }
+}
+.social svg {
+  width: 26px;
+  height: 26px;
+  flex: 0 0 auto;
+}
+
+/* The marquee between sections. Duplicated run, translated by -50%. */
+.marquee {
+  overflow: hidden;
+  white-space: nowrap;
+  background: var(--yellow);
+  border-block: 4px solid var(--ink);
+  transform: rotate(-1.5deg);
+  margin-inline: -24px;
+}
+.marquee > div {
+  display: inline-block;
+  padding: 10px 0 7px;
+  font-family: var(--display);
+  font-size: 22px;
+  animation: slide 22s linear infinite;
+}
+@keyframes slide {
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* Scroll reveal, only where the browser can drive it from scroll. */
+@supports (animation-timeline: view()) {
+  .reveal {
+    animation: rise linear both;
+    animation-timeline: view();
+    animation-range: entry 0% cover 25%;
+  }
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(40px) scale(0.97);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+}
+
+/* --- Reduced motion: everything still, nothing hidden ---------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .stage *,
+  .stage,
+  .rays,
+  .reveal,
+  .marquee > div,
+  .bus,
+  .city img,
+  .confetti i,
+  .live,
+  .hint {
+    animation: none !important;
+    transition: none !important;
+  }
+  .confetti,
+  .road {
+    display: none;
+  }
+}

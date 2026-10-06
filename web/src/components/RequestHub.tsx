@@ -17,6 +17,7 @@ const ICON: Record<RequestKind, string> = {
   event: '/assets/icons/calendar.svg',
   interview: '/assets/icons/mic.svg',
   story: '/assets/icons/newspaper.svg',
+  shoutout: '/assets/icons/cake.svg',
 }
 
 /**
@@ -27,7 +28,7 @@ const ICON: Record<RequestKind, string> = {
  */
 type Field = {
   name: string
-  type: 'text' | 'link' | 'textarea' | 'cities' | 'categories'
+  type: 'text' | 'link' | 'textarea' | 'cities' | 'categories' | 'consent'
   label: string
   ph?: string
   required?: boolean
@@ -69,6 +70,18 @@ const FIELDS: Record<RequestKind, Field[]> = {
     { name: 'city', type: 'cities', label: 'city' },
     { name: 'owner', type: 'text', label: 'yourName', ph: 'phName' },
     { name: 'phone', type: 'text', label: 'contact', ph: 'phContact', required: true },
+  ],
+  // A shoutout puts someone else's name and birthday on public socials, so the
+  // person asking has to say they agreed. The owner still approves every post.
+  shoutout: [
+    { name: 'business', type: 'text', label: 'bdayName', ph: 'phBdayName', required: true },
+    { name: 'eventWhen', type: 'text', label: 'bdayDate', ph: 'phBdayDate', required: true },
+    { name: 'city', type: 'cities', label: 'city' },
+    { name: 'story', type: 'textarea', label: 'bdayNote', ph: 'phBdayNote' },
+    { name: 'link', type: 'link', label: 'bdayInsta', ph: 'phBdayInsta' },
+    { name: 'owner', type: 'text', label: 'yourName', ph: 'phName', required: true },
+    { name: 'phone', type: 'text', label: 'contact', ph: 'phContact', required: true },
+    { name: 'consent', type: 'consent', label: 'bdayConsent', required: true },
   ],
 }
 
@@ -130,7 +143,9 @@ export function RequestHub({
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,230px),1fr))',
+            // Five across on a wide screen (the hub's width fits them), so no
+            // card is left alone on a second row.
+            gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,180px),1fr))',
             gap: 'clamp(12px,2vw,16px)',
           }}
         >
@@ -160,7 +175,7 @@ export function RequestHub({
                   position: 'relative',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: 10 }}>
                   <span
                     style={{
                       width: 46,
@@ -276,6 +291,8 @@ const fieldStyle = {
 const labelStyle = {
   display: 'flex',
   flexDirection: 'column' as const,
+  // A label that wraps to two lines must not push its input below its neighbour's.
+  justifyContent: 'space-between',
   gap: 6,
   fontWeight: 800,
   fontSize: 11,
@@ -384,6 +401,36 @@ function RequestForm({
         {FIELDS[kind].map((f) => {
           const label = c.f[f.label]
           const ph = f.ph ? c.f[f.ph] : undefined
+
+          if (f.type === 'consent') {
+            return (
+              <label
+                key={f.name}
+                style={{
+                  gridColumn: '1 / -1',
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 10,
+                  fontWeight: 700,
+                  fontSize: 14,
+                  lineHeight: 1.4,
+                  cursor: 'pointer',
+                }}
+              >
+                <input
+                  type="checkbox"
+                  name={f.name}
+                  value="yes"
+                  required={f.required}
+                  style={{ width: 22, height: 22, margin: 0, flex: '0 0 auto', accentColor: 'var(--pink)' }}
+                />
+                <span>
+                  {label}
+                  {star(f)}
+                </span>
+              </label>
+            )
+          }
 
           if (f.type === 'cities' || f.type === 'categories') {
             const opts = f.type === 'cities' ? cities : categories

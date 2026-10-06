@@ -15,7 +15,7 @@ import { cancelDraft, miamiTime } from './hq'
 import { isRunningCount, type MetricSummary } from './postiz'
 import { PUBLISHABLE, publishStatus, requestPublish } from './publishRequests'
 import { PHOTO_LICENSES, canonicalLicenseUrl, isPhotoLicense, licenseLabel, type PhotoLicense } from './photoLicense'
-import { isRequestKind, type RequestKind } from './requestKinds'
+import { REQUEST_KINDS, isRequestKind, type RequestKind } from './requestKinds'
 import { routes } from './routes'
 import { MESSAGE_LIMIT, esc, sendMessage, telegramConfigured } from './telegram'
 
@@ -340,7 +340,7 @@ export async function growthContext(payload: Payload, now: Date = new Date()) {
   // from the event's data.
   const intake = {
     listingRequests: 0,
-    requestsByKind: { listing: 0, event: 0, interview: 0, story: 0 } as Record<RequestKind, number>,
+    requestsByKind: Object.fromEntries(REQUEST_KINDS.map((k) => [k, 0])) as Record<RequestKind, number>,
     newsletterSignups: 0,
     memberSignups: 0,
   }

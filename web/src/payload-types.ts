@@ -945,7 +945,7 @@ export interface Subscriber {
 export interface ListingRequest {
   id: number;
   status?: ('new' | 'contacted' | 'listed' | 'declined') | null;
-  kind?: ('listing' | 'event' | 'interview' | 'story') | null;
+  kind?: ('listing' | 'event' | 'interview' | 'story' | 'shoutout') | null;
   /**
    * The business, the event name, or the story in one line.
    */
