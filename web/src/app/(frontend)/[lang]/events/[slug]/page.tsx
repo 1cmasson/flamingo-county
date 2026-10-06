@@ -19,6 +19,7 @@ import { eventActionStrings, eventStatusLabel, eventVenue } from '../../../../..
 import { EVENT_CARD_SIZES, eventCardUrl } from '../../../../../lib/eventCardUrl'
 import { getSeason } from '../../../../../lib/seasons'
 import { EventSource } from '../../../../../components/EventSource'
+import { EventDirections } from '../../../../../components/EventDirections'
 import s from '../../../../../components/chrome.module.css'
 
 /**
@@ -491,6 +492,8 @@ export default async function EventPage({
                 {ev.note}
               </p>
             ) : null}
+            {/* The address, and directions to it. */}
+            <EventDirections ev={ev} t={t} />
             {/* Where the event comes from, so a reader can check it with whoever puts it on. */}
             <EventSource ev={ev} lang={lang as Lang} t={t} />
             <EventActions

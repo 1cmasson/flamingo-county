@@ -3,6 +3,7 @@ import { isLang } from '../../../../../../i18n'
 import { getEvent } from '../../../../../../lib/data'
 import { addDays, dateOnly, eventEndDay, utcStamp } from '../../../../../../lib/dates'
 import { eventVenue } from '../../../../../../components/EventCard'
+import { eventAddress } from '../../../../../../lib/eventVenue'
 
 /** RFC 5545 escaping for text values. */
 const esc = (s: string) =>
@@ -55,13 +56,13 @@ export async function GET(
   const ev = await getEvent(lang, slug)
   if (!ev) notFound()
 
-  const { name: venue, listing } = eventVenue(ev)
+  const { name: venue } = eventVenue(ev)
   const iso = dateOnly(ev.date)
   const day = iso.replace(/-/g, '')
   // The finishing day: a 9PM–1AM night ends tomorrow, and a festival on its
   // `endDate`. Same day otherwise.
   const endIso = eventEndDay(ev)
-  const address = listing ? listing.detail?.address : ev.placeAddress
+  const address = eventAddress(ev)
 
   // An hour is the length the calendar draws when the event publishes a start
   // and no finish. It is not a claim that the thing ends then — the page never

@@ -32,6 +32,47 @@ export function eventVenue(ev: Event) {
 }
 
 /**
+ * The venue's street address, as written: the listing's for a listed
+ * business, `placeAddress` for a named place. Null when neither has one.
+ *
+ * A listed venue's address is the listing's own `detail.address`, so the
+ * directions are only as sound as that listing's sourcing.
+ */
+export function eventAddress(ev: Event): string | null {
+  const { listing } = eventVenue(ev)
+  const address = (listing ? listing.detail?.address : ev.placeAddress)?.trim()
+  return address || null
+}
+
+/**
+ * Directions to an event, as map links that work on any phone or computer.
+ *
+ * The destination is the venue's name with its address, so the map lands on
+ * the library or the park itself rather than a guess at the street number;
+ * with no address on file, the name and city ("Milander Park, HIALEAH, FL"),
+ * which the map search still resolves. Null only when there is no venue name.
+ *
+ * Both links are built here; the page shows one button that opens the
+ * phone's own map (`DirectionsLink`). Google's is the one in the HTML and the
+ * structured data: it opens the Google Maps app where it is installed and the
+ * web map where it is not.
+ */
+export function eventDirections(ev: Event): { address: string | null; google: string; apple: string } | null {
+  const { name, city } = eventVenue(ev)
+  if (!name.trim()) return null
+  const address = eventAddress(ev)
+  const destination = address
+    ? `${name}, ${address}`
+    : [name, city?.name, 'FL'].filter(Boolean).join(', ')
+  const q = encodeURIComponent(destination)
+  return {
+    address,
+    google: `https://www.google.com/maps/dir/?api=1&destination=${q}`,
+    apple: `https://maps.apple.com/?daddr=${q}`,
+  }
+}
+
+/**
  * Where to read more about an event: who puts it on, as the event names them.
  *
  * - an organizer that is a listing: its page on this site;
