@@ -1,7 +1,11 @@
 /**
- * Did `payload migrate` really migrate? Exits 0 only when every migration in
+ * Did `payload migrate` really migrate? Exits 0 when every migration in
  * src/migrations/index.ts is recorded in the database's payload_migrations
- * table; otherwise lists what is missing and exits 1.
+ * table, and 1, listing what is missing, when some are not, including when
+ * there is no database file or no table at all. Exits 2 when it could not
+ * tell (the database would not open or read for another reason): migrate.sh
+ * then trusts `payload migrate` as before, so a fault in this check can never
+ * stop a boot that would otherwise have worked.
  *
  * Why it exists: `payload migrate` has exited 0 having done nothing at all,
  * not even its start-up log, and the build then died on "no such table"
@@ -13,10 +17,9 @@
  * Plain JS on Node's built-in SQLite: it must run without tsx, and without the
  * libsql driver, which has segfaulted on exit in this image (src/lib/auth-migrate.ts).
  */
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { DatabaseSync } from 'node:sqlite'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..')
 
@@ -32,7 +35,7 @@ export function sqlitePath(url) {
   return path || null
 }
 
-function main() {
+async function main() {
   const expected = expectedMigrations(readFileSync(join(root, 'src/migrations/index.ts'), 'utf8'))
   if (!expected.length) {
     console.error('check-migrated: found no migrations in src/migrations/index.ts')
@@ -55,16 +58,20 @@ function main() {
   }
 
   let recorded = new Set()
-  try {
-    const db = new DatabaseSync(path, { readOnly: true })
+  if (existsSync(path)) {
     try {
-      recorded = new Set(db.prepare('select name from payload_migrations').all().map((r) => r.name))
-    } finally {
-      db.close()
+      const { DatabaseSync } = await import('node:sqlite')
+      const db = new DatabaseSync(path, { readOnly: true })
+      try {
+        const table = db.prepare("select 1 from sqlite_master where type = 'table' and name = 'payload_migrations'").get()
+        if (table) recorded = new Set(db.prepare('select name from payload_migrations').all().map((r) => r.name))
+      } finally {
+        db.close()
+      }
+    } catch (err) {
+      console.error(`check-migrated: could not read ${path}, so could not verify: ${err.message}`)
+      return 2
     }
-  } catch (err) {
-    // No file or no table: nothing was migrated.
-    console.error(`check-migrated: could not read migrations from ${path}: ${err.message}`)
   }
 
   const missing = expected.filter((name) => !recorded.has(name))
@@ -77,4 +84,4 @@ function main() {
   return 0
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) process.exit(main())
+if (process.argv[1] === fileURLToPath(import.meta.url)) process.exit(await main())
