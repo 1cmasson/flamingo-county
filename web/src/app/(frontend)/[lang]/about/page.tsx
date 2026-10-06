@@ -49,7 +49,10 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
     listings.map((b) => rel<City>(b.city)?.slug).filter(Boolean) as string[],
   )
 
-  const portrait = rel<Media>(about.photo)
+  // The founder's own photo and name are not shown (owner's call, 2026-10-06):
+  // the frame carries the three mascots instead — the home hero's cast art —
+  // and `about.photo` / `founderSig` stay in the CMS unrendered.
+  const cast = rel<Media>(settings.heroCast)
   const backdrop = rel<Media>(cities.find((c) => c.slug === 'hialeah')?.photo)
 
   return (
@@ -135,9 +138,10 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
               // one column at 900px, which let a frame designed at 250px go
               // full-bleed — a ~430px-tall portrait dominating a phone screen.
               // Capped so it keeps its intended size when it stacks.
-              maxWidth: 260,
+              maxWidth: 420,
               margin: '0 auto',
-              aspectRatio: '3/4',
+              // The cast art is a wide bust of all three (about 2.2:1).
+              aspectRatio: '16/11',
               border: '4px solid var(--ink)',
               backgroundColor: 'var(--pink)',
               // A pink wash over the Hialeah street photo, which the source
@@ -152,13 +156,13 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
               overflow: 'hidden',
             }}
           >
-            {portrait?.url ? (
+            {cast?.url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
-                src={portrait.url}
-                srcSet={buildSrcSet(portrait)}
+                src={cast.url}
+                srcSet={buildSrcSet(cast)}
                 sizes="(max-width: 900px) 100vw, 420px"
-                alt={portrait.alt ?? ''}
+                alt={cast.alt ?? ''}
                 style={{
                   // Pinned to the frame's edges rather than sized in
                   // percentages. The frame's height comes only from
@@ -168,7 +172,7 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
                   // frame, cropped at the top by the overflow above, and
                   // `height: 100%` still overshot by the border width.
                   // `inset: 0` needs no resolution at all, and `contain` keeps
-                  // the aspect ratio inside it.
+                  // the aspect ratio inside it — all three, nobody cropped.
                   position: 'absolute',
                   inset: 0,
                   width: '100%',
@@ -210,9 +214,6 @@ export default async function AboutPage({ params }: { params: Promise<{ lang: st
                 {p}
               </p>
             ))}
-            <div style={{ marginTop: 4, fontFamily: 'var(--display)', fontSize: 20 }}>
-              {about.founderSig}
-            </div>
             <div
               style={{ fontWeight: 800, fontSize: 12, letterSpacing: '1px', color: '#7A6A4E' }}
             >

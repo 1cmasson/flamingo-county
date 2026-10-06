@@ -3,10 +3,9 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { isLang, translator, type Lang } from '../../../../i18n'
 import { routes } from '../../../../lib/routes'
-import { getAboutPage, getCities, getListings, rel } from '../../../../lib/data'
+import { getAboutPage, getCities, getListings, getSiteSettings, rel } from '../../../../lib/data'
 import { buildSrcSet } from '../../../../lib/srcset'
 import { cardCopy } from '../../../../lib/cardCopy'
-import { requestCopy } from '../../../../lib/requestCopy'
 import { FOUNDER, SOCIAL } from '../../../../lib/site'
 import type { City, Media } from '../../../../payload-types'
 import { PageShell } from '../../../../components/PageShell'
@@ -17,15 +16,15 @@ import s from '../../../../components/card.module.css'
  * Where the business card's QR code lands (through /go/card, so scans count as
  * their own campaign in the growth review).
  *
- * The page opens on the card itself — the one in their hand, drawn from the
- * same mascots and portrait the CMS serves everywhere else — and then, in the
+ * The page opens on the card itself — the one in their hand: the mascots'
+ * bust on the front, the founder on the back (the only place on the site his
+ * name and photo appear), with "save contact" under it — and then, in the
  * order the owner cares about: get interviewed, birthday shoutout, the free
- * buses, the listings, what the site is, where to follow, who made it.
+ * buses, the listings, what the site is, where to follow.
  *
  * Every fact here is read, not written: the intro is the About page's, the
- * cities and their counts come from the database, the founder line is the
- * About global's. Kept out of the sitemap — it is a door for people holding
- * a card, not a page to rank.
+ * cities and their counts come from the database. Kept out of the sitemap —
+ * it is a door for people holding a card, not a page to rank.
  */
 export async function generateMetadata({
   params,
@@ -46,9 +45,6 @@ export async function generateMetadata({
   }
 }
 
-/** The printed card's order, left to right: rooster, flamingo, cow. */
-const TRIO = ['havana', 'hialeah', 'lakes']
-
 const word = (text: string, from = 0) =>
   [...text].map((ch, i) => (
     <span key={i} style={{ ['--i' as string]: from + i }}>
@@ -61,10 +57,10 @@ export default async function CardPage({ params }: { params: Promise<{ lang: str
   if (!isLang(lang)) notFound()
   const t = translator(lang as Lang)
   const c = cardCopy(lang)
-  const rc = requestCopy(lang)
 
-  const [about, cities, listings] = await Promise.all([
+  const [about, settings, cities, listings] = await Promise.all([
     getAboutPage(lang),
+    getSiteSettings(lang),
     getCities(lang),
     getListings(lang),
   ])
@@ -74,33 +70,30 @@ export default async function CardPage({ params }: { params: Promise<{ lang: str
     const slug = rel<City>(b.city)?.slug
     if (slug) counts.set(slug, (counts.get(slug) ?? 0) + 1)
   }
-  const mascot = (slug: string) => rel<Media>(cities.find((x) => x.slug === slug)?.solo)
+  // The three mascots' bust, the same art as the home page's hero.
+  const cast = rel<Media>(settings.heroCast)
+  // The founder appears on the back of the card and nowhere else on the site.
   const portrait = rel<Media>(about.photo)
   const hub = (type: string) => `${routes.listYourSpot(lang)}?type=${type}`
 
   const front = (
     <>
       <div className={s.panel}>
-        <div className={s.trio}>
-          {TRIO.map((slug) => {
-            const m = mascot(slug)
-            return m?.url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                key={slug}
-                src={m.url}
-                srcSet={buildSrcSet(m)}
-                sizes="120px"
-                alt=""
-                width={m.width ?? undefined}
-                height={m.height ?? undefined}
-                fetchPriority="high"
-              />
-            ) : null
-          })}
-        </div>
+        {cast?.url ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            className={s.cast}
+            src={cast.url}
+            srcSet={buildSrcSet(cast)}
+            sizes="(max-width: 560px) 90vw, 480px"
+            alt=""
+            width={cast.width ?? undefined}
+            height={cast.height ?? undefined}
+            fetchPriority="high"
+          />
+        ) : null}
       </div>
-      <div>
+      <div className={s.frontText}>
         <div className={s.wordmark}>
           {word('FLAMINGO')}
           <br />
@@ -166,6 +159,12 @@ export default async function CardPage({ params }: { params: Promise<{ lang: str
           <CardFlip
             front={front}
             back={back}
+            extra={
+              <a href="/contact.vcf" className={s.save}>
+                <span aria-hidden="true">＋</span>
+                {c.saveContact}
+              </a>
+            }
             label={`${c.tap} — Flamingo County`}
             tap={c.tap}
             tapBack={c.tapBack}
@@ -519,117 +518,6 @@ export default async function CardPage({ params }: { params: Promise<{ lang: str
           </div>
         </section>
 
-        {/* --- Who made it --- */}
-        <section
-          className={s.reveal}
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'minmax(130px,1fr) 1.25fr',
-            gap: 'clamp(14px,4vw,24px)',
-            alignItems: 'end',
-            background: 'var(--ink)',
-            color: 'var(--cream)',
-            border: '4px solid var(--ink)',
-            borderRadius: 14,
-            boxShadow: '8px 8px 0 var(--cyan)',
-            padding: 'clamp(16px,4vw,24px) clamp(16px,4vw,24px) 0',
-            overflow: 'hidden',
-          }}
-        >
-          {portrait?.url ? (
-            <div
-              className={s.panel}
-              style={{
-                height: 'auto',
-                borderColor: 'var(--cream)',
-                borderBottom: 0,
-                borderRadius: '12px 12px 0 0',
-                overflow: 'hidden',
-              }}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={portrait.url}
-                srcSet={buildSrcSet(portrait)}
-                sizes="260px"
-                alt={FOUNDER.name}
-                width={portrait.width ?? undefined}
-                height={portrait.height ?? undefined}
-                loading="lazy"
-                // Waist-up, like the card: a square crop from the top of the cutout.
-                style={{
-                  width: '100%',
-                  height: 'auto',
-                  aspectRatio: '4 / 5',
-                  objectFit: 'cover',
-                  objectPosition: '50% 0',
-                  display: 'block',
-                }}
-              />
-            </div>
-          ) : (
-            <span />
-          )}
-          <div style={{ paddingBottom: 'clamp(16px,4vw,24px)' }}>
-            <div
-              style={{
-                fontFamily: 'var(--display)',
-                fontSize: 'clamp(26px,7vw,38px)',
-                lineHeight: 1,
-                color: 'var(--yellow)',
-              }}
-            >
-              {c.helloCarlos}
-            </div>
-            {about.founderTag ? (
-              <div
-                style={{
-                  marginTop: 8,
-                  fontWeight: 800,
-                  fontSize: 11,
-                  letterSpacing: '1.6px',
-                  color: 'var(--cyan)',
-                }}
-              >
-                {about.founderTag}
-              </div>
-            ) : null}
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 16 }}>
-              <a
-                href="/carlos-masson.vcf"
-                className={s.social}
-                style={{ fontSize: 15, padding: '10px 12px' }}
-              >
-                {c.saveContact}
-              </a>
-              <a
-                href={`mailto:${FOUNDER.email}`}
-                className={s.social}
-                style={{ fontSize: 15, padding: '10px 12px' }}
-              >
-                {c.emailMe}
-              </a>
-            </div>
-          </div>
-        </section>
-
-        {/* --- Anything else off the request hub --- */}
-        <section className={s.reveal} style={section} aria-labelledby="card-more">
-          <h2
-            id="card-more"
-            className={s.tab}
-            style={{ alignSelf: 'flex-start', margin: 0, fontWeight: 400 }}
-          >
-            {c.moreH}
-          </h2>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
-            {(['listing', 'event', 'story'] as const).map((k) => (
-              <Link key={k} href={hub(k)} className={s.social} style={{ fontSize: 16 }}>
-                {rc.kinds[k].title}
-              </Link>
-            ))}
-          </div>
-        </section>
       </main>
     </PageShell>
   )

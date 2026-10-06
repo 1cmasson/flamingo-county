@@ -258,22 +258,32 @@ function Ticker({
 }) {
   const seconds = Math.max(24, (lead.length + items.length) * 5)
 
+  // The bullet is its own element with equal room on both sides, so it sits
+  // midway between two names instead of hugging the one before it.
+  const dot = (
+    <span aria-hidden="true" style={{ padding: '0 14px' }}>
+      •
+    </span>
+  )
   const run = (dup: boolean) => (
     <span aria-hidden={dup ? true : undefined}>
       {lead.map((l) => (
-        <span key={l} style={{ padding: '0 14px' }}>
-          {l}&#160;·
+        <span key={l}>
+          {l}
+          {dot}
         </span>
       ))}
       {items.map((it) => (
-        <Link
-          key={it.href}
-          href={it.href}
-          tabIndex={dup ? -1 : undefined}
-          style={{ color: 'inherit', textDecoration: 'none', padding: '0 14px' }}
-        >
-          {it.label}&#160;·
-        </Link>
+        <span key={it.href}>
+          <Link
+            href={it.href}
+            tabIndex={dup ? -1 : undefined}
+            style={{ color: 'inherit', textDecoration: 'none' }}
+          >
+            {it.label}
+          </Link>
+          {dot}
+        </span>
       ))}
     </span>
   )
