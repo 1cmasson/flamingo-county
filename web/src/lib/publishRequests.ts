@@ -53,45 +53,86 @@ export function formatValue(v: unknown): string {
       400,
     )
   }
+  if (Array.isArray(v) && v.every((x) => typeof x === 'string')) return clip(v.join(' · '), 400)
+  // Rows of an array field, e.g. opening hours: "Friday, Saturday 07:00 23:00 | …".
+  if (Array.isArray(v) && v.every((x) => x && typeof x === 'object' && !Array.isArray(x))) {
+    return clip(
+      v
+        .map((row) =>
+          Object.entries(row as Doc)
+            .filter(([k, x]) => k !== 'id' && x !== null && x !== undefined && x !== '')
+            .map(([, x]) => (Array.isArray(x) ? x.join(', ') : typeof x === 'object' ? JSON.stringify(x) : String(x)))
+            .join(' '),
+        )
+        .join(' | '),
+      400,
+    )
+  }
   return clip(JSON.stringify(v), 220)
+}
+
+/** Array rows get fresh ids on every save, so rows compare by what they say. */
+function withoutIds(v: unknown): unknown {
+  if (Array.isArray(v)) return v.map(withoutIds)
+  if (v && typeof v === 'object') {
+    return Object.fromEntries(Object.entries(v).filter(([k]) => k !== 'id').map(([k, x]) => [k, withoutIds(x)]))
+  }
+  return v
 }
 
 /** Empty is empty, whichever way Payload stores it. */
 const norm = (v: unknown) => (v === undefined || v === '' || (Array.isArray(v) && !v.length) ? null : v)
-const same = (a: unknown, b: unknown) => JSON.stringify(norm(a)) === JSON.stringify(norm(b))
+const same = (a: unknown, b: unknown) => JSON.stringify(norm(withoutIds(a))) === JSON.stringify(norm(withoutIds(b)))
+
+type FieldDef = { name: string; type?: string; localized?: boolean; flattenedFields?: FieldDef[] }
+
+/** A field that is translated, or holds something that is, needs a line per language. */
+const translated = (f: FieldDef): boolean => Boolean(f.localized || f.flattenedFields?.some(translated))
 
 /**
  * One line per field that differs between the live page and the draft,
+ * looking inside groups: a listing's whole `detail` group as one line was an
+ * unreadable blob, and since the group itself isn't translated, a change to
+ * the Spanish story or day labels inside it never showed at all.
+ *
  * `live → draft`, per language for translated fields and once for the rest —
  * plus a warning for the changes that can do damage.
  */
 export function diffLines(
   collection: string,
-  fields: { name: string; localized?: boolean }[],
+  fields: FieldDef[],
   live: Partial<Record<Locale, Doc>>,
   draft: Partial<Record<Locale, Doc>>,
 ): { lines: string[]; warnings: string[] } {
   const lines: string[] = []
   const warnings = new Set<string>()
   const isNew = !live.es && !live.en
-  for (const f of fields) {
-    if (META.has(f.name)) continue
-    for (const locale of f.localized ? LOCALES : ([LOCALES[0]] as const)) {
-      const next = draft[locale]?.[f.name]
-      const prev = live[locale]?.[f.name]
-      if (same(prev, next) || (isNew && norm(next) === null)) continue
-      const tag = f.localized ? ` (${locale})` : ''
-      lines.push(isNew ? `• ${f.name}${tag}: ${formatValue(next)}` : `• ${f.name}${tag}: ${formatValue(prev)} → ${formatValue(next)}`)
-      if (f.name === 'slug' && !isNew) warnings.add('⚠️ Changes the URL — existing links to this page will break.')
-      if (collection === 'listings' && f.name === 'publicationStatus') {
-        warnings.add(
-          next === 'ready'
-            ? '⚠️ Marks the listing "ready": that claims every field traces to a real source.'
-            : '⚠️ Changes how sourced this listing is marked.',
-        )
+  const walk = (defs: FieldDef[], prefix: string, at: (doc: Doc | undefined) => Doc | undefined) => {
+    for (const f of defs) {
+      if (META.has(f.name)) continue
+      if (f.type === 'group' && f.flattenedFields) {
+        walk(f.flattenedFields, `${prefix}${f.name}.`, (doc) => at(doc)?.[f.name] as Doc | undefined)
+        continue
+      }
+      const name = prefix + f.name
+      for (const locale of translated(f) ? LOCALES : ([LOCALES[0]] as const)) {
+        const next = at(draft[locale])?.[f.name]
+        const prev = at(live[locale])?.[f.name]
+        if (same(prev, next) || (isNew && norm(next) === null)) continue
+        const tag = translated(f) ? ` (${locale})` : ''
+        lines.push(isNew ? `• ${name}${tag}: ${formatValue(next)}` : `• ${name}${tag}: ${formatValue(prev)} → ${formatValue(next)}`)
+        if (name === 'slug' && !isNew) warnings.add('⚠️ Changes the URL — existing links to this page will break.')
+        if (collection === 'listings' && name === 'publicationStatus') {
+          warnings.add(
+            next === 'ready'
+              ? '⚠️ Marks the listing "ready": that claims every field traces to a real source.'
+              : '⚠️ Changes how sourced this listing is marked.',
+          )
+        }
       }
     }
   }
+  walk(fields, '', (doc) => doc)
   return { lines, warnings: [...warnings] }
 }
 
@@ -177,7 +218,7 @@ export async function requestPublish(
   const isNew = !live.es && !live.en
   if (!isNew && draft.es?._status === 'published') throw new Error('Nothing to publish: the live page is the latest version.')
 
-  const fields = payload.collections[collection].config.flattenedFields as { name: string; localized?: boolean }[]
+  const fields = payload.collections[collection].config.flattenedFields as FieldDef[]
   const { lines, warnings } = diffLines(collection, fields, live, draft)
   if (!isNew && !lines.length) throw new Error('Nothing to publish: the draft matches the live page.')
 
