@@ -45,7 +45,10 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # database needs a schema or the build dies on "no such table: cities". The
 # tables stay empty, which is correct — every route renders dynamically, so
 # nothing is prerendered from this throwaway database.
-RUN pnpm payload migrate && pnpm run build
+#
+# scripts/migrate.sh, not a bare `payload migrate`: the CLI has exited 0 having
+# migrated nothing, so the script checks the database and retries.
+RUN sh scripts/migrate.sh && pnpm run build
 
 # ---------------------------------------------------------------- runtime
 FROM base AS runner
@@ -77,6 +80,7 @@ COPY --from=builder --chown=nextjs:nodejs /app/web/src ./src
 COPY --from=builder --chown=nextjs:nodejs /app/web/package.json ./package.json
 COPY --from=builder --chown=nextjs:nodejs /app/web/tsconfig.json ./tsconfig.json
 COPY --from=builder --chown=nextjs:nodejs /app/web/next.config.ts ./next.config.ts
+COPY --from=builder --chown=nextjs:nodejs /app/web/scripts/migrate.sh /app/web/scripts/check-migrated.mjs ./scripts/
 
 # The volume mount point. Both the database and the uploads live under here;
 # anything written outside it is gone on the next deploy. Creating it here only

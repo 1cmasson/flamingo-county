@@ -86,6 +86,15 @@ jobs:
           docker logs fc-ci
           exit 1
 
+      - name: Confirm the boot checked its migrations
+        # docker-entrypoint.sh runs scripts/migrate.sh, which believes
+        # `payload migrate` only once scripts/check-migrated.mjs has found every
+        # migration in the database. Both boots above went through it; this
+        # proves the check really ran there, not just in the image build.
+        run: |
+          docker logs fc-ci 2>&1 | grep -E 'check-migrated|migrate:' || true
+          docker logs fc-ci 2>&1 | grep -q 'check-migrated: all [0-9]* migrations applied'
+
       - name: Confirm a real media file is actually being served
         # Catches a MEDIA_DIR mismatch between the seed process and the
         # server silently — that would make every image 404 and Lighthouse
