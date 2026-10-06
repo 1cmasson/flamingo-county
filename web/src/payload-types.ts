@@ -945,6 +945,10 @@ export interface Subscriber {
 export interface ListingRequest {
   id: number;
   status?: ('new' | 'contacted' | 'listed' | 'declined') | null;
+  kind?: ('listing' | 'event' | 'interview' | 'story') | null;
+  /**
+   * The business, the event name, or the story in one line.
+   */
   business: string;
   owner?: string | null;
   phone: string;
@@ -952,7 +956,16 @@ export interface ListingRequest {
   city?: (number | null) | City;
   category?: (number | null) | Category;
   /**
-   * What they told us about the place.
+   * As they wrote it.
+   */
+  eventWhen?: string | null;
+  venue?: string | null;
+  /**
+   * Flyer, tickets, Instagram or a source.
+   */
+  link?: string | null;
+  /**
+   * What they told us.
    */
   story?: string | null;
   /**
@@ -2239,12 +2252,16 @@ export interface SubscribersSelect<T extends boolean = true> {
  */
 export interface ListingRequestsSelect<T extends boolean = true> {
   status?: T;
+  kind?: T;
   business?: T;
   owner?: T;
   phone?: T;
   email?: T;
   city?: T;
   category?: T;
+  eventWhen?: T;
+  venue?: T;
+  link?: T;
   story?: T;
   lang?: T;
   updatedAt?: T;

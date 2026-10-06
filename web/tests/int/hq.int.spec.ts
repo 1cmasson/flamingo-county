@@ -491,7 +491,8 @@ describe('HQ against the database', () => {
     const brief = await buildBrief(payload)
     expect(brief).toContain('Flamingo HQ')
     expect(brief).toContain('Waiting on you')
-    expect(brief).toMatch(/new listing request/)
+    // "new listing request(s)", or "new requests (…)" when other kinds wait too.
+    expect(brief).toMatch(/new (listing )?requests?/)
   })
 
   it('sends the brief once and counts the next one from it', async () => {

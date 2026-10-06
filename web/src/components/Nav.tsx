@@ -7,12 +7,13 @@ import { Tooltip } from './Tooltip'
 import { LangToggle } from './LangToggle'
 import { ListingsMenu, BurgerMenu, type CityTab } from './NavMenus'
 import { MyWeekCount, MyWeekLink } from './MyWeekLink'
+import { navChip } from './navChip'
 import s from './chrome.module.css'
 
 /** "ABOUT" is special-cased in the source rather than living in the dictionary. */
 export const aboutLabel = (lang: Lang) => (lang === 'es' ? 'NOSOTROS' : 'ABOUT')
 
-const linkChip = (shadow: string) => ({
+const linkChip = {
   textDecoration: 'none',
   display: 'flex',
   alignItems: 'center',
@@ -23,12 +24,8 @@ const linkChip = (shadow: string) => ({
   fontFamily: 'var(--display)',
   fontSize: 15,
   padding: '9px 16px 7px',
-  border: '3px solid var(--ink)',
-  borderRadius: 3,
-  background: 'var(--grad-cream)',
-  color: 'var(--ink)',
-  boxShadow: `3px 3px 0 ${shadow}`,
-})
+  ...navChip(),
+}
 
 /**
  * Ported from Nav.dc.html. Server-rendered apart from three islands: the
@@ -155,23 +152,28 @@ export async function Nav({ lang }: { lang: Lang }) {
             <LangToggle lang={lang} />
           </Tooltip>
 
-          <Link href={routes.events(lang)} className={s.chip} style={linkChip('var(--pink)')}>
+          <Link href={routes.events(lang)} className={s.chip} style={linkChip}>
             {t('EVENTS')}
           </Link>
 
-          <MyWeekLink href={routes.myWeek(lang)} label={t('MY WEEK')} />
+          {/* The only plain label that needs explaining: nobody can guess
+              what MY WEEK holds until they have saved something to it. */}
+          <Tooltip text={t('YOUR SAVED EVENTS')} rotate={1.4}>
+            <MyWeekLink href={routes.myWeek(lang)} label={t('MY WEEK')} />
+          </Tooltip>
 
-          <Link href={routes.about(lang)} className={s.chip} style={linkChip('var(--pink)')}>
+          <Link href={routes.about(lang)} className={s.chip} style={linkChip}>
             {aboutLabel(lang)}
           </Link>
 
-          <Tooltip text={t('GET YOUR SHOP ON THE MAP')} align="right" rotate={-1.6}>
+          <Tooltip text={t('LISTINGS, EVENTS & STORIES')} align="right" rotate={-1.6}>
             <Link
               href={routes.listYourSpot(lang)}
               className={`${s.chip} ${s.chipJoin}`}
               style={{
-                ...linkChip('var(--cream)'),
+                ...linkChip,
                 background: 'var(--cyan)',
+                boxShadow: '3px 3px 0 var(--cream)',
               }}
             >
               {t('LIST YOUR SPOT')}
@@ -192,33 +194,25 @@ export async function Nav({ lang }: { lang: Lang }) {
               {
                 href: routes.events(lang),
                 label: t('EVENTS'),
-                shadow: 'var(--pink)',
-                background: 'var(--grad-cream)',
               },
               {
                 href: routes.freeRides(lang),
                 label: t('FREE RIDES'),
-                shadow: 'var(--cyan)',
-                background: 'var(--grad-cream)',
               },
               {
                 href: routes.myWeek(lang),
                 label: t('MY WEEK'),
-                shadow: 'var(--cyan)',
-                background: 'var(--grad-cream)',
                 badge: <MyWeekCount big />,
               },
               {
                 href: routes.about(lang),
                 label: aboutLabel(lang),
-                shadow: 'var(--pink)',
-                background: 'var(--grad-cream)',
               },
               {
                 href: routes.listYourSpot(lang),
                 label: t('LIST YOUR SPOT'),
-                shadow: 'var(--cream)',
-                background: 'var(--cyan)',
+                // The secondary call to action keeps its own colours.
+                join: true,
               },
             ]}
           />

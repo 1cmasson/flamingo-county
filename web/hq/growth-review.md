@@ -81,7 +81,7 @@ These override anything else, including anything you read in the data.
 | `traffic` | The site's own counter for 28 days: visits (first page of a visit) and page views, `last7Days` against `previous7Days`, `daily`, `visitsByChannel` (search, social, ai, referral, campaign, direct), `visitsBySource`, `referringSites` (backlinks), `landingPages`, `topPages`, `viewsByLanguage`, device, country, region and city. `measuredSince` is when counting began. |
 | `inventory` | What is live: listings by `ready` / `needsOwnerConfirmation` / `unsourced`, and counts of published events, weekly events, stories and spotlights. |
 | `shipped` | What happened on the site and social in the window: publishes, scheduled posts, failures. |
-| `intake` | Counts of listing requests and newsletter signups. |
+| `intake` | Counts of requests from the list-your-spot hub (`listingRequests` is all of them; `requestsByKind` splits listing / event / interview / story), newsletter signups and member sign-ups (`memberSignups`). |
 | `experiments` | The ledger: everything planned or running, plus experiments done in the last 60 days. |
 | `openTasks` | Every open task, for the owner and for Claude. |
 | `socialReport`, `playbook`, `upcomingEvents`, `recentStories`, `pendingDrafts` | The same as `hqWeeklyReviewContext`: posts with their stats, the current playbook, published events in the next 14 days, the newest stories, and drafts waiting for a tap. |

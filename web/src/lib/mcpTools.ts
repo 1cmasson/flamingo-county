@@ -15,6 +15,7 @@ import { cancelDraft, miamiTime } from './hq'
 import { isRunningCount, type MetricSummary } from './postiz'
 import { PUBLISHABLE, publishStatus, requestPublish } from './publishRequests'
 import { PHOTO_LICENSES, canonicalLicenseUrl, isPhotoLicense, licenseLabel, type PhotoLicense } from './photoLicense'
+import { isRequestKind, type RequestKind } from './requestKinds'
 import { routes } from './routes'
 import { MESSAGE_LIMIT, esc, sendMessage, telegramConfigured } from './telegram'
 
@@ -257,7 +258,14 @@ export async function weeklyReviewContext(payload: Payload, now: Date = new Date
 /* Growth review: traffic, what shipped, experiments, plus the social review */
 /* ------------------------------------------------------------------------ */
 
-const SHIPPED_TYPES = ['site.published', 'social.scheduled', 'social.failed', 'listing_request.created', 'subscriber.created']
+const SHIPPED_TYPES = [
+  'site.published',
+  'social.scheduled',
+  'social.failed',
+  'listing_request.created',
+  'subscriber.created',
+  'member.created',
+]
 
 /**
  * The growth review's whole input (web/hq/growth-review.md): everything the
@@ -300,7 +308,7 @@ export async function growthContext(payload: Payload, now: Date = new Date()) {
         limit: 200,
         depth: 0,
         overrideAccess: true,
-        select: { type: true, summary: true, createdAt: true },
+        select: { type: true, summary: true, data: true, createdAt: true },
       }),
       payload.find({
         collection: 'hq-experiments',
@@ -327,11 +335,24 @@ export async function growthContext(payload: Payload, now: Date = new Date()) {
     ])
 
   // Intake is counted, never listed: its summaries name the people who wrote in.
-  const intake = { listingRequests: 0, newsletterSignups: 0 }
+  // `listingRequests` is every request off the hub, whatever its kind (the name
+  // predates the other three); `requestsByKind` splits it. Only `kind` is read
+  // from the event's data.
+  const intake = {
+    listingRequests: 0,
+    requestsByKind: { listing: 0, event: 0, interview: 0, story: 0 } as Record<RequestKind, number>,
+    newsletterSignups: 0,
+    memberSignups: 0,
+  }
   const shippedRows: { day: string; type: string; summary: string }[] = []
   for (const e of shipped.docs) {
-    if (e.type === 'listing_request.created') intake.listingRequests += 1
+    if (e.type === 'listing_request.created') {
+      intake.listingRequests += 1
+      const kind = (e.data as { kind?: unknown } | null)?.kind
+      intake.requestsByKind[isRequestKind(kind) ? kind : 'listing'] += 1
+    }
     else if (e.type === 'subscriber.created') intake.newsletterSignups += 1
+    else if (e.type === 'member.created') intake.memberSignups += 1
     else shippedRows.push({ day: todayISO(new Date(e.createdAt)), type: e.type, summary: e.summary })
   }
 

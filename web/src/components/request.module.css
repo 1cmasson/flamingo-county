@@ -1,0 +1,64 @@
+/**
+ * The request hub's interactive bits: the four choice cards and the pill
+ * radios. Hover is gated behind (hover: hover) like the nav chrome, so a tap on
+ * a phone doesn't leave a card stuck in its hover state.
+ */
+
+.choice {
+  transition:
+    transform 160ms cubic-bezier(0.2, 0.8, 0.25, 1),
+    box-shadow 160ms cubic-bezier(0.2, 0.8, 0.25, 1),
+    background 160ms ease;
+}
+@media (hover: hover) {
+  .choice:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 9px 9px 0 var(--ink) !important;
+  }
+}
+.choice:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 4px;
+}
+
+/* Pills are real radio inputs, visually hidden, so the browser's own
+   `required` check and arrow-key navigation still work. */
+.pill {
+  position: relative;
+  display: inline-flex;
+  cursor: pointer;
+}
+.pill input {
+  position: absolute;
+  opacity: 0;
+  width: 1px;
+  height: 1px;
+}
+.pill span {
+  display: block;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.6px;
+  padding: 9px 13px 8px;
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--ink);
+  box-shadow: 2px 2px 0 var(--pink);
+  transition:
+    background 140ms ease,
+    transform 140ms ease;
+}
+.pill input:checked + span {
+  background: var(--yellow);
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.pill input:focus-visible + span {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+@media (hover: hover) {
+  .pill:hover span {
+    transform: translateY(-1px);
+  }
+}

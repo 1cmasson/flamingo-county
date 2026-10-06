@@ -336,6 +336,19 @@ export const ES_OVERRIDES: Record<string, string> = {
   'Prefer an app? The city’s free ETA SPOT app shows the same buses: pick “Hialeah Transit System”, then your line.':
     '¿Prefieres una app? La app gratis ETA SPOT de la ciudad muestra las mismas guaguas: escoge “Hialeah Transit System” y después tu ruta.',
 
+  // --- Nav tooltips ------------------------------------------------------
+  'YOUR SAVED EVENTS': 'TUS EVENTOS GUARDADOS',
+  'LISTINGS, EVENTS & STORIES': 'NEGOCIOS, EVENTOS E HISTORIAS',
+
+  // --- List your spot: the request hub ------------------------------------
+  // The hub's own copy is in lib/requestCopy.ts; these are the page around it.
+  'GET ON FLAMINGO COUNTY.': 'SAL EN FLAMINGO COUNTY.',
+  'List your business, put your event on the board, sit down for an interview or tip us off to a story. Pick one below — we read every request ourselves.':
+    'Agrega tu negocio, pon tu evento en la cartelera, siéntate a una entrevista o pásanos el dato de una historia. Escoge una abajo — leemos cada solicitud nosotros mismos.',
+  'WHAT A LISTING GETS YOU': 'LO QUE INCLUYE TU FICHA',
+  'Our AI receptionist answers your phone in English or Spanish, takes reservations and texts you the details. Add your business above and tell us you want in.':
+    'Nuestra recepcionista de IA contesta en inglés o español, toma reservaciones y te manda los detalles por mensaje. Agrega tu negocio arriba y dinos que te interesa.',
+
   // --- Metadata ----------------------------------------------------------
   'A directory of the restaurants and bars the locals actually vouch for.':
     'Un directorio de los restaurantes y bares que la gente de aquí de verdad respalda.',

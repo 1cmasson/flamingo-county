@@ -4,6 +4,8 @@ import type { Lang } from '../i18n'
 import type { Member } from '../payload-types'
 import { cleanList, keepKnown, type Lists } from './savedLists'
 import { PUBLISHED } from '../fields/shared'
+import { recordEvent } from './hq'
+import { esc } from './telegram'
 
 /**
  * Server-side access to a member's saved lists. Every call here has already
@@ -100,4 +102,20 @@ export async function deleteMember(authId: string): Promise<void> {
     where: { authId: { equals: authId } },
     overrideAccess: true,
   })
+}
+
+/**
+ * A new member account, logged to HQ and pinged to the owner. The hq-events
+ * summary names nobody (it is read by the chat model and the growth review);
+ * the ping, which only the owner sees, carries the name and address.
+ */
+export async function announceMember(user: { name?: string | null; email: string }) {
+  const payload = await db()
+  const who = user.name?.trim() ? `${esc(user.name.trim())} · ${esc(user.email)}` : esc(user.email)
+  await recordEvent(
+    payload,
+    // No ref: the members row is keyed by the auth id and may not exist yet.
+    { type: 'member.created', summary: 'New member signed up' },
+    { ping: `👤 New member signed up: ${who}` },
+  )
 }

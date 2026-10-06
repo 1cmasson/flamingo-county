@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useSaved } from '../lib/saved'
+import { navChip } from './navChip'
 import s from './chrome.module.css'
 
 /**
@@ -56,11 +57,7 @@ export function MyWeekLink({ href, label }: { href: string; label: string }) {
         fontFamily: 'var(--display)',
         fontSize: 14,
         padding: '9px 12px 7px',
-        border: '3px solid var(--ink)',
-        borderRadius: 3,
-        background: 'var(--grad-cream)',
-        color: 'var(--ink)',
-        boxShadow: '3px 3px 0 var(--cyan)',
+        ...navChip(),
       }}
     >
       <span>{label}</span>

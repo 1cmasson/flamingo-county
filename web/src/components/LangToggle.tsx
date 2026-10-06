@@ -2,6 +2,7 @@
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { otherLang, type Lang } from '../i18n'
+import { navChip } from './navChip'
 import s from './chrome.module.css'
 
 const YEAR = 60 * 60 * 24 * 365
@@ -107,11 +108,7 @@ export function LangToggle({ lang, small }: { lang: Lang; small?: boolean }) {
         fontFamily: 'var(--display)',
         fontSize: 15,
         padding: small ? '10px 11px 7px' : '8px 12px 6px',
-        border: '3px solid var(--ink)',
-        borderRadius: 3,
-        background: 'var(--grad-cream)',
-        color: 'var(--ink)',
-        boxShadow: '3px 3px 0 var(--pink)',
+        ...navChip(),
       }}
     >
       <Flag to={next} small={small} />

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
+import { navChip } from './navChip'
 import s from './chrome.module.css'
 
 /**
@@ -24,11 +25,7 @@ const tabStyle = (on: boolean, big?: boolean) => ({
   fontFamily: 'var(--display)',
   fontSize: 15,
   ...(big ? { minHeight: 46, padding: '9px 12px 7px' } : { padding: '10px 13px 8px' }),
-  border: '3px solid var(--ink)',
-  borderRadius: 3,
-  background: on ? 'var(--yellow)' : 'var(--grad-cream)',
-  color: 'var(--ink)',
-  boxShadow: `3px 3px 0 ${on ? 'var(--cyan)' : 'var(--pink)'}`,
+  ...navChip(on),
 })
 
 /**
@@ -80,11 +77,7 @@ export function ListingsMenu({ label, tabs }: { label: string; tabs: CityTab[] }
           fontFamily: 'var(--display)',
           fontSize: 15,
           padding: '9px 14px 7px',
-          border: '3px solid var(--ink)',
-          borderRadius: 3,
-          background: open ? 'var(--yellow)' : 'var(--grad-cream)',
-          color: 'var(--ink)',
-          boxShadow: `3px 3px 0 ${open ? 'var(--cyan)' : 'var(--pink)'}`,
+          ...navChip(open),
         }}
       >
         <span>{label}</span>
@@ -110,7 +103,8 @@ export function ListingsMenu({ label, tabs }: { label: string; tabs: CityTab[] }
           minWidth: 230,
           zIndex: 90,
           background: 'var(--ink)',
-          border: '3px solid var(--cyan)',
+          // Pink, like every chip's shadow; the old cyan frame read as a blue outline.
+          border: '3px solid var(--pink)',
           boxShadow: '6px 6px 0 rgba(0,0,0,0.45)',
           padding: 10,
           display: 'flex',
@@ -150,7 +144,8 @@ export function BurgerMenu({
   citiesLabel,
 }: {
   tabs: CityTab[]
-  links: { href: string; label: string; shadow: string; background: string; badge?: React.ReactNode }[]
+  /** `join` marks LIST YOUR SPOT, which keeps its cyan face; every other link is a standard chip. */
+  links: { href: string; label: string; join?: boolean; badge?: React.ReactNode }[]
   citiesLabel: string
 }) {
   const pathname = usePathname()
@@ -182,10 +177,7 @@ export function BurgerMenu({
           alignItems: 'center',
           justifyContent: 'center',
           padding: '0 11px',
-          border: '3px solid var(--ink)',
-          borderRadius: 3,
-          background: 'var(--grad-cream)',
-          boxShadow: '3px 3px 0 var(--pink)',
+          ...navChip(open),
         }}
       >
         <div
@@ -287,11 +279,8 @@ export function BurgerMenu({
                 fontSize: 17,
                 minHeight: 48,
                 padding: '12px 16px 9px',
-                border: '3px solid var(--ink)',
-                borderRadius: 3,
-                background: l.background,
-                color: 'var(--ink)',
-                boxShadow: `4px 4px 0 ${l.shadow}`,
+                ...navChip(l.href === pathname, 4),
+                ...(l.join ? { background: 'var(--cyan)', boxShadow: '4px 4px 0 var(--cream)' } : {}),
               }}
             >
               <span>{l.label}</span>

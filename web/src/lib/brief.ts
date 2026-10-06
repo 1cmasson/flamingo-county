@@ -6,6 +6,7 @@ import { SITE_TZ, todayISO } from './dates'
 import { siteSection, trafficReport } from './growth'
 import { miamiTime, recordEvent } from './hq'
 import { isRunningCount, type MetricSummary } from './postiz'
+import { describeNewRequests } from './requestKinds'
 import { esc, sendMessage, telegramConfigured } from './telegram'
 
 /** How far back the first brief looks, before there is a previous one to start from. */
@@ -124,7 +125,7 @@ async function socialsSection(payload: Payload, from: Date, now: Date): Promise<
   return out.length ? ['', '<b>Socials</b> <i>(accounts: last 7 days)</i>', ...out] : []
 }
 
-const count = (payload: Payload, collection: 'listing-requests' | 'listings' | 'hq-social-drafts', where: object) =>
+const count = (payload: Payload, collection: 'listings' | 'hq-social-drafts', where: object) =>
   payload
     .count({ collection, where: where as never, overrideAccess: true })
     .then((r) => r.totalDocs)
@@ -172,7 +173,15 @@ export async function buildBrief(
       depth: 0,
       overrideAccess: true,
     }),
-    count(payload, 'listing-requests', { status: { equals: 'new' } }),
+    // Fetched rather than counted: the line says which kinds are waiting.
+    payload.find({
+      collection: 'listing-requests',
+      where: { status: { equals: 'new' } },
+      select: { kind: true },
+      pagination: false,
+      depth: 0,
+      overrideAccess: true,
+    }),
     count(payload, 'listings', { publicationStatus: { equals: 'needs_owner_confirmation' } }),
     count(payload, 'hq-social-drafts', { status: { equals: 'pending' } }),
     payload.find({
@@ -219,7 +228,7 @@ export async function buildBrief(
   // Waiting on you
   out.push('', '<b>Waiting on you</b>')
   const waiting = [
-    newRequests && `${newRequests} new listing request${newRequests === 1 ? '' : 's'}`,
+    newRequests.docs.length > 0 && describeNewRequests(newRequests.docs.map((r) => r.kind)),
     pendingDrafts && `${pendingDrafts} social draft${pendingDrafts === 1 ? '' : 's'} to approve`,
     needsOwner && `${needsOwner} listing${needsOwner === 1 ? '' : 's'} still need owner confirmation`,
   ].filter(Boolean)
