@@ -3,7 +3,7 @@
  * the server action and the `listing-requests` collection, so it lives on its
  * own: the collection module pulls in server code a client component can't load.
  */
-export const REQUEST_KINDS = ['listing', 'event', 'interview', 'story'] as const
+export const REQUEST_KINDS = ['listing', 'event', 'interview', 'story', 'shoutout'] as const
 export type RequestKind = (typeof REQUEST_KINDS)[number]
 
 export const isRequestKind = (v: unknown): v is RequestKind =>
@@ -15,6 +15,7 @@ export const KIND_LABEL: Record<RequestKind, string> = {
   event: 'Event request',
   interview: 'Interview request',
   story: 'Story pitch',
+  shoutout: 'Birthday shoutout',
 }
 
 /**

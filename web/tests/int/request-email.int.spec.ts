@@ -93,3 +93,45 @@ describe('sendRequest and the confirmation email', () => {
     expect(saved.totalDocs).toBe(2)
   })
 })
+
+describe('birthday shoutouts', () => {
+  let payload: Payload
+  const marker = `SHOUTOUT-TEST ${Date.now()}`
+
+  beforeAll(async () => {
+    payload = await getPayload({ config })
+    vi.stubGlobal('fetch', vi.fn(async () => Response.json({ ok: true, result: { message_id: 1 } })))
+  })
+
+  afterAll(async () => {
+    vi.unstubAllGlobals()
+    await payload.delete({ collection: 'listing-requests', where: { business: { equals: marker } }, overrideAccess: true })
+  })
+
+  const shoutout = (consent: boolean) => {
+    const fd = new FormData()
+    fd.set('kind', 'shoutout')
+    fd.set('lang', 'es')
+    fd.set('business', marker)
+    fd.set('eventWhen', '18 de octubre')
+    fd.set('owner', 'Nieta')
+    fd.set('phone', '305-000-0000')
+    if (consent) fd.set('consent', 'yes')
+    return sendRequest({ ok: false }, fd)
+  }
+
+  it('refuses one without the birthday person’s say-so', async () => {
+    expect(await shoutout(false)).toEqual({ ok: false, error: 'missing-required' })
+  })
+
+  it('saves one with it, as kind shoutout', async () => {
+    expect(await shoutout(true)).toEqual({ ok: true })
+    const { docs } = await payload.find({
+      collection: 'listing-requests',
+      where: { business: { equals: marker } },
+      overrideAccess: true,
+    })
+    expect(docs).toHaveLength(1)
+    expect(docs[0]).toMatchObject({ kind: 'shoutout', eventWhen: '18 de octubre', owner: 'Nieta' })
+  })
+})

@@ -23,12 +23,14 @@ const SUBJECT: Record<Lang, Record<RequestKind, string>> = {
     event: 'We got your event',
     interview: 'We got your interview request',
     story: 'Thanks for the story tip',
+    shoutout: 'We got your birthday shoutout',
   },
   es: {
     listing: 'Recibimos tu solicitud para la ficha',
     event: 'Recibimos tu evento',
     interview: 'Recibimos tu pedido de entrevista',
     story: 'Gracias por el dato',
+    shoutout: 'Recibimos tu felicitación de cumpleaños',
   },
 }
 
@@ -64,6 +66,7 @@ const TITLE_LABEL: Record<RequestKind, string> = {
   event: 'eventName',
   interview: 'whatYouDo',
   story: 'storyLine',
+  shoutout: 'bdayName',
 }
 
 export function requestEmail(r: RequestSummary) {

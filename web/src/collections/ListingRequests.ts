@@ -8,6 +8,7 @@ const KIND_EMOJI: Record<RequestKind, string> = {
   event: '📅',
   interview: '🎙️',
   story: '📰',
+  shoutout: '🎂',
 }
 
 /**
@@ -91,6 +92,7 @@ export const ListingRequests: CollectionConfig = {
         { label: 'Add an event', value: 'event' },
         { label: 'Interview request', value: 'interview' },
         { label: 'Story pitch', value: 'story' },
+        { label: 'Birthday shoutout', value: 'shoutout' },
       ],
       admin: { position: 'sidebar' },
     },

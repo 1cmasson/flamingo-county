@@ -43,3 +43,17 @@ export function twitterCard(image?: string) {
     images: [image ?? DEFAULT_OG_IMAGE],
   }
 }
+
+/**
+ * The accounts, as the owner gave them. Facebook was confirmed by the owner
+ * (2026-10-06); Instagram and TikTok are the @flamingocounty handles Postiz
+ * posts as — confirm before relying on them elsewhere.
+ */
+export const SOCIAL = {
+  instagram: 'https://www.instagram.com/flamingocounty/',
+  tiktok: 'https://www.tiktok.com/@flamingocounty',
+  facebook: 'https://www.facebook.com/flamingocounty.mia',
+} as const
+
+/** The founder, as printed on the business card (and in the card page's vCard). */
+export const FOUNDER = { name: 'Carlos Masson', email: 'hola@flamingocounty.com' } as const

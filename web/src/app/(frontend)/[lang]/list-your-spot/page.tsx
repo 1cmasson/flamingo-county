@@ -15,7 +15,7 @@ import { isRequestKind } from '../../../../lib/requestKinds'
  */
 const TITLE = 'GET ON FLAMINGO COUNTY.'
 const LEDE =
-  'List your business, put your event on the board, sit down for an interview or tip us off to a story. Pick one below — we read every request ourselves.'
+  'List your business, put your event on the board, sit down for an interview, tip us off to a story or send a birthday shoutout. Pick one below — we read every request ourselves.'
 
 /** Perk icons ship as static SVGs; the CMS stores which one, by name. */
 const ICON = (name?: string | null) => `/assets/icons/${name ?? 'map-pin'}.svg`

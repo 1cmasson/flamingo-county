@@ -27,6 +27,8 @@ export const routes = {
   myWeek: (lang: Lang) => `/${lang}/my-week`,
   listYourSpot: (lang: Lang) => `/${lang}/list-your-spot`,
   about: (lang: Lang) => `/${lang}/about`,
+  /** The business card's landing page — where its QR code leads (via /go/card). */
+  card: (lang: Lang) => `/${lang}/card`,
   privacy: (lang: Lang) => `/${lang}/privacy`,
   freeRides: (lang: Lang) => `/${lang}/free-rides`,
   freeRoute: (lang: Lang, route: string) => `/${lang}/free-rides/${route}`,

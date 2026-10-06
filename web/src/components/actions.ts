@@ -108,7 +108,11 @@ export async function sendRequest(_prev: FormState, formData: FormData): Promise
   const story = text('story')
   if (!business || !phone) return { ok: false, error: 'missing-required' }
   if ((kind === 'interview' || kind === 'story') && !story) return { ok: false, error: 'missing-required' }
-  if (kind === 'event' && !text('eventWhen')) return { ok: false, error: 'missing-required' }
+  if ((kind === 'event' || kind === 'shoutout') && !text('eventWhen')) return { ok: false, error: 'missing-required' }
+  // Their say-so that the birthday person agreed to a public post.
+  if (kind === 'shoutout' && (text('consent') !== 'yes' || !text('owner'))) {
+    return { ok: false, error: 'missing-required' }
+  }
 
   // The form has one "phone or email" box, saved as `phone` either way (it is
   // the required column). When it is an email, it goes in `email` too, so the
