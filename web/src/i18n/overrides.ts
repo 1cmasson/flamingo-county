@@ -90,6 +90,8 @@ export const ES_OVERRIDES: Record<string, string> = {
   'HIALEAH · FREE TRANSIT': 'HIALEAH · TRANSPORTE GRATIS',
   'RIDE THE CITY': 'RECORRE LA CIUDAD',
   'FOR FREE.': 'GRATIS.',
+  'No fare, no card.': 'Sin pasaje, sin tarjeta.',
+  'Map of Hialeah with the free {name} bus line': 'Mapa de Hialeah con la ruta de guagua gratis {name}',
   'Two free bus lines cross Hialeah, both directions, six days a week. No fare, no card — just get on. Here is where they go and what is a short walk from each stop.':
     'Dos rutas de guagua gratis cruzan Hialeah, de ida y vuelta, seis días a la semana. Sin pasaje, sin tarjeta: te subes y ya. Aquí ves adónde van y qué te queda a pasos de cada parada.',
   'Free buses in Hialeah: the Flamingo and Marlin lines': 'Guaguas gratis en Hialeah: las rutas Flamingo y Marlin',
