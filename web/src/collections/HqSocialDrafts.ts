@@ -88,7 +88,13 @@ export const HqSocialDrafts: CollectionConfig = {
       relationTo: 'hq-media',
       hasMany: true,
       admin: { description: 'The first file is the cover shown in Telegram.' },
-      validate: (value: unknown, { siblingData }: { siblingData: Partial<HqSocialDraft> }) => {
+      validate: (
+        value: unknown,
+        { siblingData, req }: { siblingData: Partial<HqSocialDraft>; req?: { context?: Record<string, unknown> } },
+      ) => {
+        // HQ's own bookkeeping writes (stats, post ids) must not fail on an
+        // older text-only draft; Approve enforces the rule before posting.
+        if (req?.context?.[HQ_INTERNAL]) return true
         const needs = (siblingData.platforms ?? []).filter((p) => NEEDS_MEDIA.includes(p))
         const count = Array.isArray(value) ? value.length : 0
         return needs.length && !count
