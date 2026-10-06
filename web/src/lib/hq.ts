@@ -175,7 +175,7 @@ export async function draftClashes(payload: Payload, draft: Pick<HqSocialDraft, 
     where: {
       and: [
         { id: { not_equals: draft.id } },
-        { status: { in: ['pending', 'approved', 'scheduled'] } },
+        { status: { in: ['pending', 'approved', 'scheduled', 'published'] } },
         { scheduledFor: { greater_than: new Date(at - POST_GAP_MS).toISOString() } },
         { scheduledFor: { less_than: new Date(at + POST_GAP_MS).toISOString() } },
       ],

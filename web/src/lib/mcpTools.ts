@@ -59,7 +59,7 @@ export async function socialReport(payload: Payload, days: number, now: Date = n
   const [drafts, stats, clicks, channels] = await Promise.all([
     payload.find({
       collection: 'hq-social-drafts',
-      where: { and: [{ status: { equals: 'scheduled' } }, { publishAt: { greater_than: from } }] },
+      where: { and: [{ status: { in: ['scheduled', 'published'] } }, { publishAt: { greater_than: from } }] },
       sort: 'publishAt',
       limit: 200,
       depth: 0,

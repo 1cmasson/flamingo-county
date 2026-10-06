@@ -665,3 +665,13 @@ flamingocounty.com link. It is enforced in code, not by habit:
   publish it again.
 - The Studio's Facebook channel has `requiresMedia: true`.
 
+## Published status
+
+A draft moves to `published` on its own. The hourly stats job asks Postiz for
+each scheduled draft whose time has passed; when every one of its posts reports
+`PUBLISHED`, the draft is marked published and a `social.published` event is
+logged. A post Postiz does not list, or one that is queued or errored, leaves
+the draft `scheduled`. Published drafts keep getting their 24 h, 3 d and 7 d
+stats and still appear in the social report. Drafts older than about nine days
+are not looked at.
+

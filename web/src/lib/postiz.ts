@@ -278,7 +278,7 @@ export function postIdsFrom(
   return out
 }
 
-type ListedPost = { id: string; publishDate?: string; integration?: { id?: string } }
+type ListedPost = { id: string; publishDate?: string; state?: string; integration?: { id?: string } }
 
 /**
  * When each post between two instants is set to go out, by post id, as Postiz
@@ -294,6 +294,20 @@ export async function listPostTimes(from: Date, to: Date): Promise<Map<string, D
     const at = p.publishDate ? new Date(p.publishDate) : null
     if (p.id && at && Number.isFinite(at.getTime())) out.set(p.id, at)
   }
+  return out
+}
+
+/**
+ * The state Postiz reports for each post between two instants, by post id:
+ * `PUBLISHED` once it is live, `QUEUE` while it waits, `ERROR` if it failed,
+ * `DRAFT` for a draft. Read only.
+ */
+export async function listPostStates(from: Date, to: Date): Promise<Map<string, string>> {
+  const q = new URLSearchParams({ startDate: from.toISOString(), endDate: to.toISOString() })
+  const res = await postiz<ListedPost[] | { posts?: ListedPost[] }>(`/posts?${q}`)
+  const list = Array.isArray(res) ? res : (res?.posts ?? [])
+  const out = new Map<string, string>()
+  for (const p of list) if (p.id && p.state) out.set(p.id, p.state)
   return out
 }
 
