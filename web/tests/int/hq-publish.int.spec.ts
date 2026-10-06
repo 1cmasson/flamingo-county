@@ -42,6 +42,36 @@ describe('what the owner reads', () => {
     expect(lines).toEqual(['• slug: n', '• title (es): Nueva'])
   })
 
+  it('reads inside groups, per language where anything inside is translated', () => {
+    const detail = {
+      name: 'detail',
+      type: 'group',
+      flattenedFields: [
+        { name: 'phone' },
+        { name: 'hours', type: 'array', flattenedFields: [{ name: 'd', localized: true }, { name: 't' }, { name: 'id' }] },
+        { name: 'openingHours', type: 'array', flattenedFields: [{ name: 'days' }, { name: 'opens' }, { name: 'closes' }, { name: 'id' }] },
+      ],
+    }
+    const hours = (d: string | null, id: string) => [{ id, d, t: '7am – 10pm' }]
+    const live = {
+      es: { detail: { phone: '1', hours: hours(null, 'a'), openingHours: [] } },
+      en: { detail: { phone: '1', hours: hours('Sun – Thu', 'a'), openingHours: [] } },
+    }
+    const draft = {
+      // Same content under a fresh row id must not count as a change.
+      es: { detail: { phone: '1', hours: hours('Dom – Jue', 'b'), openingHours: [{ id: 'x', days: ['Friday', 'Saturday'], opens: '07:00', closes: '23:00' }] } },
+      en: { detail: { phone: '1', hours: hours('Sun – Thu', 'b'), openingHours: [{ id: 'x', days: ['Friday', 'Saturday'], opens: '07:00', closes: '23:00' }] } },
+    }
+    expect(diffLines('listings', [detail], live, draft).lines).toEqual([
+      '• detail.hours (es): 7am – 10pm → Dom – Jue 7am – 10pm',
+      '• detail.openingHours: ∅ → Friday, Saturday 07:00 23:00',
+    ])
+  })
+
+  it('prints a list of strings as a list', () => {
+    expect(formatValue(['Cuban', 'Spanish'])).toBe('Cuban · Spanish')
+  })
+
   it('flattens story blocks and parses only its own buttons', () => {
     expect(formatValue([{ blockType: 'paragraph', text: 'Uno', id: 'x' }])).toBe('[paragraph] Uno')
     expect(parsePublishCallback('pb:a:4')).toEqual({ action: 'publish', id: 4 })
