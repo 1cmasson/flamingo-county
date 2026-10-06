@@ -1,6 +1,7 @@
 import type { Lang } from '../i18n'
 import type { Category, City, Event, Listing, Media } from '../payload-types'
 import { eventEndDay } from './dates'
+import { eventDirections } from './eventVenue'
 import { routes } from './routes'
 import { absUrl, SITE_NAME, SITE_URL } from './site'
 
@@ -237,6 +238,8 @@ export function eventJsonLd(
                   addressCountry: 'US',
                 })
               : undefined)),
+        // The same directions link the page shows.
+        hasMap: eventDirections(ev)?.google,
       })
     : undefined
   // Who puts it on: the organizer the event names, else the venue's own
