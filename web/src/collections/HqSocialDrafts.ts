@@ -43,6 +43,7 @@ export const HqSocialDrafts: CollectionConfig = {
         { label: 'Pending', value: 'pending' },
         { label: 'Approved', value: 'approved' },
         { label: 'Scheduled', value: 'scheduled' },
+        { label: 'Published', value: 'published' },
         { label: 'Rejected', value: 'rejected' },
         { label: 'Failed', value: 'failed' },
       ],

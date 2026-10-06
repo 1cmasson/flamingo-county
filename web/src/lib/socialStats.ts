@@ -2,11 +2,12 @@ import type { Payload } from 'payload'
 
 import type { HqSocialDraft } from '../payload-types'
 import { miamiHour } from './brief'
-import { HQ_INTERNAL } from './hq'
+import { HQ_INTERNAL, recordEvent } from './hq'
 import {
   channelAnalytics,
   connectedChannels,
   findPostIds,
+  listPostStates,
   listPostTimes,
   postAnalytics,
   postizConfigured,
@@ -116,6 +117,52 @@ export async function syncPublishTimes(payload: Payload, now: Date = new Date())
   return moved
 }
 
+/**
+ * Mark a scheduled draft `published` once Postiz reports every one of its
+ * posts as PUBLISHED. Only a draft whose time has passed is looked at, and a
+ * post Postiz does not list (deleted, or outside the window) leaves the draft
+ * as it was. Returns how many drafts changed.
+ */
+export async function markPublished(payload: Payload, now: Date = new Date()): Promise<number> {
+  const drafts = await payload.find({
+    collection: 'hq-social-drafts',
+    where: {
+      and: [
+        { status: { equals: 'scheduled' } },
+        { publishAt: { greater_than: new Date(now.getTime() - LOOKBACK_MS).toISOString() } },
+        { publishAt: { less_than: now.toISOString() } },
+      ],
+    },
+    limit: 200,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const due = drafts.docs.filter((d) => d.postizPosts?.length)
+  if (!due.length) return 0
+
+  const states = await listPostStates(new Date(now.getTime() - LOOKBACK_MS), now)
+  let changed = 0
+  for (const draft of due) {
+    const mine = (draft.postizPosts ?? []).map((p) => states.get(p.postId))
+    if (!mine.every((st) => st === 'PUBLISHED')) continue
+    await payload.update({
+      collection: 'hq-social-drafts',
+      id: draft.id,
+      data: { status: 'published' },
+      overrideAccess: true,
+      context: { [HQ_INTERNAL]: true },
+    })
+    await recordEvent(payload, {
+      type: 'social.published',
+      summary: `Draft #${draft.id} is live on ${(draft.platforms ?? []).join(', ')}`,
+      refCollection: 'hq-social-drafts',
+      refId: draft.id,
+    })
+    changed++
+  }
+  return changed
+}
+
 /** Take every post checkpoint that has come due. Returns how many were saved. */
 export async function collectPostStats(payload: Payload, now: Date = new Date()): Promise<number> {
   try {
@@ -123,11 +170,16 @@ export async function collectPostStats(payload: Payload, now: Date = new Date())
   } catch (err) {
     console.error('[hq] syncing post times from Postiz failed:', err instanceof Error ? err.message : err)
   }
+  try {
+    await markPublished(payload, now)
+  } catch (err) {
+    console.error('[hq] marking published drafts failed:', err instanceof Error ? err.message : err)
+  }
   const drafts = await payload.find({
     collection: 'hq-social-drafts',
     where: {
       and: [
-        { status: { equals: 'scheduled' } },
+        { status: { in: ['scheduled', 'published'] } },
         { publishAt: { greater_than: new Date(now.getTime() - LOOKBACK_MS).toISOString() } },
         { publishAt: { less_than: new Date(now.getTime() - CHECKPOINTS[0].hours * HOUR).toISOString() } },
       ],
