@@ -4,7 +4,7 @@ import { notFound, permanentRedirect } from 'next/navigation'
 import type { Metadata } from 'next'
 import { isLang, translator, type Lang } from '../../../../../i18n'
 import { routes } from '../../../../../lib/routes'
-import { openGraph, twitterCard } from '../../../../../lib/site'
+import { absUrl, openGraph, twitterCard } from '../../../../../lib/site'
 import {
   getCity,
   getCityByAlias,
@@ -17,7 +17,11 @@ import {
 } from '../../../../../lib/data'
 import type { Category, City, Media } from '../../../../../payload-types'
 import { JsonLd } from '../../../../../components/JsonLd'
-import { breadcrumbJsonLd, listingJsonLd, mediaUrl, titleCase } from '../../../../../lib/jsonld'
+import { breadcrumbJsonLd, listingJsonLd, mediaUrl, titleCase, webPageJsonLd } from '../../../../../lib/jsonld'
+import { listingAnswer, listingQuestion, verifiedLine } from '../../../../../lib/answers'
+import { dateOnly } from '../../../../../lib/dates'
+import { AnswerBlock } from '../../../../../components/AnswerBlock'
+import { Breadcrumbs, type Crumb } from '../../../../../components/Breadcrumbs'
 import { PageShell } from '../../../../../components/PageShell'
 import { MediaSlot } from '../../../../../components/MediaSlot'
 import { FreeRidePanel } from '../../../../../components/Transit'
@@ -149,16 +153,28 @@ export default async function BusinessPage({
   const TRADE_CATEGORIES = ['contract', 'clean']
   const services = TRADE_CATEGORIES.includes(category?.slug ?? '') ? (lys.services ?? []) : []
 
+  // The Spanish page names the city the way its own copy does ("La Pequeña
+  // Habana"); the record stores the English display caps.
+  const cityName = titleCase(t(city?.name ?? listingCity.name))
+  const crumbs: Crumb[] = [
+    { name: 'Flamingo County', path: routes.home(lang) },
+    { name: cityName ?? listingCity.name, path: routes.city(lang, citySlug) },
+    { name: listing.name, path: routes.business(lang, citySlug, listing.slug) },
+  ]
+  const verifiedText = verifiedLine(lang, listing.lastVerifiedAt)
+  const pagePath = routes.business(lang, citySlug, listing.slug)
+
   return (
     <PageShell>
       <JsonLd
         data={[
           listingJsonLd(lang, listing, citySlug),
-          breadcrumbJsonLd([
-            { name: 'Flamingo County', path: routes.home(lang) },
-            { name: titleCase(city?.name ?? listingCity.name) ?? listingCity.name, path: routes.city(lang, citySlug) },
-            { name: listing.name, path: routes.business(lang, citySlug, listing.slug) },
-          ]),
+          webPageJsonLd(lang, pagePath, {
+            name: listing.name,
+            mainEntityId: `${absUrl(pagePath)}#business`,
+            dateModified: listing.lastVerifiedAt,
+          }),
+          breadcrumbJsonLd(crumbs),
         ]}
       />
       <main
@@ -171,29 +187,7 @@ export default async function BusinessPage({
           gap: 'clamp(16px,3vw,22px)',
         }}
       >
-        <Link
-          href={routes.city(lang, citySlug)}
-          className={s.chip}
-          style={{
-            textDecoration: 'none',
-            color: 'inherit',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            flex: '0 0 auto',
-            whiteSpace: 'nowrap',
-            cursor: 'pointer',
-            alignSelf: 'flex-start',
-            fontFamily: 'var(--display)',
-            fontSize: 15,
-            padding: '9px 14px 7px',
-            border: '4px solid var(--ink)',
-            background: 'var(--grad-cream)',
-            boxShadow: '4px 4px 0 var(--ink)',
-          }}
-        >
-          {t('← ALL LISTINGS')}
-        </Link>
+        <Breadcrumbs items={crumbs} label={t('Breadcrumb')} />
 
         {/* --- Masthead --- */}
         <div
@@ -336,6 +330,12 @@ export default async function BusinessPage({
             </p>
           </div>
         </div>
+
+        <AnswerBlock
+          question={listingQuestion(lang, listing.name)}
+          answer={listingAnswer(lang, listing, category, cityName)}
+          verified={verifiedText ? { text: verifiedText, iso: dateOnly(listing.lastVerifiedAt) } : null}
+        />
 
         <div
           data-stack
