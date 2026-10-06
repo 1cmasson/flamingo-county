@@ -192,6 +192,15 @@ export function eventCardData(ev: Event, lang: Lang, today: string = todayISO())
   }
 }
 
+/** The card's two fonts, for the other cards Satori draws (lib/freeRidesCard.tsx). */
+export async function cardFonts() {
+  const a = await loadAssets()
+  return [
+    { name: 'Luckiest Guy', data: a.luckiest, weight: 400 as const, style: 'normal' as const },
+    { name: 'Archivo', data: a.archivo, weight: 800 as const, style: 'normal' as const },
+  ]
+}
+
 /* ------------------------------------------------------------------------ */
 /* Assets                                                                    */
 /* ------------------------------------------------------------------------ */

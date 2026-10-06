@@ -3,7 +3,8 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { isLang, translator, type Lang } from '../../../../i18n'
 import { routes } from '../../../../lib/routes'
-import { openGraph } from '../../../../lib/site'
+import { openGraph, twitterCard } from '../../../../lib/site'
+import { FREE_RIDES_CARD_SIZE, freeRidesCardUrl } from '../../../../lib/freeRidesCardUrl'
 import { placesOnLines } from '../../../../lib/rides'
 import {
   CITY_TRANSIT_PHONE,
@@ -53,10 +54,20 @@ export async function generateMetadata({
   const description = t(
     'Where Hialeah’s two free bus lines go, when they run, and the local spots a short walk from a stop. No fare, no card.',
   )
+  // The drawn city map with the hero's headline, so a shared link shows the lines.
+  const image = freeRidesCardUrl(lang)
   return {
     title,
     description,
-    openGraph: openGraph(lang, { title, description, url: routes.freeRides(lang) }),
+    openGraph: openGraph(lang, {
+      title,
+      description,
+      url: routes.freeRides(lang),
+      image,
+      imageSize: FREE_RIDES_CARD_SIZE,
+      imageAlt: t('Map of Hialeah with the Flamingo and Marlin free bus lines'),
+    }),
+    twitter: twitterCard(image),
     alternates: {
       canonical: routes.freeRides(lang),
       languages: { en: routes.freeRides('en'), es: routes.freeRides('es') },
