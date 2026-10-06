@@ -2,8 +2,7 @@ import type { Lang } from '../i18n'
 
 /**
  * The business card page's copy. Everything factual on that page — what the
- * site is, the cities, the listing count, the founder line — comes from the
- * CMS or the database; this is only the page's own voice. `{n}` is a count.
+ * site is, the cities, the listing count — comes from the CMS or the database; this is only the page's own voice. `{n}` is a count.
  */
 export type CardCopy = typeof EN
 
@@ -38,10 +37,7 @@ const EN = {
   soon: 'COMING SOON',
   followH: 'FOLLOW THE FLOCK',
   followP: 'New spots, events and birthday shoutouts.',
-  helloCarlos: 'HOLA, I’M CARLOS.',
-  saveContact: 'SAVE MY CONTACT',
-  emailMe: 'EMAIL ME',
-  moreH: 'SOMETHING ELSE?',
+  saveContact: 'SAVE CONTACT',
 }
 
 const ES: CardCopy = {
@@ -71,8 +67,5 @@ const ES: CardCopy = {
   soon: 'MUY PRONTO',
   followH: 'SIGUE A LA BANDADA',
   followP: 'Lugares nuevos, eventos y felicitaciones de cumpleaños.',
-  helloCarlos: 'HOLA, SOY CARLOS.',
-  saveContact: 'GUARDA MI CONTACTO',
-  emailMe: 'ESCRÍBEME',
-  moreH: '¿ALGO MÁS?',
+  saveContact: 'GUARDAR CONTACTO',
 }
