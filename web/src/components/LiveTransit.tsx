@@ -1,9 +1,10 @@
 'use client'
 
 import type * as React from 'react'
-import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useState, useSyncExternalStore } from 'react'
+import { createPortal } from 'react-dom'
 import type { Arrival, LiveSnapshot, LiveVehicle, Toward } from '../lib/live'
-import { TRANSIT, formatClock, meters, miamiClock, towardName, type LatLng, type TransitRoute } from '../lib/transit'
+import { ROUTE_STYLE, TRANSIT, formatClock, meters, miamiClock, towardName, type LatLng, type TransitRoute } from '../lib/transit'
 import tr from './transit.module.css'
 
 /**
@@ -141,74 +142,127 @@ export function NextBus({
 
 /* ---------------------------------------------------- buses on the strip */
 
-export type StripLiveCopy = Record<'many' | 'one' | 'none' | 'near' | 'late' | 'onTime' | 'updated' | 'marker' | 'offline', string>
+export type StripLiveCopy = Record<
+  'many' | 'one' | 'none' | 'updated' | 'offline' | 'toward' | 'nextIn' | 'arriving' | 'late' | 'onTime' | 'bus',
+  string
+> & { places: Record<string, string> }
+
+/** "Next stop: W 49 St & W 12 Ave · in ~3 min" — or "arriving" when it's there. */
+function nextWords(v: LiveVehicle, copy: Pick<StripLiveCopy, 'nextIn' | 'arriving'>): string | null {
+  if (!v.nextStop || v.nextInMin === null) return null
+  return v.nextInMin <= 0 ? fill(copy.arriving, { stop: v.nextStop }) : fill(copy.nextIn, { stop: v.nextStop, n: v.nextInMin })
+}
 
 /**
- * "3 buses on the Marlin right now", each a link to the stop it's at — and the
- * strip itself lights those stops up. The strip is server-rendered, so this
- * marks rows by attribute rather than re-rendering them: `data-bus` on the row
- * (or on the folded run that holds it), which transit.module.css draws.
+ * Every bus on this line, drawn on the strip itself: a big dot on the rail
+ * just before the stop it's heading to, an arrow for which way it's going
+ * (down the list toward the line's end, up toward its start), and a card
+ * with the next stop and how long until it gets there.
+ *
+ * The strip is server-rendered; RouteStrip leaves an empty slot above and
+ * below each stop, and this fills them through portals.
  */
 export function StripLive({ route, name, copy }: { route: string; name: string; copy: StripLiveCopy }) {
   const { data, failed } = usePoll<LiveSnapshot>('/api/transit/live', 15_000)
   // Age of the data itself, not of our last fetch: a frozen feed fetched a
   // second ago is still old.
   const ago = useAgo(data?.updatedAt ?? null)
-  const marked = useRef<Element[]>([])
-  const buses = (data?.vehicles ?? []).filter((v) => v.route === route)
+  const buses = useMemo(() => (data?.ok ? data.vehicles : []).filter((v) => v.route === route), [data, route])
+  const [slots, setSlots] = useState<{ el: Element; buses: LiveVehicle[] }[]>([])
+  const line = TRANSIT.routes.find((r) => r.slug === route)
 
   useEffect(() => {
-    marked.current.forEach((el) => el.removeAttribute('data-bus'))
-    marked.current = []
+    const out = new Map<Element, LiveVehicle[]>()
     for (const b of buses) {
-      if (!b.stationId) continue
-      const el = document.getElementById(`stop-${b.stationId}`)
+      if (!b.nextStationId) continue
+      // Coming down the strip, it's drawn above its next stop; coming up, below.
+      let way = b.toward === 'start' ? 'start' : 'end'
+      // Except at either end, where that would put it off the end of the
+      // line: a bus at the last stop about to turn back is drawn above it,
+      // one leaving the first stop below it.
+      const row = document.getElementById(`stop-${b.nextStationId}`)
+      const list = row?.parentElement
+      if (row && list && row === list.lastElementChild) way = 'end'
+      if (row && list && row === list.firstElementChild) way = 'start'
+      const el = document.querySelector(`[data-bus-slot~="${CSS.escape(b.nextStationId)}"][data-way="${way}"]`)
       if (!el) continue
-      // A stop folded away inside "more stops" marks the fold instead.
-      const fold = el.closest('details')
-      const target = fold && !fold.open ? (fold.closest('li') ?? el) : el
-      target.setAttribute('data-bus', copy.marker)
-      marked.current.push(target)
+      out.set(el, [...(out.get(el) ?? []), b])
     }
-  })
+    // The slots are server-rendered DOM, found only after the poll answers.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setSlots([...out].map(([el, list]) => ({ el, buses: list })))
+  }, [buses])
+
+  // The rail stops at the last stop's dot, which a bus card above it pushes
+  // down: tell the CSS where the dot really is, whenever cards come or go.
+  useLayoutEffect(() => {
+    const strip = document.querySelector(`[data-strip="${CSS.escape(route)}"]`)
+    const last = strip?.lastElementChild as HTMLElement | null | undefined
+    const node = last?.querySelector<HTMLElement>(':scope > span:nth-of-type(2)')
+    if (!last || !node) return
+    const place = () => last.style.setProperty('--node-y', `${node.offsetTop + node.offsetHeight / 2}px`)
+    place()
+    const ro = new ResizeObserver(place)
+    ro.observe(last)
+    return () => ro.disconnect()
+  }, [slots, route])
 
   if (!data) return null
   if (!data.ok || failed) {
-    return <p style={{ margin: '0 0 16px', fontSize: 13, fontWeight: 600 }}>{copy.offline}</p>
+    return <p style={{ margin: '0 0 16px', fontSize: 16, fontWeight: 600 }}>{copy.offline}</p>
   }
   return (
-    <div
-      className={tr.reveal}
-      style={{ margin: '0 0 18px', border: '3px solid var(--ink)', background: 'var(--cream)', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}
-    >
-      <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 10px', justifyContent: 'space-between' }}>
-        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 800, fontSize: 14 }}>
-          <span className={`${tr.dot} ${buses.length ? tr.dotLive : ''}`} style={buses.length ? undefined : ({ '--dot': '#9aa1a8' } as React.CSSProperties)} />
-          {buses.length === 0 ? fill(copy.none, { name }) : fill(buses.length === 1 ? copy.one : copy.many, { n: buses.length, name })}
-        </span>
-        {ago !== null ? <span style={{ fontSize: 11, fontWeight: 800, color: '#5b6168' }}>{fill(copy.updated, { s: ago })}</span> : null}
+    <>
+      <div
+        className={tr.reveal}
+        style={{ margin: '0 0 18px', border: '3px solid var(--ink)', background: 'var(--cream)', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 8 }}
+      >
+        <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: '4px 10px', justifyContent: 'space-between' }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, fontWeight: 800, fontSize: 16 }}>
+            <span className={`${tr.dot} ${buses.length ? tr.dotLive : ''}`} style={buses.length ? undefined : ({ '--dot': '#9aa1a8' } as React.CSSProperties)} />
+            {buses.length === 0 ? fill(copy.none, { name }) : fill(buses.length === 1 ? copy.one : copy.many, { n: buses.length, name })}
+          </span>
+          {ago !== null ? <span style={{ fontSize: 13, fontWeight: 700, color: '#3d4248' }}>{fill(copy.updated, { s: ago })}</span> : null}
+        </div>
+        {buses.length ? (
+          <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
+            {buses.map((b) => (
+              <li key={b.id}>
+                <a href={b.nextStationId ? `#stop-${b.nextStationId}` : undefined} className={tr.place} style={{ display: 'block', padding: '8px 10px 7px', fontSize: 15, fontWeight: 700, lineHeight: 1.4, boxShadow: '3px 3px 0 var(--ink)' }}>
+                  <span aria-hidden="true" style={{ fontWeight: 800 }}>{b.toward === 'start' ? '▲ ' : '▼ '}</span>
+                  {line && b.toward ? fill(copy.toward, { place: towardName(line, b.toward, copy.places) }) : null}
+                  {nextWords(b, copy) ? <span style={{ display: 'block', fontWeight: 600 }}>{nextWords(b, copy)}</span> : null}
+                </a>
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </div>
-      {buses.length ? (
-        <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-          {buses.map((b) => (
-            <li key={b.id}>
-              <a
-                href={b.stationId ? `#stop-${b.stationId}` : undefined}
-                className={tr.place}
-                // Plain flowing text, not the card's flex row: on a phone the
-                // delay should wrap with the sentence, not stack beside it.
-                style={{ display: 'block', padding: '5px 9px 4px', fontSize: 12, fontWeight: 800, lineHeight: 1.35, boxShadow: '3px 3px 0 var(--ink)' }}
-              >
-                {fill(copy.near, { stop: b.next ?? '—' })}
-                <span style={{ color: b.delayMin >= 2 ? 'var(--magenta)' : '#5b6168', fontWeight: 800, whiteSpace: 'nowrap' }}>
+      {slots.map(({ el, buses: here }) =>
+        createPortal(
+          here.map((b) => (
+            <div key={b.id} className={tr.busBand} style={{ '--line': line ? ROUTE_STYLE[line.slug].color : 'var(--yellow)' } as React.CSSProperties}>
+              <span className={tr.busDot} aria-hidden="true">
+                {b.toward === 'start' ? '▲' : '▼'}
+              </span>
+              <div className={tr.busCard}>
+                <strong style={{ display: 'block', fontSize: 15, letterSpacing: '0.4px', textTransform: 'uppercase' }}>
+                  {copy.bus}
+                  {line && b.toward ? ` · ${fill(copy.toward, { place: towardName(line, b.toward, copy.places) })}` : ''}
+                </strong>
+                {nextWords(b, copy) ? <span style={{ display: 'block' }}>{nextWords(b, copy)}</span> : null}
+                <span style={{ display: 'block', color: b.delayMin >= 2 ? 'var(--magenta)' : '#3d4248', fontWeight: 800 }}>
                   {b.delayMin >= 2 ? fill(copy.late, { n: b.delayMin }) : copy.onTime}
                 </span>
-              </a>
-            </li>
-          ))}
-        </ul>
-      ) : null}
-    </div>
+              </div>
+            </div>
+          )),
+          el,
+          // One portal per slot: its stations and which side of them.
+          `${el.getAttribute('data-bus-slot')}:${el.getAttribute('data-way')}`,
+        ),
+      )}
+    </>
   )
 }
 
@@ -233,7 +287,10 @@ export type LeaveCopy = Record<
   | 'checking'
   | 'oneSide'
   | 'untracked'
-  | 'unavailable',
+  | 'unavailable'
+  | 'oneWayHere'
+  | 'otherStop'
+  | 'loopBack',
   string
 > & { places: Record<string, string> }
 
@@ -260,6 +317,7 @@ export function LeaveTimes({
   onShowBus,
   onFirstLive,
   oneSide,
+  oneWay,
 }: {
   route: TransitRoute
   stops: number[]
@@ -276,6 +334,8 @@ export function LeaveTimes({
   onFirstLive?: (id: string | null) => void
   /** Buses stop on both sides of the street here, but only one side is in the city's tracker. */
   oneSide?: boolean
+  /** A stop served one way only — and where the other way's bus stops, if near. */
+  oneWay?: { way: Toward; other: { name: string; walk: number; at: LatLng } | null }
 }) {
   const url = stops.length ? `/api/transit/arrivals?stops=${stops.join(',')}&route=${route.slug}` : null
   const { data, at: fetchedAt, failed } = usePoll<{ arrivals: Arrival[] }>(url, 30_000)
@@ -307,7 +367,24 @@ export function LeaveTimes({
       </p>
     )
   }
-  const sideNote = oneSide ? <p style={{ margin: 0, fontSize: 15, fontWeight: 600, lineHeight: 1.45, color: '#3d4248' }}>{copy.oneSide}</p> : null
+  const otherWay: Toward | null = oneWay ? (oneWay.way === 'start' ? 'end' : 'start') : null
+  const sideNote = oneWay ? (
+    // The line is a loop: the other way is a stop away, or a ride round the end.
+    <div style={{ border: '3px solid var(--ink)', background: 'var(--cream)', padding: '10px 12px', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 15, fontWeight: 600, lineHeight: 1.45 }}>
+      <strong style={{ fontWeight: 800 }}>{fill(copy.oneWayHere, { place: towardName(route, oneWay.way, copy.places) })}</strong>
+      {oneWay.other && otherWay ? (
+        <span>
+          {fill(copy.otherStop, { place: towardName(route, otherWay, copy.places), stop: oneWay.other.name, n: oneWay.other.walk })}{' '}
+          <a href={walkHref(oneWay.other.at)} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 800, textDecoration: 'underline', whiteSpace: 'nowrap' }}>
+            {copy.walkThere}
+          </a>
+        </span>
+      ) : null}
+      <span style={{ color: '#3d4248' }}>{copy.loopBack}</span>
+    </div>
+  ) : oneSide ? (
+    <p style={{ margin: 0, fontSize: 15, fontWeight: 600, lineHeight: 1.45, color: '#3d4248' }}>{copy.oneSide}</p>
+  ) : null
   if (!list.length) {
     return (
       <>
@@ -388,15 +465,23 @@ export function LeaveTimes({
 
 /* ------------------------------------------------- buses, said in words */
 
-export type BusWordsCopy = Record<'sentence' | 'noToward' | 'late' | 'onTime', string> & { places: Record<string, string> }
+export type BusWordsCopy = Record<'sentence' | 'noToward' | 'late' | 'onTime' | 'nextIn' | 'arriving' | 'next', string> & { places: Record<string, string> }
 
-/** "Flamingo bus, going toward City Hall. Next stop: W 49 St & W 12 Ave. 8 min late." */
+/** "Flamingo bus, going toward City Hall. Next stop: W 49 St & W 12 Ave · in ~3 min. 8 min late." */
 export function busSentence(v: LiveVehicle, copy: BusWordsCopy): string {
   const route = TRANSIT.routes.find((r) => r.slug === v.route)
-  const base = v.toward && route
-    ? fill(copy.sentence, { name: route.name, place: towardName(route, v.toward, copy.places), stop: v.next ?? '—' })
-    : fill(copy.noToward, { name: route?.name ?? '', stop: v.next ?? '—' })
-  return `${base} ${v.delayMin >= 2 ? fill(copy.late, { n: v.delayMin }) : copy.onTime}`
+  const stop = v.nextStop ?? v.next ?? '—'
+  const base =
+    v.toward && route
+      ? fill(copy.sentence, { name: route.name, place: towardName(route, v.toward, copy.places) })
+      : fill(copy.noToward, { name: route?.name ?? '' })
+  const next =
+    v.nextInMin === null
+      ? stop === '—'
+        ? ''
+        : ` ${fill(copy.next, { stop })}.`
+      : ` ${v.nextInMin <= 0 ? fill(copy.arriving, { stop }) : fill(copy.nextIn, { stop, n: v.nextInMin })}.`
+  return `${base}${next} ${v.delayMin >= 2 ? fill(copy.late, { n: v.delayMin }) : copy.onTime}`
 }
 
 export type BusesNowCopy = BusWordsCopy & Record<'heading' | 'none' | 'offline' | 'updated' | 'count' | 'one', string>

@@ -31,7 +31,7 @@ export type CityMapLine = {
   d: string
   color: string
   ink: string
-  /** Seconds for one bus to go out and back. */
+  /** Seconds for one bus to go round the loop. */
   cycle: number
   /** How many buses are drawn on the line at once — from the real frequency. */
   buses: number
@@ -56,7 +56,7 @@ export type CityMapModel = {
 const SECONDS_PER_MINUTE = 0.5
 
 export function cityMap(places: PlaceOnLine[], lang: Lang): CityMapModel {
-  const pts = TRANSIT.routes.flatMap((r) => r.stations.flatMap((s) => s.points))
+  const pts = TRANSIT.routes.flatMap((r) => [...r.path, ...r.stations.flatMap((s) => s.points)])
   const lat0 = pts.reduce((n, p) => n + p[0], 0) / pts.length
   const k = Math.cos((lat0 * Math.PI) / 180)
   const xs = pts.map((p) => p[1] * k)
@@ -93,7 +93,8 @@ export function cityMap(places: PlaceOnLine[], lang: Lang): CityMapModel {
     return {
       slug: r.slug,
       name: r.name,
-      d: line(r.stations.map((s) => s.points[0])),
+      // The street path the bus drives — a loop, out and back.
+      d: line(r.path),
       color: ROUTE_STYLE[r.slug].color,
       ink: ROUTE_STYLE[r.slug].ink,
       cycle: Math.round(r.rideMinutes * 2 * SECONDS_PER_MINUTE),

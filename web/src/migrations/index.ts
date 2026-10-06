@@ -19,6 +19,7 @@ import * as migration_20261002_060000_replace_flamingo_mascot from './20261002_0
 import * as migration_20261005_145545_add_event_season from './20261005_145545_add_event_season';
 import * as migration_20261005_154532_add_venue_photos from './20261005_154532_add_venue_photos';
 import * as migration_20261005_165632_add_event_setting from './20261005_165632_add_event_setting';
+import * as migration_20261005_213633_add_upload_media_tool from './20261005_213633_add_upload_media_tool';
 
 export const migrations = [
   {
@@ -124,6 +125,11 @@ export const migrations = [
   {
     up: migration_20261005_165632_add_event_setting.up,
     down: migration_20261005_165632_add_event_setting.down,
-    name: '20261005_165632_add_event_setting'
+    name: '20261005_165632_add_event_setting',
+  },
+  {
+    up: migration_20261005_213633_add_upload_media_tool.up,
+    down: migration_20261005_213633_add_upload_media_tool.down,
+    name: '20261005_213633_add_upload_media_tool'
   },
 ];

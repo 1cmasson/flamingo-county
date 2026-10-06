@@ -5,6 +5,7 @@ import { routes } from '../lib/routes'
 import { eventDateLine } from '../lib/dates'
 import { eventCardUrl, EVENT_CARD_SIZES } from '../lib/eventCardUrl'
 import { eventVenue } from '../lib/eventVenue'
+import { getSeason } from '../lib/seasons'
 import { photoCredit } from '../lib/photoLicense'
 import type { Lang } from '../i18n'
 import { EventActions } from './EventActions'
@@ -101,8 +102,8 @@ export function EventCard({
             aspectRatio: '4 / 3',
             borderBottom: '4px solid var(--ink)',
             overflow: 'hidden',
-            // The city's colour behind the card while it loads.
-            background: city?.accent ?? kind?.bg ?? 'var(--grad-pink)',
+            // The card's own ground behind it while it loads: the season's, else the city's colour.
+            background: getSeason(ev.season)?.card.event?.ground ?? city?.accent ?? kind?.bg ?? 'var(--grad-pink)',
           }}
         >
           {/* The generated card, in the 4:3 shape of this slot: the city,

@@ -184,6 +184,45 @@
    across the map, not something entering it. */
 .liveBus {
   transition: transform 2.6s cubic-bezier(0.65, 0, 0.35, 1);
+  cursor: pointer;
+  outline: none;
+}
+.liveBus:focus-visible circle:nth-of-type(2) {
+  stroke: var(--yellow);
+}
+.busLetter {
+  font-family: var(--display);
+  font-size: 21px;
+  pointer-events: none;
+}
+
+/* What the tapped bus is doing, in words, right under the map. */
+.busCard {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  background: var(--cream);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  padding: 10px 12px;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.4;
+}
+.busCard[data-on] {
+  background: var(--yellow);
+}
+.busCardClose {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 8px 12px;
+  font: inherit;
+  font-weight: 800;
+  background: var(--ink);
+  color: var(--cream);
+  border: 0;
+  cursor: pointer;
 }
 .statusDotLive {
   position: relative;

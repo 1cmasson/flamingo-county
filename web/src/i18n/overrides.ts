@@ -141,8 +141,8 @@ export const ES_OVERRIDES: Record<string, string> = {
   'Miami-Dade’s free elevated train loops downtown, Brickell and Omni. The Little Havana trolley meets it at Brickell.':
     'El tren elevado gratis de Miami-Dade da la vuelta por Downtown, Brickell y Omni. El trolley de la Pequeña Habana lo conecta en Brickell.',
   'Stations & hours': 'Estaciones y horario',
-  'Live buses and arrival times: the City of Hialeah’s ETA SPOT tracker, by ETA Transit Systems. Stops and ride times: Miami-Dade Transit (updated {date}). Hours: City of Hialeah. Map: US Census Bureau.':
-    'Guaguas y llegadas en vivo: el rastreador ETA SPOT de la Ciudad de Hialeah, de ETA Transit Systems. Paradas y tiempos de viaje: Miami-Dade Transit (actualizado el {date}). Horario: Ciudad de Hialeah. Mapa: Oficina del Censo de EE. UU.',
+  'Routes, stops, ride times and live buses: the City of Hialeah’s ETA SPOT system, by ETA Transit Systems (updated {date}). How often buses come, and Metrorail: Miami-Dade Transit. Hours: City of Hialeah. Maps: US Census Bureau, OpenStreetMap.':
+    'Rutas, paradas, tiempos de viaje y guaguas en vivo: el sistema ETA SPOT de la Ciudad de Hialeah, de ETA Transit Systems (actualizado el {date}). Cada cuánto pasan y Metrorail: Miami-Dade Transit. Horario: Ciudad de Hialeah. Mapas: Oficina del Censo de EE. UU., OpenStreetMap.',
   'RUNNING NOW · until {time}': 'PASANDO AHORA · hasta las {time}',
   'NOT OUT YET · starts at {time}': 'TODAVÍA NO SALE · empieza a las {time}',
   'DONE FOR TODAY · back tomorrow at {time}': 'TERMINÓ POR HOY · vuelve mañana a las {time}',
@@ -293,8 +293,10 @@ export const ES_OVERRIDES: Record<string, string> = {
   'YOUR BUS': 'TU GUAGUA',
   'Loading the map…': 'Cargando el mapa…',
   'The map didn’t load. Everything below still works.': 'El mapa no cargó. Todo lo de abajo sigue funcionando.',
-  '{name} bus going toward {place}. Next stop: {stop}.': 'Guagua {name} hacia {place}. Próxima parada: {stop}.',
-  '{name} bus. Next stop: {stop}.': 'Guagua {name}. Próxima parada: {stop}.',
+  '{name} bus going toward {place}.': 'Guagua {name} hacia {place}.',
+  '{name} bus.': 'Guagua {name}.',
+  'Next stop: {stop} · in ~{n} min': 'Próxima parada: {stop} · en ~{n} min',
+  'Arriving at {stop} now': 'Llegando ahora a {stop}',
   '{n} min late.': '{n} min tarde.',
   'On time.': 'A tiempo.',
   'Buses on the road right now': 'Guaguas en la calle ahora mismo',
@@ -306,6 +308,18 @@ export const ES_OVERRIDES: Record<string, string> = {
     'El rastreador de la ciudad no tiene esta parada, así que no podemos mostrar las horas aquí. La guagua sí para.',
   'Bus times aren’t loading right now. The buses are still running; try again in a moment.':
     'Las horas de las guaguas no están cargando ahora mismo. Las guaguas siguen pasando; prueba otra vez en un momento.',
+  'Places you can ride to ({n})': 'Lugares a los que puedes ir ({n})',
+  'See all {n} spots': 'Ver los {n} lugares',
+  'Two free bus lines cross Hialeah, both directions, six days a week. No fare, no card — just get on.':
+    'Dos rutas de guagua gratis cruzan Hialeah, en los dos sentidos, seis días a la semana. Sin pasaje, sin tarjeta: súbete y ya.',
+  'Here is where they go and what is a short walk from each stop.': 'Aquí ves por dónde pasan y qué queda cerca de cada parada.',
+  'Tap a bus to see where it’s going and when it gets to its next stop.': 'Toca una guagua para ver hacia dónde va y cuándo llega a su próxima parada.',
+  'Live positions from the City of Hialeah’s ETA SPOT tracker, every 15 seconds.': 'Posiciones en vivo del rastreador ETA SPOT de la Ciudad de Hialeah, cada 15 segundos.',
+  'ONLY TOWARD {place}': 'SOLO HACIA {place}',
+  'Only buses going toward {place} stop here.': 'Aquí solo paran las guaguas que van hacia {place}.',
+  'Going toward {place}? That bus stops at {stop}, a {n}-min walk.': '¿Vas hacia {place}? Esa guagua para en {stop}, a {n} min a pie.',
+  'Or get on here and stay on: the line is a loop, so the bus turns at the end and comes back.':
+    'O súbete aquí y quédate: la ruta es un circuito, así que la guagua da la vuelta al final y regresa.',
   Close: 'Cerrar',
   'Zoom in': 'Acercar',
   'Zoom out': 'Alejar',

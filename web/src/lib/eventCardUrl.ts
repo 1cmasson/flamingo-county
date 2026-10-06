@@ -36,7 +36,7 @@ export function isEventCardSize(v: string | null | undefined): v is EventCardSiz
  * Bump when the card's design or its art changes (fonts, a mascot), so every
  * cached card is fetched again. The event's own `updatedAt` covers its fields.
  */
-export const EVENT_CARD_VERSION = '5'
+export const EVENT_CARD_VERSION = '8'
 
 /**
  * The card's path. `v` is a cache key only: the route always draws the event

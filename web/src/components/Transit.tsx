@@ -13,6 +13,7 @@ import {
   TOWARD_PLACES,
   TRANSIT,
   diagram,
+  towardName,
   formatClock,
   formatHeadway,
   headwayToday,
@@ -21,6 +22,7 @@ import {
   serviceStatus,
   walkMinutes,
   type NearestStop,
+  type Station,
   type TransitRoute,
 } from '../lib/transit'
 import type { NearMeCopy, NearMePlace } from './NearMe'
@@ -280,7 +282,7 @@ export async function FreeRidePanel({ listing, lang, t }: { listing: Listing; la
   const headway = headwayToday(route)
   const live = await trackLiveHref(lang, route)
   const stopHref = `${routes.freeRoute(lang, route.slug)}#stop-${main.station.id}`
-  const pole = main.station.points[main.station.names.indexOf(main.stopName)] ?? main.station.points[0]
+  const pole = main.station.points[main.pole] ?? main.station.points[0]
   const walkHref = await directionsHref(pole)
 
   return (
@@ -405,14 +407,17 @@ export function RouteStrip({
     byStation.set(p.stop.index, list)
   }
   const items = diagram(route, new Set(byStation.keys()))
+  const towardNames = towardPlaces(t)
+  const only = (s: Station) => (s.oneWay ? fill(t('ONLY TOWARD {place}'), { place: towardName(route, s.oneWay, towardNames).toUpperCase() }) : null)
   const lineVar = { '--line': ROUTE_STYLE[route.slug].color } as React.CSSProperties
 
   return (
-    <ol className={tr.strip} style={lineVar} aria-label={fill(t('Stops on the {name} line'), { name: route.name })}>
+    <ol className={tr.strip} style={lineVar} data-strip={route.slug} aria-label={fill(t('Stops on the {name} line'), { name: route.name })}>
       {items.map((it) => {
         if (it.kind === 'gap') {
           return (
             <li key={`gap-${it.stations[0].index}`} className={`${tr.row} ${tr.gap}`}>
+              <BusSlot ids={it.stations.map((x) => x.station.id)} way="end" />
               <span />
               <span />
               <div className={tr.body}>
@@ -427,12 +432,15 @@ export function RouteStrip({
                     {it.stations.map(({ station }) => (
                       <li key={station.id} id={`stop-${station.id}`}>
                         {station.name}{' '}
-                        <span style={{ fontWeight: 800, fontSize: 12, color: '#5b6168' }}>· {station.min}′</span>
+                        <span style={{ fontWeight: 800, fontSize: 12, color: '#5b6168' }}>
+                          · {station.oneWay ? `${station.oneWay === 'start' ? '▲' : '▼'} ${only(station)}` : `${station.min}′`}
+                        </span>
                       </li>
                     ))}
                   </ol>
                 </details>
               </div>
+              <BusSlot ids={it.stations.map((x) => x.station.id)} way="start" />
             </li>
           )
         }
@@ -447,9 +455,13 @@ export function RouteStrip({
         const first = index === 0
         return (
           <li key={station.id} id={`stop-${station.id}`} className={tr.row}>
+            <BusSlot ids={[station.id]} way="end" />
             <span className={tr.minutes} aria-hidden={first ? undefined : true}>
               {first ? (
                 <small style={{ fontSize: 10 }}>{t('START')}</small>
+              ) : station.oneWay ? (
+                // A one-way stop's minutes would be the other leg's guess; its arrow says more.
+                <span title={only(station) ?? undefined}>{station.oneWay === 'start' ? '▲' : '▼'}</span>
               ) : (
                 <>
                   {station.min}
@@ -472,6 +484,7 @@ export function RouteStrip({
               {station.landmark && station.landmark !== station.name ? (
                 <div style={{ fontSize: 13, fontWeight: 600, marginTop: 3 }}>{station.name}</div>
               ) : null}
+              {station.oneWay ? <div className={tr.oneWay}>{only(station)}</div> : null}
               {station.transfers.map((x) => (
                 <div key={x} className={tr.transfer}>
                   <span aria-hidden="true">⇄</span>
@@ -505,6 +518,7 @@ export function RouteStrip({
                 </div>
               ) : null}
             </div>
+            <BusSlot ids={[station.id]} way="start" />
           </li>
         )
       })}
@@ -512,8 +526,19 @@ export function RouteStrip({
   )
 }
 
-/** "Aquabella ↔ Hialeah Dr & E 4 Ave" — the line's two ends. */
-export const ends = lineEnds
+/**
+ * Where StripLive draws a bus: above a stop for a bus coming down the strip
+ * toward it, below for one coming up. Empty — and so invisible — until then.
+ */
+function BusSlot({ ids, way }: { ids: string[]; way: 'start' | 'end' }) {
+  return <div className={tr.busSlot} data-bus-slot={ids.join(' ')} data-way={way} />
+}
+
+/** "Aquabella ⇄ City Hall" — the line's two ends, in the page's language. */
+export function ends(route: TransitRoute, t: T): [string, string] {
+  const [a, b] = lineEnds(route)
+  return [t(a), t(b)]
+}
 
 /* ------------------------------------------------------- where are you? */
 
@@ -547,7 +572,7 @@ export function nearMeCopy(t: T): NearMeCopy {
     distance: t('about {mi} mi'),
     directions: t('WALKING DIRECTIONS ↗'),
     seeStop: t('See this stop on the line →'),
-    rideTo: t('RIDE TO'),
+    rideTo: t('Places you can ride to ({n})'),
     ride: t('~{n} min ride'),
     walkFromStop: t('{n} min walk'),
     far: t('The closest free bus stop is a {n}-minute walk (about {mi} mi).'),
@@ -580,6 +605,9 @@ export function leaveCopy(t: T): LeaveCopy {
     oneSide: t('Buses going the other way stop across the street. The city’s tracker doesn’t show their times at that pole.'),
     untracked: t('The city’s tracker doesn’t list this stop, so we can’t show bus times here. The bus still stops.'),
     unavailable: t('Bus times aren’t loading right now. The buses are still running; try again in a moment.'),
+    oneWayHere: t('Only buses going toward {place} stop here.'),
+    otherStop: t('Going toward {place}? That bus stops at {stop}, a {n}-min walk.'),
+    loopBack: t('Or get on here and stay on: the line is a loop, so the bus turns at the end and comes back.'),
     places: towardPlaces(t),
   }
 }
@@ -603,8 +631,11 @@ export function rideMapCopy(t: T): RideMapCopy {
 
 export function busWordsCopy(t: T): BusWordsCopy {
   return {
-    sentence: t('{name} bus going toward {place}. Next stop: {stop}.'),
-    noToward: t('{name} bus. Next stop: {stop}.'),
+    sentence: t('{name} bus going toward {place}.'),
+    noToward: t('{name} bus.'),
+    nextIn: t('Next stop: {stop} · in ~{n} min'),
+    arriving: t('Arriving at {stop} now'),
+    next: t('Next stop: {stop}'),
     late: t('{n} min late.'),
     onTime: t('On time.'),
     places: towardPlaces(t),
@@ -670,11 +701,14 @@ export function stripLiveCopy(t: T): StripLiveCopy {
     many: t('{n} buses on the {name} right now'),
     one: t('1 bus on the {name} right now'),
     none: t('No {name} buses on the road right now'),
-    near: t('Next stop: {stop}'),
-    late: t(' · {n} min late'),
-    onTime: t(' · on time'),
     updated: t('updated {s}s ago'),
-    marker: t('BUS'),
     offline: t('Live bus positions are unavailable right now. Hours and frequency below still apply.'),
+    toward: t('Toward {place}'),
+    nextIn: t('Next stop: {stop} · in ~{n} min'),
+    arriving: t('Arriving at {stop} now'),
+    late: t('{n} min late'),
+    onTime: t('on time'),
+    bus: t('BUS'),
+    places: towardPlaces(t),
   }
 }

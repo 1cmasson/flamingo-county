@@ -10,7 +10,9 @@ import {
   LINKS,
   ROUTE_STYLE,
   TRANSIT,
+  nearestServing,
   nearestStops,
+  rideBetween,
   walkMinutes,
   type LatLng,
   type NearestStop,
@@ -116,8 +118,15 @@ function stopIndex(routes: TransitRoute[]) {
 const isOneSided = (a: NearestStop) =>
   a.index > 0 && a.index < a.route.stations.length - 1 && a.station.points.length > 1 && a.etaIds.length === 1
 
+/** For a one-way stop: the nearest stop the other way's buses use, if it's a walk at all. */
+function otherWay(a: NearestStop, from: LatLng): { name: string; walk: number; at: LatLng } | null {
+  const other = nearestServing(a.route, from, a.station.oneWay === 'start' ? 'end' : 'start')
+  if (!other || walkMinutes(other.meters) > 20) return null
+  return { name: other.stopName, walk: walkMinutes(other.meters), at: poleOf(other) }
+}
+
 /** The pole a stop answer is measured to. */
-const poleOf = (a: NearestStop): LatLng => a.station.points[a.station.names.indexOf(a.stopName)] ?? a.station.points[0]
+const poleOf = (a: NearestStop): LatLng => a.station.points[a.pole] ?? a.station.points[0]
 
 /** ETA stop number → its pole, for "the bus that way stops across the street". */
 function polesOf(a: NearestStop): Record<number, { at: LatLng; name: string }> {
@@ -548,7 +557,7 @@ export function NearMe({
                 const at = poleOf(a)
                 const rides = places
                   .filter((p) => p.route === a.route.slug)
-                  .map((p) => ({ ...p, ride: Math.abs(a.route.stations[p.index].min - a.station.min) }))
+                  .map((p) => ({ ...p, ride: rideBetween(a.route, a.index, p.index) }))
                   .sort((x, y) => x.ride - y.ride)
                   .slice(0, 5)
                 return (
@@ -589,11 +598,13 @@ export function NearMe({
                         onShowBus={showBus}
                         onFirstLive={n === 0 ? onFirstLive : undefined}
                         oneSide={isOneSided(a)}
+                        oneWay={a.station.oneWay ? { way: a.station.oneWay, other: otherWay(a, origin.at) } : undefined}
                       />
 
                       {rides.length ? (
-                        <div>
-                          <div style={{ fontWeight: 800, fontSize: 13, letterSpacing: '1.2px', margin: '2px 0 8px' }}>{copy.rideTo}</div>
+                        // Folded: the card's job is "when do I leave"; where to go is a second question.
+                        <details className={tr.moreSpots}>
+                          <summary>{fill(copy.rideTo, { n: rides.length })}</summary>
                           <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
                             {rides.map((p) => (
                               <li key={p.href}>
@@ -608,7 +619,7 @@ export function NearMe({
                               </li>
                             ))}
                           </ul>
-                        </div>
+                        </details>
                       ) : null}
 
                       <Link

@@ -39,7 +39,7 @@ export async function generateMetadata({
   const route = getRoute(slug)
   if (!isLang(lang) || !route) return {}
   const t = translator(lang)
-  const [from, to] = ends(route)
+  const [from, to] = ends(route, t)
   const title = fill(t('{name} free bus: every stop, Hialeah'), { name: route.name })
   const description = fill(t('Every stop on Hialeah’s free {name} line, {from} to {to}, with ride times and the spots near each stop.'), {
     name: route.name,
@@ -68,7 +68,7 @@ export default async function FreeRoutePage({ params }: { params: Promise<{ lang
   const mine = places.filter((p) => p.stop.route.slug === route.slug)
   const other = TRANSIT.routes.find((r) => r.slug !== route.slug)
   const st = ROUTE_STYLE[route.slug]
-  const [from, to] = ends(route)
+  const [from, to] = ends(route, t)
   const headway = headwayToday(route)
 
   return (

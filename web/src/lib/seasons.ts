@@ -29,7 +29,7 @@ export const SEASON_OPTIONS: { label: string; value: SeasonKey }[] = [
 ]
 
 /** The season card's palette, drawn by lib/eventCard.tsx. */
-export type SeasonCardTheme = 'night' | 'pumpkin'
+export type SeasonCardTheme = 'night' | 'pumpkin' | 'dusk'
 
 type Copy = Record<Lang, string>
 
@@ -78,6 +78,18 @@ export type Season = {
       credit: { lead: Copy; photo: Copy; license: string }
       sourceUrl: string
       licenseUrl: string
+    }
+    /**
+     * How each event tagged with the season dresses its cards: the palette
+     * in place of the city's colour, and a chip naming the season, at every
+     * size (the board's and the guide's tiles, the event page's hero, the
+     * link preview and the social poster).
+     */
+    event?: {
+      theme: SeasonCardTheme
+      chip: Copy
+      /** The palette's ground, for the page's hero box while the card loads. */
+      ground: string
     }
   }
   /** The events board's link while the window is open, and its colour. */
@@ -132,6 +144,13 @@ export const SEASONS: Partial<Record<SeasonKey, Season>> = {
         },
         sourceUrl: 'https://commons.wikimedia.org/wiki/File:Hialeah_Park_Race_Track_(28830740140).jpg',
         licenseUrl: 'https://creativecommons.org/licenses/by/2.0/',
+      },
+      // Orange and purple, friendly rather than scary: the Hialeah Park
+      // scene's night purple as the ground, pumpkin orange for the type.
+      event: {
+        theme: 'dusk',
+        chip: { es: 'HALLOWEEN', en: 'HALLOWEEN' },
+        ground: '#390a75',
       },
     },
     boardLink: (lang, year) => (lang === 'es' ? `HALLOWEEN EN HIALEAH ${year} →` : `HALLOWEEN IN HIALEAH ${year} →`),

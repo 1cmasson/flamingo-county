@@ -6,7 +6,9 @@ import {
   formatHeadway,
   getRoute,
   headwayToday,
+  nearestServing,
   nearestStops,
+  rideBetween,
   serviceStatus,
   walkMinutes,
 } from '@/lib/transit'
@@ -98,10 +100,10 @@ describe('nearestStops', () => {
   it('finds the Marlin stop on Palm Ave a block away', () => {
     const [first] = nearestStops(casaMarin)
     expect(first.route.slug).toBe('marlin')
-    // Drawn at the outbound station, but the pole a rider walks to is the one
-    // across Palm Ave — and that is the name the panel must print.
-    expect(first.station.name).toBe('Palm Ave & W 41 St')
-    expect(first.stopName).toBe('Palm Ave & E 41 St')
+    // Drawn at the station named for one pole, but the pole a rider walks to
+    // is its partner up the block — and that is the name the panel must print.
+    expect(first.station.name).toBe('Palm Ave & E 41st St')
+    expect(first.stopName).toBe('Palm Ave & E 42nd St')
     expect(walkMinutes(first.meters)).toBeLessThanOrEqual(2)
   })
 
@@ -149,5 +151,65 @@ describe('geocoding guard', () => {
   it('refuses addresses with no street number', () => {
     expect(hasStreetNumber('Hialeah, FL')).toBe(false)
     expect(hasStreetNumber('4195 Palm Ave, Hialeah, FL, 33012')).toBe(true)
+  })
+})
+
+describe('the lines as the city runs them', () => {
+  const flamingo = TRANSIT.routes.find((r) => r.slug === 'flamingo')!
+  const marlin = TRANSIT.routes.find((r) => r.slug === 'marlin')!
+
+  it('include the stretches the county’s copy missed', () => {
+    // Flamingo up NW 97th Ave past Bonterra to Aquabella; Marlin on Red Rd.
+    expect(flamingo.stations.some((s) => /Bonterra/.test(s.name))).toBe(true)
+    expect(marlin.stations.some((s) => /Red Rd & W 62nd St/.test(s.name))).toBe(true)
+  })
+
+  it('draw each line along its street path, not stop to stop', () => {
+    for (const r of [flamingo, marlin]) {
+      expect(r.path.length).toBeGreaterThan(50)
+      // Small enough to ship in the page bundle.
+      expect(r.path.length).toBeLessThan(400)
+    }
+  })
+
+  it('mark the stops served one way only, and never the ends', () => {
+    for (const r of [flamingo, marlin]) {
+      expect(r.stations.some((s) => s.oneWay === 'start')).toBe(true)
+      expect(r.stations.some((s) => s.oneWay === 'end')).toBe(true)
+      expect(r.stations[0].oneWay).toBeUndefined()
+      expect(r.stations.at(-1)!.oneWay).toBeUndefined()
+    }
+  })
+
+  it('point a rider at a one-way stop to a pole the other way’s buses really use', () => {
+    // Pole by pole: the stop across the street from a one-way stop is often
+    // a pole for the same direction, and sending a rider there strands them.
+    for (const r of [flamingo, marlin]) {
+      for (const st of r.stations.filter((s) => s.oneWay)) {
+        const way = st.oneWay === 'start' ? 'end' : 'start'
+        for (const p of st.points) {
+          const other = nearestServing(r, p, way)!
+          expect(['both', way], `${st.name} → ${other.stopName}`).toContain(other.station.poleWays?.[other.pole])
+        }
+      }
+    }
+  })
+
+  it('list each stop once, even where the bus rounds a block and passes it again', () => {
+    for (const r of [flamingo, marlin]) {
+      const ids = r.stations.map((s) => s.id)
+      expect(new Set(ids).size).toBe(ids.length)
+    }
+  })
+
+  it('count a ride from a one-way stop the long way round when it has to be', () => {
+    const k = flamingo.stations.findIndex((s) => s.oneWay === 'end')
+    const st = flamingo.stations[k]
+    // Toward the end: a later stop is a direct ride…
+    const later = flamingo.stations.findIndex((s, i) => i > k && s.min > st.min)
+    expect(rideBetween(flamingo, k, later)).toBe(flamingo.stations[later].min - st.min)
+    // …an earlier one means riding to the end of the line and back.
+    const earlier = flamingo.stations.findIndex((s) => s.min < st.min)
+    expect(rideBetween(flamingo, k, earlier)).toBeGreaterThan(flamingo.rideMinutes - st.min)
   })
 })
