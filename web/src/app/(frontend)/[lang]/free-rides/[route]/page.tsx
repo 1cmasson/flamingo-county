@@ -3,7 +3,8 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { isLang, translator, type Lang } from '../../../../../i18n'
 import { routes } from '../../../../../lib/routes'
-import { openGraph } from '../../../../../lib/site'
+import { openGraph, twitterCard } from '../../../../../lib/site'
+import { FREE_RIDES_CARD_SIZE, freeRidesCardUrl } from '../../../../../lib/freeRidesCardUrl'
 import { placesOnLines } from '../../../../../lib/rides'
 import { LINKS, ROUTE_STYLE, TRANSIT, formatHeadway, getRoute, headwayToday, walkMinutes } from '../../../../../lib/transit'
 import { PageShell } from '../../../../../components/PageShell'
@@ -46,10 +47,20 @@ export async function generateMetadata({
     from,
     to,
   })
+  // The city map with this line drawn and the other faded, under the line's name.
+  const image = freeRidesCardUrl(lang, route.slug)
   return {
     title,
     description,
-    openGraph: openGraph(lang, { title, description, url: routes.freeRoute(lang, slug) }),
+    openGraph: openGraph(lang, {
+      title,
+      description,
+      url: routes.freeRoute(lang, slug),
+      image,
+      imageSize: FREE_RIDES_CARD_SIZE,
+      imageAlt: fill(t('Map of Hialeah with the free {name} bus line'), { name: route.name }),
+    }),
+    twitter: twitterCard(image),
     alternates: {
       canonical: routes.freeRoute(lang, slug),
       languages: { en: routes.freeRoute('en', slug), es: routes.freeRoute('es', slug) },
