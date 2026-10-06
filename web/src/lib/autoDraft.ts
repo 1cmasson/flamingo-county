@@ -175,6 +175,9 @@ async function create(
     if (photo) cards.push(photo)
   }
   const media = cards[0] ?? null
+  // Facebook posts are never text only, so a page with no picture gets no
+  // draft. Give the story a cover and publish it again.
+  if (!media) return null
   // The photo's credit goes in the caption wherever the photo is in the post.
   const coverDoc: Media | null =
     cover && typeof cover !== 'object'
@@ -183,7 +186,7 @@ async function create(
   const credit = media ? creditLine(coverDoc) : null
   // Instagram and TikTok need media; a still goes to Facebook and Instagram.
   // TikTok is left to the owner, since it wants video.
-  const platforms: Platform[] = media ? ['facebook', 'instagram'] : ['facebook']
+  const platforms: Platform[] = ['facebook', 'instagram']
   const scheduledFor = pickPostTime(now, await busyTimes(payload, now), deadline, notBefore)
 
   const draft = await payload.create({

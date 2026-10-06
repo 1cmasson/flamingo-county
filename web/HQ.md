@@ -476,8 +476,8 @@ preview arrives in Telegram for Approve / Reject like any other draft:
   1080×1350 "social" size, in Spanish). It has the event's photo framed on it,
   with the credit printed, or the mascot when there is no photo. A story's
   cover photo is re-encoded as a JPEG. Either way the picture goes into HQ
-  media for Facebook and Instagram. A story with no cover is Facebook text
-  only. A credited photo adds a last line to the caption (see *Venue photos*).
+  media for Facebook and Instagram. A story with no cover gets no draft
+  at all, because Facebook posts are never text only (see *Facebook rule*). A credited photo adds a last line to the caption (see *Venue photos*).
   An event with no photo has a poster that stands on a drawn scene
   (`src/lib/eventSetting.ts`). The event's **Setting** field (sidebar) picks
   one, or "None" for the flat city-colour poster. Left empty, the venue's name
@@ -647,4 +647,21 @@ A video made on the owner's computer reaches a draft in two steps, neither of wh
    Reject, exactly as for a photo, and Approve uploads it to Postiz.
 
 Instagram and TikTok drafts need the video attached, so this is the step that unblocks them.
+
+## Facebook rule
+
+Standing rule from the owner (2026-10-06): **a Facebook post is never text
+only.** Every Facebook post carries a photo or video **and** a
+flamingocounty.com link. It is enforced in code, not by habit:
+
+- Saving a draft that includes Facebook needs at least one media file, and a
+  caption with a flamingocounty.com link (`facebookProblem` in
+  `src/lib/postiz.ts`). This covers Claude, the admin and the importers.
+  HQ's own two-step auto-draft writes skip only the link check, since the
+  tracking link is written in a second step.
+- Approve checks it again, so an old or edited draft that breaks the rule is
+  refused in Telegram instead of reaching Postiz.
+- A page with no picture gets no auto-draft. Give the story a cover and
+  publish it again.
+- The Studio's Facebook channel has `requiresMedia: true`.
 

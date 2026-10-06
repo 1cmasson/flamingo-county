@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
@@ -11,6 +12,7 @@ import { GET as goRoute } from '@/app/go/[...slug]/route'
 import { clip, esc } from '@/lib/telegram'
 import { handleUpdate } from '@/lib/telegramBot'
 import type { HqSocialDraft } from '@/payload-types'
+import { makeHqMedia, withFbLink } from './helpers/facebook'
 
 const OWNER = '1001'
 const STRANGER = 2002
@@ -273,8 +275,11 @@ describe('HQ against the database', () => {
     id: number
   }[] = []
 
+  let mediaId: number
+
   beforeAll(async () => {
     payload = await getPayload({ config: await config })
+    mediaId = await makeHqMedia(payload)
   })
 
   beforeEach(() => {
@@ -294,6 +299,7 @@ describe('HQ against the database', () => {
 
   afterAll(async () => {
     if (!payload) return
+    if (mediaId) await payload.delete({ collection: 'hq-media', id: mediaId, overrideAccess: true }).catch(() => undefined)
     for (const { collection, id } of created) {
       await payload.delete({ collection, id, overrideAccess: true }).catch(() => undefined)
       await payload.delete({
@@ -308,7 +314,8 @@ describe('HQ against the database', () => {
     const draft = await payload.create({
       collection: 'hq-social-drafts',
       data: {
-        caption: 'HQ-TEST caption',
+        caption: withFbLink('HQ-TEST caption'),
+        media: [mediaId],
         platforms: ['facebook'],
         scheduledFor: new Date(Date.now() + 86_400_000).toISOString(),
         ...data,
@@ -363,7 +370,7 @@ describe('HQ against the database', () => {
 
   it('refuses an Instagram draft with no media', async () => {
     fakeNetwork()
-    await expect(newDraft({ platforms: ['instagram'] })).rejects.toThrow()
+    await expect(newDraft({ platforms: ['instagram'], media: [] })).rejects.toThrow()
   })
 
   it('previews a new draft in Telegram with approve and reject buttons', async () => {
@@ -373,7 +380,11 @@ describe('HQ against the database', () => {
       const fresh = await payload.findByID({ collection: 'hq-social-drafts', id: draft.id, overrideAccess: true })
       expect(fresh.telegramMessageId).toBe(42)
     })
-    const preview = net.telegram()[0].body as { reply_markup: { inline_keyboard: { callback_data: string }[][] } }
+    // With a photo, Telegram gets multipart form data and the keyboard is a JSON string field.
+    const sent = net.telegram()[0].body
+    const preview = (sent instanceof FormData ? { reply_markup: JSON.parse(String(sent.get('reply_markup'))) } : sent) as {
+      reply_markup: { inline_keyboard: { callback_data: string }[][] }
+    }
     expect(preview.reply_markup.inline_keyboard[0].map((b) => b.callback_data)).toEqual([
       draftCallback('approve', draft.id),
       draftCallback('reject', draft.id),
@@ -434,7 +445,9 @@ describe('HQ against the database', () => {
       vi.fn(async (input: string | URL | Request) =>
         String(input).endsWith('/integrations')
           ? Response.json([])
-          : Response.json({ ok: true, result: { message_id: 1 } }),
+          : String(input).endsWith('/upload')
+            ? Response.json({ id: 'up1', path: 'https://postiz.example/up1.jpg' })
+            : Response.json({ ok: true, result: { message_id: 1 } }),
       ),
     )
     const outcome = await decideDraft(payload, draft.id, 'approve')
@@ -535,7 +548,7 @@ describe('HQ against the database', () => {
     fakeNetwork()
     const at = Date.now() + 10 * 86_400_000
     const iso = (h: number) => new Date(at + h * 3_600_000).toISOString()
-    const near = await newDraft({ scheduledFor: iso(2), caption: 'HQ-TEST near\nsecond line' })
+    const near = await newDraft({ scheduledFor: iso(2), caption: withFbLink('HQ-TEST near\nsecond line') })
     const far = await newDraft({ scheduledFor: iso(3.5) })
     const gone = await newDraft({ scheduledFor: iso(-1) })
     await payload.update({ collection: 'hq-social-drafts', id: gone.id, data: { status: 'rejected' }, overrideAccess: true, context: { hqInternal: true } })

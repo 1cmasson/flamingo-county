@@ -20,6 +20,7 @@ import * as migration_20261005_145545_add_event_season from './20261005_145545_a
 import * as migration_20261005_154532_add_venue_photos from './20261005_154532_add_venue_photos';
 import * as migration_20261005_165632_add_event_setting from './20261005_165632_add_event_setting';
 import * as migration_20261005_213633_add_upload_media_tool from './20261005_213633_add_upload_media_tool';
+import * as migration_20261006_002646_add_cancel_draft_tool from './20261006_002646_add_cancel_draft_tool';
 
 export const migrations = [
   {
@@ -130,6 +131,11 @@ export const migrations = [
   {
     up: migration_20261005_213633_add_upload_media_tool.up,
     down: migration_20261005_213633_add_upload_media_tool.down,
-    name: '20261005_213633_add_upload_media_tool'
+    name: '20261005_213633_add_upload_media_tool',
+  },
+  {
+    up: migration_20261006_002646_add_cancel_draft_tool.up,
+    down: migration_20261006_002646_add_cancel_draft_tool.down,
+    name: '20261006_002646_add_cancel_draft_tool'
   },
 ];

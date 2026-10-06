@@ -1,7 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { humanOnly, staffOnly } from '../fields/shared'
 import { HQ_INTERNAL, draftFingerprint, recordEvent, sendDraftPreview } from '../lib/hq'
-import { NEEDS_MEDIA, PLATFORMS } from '../lib/postiz'
+import { NEEDS_MEDIA, PLATFORMS, facebookProblem } from '../lib/postiz'
 import type { HqSocialDraft } from '../payload-types'
 
 /**
@@ -68,6 +68,17 @@ export const HqSocialDrafts: CollectionConfig = {
       name: 'caption',
       type: 'textarea',
       required: true,
+      // A Facebook post must carry a flamingocounty.com link. Skipped for HQ's
+      // own writes: an auto-draft is created first and gets its tracking link
+      // in a second write. Approve checks again.
+      validate: (
+        value: unknown,
+        { siblingData, req }: { siblingData: Partial<HqSocialDraft>; req?: { context?: Record<string, unknown> } },
+      ) => {
+        if (typeof value !== 'string' || !value.trim()) return 'Write the caption.'
+        if (req?.context?.[HQ_INTERNAL]) return true
+        return facebookProblem(siblingData.platforms, 1, value) ?? true
+      },
       // TikTok's 2000 is the tightest of the three (Instagram 2200, Facebook 63k).
       maxLength: 2000,
     },
@@ -77,7 +88,13 @@ export const HqSocialDrafts: CollectionConfig = {
       relationTo: 'hq-media',
       hasMany: true,
       admin: { description: 'The first file is the cover shown in Telegram.' },
-      validate: (value: unknown, { siblingData }: { siblingData: Partial<HqSocialDraft> }) => {
+      validate: (
+        value: unknown,
+        { siblingData, req }: { siblingData: Partial<HqSocialDraft>; req?: { context?: Record<string, unknown> } },
+      ) => {
+        // HQ's own bookkeeping writes (stats, post ids) must not fail on an
+        // older text-only draft; Approve enforces the rule before posting.
+        if (req?.context?.[HQ_INTERNAL]) return true
         const needs = (siblingData.platforms ?? []).filter((p) => NEEDS_MEDIA.includes(p))
         const count = Array.isArray(value) ? value.length : 0
         return needs.length && !count

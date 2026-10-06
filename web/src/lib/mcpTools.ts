@@ -11,7 +11,7 @@ import type { Event, HqSocialDraft, Story } from '../payload-types'
 import { buildBrief } from './brief'
 import { trafficReport } from './growth'
 import { addDays, dateOnly, eventEndDay, todayISO } from './dates'
-import { miamiTime } from './hq'
+import { cancelDraft, miamiTime } from './hq'
 import { isRunningCount, type MetricSummary } from './postiz'
 import { PUBLISHABLE, publishStatus, requestPublish } from './publishRequests'
 import { PHOTO_LICENSES, canonicalLicenseUrl, isPhotoLicense, licenseLabel, type PhotoLicense } from './photoLicense'
@@ -876,6 +876,14 @@ export const hqMcpTools: McpTool[] = [
           ),
         ),
       ),
+  },
+  {
+    name: 'hqCancelDraft',
+    description:
+      'Cancel a social draft that is scheduled but has not gone out: removes it from the Postiz calendar and marks the draft rejected. A pending draft is just rejected. Refuses a post whose time has passed. Use when the owner says to pull a post.',
+    parameters: { id: z.number().int().positive().describe('The hq-social-drafts id') },
+    handler: (args: Record<string, unknown>, req: PayloadRequest) =>
+      guard(async () => text(JSON.stringify({ result: await cancelDraft(req.payload, Number(args.id)) }))),
   },
   {
     name: 'hqRequestPublish',

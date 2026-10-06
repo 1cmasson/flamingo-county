@@ -1,3 +1,4 @@
+// @vitest-environment node
 import fs from 'node:fs'
 import path from 'node:path'
 import { createHash } from 'node:crypto'
@@ -7,6 +8,7 @@ import config from '@/payload.config'
 
 import { buildBrief } from '@/lib/brief'
 import { applyImport } from '@/lib/storyImport'
+import { makeHqMedia, withFbLink } from './helpers/facebook'
 import { planImport, scriptLines, validatePack, type StoryPack } from '@/lib/storyPack'
 
 /**
@@ -143,7 +145,21 @@ describe('story import against the database', () => {
     return p
   }
 
+  // The Facebook rule: every Facebook draft carries a photo and a flamingocounty.com link.
+  const mediaIds: number[] = []
+  const fbReady = async (plan: ReturnType<typeof planImport>) => {
+    const id = await makeHqMedia(payload)
+    mediaIds.push(id)
+    for (const post of plan.social) {
+      const data = post.data as { caption: string; media?: number[] }
+      data.caption = withFbLink(data.caption)
+      data.media = [id]
+    }
+    return plan
+  }
+
   const cleanup = async () => {
+    for (const id of mediaIds.splice(0)) await payload.delete({ collection: 'hq-media', id, overrideAccess: true }).catch(() => undefined)
     const stories = await payload.find({ collection: 'stories', where: { slug: { equals: SLUG } }, draft: true, depth: 0, overrideAccess: true })
     for (const s of stories.docs) await payload.delete({ collection: 'stories', id: s.id, overrideAccess: true }).catch(() => undefined)
     const posts = await payload.find({ collection: 'hq-social-drafts', where: { caption: { contains: MARK } }, limit: 50, depth: 0, overrideAccess: true })
@@ -167,7 +183,7 @@ describe('story import against the database', () => {
   })
 
   it('creates a site draft, pending posts and a task, and publishes nothing', async () => {
-    const plan = planImport(testPack(), { start: '2026-10-06' })
+    const plan = await fbReady(planImport(testPack(), { start: '2026-10-06' }))
     const results = await applyImport(payload, plan)
     expect(results.filter((r) => r.result === 'created').map((r) => r.part).sort()).toEqual(
       ['site', 'social', 'social', 'social', 'social', 'social', 'social', 'stage'].sort(),
@@ -218,7 +234,7 @@ describe('story import against the database', () => {
 
   it('is safe to run again: nothing duplicated, nothing overwritten', async () => {
     const before = await payload.count({ collection: 'hq-social-drafts', where: { caption: { contains: MARK } }, overrideAccess: true })
-    const results = await applyImport(payload, planImport(testPack(), { start: '2026-10-06' }))
+    const results = await applyImport(payload, await fbReady(planImport(testPack(), { start: '2026-10-06' })))
     expect(results.every((r) => r.result === 'skipped')).toBe(true)
     const after = await payload.count({ collection: 'hq-social-drafts', where: { caption: { contains: MARK } }, overrideAccess: true })
     expect(after.totalDocs).toBe(before.totalDocs)
@@ -226,7 +242,7 @@ describe('story import against the database', () => {
 
   it('can import a few posts at a time, each of which sends a preview', async () => {
     await cleanup()
-    const results = await applyImport(payload, planImport(testPack(), { start: '2026-10-06' }), { only: ['social'], limit: 2 })
+    const results = await applyImport(payload, await fbReady(planImport(testPack(), { start: '2026-10-06' })), { only: ['social'], limit: 2 })
     expect(results.filter((r) => r.result === 'created')).toHaveLength(2)
     expect(results.filter((r) => r.result === 'skipped')).toHaveLength(4)
   })
