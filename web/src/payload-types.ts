@@ -91,6 +91,7 @@ export interface Config {
     'hq-chat-turns': HqChatTurn;
     'hq-visits': HqVisit;
     'hq-experiments': HqExperiment;
+    'hq-artwork-uploads': HqArtworkUpload;
     'payload-mcp-api-keys': PayloadMcpApiKey;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
@@ -123,6 +124,7 @@ export interface Config {
     'hq-chat-turns': HqChatTurnsSelect<false> | HqChatTurnsSelect<true>;
     'hq-visits': HqVisitsSelect<false> | HqVisitsSelect<true>;
     'hq-experiments': HqExperimentsSelect<false> | HqExperimentsSelect<true>;
+    'hq-artwork-uploads': HqArtworkUploadsSelect<false> | HqArtworkUploadsSelect<true>;
     'payload-mcp-api-keys': PayloadMcpApiKeysSelect<false> | PayloadMcpApiKeysSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
@@ -1324,6 +1326,50 @@ export interface HqExperiment {
   createdAt: string;
 }
 /**
+ * Upload links for our own artwork. Bookkeeping only.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-artwork-uploads".
+ */
+export interface HqArtworkUpload {
+  id: number;
+  tokenHash: string;
+  status: 'pending' | 'storing' | 'stored' | 'failed';
+  expiresAt: string;
+  meta:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  chunks?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  chunkTotal?: number | null;
+  media?: (number | null) | Media;
+  result?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  error?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * API keys control which collections, resources, tools, and prompts MCP clients can access
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1561,9 +1607,21 @@ export interface PayloadMcpApiKey {
      */
     hqAddSiteMediaFromUrl?: boolean | null;
     /**
-     * Add artwork Flamingo County made itself (a drawn cover or illustration, or our own photo) to the public site’s media library and return its id, for a listing’s `gallery`, a story’s cover or an event’s `image` (set it in a draft; it shows only once the owner publishes). Never a third party’s picture: an archive photo goes through hqAddSiteMediaFromUrl. Send the file as base64 (JPEG or PNG, checked by its real bytes, at least 1000 px wide); it is re-encoded within the site’s 400 KB image budget. The credit is always "Flamingo County" ("Ilustración: Flamingo County" for an illustration), followed by `basedOn`: what it was drawn from, in each language, so that source keeps its credit; "original" for work drawn from nothing. Returns {id, filename, width, height, filesize}.
+     * Add artwork Flamingo County made itself (a drawn cover or illustration, or our own photo) to the public site’s media library and return its id, for a listing’s `gallery`, a story’s cover or an event’s `image` (set it in a draft; it shows only once the owner publishes). Never a third party’s picture: an archive photo goes through hqAddSiteMediaFromUrl. Send the file as base64 (JPEG or PNG, checked by its real bytes, at least 1000 px wide); it is re-encoded within the site’s 400 KB image budget. Only for a SMALL file: the whole file must fit in this one call, and a 70 KB drawing is already about 95,000 characters. Anything bigger: use hqStartSiteArtworkUpload (a one-time upload link you PUT the file to with curl) instead. The credit is always "Flamingo County" ("Ilustración: Flamingo County" for an illustration), followed by `basedOn`: what it was drawn from, in each language, so that source keeps its credit; "original" for work drawn from nothing. Returns {id, filename, width, height, filesize}.
      */
     hqAddSiteArtworkFromUpload?: boolean | null;
+    /**
+     * Step 1 of adding artwork Flamingo County made (a drawn cover, our own photo) to the public site’s media library: the usual way, for a file of any size up to 25 MB. Give the picture’s details (the same rules as hqAddSiteArtworkFromUpload: ours only, alt text and basedOn in both languages; the credit is always "Flamingo County"). Returns {uploadId, uploadUrl, expiresAt, maxBytes, send}. Step 2: send the file from your shell, exactly as `send` shows: curl -sS -X PUT --data-binary @<file> -H 'Content-Type: image/jpeg' '<uploadUrl>'. The answer is {id, filename, width, height, filesize}: set that id on a draft (listing gallery, story cover, event image). The link works once, for 15 minutes; never paste it anywhere else. No shell? Send the file in pieces with hqSiteArtworkUploadChunk, then hqFinishSiteArtworkUpload.
+     */
+    hqStartSiteArtworkUpload?: boolean | null;
+    /**
+     * The fallback for a client that cannot run curl: send an upload’s file in pieces. After hqStartSiteArtworkUpload, base64 the file, cut the base64 into pieces of at most 20,000 characters (cut on a multiple of 4 characters), and send each with its index (from 0), the total count, and the sha256 (hex) of that piece’s DECODED bytes. A piece that does not match its sha256 is refused: resend just that one. Up to 2 MB in all. Then call hqFinishSiteArtworkUpload.
+     */
+    hqSiteArtworkUploadChunk?: boolean | null;
+    /**
+     * Where an artwork upload stands: stored (with {id, filename, width, height, filesize}), pending, storing, failed (with the reason) or expired. For a chunked upload with every piece in, this assembles them, checks the whole file against `sha256` when given, and stores the picture.
+     */
+    hqFinishSiteArtworkUpload?: boolean | null;
     /**
      * Add a photo or video from the caller's own computer to HQ media and return its id, for the `media` field of an hq-social-drafts document. Use it when the file is not on a public URL, for example a finished video. Send the file as base64 in `dataBase64` and its type in `mimeType`: JPEG, PNG or MP4 (H.264; not .mov), up to 50 MB (about 67 MB of base64). The file is checked by its real bytes. Sending the same file again returns the stored one. Instagram and TikTok drafts need at least one media. Nothing is posted by this tool.
      */
@@ -1804,6 +1862,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'hq-experiments';
         value: number | HqExperiment;
+      } | null)
+    | ({
+        relationTo: 'hq-artwork-uploads';
+        value: number | HqArtworkUpload;
       } | null)
     | ({
         relationTo: 'payload-mcp-api-keys';
@@ -2462,6 +2524,23 @@ export interface HqExperimentsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-artwork-uploads_select".
+ */
+export interface HqArtworkUploadsSelect<T extends boolean = true> {
+  tokenHash?: T;
+  status?: T;
+  expiresAt?: T;
+  meta?: T;
+  chunks?: T;
+  chunkTotal?: T;
+  media?: T;
+  result?: T;
+  error?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-mcp-api-keys_select".
  */
 export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
@@ -2589,6 +2668,9 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         hqAddDraftMediaFromUrl?: T;
         hqAddSiteMediaFromUrl?: T;
         hqAddSiteArtworkFromUpload?: T;
+        hqStartSiteArtworkUpload?: T;
+        hqSiteArtworkUploadChunk?: T;
+        hqFinishSiteArtworkUpload?: T;
         hqAddDraftMediaFromUpload?: T;
         hqCancelDraft?: T;
         hqRequestPublish?: T;

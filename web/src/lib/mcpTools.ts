@@ -8,6 +8,7 @@ import { z } from 'zod'
 
 import { PUBLISHED } from '../fields/shared'
 import type { Event, HqSocialDraft, Story } from '../payload-types'
+import { CHUNK_MAX_CHARS, MAX_CHUNKS, addArtworkChunk, finishArtworkUpload, startArtworkUpload } from './artworkUpload'
 import { buildBrief } from './brief'
 import { trafficReport } from './growth'
 import { addDays, dateOnly, eventEndDay, todayISO } from './dates'
@@ -16,6 +17,18 @@ import { isRunningCount, type MetricSummary } from './postiz'
 import { PUBLISHABLE, publishStatus, requestPublish } from './publishRequests'
 import { PHOTO_LICENSES, canonicalLicenseUrl, isPhotoLicense, licenseLabel, type PhotoLicense } from './photoLicense'
 import { REQUEST_KINDS, isRequestKind, type RequestKind } from './requestKinds'
+import {
+  ARTWORK_BUDGET,
+  ARTWORK_CREDIT,
+  ARTWORK_ORIGINS,
+  ARTWORK_UPLOAD_LIMIT,
+  checkArtworkMeta,
+  fitArtwork,
+  focalPoint,
+  storeSiteArtwork,
+  type ArtworkMetaArgs,
+  type ArtworkOrigin,
+} from './siteArtwork'
 import { routes } from './routes'
 import { MESSAGE_LIMIT, esc, sendMessage, telegramConfigured } from './telegram'
 
@@ -24,6 +37,8 @@ import { MESSAGE_LIMIT, esc, sendMessage, telegramConfigured } from './telegram'
  * generates. Each must also be ticked on the API key before a client sees it
  * (Admin → MCP → API Keys), the same as the collections.
  */
+
+export { ARTWORK_BUDGET, ARTWORK_CREDIT, ARTWORK_ORIGINS, fitArtwork, type ArtworkOrigin }
 
 type ToolResult = { content: { type: 'text'; text: string }[] }
 const text = (t: string): ToolResult => ({ content: [{ type: 'text', text: t }] })
@@ -616,12 +631,7 @@ export type SiteMediaArgs = {
   focalY?: number
 }
 
-const focal = (v: unknown, what: string): number | undefined => {
-  if (v === undefined || v === null) return undefined
-  const n = Number(v)
-  if (!Number.isFinite(n) || n < 0 || n > 100) throw new Error(`${what} must be 0–100.`)
-  return n
-}
+const focal = focalPoint
 
 function httpsUrl(v: string, what: string): URL {
   let u: URL
@@ -741,144 +751,23 @@ export async function addSiteMediaFromUrl(req: PayloadRequest, args: SiteMediaAr
 /* Our own artwork, into the public media library                           */
 /* ------------------------------------------------------------------------ */
 
-/** Who made it. Nothing else can be stored through this tool: an archive's photo goes through hqAddSiteMediaFromUrl. */
-export const ARTWORK_ORIGINS = ['own-illustration', 'own-photo'] as const
-export type ArtworkOrigin = (typeof ARTWORK_ORIGINS)[number]
-/** The site's image budget (scripts/check-image-budget.mjs), applied to the stored original. */
-export const ARTWORK_BUDGET = 400 * 1024
-/** What may be sent: a full-size PNG from the drawing pipeline is several MB before it is compressed here. */
-const ARTWORK_UPLOAD_LIMIT = 25 * 1024 * 1024
-/** The credit our artwork carries: it is ours, so the name is not a parameter. */
-export const ARTWORK_CREDIT = 'Flamingo County'
-const BASED_ON_MAX = 160
-
-export type SiteArtworkArgs = {
-  filename: string
-  mimeType: string
+export type SiteArtworkArgs = ArtworkMetaArgs & {
+  /** The file, base64. Fine for a small file; anything bigger goes through hqStartSiteArtworkUpload. */
   dataBase64: string
-  origin: string
-  altEs: string
-  altEn: string
-  /** What it was drawn from, as the credit says it, in each language; "original" for work from nothing. */
-  basedOnEs: string
-  basedOnEn: string
-  focalX?: number
-  focalY?: number
 }
 
 /**
- * Re-encode to a JPEG within the budget: no metadata carried over, longest side
- * at most 2560, and the quality stepped down until it fits. Refuses rather than
- * crushing it: past the lowest step the image is too detailed to stay crisp.
- */
-export async function fitArtwork(data: Buffer, budget: number = ARTWORK_BUDGET): Promise<Buffer> {
-  const steps: [number, number][] = [
-    [SITE_MEDIA_MAX_SIDE, 86],
-    [SITE_MEDIA_MAX_SIDE, 78],
-    [2200, 74],
-    [1920, 72],
-    [1920, 64],
-  ]
-  for (const [side, quality] of steps) {
-    const out = await sharp(data)
-      .rotate()
-      .resize({ width: side, height: side, fit: 'inside', withoutEnlargement: true })
-      .jpeg({ quality, mozjpeg: true })
-      .toBuffer()
-    if (out.length <= budget) return out
-  }
-  throw new Error(
-    `Over the site's ${Math.round(budget / 1024)} KB image budget even at 1920 px and quality 64. Simplify or crop the image and send it again.`,
-  )
-}
-
-const isOriginal = (v: string) => v.toLowerCase() === 'original'
-
-/**
- * Add artwork Flamingo County made (a drawn cover, our own photo) to the public
- * `media` library and return its id, for a listing's `gallery`, a story's
- * cover or an event's `image`, set in a draft.
- *
- * The archive tool takes only licensed photos from three hosts, which left no
- * way in for our own drawings. This is that way, and only that:
- * - `origin` must say we made it, and the credit is always "Flamingo County",
- *   never a parameter, so a third party's picture cannot be passed off here;
- * - `basedOn` (both languages) is required: an illustration drawn from an
- *   archive photo says so, and that archive keeps its credit;
- * - the bytes decide the type (JPEG or PNG), at least 1000 px wide, and the
- *   stored file is re-encoded within the 400 KB image budget.
- *
- * Like an imported photo, it has a public URL from now on but is on a page only
- * once something that uses it is published, by the owner's tap.
+ * The one-shot way in: the whole file as base64 inside one tool call. It works
+ * for a small file, but a model cannot reliably write a 100,000-character
+ * argument (a 72 KB drawing is that), so the upload link
+ * (`hqStartSiteArtworkUpload`, lib/artworkUpload.ts) is the usual path. The
+ * checks and the storing are shared (lib/siteArtwork.ts).
  */
 export async function addSiteArtworkFromUpload(req: PayloadRequest, args: SiteArtworkArgs) {
-  if (!(ARTWORK_ORIGINS as readonly string[]).includes(String(args.origin))) {
-    throw new Error(
-      `origin must be one of ${ARTWORK_ORIGINS.join(', ')}: this tool is for artwork Flamingo County made. A photo from an archive goes through hqAddSiteMediaFromUrl.`,
-    )
-  }
-  const altEn = String(args.altEn ?? '').trim()
-  const altEs = String(args.altEs ?? '').trim()
-  if (!altEn || !altEs) throw new Error('Alt text is required in both languages (altEs, altEn).')
-  const basedOnEs = String(args.basedOnEs ?? '').replace(/\s+/g, ' ').trim()
-  const basedOnEn = String(args.basedOnEn ?? '').replace(/\s+/g, ' ').trim()
-  if (!basedOnEs || !basedOnEn) {
-    throw new Error(
-      'basedOnEs and basedOnEn are required: what the artwork was drawn from, as the credit says it (e.g. "basada en fotos del Historic American Buildings Survey (dominio público)"), or "original" for work from nothing.',
-    )
-  }
-  if (basedOnEs.length > BASED_ON_MAX || basedOnEn.length > BASED_ON_MAX) {
-    throw new Error(`basedOn too long (at most ${BASED_ON_MAX} characters each).`)
-  }
-  const focalX = focal(args.focalX, 'focalX')
-  const focalY = focal(args.focalY, 'focalY')
-
+  const meta = checkArtworkMeta(args)
   const { data, type } = decodeUpload(args, ARTWORK_UPLOAD_LIMIT)
   if (type !== 'image/jpeg' && type !== 'image/png') throw new Error('Artwork must be a JPEG or PNG image.')
-  const meta = await sharp(data)
-    .metadata()
-    .catch(() => null)
-  if (!meta || !meta.width || !meta.height) throw new Error('Not a readable JPEG or PNG.')
-  const wide = meta.orientation && meta.orientation >= 5 ? meta.height : meta.width
-  if (wide < SITE_MEDIA_MIN_WIDTH) throw new Error(`Too small: ${wide} px wide, at least ${SITE_MEDIA_MIN_WIDTH} needed.`)
-  const jpeg = await fitArtwork(data)
-
-  const stem = args.filename.replace(/\.[^.]*$/, '').replace(/[^\w-]+/g, '-').slice(0, 60) || 'artwork'
-  const doc = await req.payload.create({
-    collection: 'media',
-    data: {
-      alt: altEn,
-      credit: ARTWORK_CREDIT,
-      origin: args.origin as ArtworkOrigin,
-      basedOn: isOriginal(basedOnEn) ? null : basedOnEn,
-      modified: false,
-      // Payload takes a focal point only with both values set, and reads 0 as unset.
-      ...(focalX !== undefined || focalY !== undefined
-        ? { focalX: Math.max(1, focalX ?? 50), focalY: Math.max(1, focalY ?? 50) }
-        : {}),
-    },
-    file: { data: jpeg, mimetype: 'image/jpeg', name: `${stem}-${Date.now()}.jpg`, size: jpeg.length },
-    locale: 'en',
-    req,
-    overrideAccess: false,
-  })
-  // Payload stores the original as WebP (Media's formatOptions), so the budget is checked on what it kept.
-  if ((doc.filesize ?? 0) > ARTWORK_BUDGET) {
-    // Only the record this call just made: delete is off over MCP, so it is removed with server rights.
-    await req.payload.delete({ collection: 'media', id: doc.id, overrideAccess: true }).catch(() => undefined)
-    throw new Error(
-      `Stored at ${Math.round((doc.filesize ?? 0) / 1024)} KB, over the site's ${Math.round(ARTWORK_BUDGET / 1024)} KB image budget. Simplify or crop the image and send it again.`,
-    )
-  }
-  await req.payload.update({
-    collection: 'media',
-    id: doc.id,
-    data: { alt: altEs, basedOn: isOriginal(basedOnEs) ? null : basedOnEs },
-    locale: 'es',
-    req,
-    overrideAccess: false,
-  })
-  return { id: doc.id, filename: doc.filename, width: doc.width, height: doc.height, filesize: doc.filesize }
+  return storeSiteArtwork(req.payload, meta, data, { req })
 }
 
 /* ------------------------------------------------------------------------ */
@@ -1021,7 +910,7 @@ export const hqMcpTools: McpTool[] = [
   {
     name: 'hqAddSiteArtworkFromUpload',
     description:
-      'Add artwork Flamingo County made itself (a drawn cover or illustration, or our own photo) to the public site’s media library and return its id, for a listing’s `gallery`, a story’s cover or an event’s `image` (set it in a draft; it shows only once the owner publishes). Never a third party’s picture: an archive photo goes through hqAddSiteMediaFromUrl. Send the file as base64 (JPEG or PNG, checked by its real bytes, at least 1000 px wide); it is re-encoded within the site’s 400 KB image budget. The credit is always "Flamingo County" ("Ilustración: Flamingo County" for an illustration), followed by `basedOn`: what it was drawn from, in each language, so that source keeps its credit; "original" for work drawn from nothing. Returns {id, filename, width, height, filesize}.',
+      'Add artwork Flamingo County made itself (a drawn cover or illustration, or our own photo) to the public site’s media library and return its id, for a listing’s `gallery`, a story’s cover or an event’s `image` (set it in a draft; it shows only once the owner publishes). Never a third party’s picture: an archive photo goes through hqAddSiteMediaFromUrl. Send the file as base64 (JPEG or PNG, checked by its real bytes, at least 1000 px wide); it is re-encoded within the site’s 400 KB image budget. Only for a SMALL file: the whole file must fit in this one call, and a 70 KB drawing is already about 95,000 characters. Anything bigger: use hqStartSiteArtworkUpload (a one-time upload link you PUT the file to with curl) instead. The credit is always "Flamingo County" ("Ilustración: Flamingo County" for an illustration), followed by `basedOn`: what it was drawn from, in each language, so that source keeps its credit; "original" for work drawn from nothing. Returns {id, filename, width, height, filesize}.',
     parameters: {
       filename: z.string().min(1).max(120).describe('The file name, e.g. hialeah-park-cover.png'),
       mimeType: z.enum(['image/jpeg', 'image/png']).describe('The type of the file'),
@@ -1044,6 +933,80 @@ export const hqMcpTools: McpTool[] = [
     },
     handler: (args: Record<string, unknown>, req: PayloadRequest) =>
       guard(async () => text(JSON.stringify(await addSiteArtworkFromUpload(req, args as unknown as SiteArtworkArgs)))),
+  },
+  {
+    name: 'hqStartSiteArtworkUpload',
+    description:
+      'Step 1 of adding artwork Flamingo County made (a drawn cover, our own photo) to the public site’s media library: the usual way, for a file of any size up to 25 MB. Give the picture’s details (the same rules as hqAddSiteArtworkFromUpload: ours only, alt text and basedOn in both languages; the credit is always "Flamingo County"). Returns {uploadId, uploadUrl, expiresAt, maxBytes, send}. Step 2: send the file from your shell, exactly as `send` shows: curl -sS -X PUT --data-binary @<file> -H \'Content-Type: image/jpeg\' \'<uploadUrl>\'. The answer is {id, filename, width, height, filesize}: set that id on a draft (listing gallery, story cover, event image). The link works once, for 15 minutes; never paste it anywhere else. No shell? Send the file in pieces with hqSiteArtworkUploadChunk, then hqFinishSiteArtworkUpload.',
+    parameters: {
+      filename: z.string().min(1).max(120).describe('The file name, e.g. hialeah-park-cover.jpg'),
+      mimeType: z.enum(['image/jpeg', 'image/png']).describe('The type of the file you will send'),
+      origin: z.enum(ARTWORK_ORIGINS).describe('own-illustration (we drew it) or own-photo (we took it)'),
+      altEs: z.string().min(1).max(300).describe('Alt text in Spanish: what the picture shows'),
+      altEn: z.string().min(1).max(300).describe('Alt text in English'),
+      basedOnEs: z
+        .string()
+        .min(1)
+        .max(160)
+        .describe('What it was drawn from, as the Spanish credit says it, e.g. "basada en fotos del Historic American Buildings Survey (dominio público)"; "original" if from nothing'),
+      basedOnEn: z
+        .string()
+        .min(1)
+        .max(160)
+        .describe('The same in English, e.g. "based on Historic American Buildings Survey photos (public domain)"; "original" if from nothing'),
+      focalX: z.number().min(0).max(100).optional().describe('Where crops centre across, 0–100 (default 50)'),
+      focalY: z.number().min(0).max(100).optional().describe('Where crops centre down, 0–100 (default 50)'),
+    },
+    handler: (args: Record<string, unknown>, req: PayloadRequest) =>
+      guard(async () => text(JSON.stringify(await startArtworkUpload(req.payload, args as unknown as ArtworkMetaArgs)))),
+  },
+  {
+    name: 'hqSiteArtworkUploadChunk',
+    description:
+      'The fallback for a client that cannot run curl: send an upload’s file in pieces. After hqStartSiteArtworkUpload, base64 the file, cut the base64 into pieces of at most ' +
+      CHUNK_MAX_CHARS.toLocaleString('en-US') +
+      ' characters (cut on a multiple of 4 characters), and send each with its index (from 0), the total count, and the sha256 (hex) of that piece’s DECODED bytes. A piece that does not match its sha256 is refused: resend just that one. Up to 2 MB in all. Then call hqFinishSiteArtworkUpload.',
+    parameters: {
+      uploadId: z.number().int().positive().describe('From hqStartSiteArtworkUpload'),
+      index: z.number().int().min(0).describe('This piece’s position, from 0'),
+      total: z.number().int().min(1).max(MAX_CHUNKS).describe('How many pieces in all'),
+      dataBase64: z.string().min(1).max(CHUNK_MAX_CHARS).describe('This piece, base64'),
+      sha256: z.string().regex(/^[a-fA-F0-9]{64}$/).describe('sha256 hex of this piece’s decoded bytes'),
+    },
+    handler: (args: Record<string, unknown>, req: PayloadRequest) =>
+      guard(async () =>
+        text(
+          JSON.stringify(
+            await addArtworkChunk(req.payload, {
+              uploadId: Number(args.uploadId),
+              index: Number(args.index),
+              total: Number(args.total),
+              dataBase64: String(args.dataBase64),
+              sha256: String(args.sha256),
+            }),
+          ),
+        ),
+      ),
+  },
+  {
+    name: 'hqFinishSiteArtworkUpload',
+    description:
+      'Where an artwork upload stands: stored (with {id, filename, width, height, filesize}), pending, storing, failed (with the reason) or expired. For a chunked upload with every piece in, this assembles them, checks the whole file against `sha256` when given, and stores the picture.',
+    parameters: {
+      uploadId: z.number().int().positive().describe('From hqStartSiteArtworkUpload'),
+      sha256: z.string().regex(/^[a-fA-F0-9]{64}$/).optional().describe('Optional: sha256 hex of the whole file, checked after a chunked upload is assembled'),
+    },
+    handler: (args: Record<string, unknown>, req: PayloadRequest) =>
+      guard(async () =>
+        text(
+          JSON.stringify(
+            await finishArtworkUpload(req.payload, {
+              uploadId: Number(args.uploadId),
+              sha256: (args.sha256 as string | undefined) ?? null,
+            }),
+          ),
+        ),
+      ),
   },
   {
     name: 'hqAddDraftMediaFromUpload',

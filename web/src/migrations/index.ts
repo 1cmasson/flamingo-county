@@ -26,6 +26,7 @@ import * as migration_20261006_145921_add_request_kinds from './20261006_145921_
 import * as migration_20261007_120000_add_gems_category from './20261007_120000_add_gems_category';
 import * as migration_20261007_125000_gem_label from './20261007_125000_gem_label';
 import * as migration_20261007_170624_add_site_artwork_tool from './20261007_170624_add_site_artwork_tool';
+import * as migration_20261007_183854_add_artwork_upload_links from './20261007_183854_add_artwork_upload_links';
 
 export const migrations = [
   {
@@ -166,6 +167,11 @@ export const migrations = [
   {
     up: migration_20261007_170624_add_site_artwork_tool.up,
     down: migration_20261007_170624_add_site_artwork_tool.down,
-    name: '20261007_170624_add_site_artwork_tool'
+    name: '20261007_170624_add_site_artwork_tool',
+  },
+  {
+    up: migration_20261007_183854_add_artwork_upload_links.up,
+    down: migration_20261007_183854_add_artwork_upload_links.down,
+    name: '20261007_183854_add_artwork_upload_links'
   },
 ];
