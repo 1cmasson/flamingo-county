@@ -1,9 +1,9 @@
 # AEO handoff: making flamingocounty.com the source answer engines cite
 
-Last updated 2026-10-05 for the next agent. Read this first, then `scripts/aeo/probe.ts` and `src/lib/jsonld.ts`.
+Last updated 2026-10-07 for the next agent. Read this first. **Round 3 (below the owner rules) is the current plan;** the older sections are its background. Then read `scripts/aeo/probe.ts`, `src/lib/jsonld.ts` and, for the civic data, `src/lib/civicSync.ts`.
 
 ## The goal
-When someone asks ChatGPT, Perplexity, Google AI Overviews, Claude or Siri about restaurants, bars, nonprofits, events or local business in Hialeah / Miami-Dade (later also Miami-Dade business history), flamingocounty.com is one of the cited sources. Answer engines cite what they can crawl, parse, trust and quote, so the work is: be crawlable, be machine-readable, state verified facts as short direct answers, stay fresh, and be corroborated off-site.
+When someone asks ChatGPT, Perplexity, Google AI Overviews, Claude or Siri about restaurants, bars, nonprofits, events or local business in Hialeah / Miami-Dade (later also Miami-Dade business history), **or about living there (trash days, flood and evacuation zones, who represents you, where you vote)**, flamingocounty.com is one of the cited sources. Answer engines cite what they can crawl, parse, trust and quote, so the work is: be crawlable, be machine-readable, state verified facts as short direct answers, stay fresh, and be corroborated off-site.
 
 ## Owner rules (don't re-ask, don't work around)
 - **Publishing needs the owner's tap.** Claude drafts freely; site content goes live only when the owner taps Publish in Telegram (HQ). Save drafts over the `flamingo-hq` MCP with `draft: true`, then `hqRequestPublish`. Never publish through the admin in Chrome, a Railway shell, direct DB access, or a merge that changes content. Code PRs are not content publishing. If the owner asks to bypass this once, confirm first. (Memory: `site-writes-need-owner-code`.)
@@ -11,6 +11,150 @@ When someone asks ChatGPT, Perplexity, Google AI Overviews, Claude or Siri about
 - **Autonomy:** AI drafts, a human batch-approves. Nothing AI-generated publishes unreviewed. 13 mock listings once had fabricated phone/hours/story; a wrong fact in an AI answer is worse than none.
 - **Content focus:** restaurant listings, events, non-restaurant local businesses, later a Miami-Dade history section (only with a cited source per claim).
 - **Tracking:** free/DIY, no paid GEO tracker. **Training bots:** allowed (opt-out recipe in a comment in `src/app/robots.ts`).
+
+## Round 3 (2026-10-07): civic answers, and finishing round 2
+
+### Where things stand (checked live on 2026-10-07)
+- **Citations: still the 2026-10-01 baseline, 0/216.** The next probe is due 2026-10-22 to 10-29 (Open items #3 below). Google sent **2 visits in 28 days** (`hqBrief`).
+- **Round 2 stalled.** Of 13 listings, only `molinas-ranch` shows "Last verified" and `OpeningHoursSpecification` live. HQ task #30 is "doing", but **no drafts exist for the other ten** (checked with `findListings` with `draft: true`), so it waits on Claude, not on the owner. The likely blocker is the Spanish hours-label snag in Open items #1. No listing has its `answer` copy yet.
+- **New since round 2 (PRs #86/#87, live 2026-10-07):**
+  - **`/[lang]/address`**, linked from the home page box, TU DIRECCIÓN in the menus and the footer. For any of Miami-Dade's ~613,000 street addresses it shows:
+    - trash, recycling and bulk days, with the next dates
+    - the FEMA flood zone and the storm-surge zone
+    - the county commissioner and the state districts, plus Hialeah's mayor
+    - the Election Day polling place and the assigned schools
+    - the nearest fire station, police, hospital, library and park
+    - a map of eight layers
+  - **The data** comes from `src/lib/civicSync.ts`, which builds `/data/civic/civic.db` monthly on the server, never in git. Its tables:
+    - `addr`: one row per address, with its zone ids
+    - `meta`: the zone tables and the places
+    - `tiles`: vector tiles for the map
+  - **What isn't crawlable:** single-address pages (`?a=`) are **noindex** on purpose. The search page `/es/address` is in the sitemap, but nothing on it is a citable fact.
+  - **`llms.txt` mentions neither the address tool nor the free-rides pages.**
+- **No unmerged AEO work exists.** Every `aeo-*` branch is merged, and `admin-hq-link` (#79) was an admin nav change.
+
+### Why civic is the opportunity
+These questions are asked daily, in Spanish, and today's answers are buried in city PDFs and map viewers that answer engines can't read. On 2026-10-06 ChatGPT, asked for one Hialeah address's bulk trash day, said the city map "isn't returning the address" and declined. It also sent the asker to a Flamingo stop 24 minutes' walk away, when the free Marlin stopped 7 minutes away. We hold the worked-out answers. What's missing is a page per question that a crawler can read and quote.
+
+### What this round will not do
+- **No page per house, ever.** It's a "look up anyone's home" directory and thin content. Single addresses stay noindex.
+- **No pages per street (yet).** Tens of thousands of near-identical generated pages, on a site with no citations and most pages still "Discovered, not indexed", is what Google's scaled-content policy targets. A small street experiment can come later, measured (Phase 5).
+- **No owner-occupancy data.** The homestead work is an eligibility guide, never a lookup of whether a given address has an exemption (Phase 4).
+
+### Phase 0: measure first (do before shipping any page)
+1. Add **25–30 civic questions** to `scripts/aeo/questions.json`.
+   - Spanish first, phrased the way people ask: «qué día recogen la basura grande en hialeah», «quién es mi comisionado en miami-dade», «dónde voto en hialeah», «hialeah está en zona de evacuación», «cuál es mi zona de inundación».
+   - Add English twins.
+   - Give the new ids a `civic-` prefix. Keep reporting the original 23 ids separately, as below.
+2. **Run a baseline on only the civic ids now** (`--only` / `--runs 1` keep it cheap) and log it in `docs/aeo-experiments.md` as an experiment: pages changed = the new civic pages, control = listings and events.
+3. **Decide the Search Console path for HQ-G2.**
+   - Owner action H7 is done, so it's no longer blocked. The `/api/mcp` script route is blocked by Cloudflare, and the third-party Search Console MCPs are unvetted.
+   - **Recommendation:** a Google Cloud service account added to the Search Console property as a restricted user, its key in a Railway env var, and `searchanalytics.query` called inside `hqGrowthContext`. It pulls when a `/review` runs, so no cron is needed.
+   - **Owner decision (O1).**
+
+**Done when:** the questions are merged, the baseline is logged with its date, and G2 has a decided path (built or scheduled).
+
+### Phase 1: quick wins (one small PR)
+- **`llms.txt`:** add the address tool (what it answers and its source agencies), the free-rides hub and route pages, and every page this round creates.
+- **JSON-LD on `/address`:**
+  - `WebApplication`, with `areaServed` Miami-Dade County. Leave out `isAccessibleForFree` and any `offers`: the "no prices" rule bans those on events, and it's simplest to keep them off every page.
+  - `Dataset`, naming the county, city and FEMA sources.
+- **Sitemap and IndexNow:** the new URLs, then `pnpm aeo:indexnow`.
+- **Finish round 2 #1 (task #30).**
+  1. Clear the Spanish `detail.hours[].d` snag: make the seed write Spanish labels, or put them in each ES draft.
+  2. Create the ten listing drafts carrying only the four fact fields.
+  3. Call one `hqRequestPublish`. Publishing takes the **owner's tap**.
+
+**Done when:**
+- `llms.txt` lists the new pages.
+- The Rich Results Test is clean on `/en/address`.
+- Ten more listings show "Last verified".
+
+### Phase 2: "where to vote" (time-boxed: the election is 2026-11-03)
+These pages are only worth it if they're crawled well before Election Day. **Ship by 2026-10-14 or skip until the next election.**
+- **Pages:** `/[lang]/vote` plus one page per municipality, and one for unincorporated Miami-Dade split by commission district.
+  - Each page is a table: precinct → Election Day polling place (name and address) → the precincts it serves.
+  - A map links to the address page's `polling` layer.
+- **Copy:** «Esto es para el día de las elecciones; la votación temprana es en otros lugares», linking the Miami-Dade Elections Department.
+- **Verify before shipping.** The `PollingPlace_gdb` layer was edited 2026-08-03. Spot-check 10 precincts against the Elections Department's own precinct finder for **this** election. If any differ, the county data is stale: don't ship, and say so.
+- **After Nov 3:** show "the 2026-11-03 election is over" and stop claiming the sites are current. Keep the pages for the next election.
+
+**Done when:** the pages are live, in the sitemap and submitted, with 10/10 spot checks matching and the after-election behavior coded.
+
+### Phase 3: civic answer pages (a few dozen, each with data that really differs)
+Every page:
+- leads with a one-sentence direct answer (the answer-block pattern from #48),
+- shows a table of the underlying records, and links the map layer (`/es/address?lens=…`),
+- shows "Fuente: <agency> · datos del <fetchedAt>" with links,
+- carries `BreadcrumbList` and `WebPage` with `dateModified`,
+- uses `FAQPage` **only** where each answer is a sourced record.
+
+**Pages:**
+- **Commission districts (13):** the commissioner, the cities and areas in the district, a map, and the source.
+- **City civic pages (~34 municipalities, plus unincorporated):**
+  - who collects trash (the city or the county)
+  - the zone table, where we have one
+  - the share of addresses in high-risk flood zones and in each surge zone
+  - the number of polling places
+  - the fire and police stations
+  - the link to the city's own site
+- **Storm-surge zones A–E**, and a Hialeah page («¿Hialeah está en zona de evacuación?»: about 10,500 Hialeah buildings are in zones D/E). **Hurricane season ends 2026-11-30**, so ship this before that.
+- **Trash zone pages**, only where real schedules exist:
+  - Hialeah (garbage, recycling and bulk zones)
+  - City of Miami (garbage, recycling, and the 4-Day Plan bulk)
+  - County routes, grouped by pickup days. County bulk is by appointment, and county recycling is every other week with no published anchor, so name the day and link the county's lookup. Never invent dates.
+
+**Build notes:**
+- Generate the page data in `civicSync.ts` (new `meta` keys or tables) and bump `SCHEMA`.
+- Pages read only `civic.db`. **While it's missing, return 503 with Retry-After, never an empty 200.**
+
+**Done when:**
+- The pages are live and in the sitemap, with IndexNow submitted.
+- The Rich Results Test is clean on one page of each kind.
+- The civic probe ids are re-run 4–6 weeks after shipping and logged against Phase 0.
+
+### Phase 4: homestead and senior exemption guide (ship by January; filing closes March 1, the next on 2027-03-01)
+- **An eligibility guide, not a lookup.** A few yes/no questions:
+  - Do you own it and live there on January 1?
+  - Are you 65 or older? Under the year's income limit?
+  - Have you lived there 25+ years? Are you a veteran or disabled?
+- **Results:** which exemptions to ask about, the March 1 deadline, what to bring, and links to the Property Appraiser's online filing and offices.
+- **Figures are read from the Property Appraiser's site** when the guide is built or refreshed, with source and date shown: this year's income limit, the exemption amounts. Never from memory.
+- **Spanish first.** It answers «¿cómo aplico al homestead en Miami-Dade?» and «exención para personas mayores Miami-Dade».
+- **The county has no open-data layer of exemptions** (searched 2026-10-07). A per-address check would expose whether an owner lives in their house, so there won't be one.
+
+### Phase 5: later, only if Phases 2–3 get crawled and cited
+- **A street-page experiment** on one city (Hialeah's main corridors), measured against a control. Kill it if it doesn't earn impressions.
+- **Elementary-school zone pages (216).**
+- **A public, read-only civic tool for AI agents** (approved, O4): a remote MCP or OpenAPI endpoint over `/api/address/*`, so assistants that can call tools ask us directly. It only exposes what the page already shows, and goes through a privacy review before launch.
+
+### Guardrails for whoever executes this
+- **Civic pages are code, not CMS content,** so they ship by PR, not through the owner's Publish tap. But **nothing AI-written ships unreviewed**: page text is built from the records, and any written intro goes through PR review.
+- **Privacy:** `ADDRESS_FIELDS` and `PARCEL_FIELDS` in `civicSync.ts` are allowlists. Never add owner, mailing-address, price, value or legal fields. A test checks this.
+- **Bump `SCHEMA` on any change to `civic.db`,** so servers rebuild at boot. The first build takes ~10 minutes, during which pages must 503.
+- **County layers come from the Open Data `*_gdb` services, by name.** The 311 map service renumbered and dropped its layers on 2026-10-07.
+- **Merging:** follow `GROWTH-HANDOFF.md`. Re-check `main` right before merging, `gh pr merge --match-head-commit`, and confirm Railway deployed that SHA. Other agents merge in parallel.
+- **Copy:** Spanish quotes are « », English uses " ". Spanish first. Use "guagua" for bus in Hialeah copy.
+- **State legislators:** the county's House and Senate layers date from 2022. Show the district and link the Legislature's lookup, never the name.
+
+### Owner decisions (answered 2026-10-07)
+| # | Decision | Answer |
+| --- | --- | --- |
+| O1 | Search Console access for HQ-G2 | **Not working yet.** The owner believed it was connected. On 2026-10-07 the local `gcloud` login returned 403 "insufficient authentication scopes" for the Search Console API. Next step: the owner runs `gcloud auth application-default login --scopes=https://www.googleapis.com/auth/webmasters.readonly,https://www.googleapis.com/auth/cloud-platform` (read-only, for local sessions). For HQ-G2 on the server, the service account below is still the plan. |
+| O2 | Ship "where to vote" pages before Nov 3 | **Go**, if the 10 spot checks pass by 2026-10-14 |
+| O3 | Tap Publish on the ten listing-fact drafts once sent | **Yes** |
+| O4 | A public civic tool for AI agents | **Yes, approved.** It still comes after Phases 2–3, and needs its own privacy review: expose only what `/address` already shows, and never accept or log anything about the person asking. |
+| O5 | A Cloudflare cache rule for `/api/tiles/*` (respect origin headers) | **Yes.** It's a Cloudflare dashboard change. Claude can do it in the owner's Chrome, with confirmation before saving. |
+
+### Order and dates
+| When | What |
+| --- | --- |
+| Now | Phase 0, then Phase 1 |
+| By 2026-10-14 | Phase 2 (where to vote), or skip it |
+| 2026-10-22 to 10-29 | Re-run the probe (Open items #3), including the civic baseline ids |
+| By 2026-11-15 | Phase 3, surge pages first (hurricane season ends Nov 30) |
+| January | Phase 4 |
+| After 4–6 weeks of data | Decide on Phase 5 |
 
 ## What is live (all merged to main and deployed, 2026-10-01)
 - **Foundations (#17):** `robots.ts`, `sitemap.ts` (EN/ES hreflang, real `lastmod`, published content only via `lib/data.ts`), `llms.txt`, JSON-LD (`src/lib/jsonld.ts` + `src/components/JsonLd.tsx`), OpenGraph helpers in `src/lib/site.ts` (pages must use `openGraph()`/`twitterCard()`: Next shallow-merges `openGraph`), AI traffic log (`logAiTraffic` in `src/proxy.ts`, one JSON line per AI bot hit or AI referral in Railway logs), IndexNow (hooks on listings/events/stories/cities, skips drafts; bulk `pnpm aeo:indexnow`).
