@@ -323,7 +323,7 @@ export function toListingEs(r: ResearchListing, enHours: { id?: string | null }[
   if (!schedule.length) return {}
   return {
     detail: {
-      hours: schedule.map((s: any, i: number) => ({
+      hours: schedule.map((s: { days?: string[]; opens: string; closes: string }, i: number) => ({
         id: enHours?.[i]?.id,
         d: dayLabel(s.days ?? [], 'es'),
         t: `${clock(s.opens)} – ${clock(s.closes)}`,
