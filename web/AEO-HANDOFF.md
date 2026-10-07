@@ -126,7 +126,7 @@ Every page:
 ### Phase 5: later, only if Phases 2–3 get crawled and cited
 - **A street-page experiment** on one city (Hialeah's main corridors), measured against a control. Kill it if it doesn't earn impressions.
 - **Elementary-school zone pages (216).**
-- **A public, read-only civic tool for AI agents:** a remote MCP or OpenAPI endpoint over `/api/address/*`, so assistants that can call tools ask us directly. It needs the owner's decision (O4) and a privacy review, though it only exposes what the page already shows.
+- **A public, read-only civic tool for AI agents** (approved, O4): a remote MCP or OpenAPI endpoint over `/api/address/*`, so assistants that can call tools ask us directly. It only exposes what the page already shows, and goes through a privacy review before launch.
 
 ### Guardrails for whoever executes this
 - **Civic pages are code, not CMS content,** so they ship by PR, not through the owner's Publish tap. But **nothing AI-written ships unreviewed**: page text is built from the records, and any written intro goes through PR review.
@@ -137,14 +137,14 @@ Every page:
 - **Copy:** Spanish quotes are « », English uses " ". Spanish first. Use "guagua" for bus in Hialeah copy.
 - **State legislators:** the county's House and Senate layers date from 2022. Show the district and link the Legislature's lookup, never the name.
 
-### Owner decisions this round needs
-| # | Decision | Recommendation |
+### Owner decisions (answered 2026-10-07)
+| # | Decision | Answer |
 | --- | --- | --- |
-| O1 | Search Console access for HQ-G2 | Service account + API, pulled when `/review` runs |
-| O2 | Ship "where to vote" pages before Nov 3 | Yes, if the 10 spot checks pass by 2026-10-14 |
-| O3 | Tap Publish on the ten listing-fact drafts once sent | — |
-| O4 | A public civic tool for AI agents (Phase 5) | Later |
-| O5 | Optional: a Cloudflare cache rule for `/api/tiles/*` (respect origin) | Yes, it costs nothing |
+| O1 | Search Console access for HQ-G2 | **Not working yet.** The owner believed it was connected. On 2026-10-07 the local `gcloud` login returned 403 "insufficient authentication scopes" for the Search Console API. Next step: the owner runs `gcloud auth application-default login --scopes=https://www.googleapis.com/auth/webmasters.readonly,https://www.googleapis.com/auth/cloud-platform` (read-only, for local sessions). For HQ-G2 on the server, the service account below is still the plan. |
+| O2 | Ship "where to vote" pages before Nov 3 | **Go**, if the 10 spot checks pass by 2026-10-14 |
+| O3 | Tap Publish on the ten listing-fact drafts once sent | **Yes** |
+| O4 | A public civic tool for AI agents | **Yes, approved.** It still comes after Phases 2–3, and needs its own privacy review: expose only what `/address` already shows, and never accept or log anything about the person asking. |
+| O5 | A Cloudflare cache rule for `/api/tiles/*` (respect origin headers) | **Yes.** It's a Cloudflare dashboard change. Claude can do it in the owner's Chrome, with confirmation before saving. |
 
 ### Order and dates
 | When | What |
