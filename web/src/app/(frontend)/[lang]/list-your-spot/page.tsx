@@ -4,6 +4,7 @@ import type { Metadata } from 'next'
 import { isLang, translator, type Lang } from '../../../../i18n'
 import { routes } from '../../../../lib/routes'
 import { getCategories, getCities, getListYourSpotPage } from '../../../../lib/data'
+import { isSelfServeCategory } from '../../../../lib/categories'
 import { PageShell } from '../../../../components/PageShell'
 import { RequestHub } from '../../../../components/RequestHub'
 import { isRequestKind } from '../../../../lib/requestKinds'
@@ -142,7 +143,9 @@ export default async function ListYourSpotPage({
           // City names are not localized on the record — they are proper
           // nouns — but the dictionary does carry them. The value stays the slug.
           cities={cities.map((c) => ({ slug: c.slug, label: t(c.name ?? c.slug) }))}
-          categories={categories.map((c) => ({ slug: c.slug, label: c.label ?? c.slug }))}
+          categories={categories
+            .filter((c) => isSelfServeCategory(c.slug))
+            .map((c) => ({ slug: c.slug, label: c.label ?? c.slug }))}
         />
 
         {/* --- Perks --- */}

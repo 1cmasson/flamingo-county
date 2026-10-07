@@ -28,6 +28,12 @@ describe('listingAnswer', () => {
       'Club de la Amistad is a nonprofit organization in Hialeah, Florida.',
     )
   })
+  it('calls a local gem an institution', () => {
+    const park = { name: 'Hialeah Park', answer: null, detail: { address: '100 E 32nd St, Hialeah, FL 33013' } }
+    expect(listingAnswer('es', park, { slug: 'gems' }, 'Hialeah')).toBe(
+      'Hialeah Park es una institución local en Hialeah, Florida, en 100 E 32nd St.',
+    )
+  })
   it('uses a neutral noun for an unknown category', () => {
     expect(listingAnswer('en', { name: 'X', answer: null, detail: {} }, null, undefined)).toBe(
       'X is a local business.',

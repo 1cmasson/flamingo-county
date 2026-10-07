@@ -31,7 +31,7 @@ async function main() {
   /* counts */
   const want: Record<string, number> = {
     cities: 3,
-    categories: 3,
+    categories: 4,
     'event-kinds': 7,
     // 13 researched imports; +14 fc-data mocks only when they are seeded.
     listings: SEED_MOCKS ? 27 : 13,
@@ -57,8 +57,8 @@ async function main() {
     const cats = await payload.find({ collection: 'categories', limit: 50, sort: 'order' })
     const slugs = cats.docs.map((d: any) => d.slug).sort()
     check(
-      'categories are food + night + nonprofit only',
-      slugs.join(',') === 'food,night,nonprofit',
+      'categories are food + gems + night + nonprofit only',
+      slugs.join(',') === 'food,gems,night,nonprofit',
       `got ${slugs.join(',') || '(none)'}`,
     )
     const labels = Object.fromEntries(cats.docs.map((d: any) => [d.slug, d.label]))
@@ -68,6 +68,8 @@ async function main() {
     const esLabels = Object.fromEntries(es.docs.map((d: any) => [d.slug, d.label]))
     check('food ES is RESTAURANTES', esLabels.food === 'RESTAURANTES', `got ${esLabels.food}`)
     check('night ES is BARES', esLabels.night === 'BARES', `got ${esLabels.night}`)
+    check('gems is labelled LOCAL GEMS', labels.gems === 'LOCAL GEMS', `got ${labels.gems}`)
+    check('gems ES is JOYAS LOCALES', esLabels.gems === 'JOYAS LOCALES', `got ${esLabels.gems}`)
   }
 
   /* --- the researched imports ------------------------------------------- */

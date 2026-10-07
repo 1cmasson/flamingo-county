@@ -81,6 +81,7 @@ const CATEGORY: Record<string, string> = {
   restaurant: 'food',
   bar: 'night',
   nonprofit: 'nonprofit',
+  gems: 'gems',
 }
 
 /**
