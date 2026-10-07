@@ -19,6 +19,7 @@ import type { ListYourSpotPage } from '../payload-types'
 import {
   loadResearch,
   toListing,
+  toListingEs,
   CITY,
   CATEGORY,
   SLUG_RENAMES,
@@ -708,7 +709,10 @@ async function seed() {
         ...(mediaId ? { gallery: [mediaId] } : {}),
         ...(logoId ? { logo: logoId } : {}),
       }
-      const doc = await upsert(payload, 'listings', r.slug, data)
+      // Spanish hours labels ride on the English rows' ids (see toListingEs).
+      const doc = await upsert(payload, 'listings', r.slug, data, (enDoc: any) =>
+        toListingEs(r, enDoc?.detail?.hours),
+      )
       id.listings[r.slug] = doc.id
     }
   } catch (err) {
