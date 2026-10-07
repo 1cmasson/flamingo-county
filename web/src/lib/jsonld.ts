@@ -414,3 +414,69 @@ export function faqJsonLd(blocks: Story['blocks']): Obj | null {
     })),
   }
 }
+
+/** The public bodies whose records the address tool is built from. */
+export const ADDRESS_SOURCES = [
+  { name: 'Miami-Dade County · Open Data', url: 'https://gis-mdc.opendata.arcgis.com' },
+  {
+    name: 'City of Hialeah · Solid Waste map service',
+    url: 'https://hgis.hialeahfl.gov/arcgis/rest/services/Government_Services/Solid_Waste/MapServer',
+  },
+  { name: 'City of Miami · Solid Waste map services', url: 'https://gis.miami.gov/gis/rest/services/SolidWaste' },
+  { name: 'FEMA · Flood Map Service Center', url: 'https://msc.fema.gov/portal/search' },
+] as const
+
+/**
+ * The address tool, as a web tool (`WebApplication`) and as the records behind
+ * it (`Dataset`).
+ *
+ * No `offers`, price or `isAccessibleForFree` on either: the site makes no
+ * cost claims anywhere (owner rule), so Google's software-app rich result,
+ * which wants `offers` and a rating, is not a goal. No `license` either: the
+ * agencies publish no single licence we could cite. `dateModified` is the day
+ * the records were read, and is absent until the first sync.
+ */
+export function addressToolJsonLd(
+  lang: Lang,
+  page: {
+    path: string
+    name: string
+    description: string
+    datasetName: string
+    datasetDescription: string
+    fetchedAt?: string | null
+  },
+): Obj[] {
+  const url = absUrl(page.path)
+  const miamiDade = { '@type': 'AdministrativeArea', name: 'Miami-Dade County, Florida' }
+  return [
+    clean({
+      '@context': 'https://schema.org',
+      '@type': 'WebApplication',
+      '@id': `${url}#app`,
+      name: page.name,
+      url,
+      description: page.description,
+      applicationCategory: 'ReferenceApplication',
+      operatingSystem: 'Any',
+      inLanguage: lang,
+      areaServed: miamiDade,
+      publisher: { '@id': `${SITE_URL}/#organization` },
+      isBasedOn: { '@id': `${url}#dataset` },
+    }),
+    clean({
+      '@context': 'https://schema.org',
+      '@type': 'Dataset',
+      '@id': `${url}#dataset`,
+      name: page.datasetName,
+      description: page.datasetDescription,
+      url,
+      inLanguage: lang,
+      spatialCoverage: { '@type': 'Place', name: 'Miami-Dade County, Florida' },
+      creator: { '@id': `${SITE_URL}/#organization` },
+      isBasedOn: ADDRESS_SOURCES.map((s) => s.url),
+      citation: ADDRESS_SOURCES.map((s) => s.name),
+      dateModified: page.fetchedAt ? page.fetchedAt.slice(0, 10) : undefined,
+    }),
+  ]
+}

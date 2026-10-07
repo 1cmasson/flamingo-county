@@ -7,6 +7,7 @@ import { routes } from '../../../../lib/routes'
 import { openGraph } from '../../../../lib/site'
 import {
   addressReport,
+  civicFetchedAt,
   civicVersion,
   civicReady,
   CITY_GOVERNMENT,
@@ -30,6 +31,8 @@ import {
 } from '../../../../lib/addressCopy'
 import { addDays } from '../../../../lib/dates'
 import { PageShell } from '../../../../components/PageShell'
+import { JsonLd } from '../../../../components/JsonLd'
+import { addressToolJsonLd } from '../../../../lib/jsonld'
 import { AddressSearch } from '../../../../components/AddressSearch'
 import { PrintButton } from '../../../../components/PrintButton'
 import { OpenInBrowser } from '../../../../components/OpenInBrowser'
@@ -94,10 +97,21 @@ export default async function AddressPage({ params, searchParams }: Props) {
   const webview = report ? detectWebview((await headers()).get('user-agent')) : null
 
   const searchCopyText = searchCopy(lang)
+  const fetchedAt = await civicFetchedAt()
 
   return (
     <PageShell>
       <main className={s.main}>
+        <JsonLd
+          data={addressToolJsonLd(lang, {
+            path: routes.address(lang),
+            name: c.metaTitle,
+            description: c.metaDescription,
+            datasetName: c.datasetName,
+            datasetDescription: c.datasetDescription,
+            fetchedAt,
+          })}
+        />
         {report ? (
           <Report r={report} lang={lang} c={c} webview={webview} mc={mc} view={view} lens={lens} version={version} />
         ) : null}

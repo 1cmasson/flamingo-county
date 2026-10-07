@@ -115,6 +115,11 @@ export async function civicReady(): Promise<boolean> {
   return !!(await open())
 }
 
+/** The day the records were read from the agencies, or null before the first sync. */
+export async function civicFetchedAt(): Promise<string | null> {
+  return (await open())?.meta.fetchedAt ?? null
+}
+
 const toRow = (r: Record<string, unknown>) => r as unknown as Row
 const zipText = (z: number) => String(z).padStart(5, '0')
 const atOf = (r: Row): LatLng => [r.lat / 1e5, r.lon / 1e5]
