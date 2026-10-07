@@ -93,6 +93,23 @@ async function open(): Promise<typeof conn> {
   return conn
 }
 
+/**
+ * The data's version, for tile URLs: a tile address never changes meaning, so
+ * phones (and Cloudflare) can keep it for a year and a refresh moves to a new one.
+ */
+export async function civicVersion(): Promise<string | null> {
+  const c = await open()
+  return c ? String(Math.round(c.mtime / 1000)) : null
+}
+
+/** One gzipped vector tile, or null where the county has nothing to draw. */
+export async function tileAt(z: number, x: number, y: number): Promise<Uint8Array | null> {
+  const c = await open()
+  if (!c) return null
+  const row = (await c.db.execute({ sql: 'SELECT data FROM tiles WHERE z = ? AND x = ? AND y = ?', args: [z, x, y] })).rows[0]
+  return row ? new Uint8Array(row.data as ArrayBuffer) : null
+}
+
 /** False until the first sync has finished. */
 export async function civicReady(): Promise<boolean> {
   return !!(await open())

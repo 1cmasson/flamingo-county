@@ -7,6 +7,7 @@ import { routes } from '../../../../lib/routes'
 import { openGraph } from '../../../../lib/site'
 import {
   addressReport,
+  civicVersion,
   civicReady,
   CITY_GOVERNMENT,
   KIND,
@@ -88,6 +89,7 @@ export default async function AddressPage({ params, searchParams }: Props) {
   const mc = mapCopy(lang)
   const report = slug ? await addressReport(slug) : null
   const ready = report ? true : await civicReady()
+  const version = (await civicVersion()) ?? '0'
   const webview = report ? detectWebview((await headers()).get('user-agent')) : null
 
   const searchCopy = {
@@ -109,7 +111,7 @@ export default async function AddressPage({ params, searchParams }: Props) {
     <PageShell>
       <main className={s.main}>
         {report ? (
-          <Report r={report} lang={lang} c={c} webview={webview} mc={mc} view={view} lens={lens} />
+          <Report r={report} lang={lang} c={c} webview={webview} mc={mc} view={view} lens={lens} version={version} />
         ) : null}
 
         <header className={`${s.hero} ${report ? s.noPrint : ''}`} id="search">
@@ -131,7 +133,7 @@ export default async function AddressPage({ params, searchParams }: Props) {
           <p className={s.coverage}>{c.coverage}</p>
         </header>
 
-        {!report && ready ? <ExploreMap copy={mc} initialLens={lens} /> : null}
+        {!report && ready ? <ExploreMap copy={mc} version={version} initialLens={lens} /> : null}
       </main>
     </PageShell>
   )
@@ -145,6 +147,7 @@ function Report({
   mc,
   view,
   lens,
+  version,
 }: {
   r: AddressReport
   lang: Lang
@@ -153,6 +156,7 @@ function Report({
   mc: MapCopy
   view: 'list' | 'map'
   lens: LensId
+  version: string
 }) {
   const t = translator(lang)
   const address = prettyAddress(r.label)
@@ -215,7 +219,7 @@ function Report({
         {!webview && hasCalendar ? <p className={s.hint}>{c.calendarHint}</p> : null}
       </section>
 
-      <ReportTabs at={r.at} copy={mc} initialView={view} initialLens={lens}>
+      <ReportTabs at={r.at} copy={mc} version={version} initialView={view} initialLens={lens}>
         <div className={s.grid}>
           {/* --- Trash --- */}
           <section className={`${s.card} ${s.wide}`} aria-labelledby="trash">

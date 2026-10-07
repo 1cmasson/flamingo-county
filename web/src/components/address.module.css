@@ -586,3 +586,81 @@
   border: 2px solid var(--ink);
   flex: 0 0 auto;
 }
+
+/* --- Map: tiles, full screen ------------------------------------------ */
+
+.chipsRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.chipsRow .chips {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.mapWrap {
+  position: relative;
+}
+.fullBtn,
+.closeFull {
+  font-family: var(--display);
+  font-size: 16px;
+  line-height: 1;
+  padding: 11px 12px 8px;
+  min-height: 44px;
+  border: 3px solid var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.fullBtn {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  z-index: 2;
+  background: var(--ink);
+  color: var(--yellow);
+  box-shadow: 3px 3px 0 var(--pink);
+}
+.closeFull {
+  flex: 0 0 auto;
+  background: var(--ink);
+  color: var(--yellow);
+  box-shadow: 3px 3px 0 var(--pink);
+}
+
+/*
+ * Full screen without the Fullscreen API (iPhones give it only to video): the
+ * map block takes the viewport. dvh follows Safari's toolbars as they come and go.
+ */
+.mapFull {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: var(--ink);
+  padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
+  gap: 8px;
+  height: 100dvh;
+}
+.mapFull .mapWrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  box-shadow: none;
+}
+.mapFull .mapCanvas {
+  height: 100%;
+}
+.mapFull .mapHint {
+  font-size: 13px;
+  padding: 6px 10px 5px;
+}
+.mapFull .legend {
+  font-size: 12px;
+  padding: 6px 10px;
+  max-height: 22dvh;
+  overflow-y: auto;
+}
+
+/* With the full-screen button in the top-left corner, "zoom in" sits under it. */
+.hintBelow {
+  top: 64px !important;
+}

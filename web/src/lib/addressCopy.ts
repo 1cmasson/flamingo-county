@@ -284,6 +284,8 @@ export type MapCopy = {
   exploreLead: string
   label: string
   layers: string
+  fullScreen: string
+  closeFull: string
   lens: Record<'garbage' | 'flood' | 'surge' | 'commission' | 'polling' | 'elementary' | 'places' | 'bus', string>
   you: string
   closer: string
@@ -321,6 +323,8 @@ export function mapCopy(lang: Lang): MapCopy {
         exploreLead: 'Escoge una capa: días de basura, inundación, marejada, comisionados, dónde votar, escuelas.',
         label: 'Mapa de Miami-Dade',
         layers: 'Capas del mapa',
+        fullScreen: 'PANTALLA COMPLETA',
+        closeFull: 'CERRAR',
         lens: {
           garbage: '🗑️ Basura',
           flood: '🌊 Inundación',
@@ -373,6 +377,8 @@ export function mapCopy(lang: Lang): MapCopy {
         exploreLead: 'Pick a layer: trash days, flood, storm surge, commissioners, where to vote, schools.',
         label: 'Map of Miami-Dade',
         layers: 'Map layers',
+        fullScreen: 'FULL SCREEN',
+        closeFull: 'CLOSE',
         lens: {
           garbage: '🗑️ Trash',
           flood: '🌊 Flood',
