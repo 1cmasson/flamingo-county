@@ -47,7 +47,7 @@ export function StoryCard({
           </figure>
         ) : null}
         {/* Not a heading: the masthead's h1 above already says the title. */}
-        <div className={s.title}>{title}</div>
+        <div className={title.length > 28 ? `${s.title} ${s.long}` : s.title}>{title}</div>
         <div className={s.tag}>{tagline}</div>
         <div className={s.url}>FLAMINGOCOUNTY.COM</div>
       </div>

@@ -90,6 +90,11 @@
   text-wrap: balance;
 }
 
+/* A sentence, not a name: "AL CAPONE WAS IN HIALEAH" fits big, a whole clause doesn't. */
+.long {
+  font-size: clamp(32px, 4.4vw, 56px);
+}
+
 .tag {
   grid-area: tag;
   justify-self: start;
