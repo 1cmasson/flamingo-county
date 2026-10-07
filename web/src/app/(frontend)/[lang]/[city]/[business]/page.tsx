@@ -19,7 +19,7 @@ import type { Category, City, Media } from '../../../../../payload-types'
 import { JsonLd } from '../../../../../components/JsonLd'
 import { breadcrumbJsonLd, listingJsonLd, mediaUrl, titleCase, webPageJsonLd } from '../../../../../lib/jsonld'
 import { listingAnswer, listingQuestion, verifiedLine } from '../../../../../lib/answers'
-import { dateOnly } from '../../../../../lib/dates'
+import { dateOnly, hoursLabel } from '../../../../../lib/dates'
 import { AnswerBlock } from '../../../../../components/AnswerBlock'
 import { Breadcrumbs, type Crumb } from '../../../../../components/Breadcrumbs'
 import { PageShell } from '../../../../../components/PageShell'
@@ -639,7 +639,7 @@ export default async function BusinessPage({
                           paddingBottom: 5,
                         }}
                       >
-                        <span>{h.d}</span>
+                        <span>{hoursLabel(h.d, lang as Lang)}</span>
                         <span style={{ fontWeight: 800, color: 'var(--yellow)' }}>{h.t}</span>
                       </div>
                     ))}
