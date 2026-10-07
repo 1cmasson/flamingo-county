@@ -1,6 +1,5 @@
 import { access, readFile } from 'node:fs/promises'
 import { basename, join, resolve } from 'node:path'
-import { ImageResponse } from 'next/og'
 import sharp from 'sharp'
 
 import { noPrice } from '../fields/shared'
@@ -12,6 +11,7 @@ import { EVENT_CARD_SIZES, type EventCardSize } from './eventCardUrl'
 import { eventDateLine, todayISO } from './dates'
 import { EVENT_SETTINGS, eventSetting, type EventSetting } from './eventSetting'
 import { eventVenue } from './eventVenue'
+import { renderOgPng } from './ogImage'
 import { getSeason, sceneCreditText, type Season, type SeasonCardTheme } from './seasons'
 
 /**
@@ -1302,7 +1302,7 @@ async function drawCard(
       photoMascot={opts.photoMascot}
     />
   )
-  const res = new ImageResponse(card, {
+  const png = await renderOgPng(card, {
     width,
     height,
     fonts: [
@@ -1310,7 +1310,6 @@ async function drawCard(
       { name: 'Archivo', data: a.archivo, weight: 800, style: 'normal' },
     ],
   })
-  const png = await res.arrayBuffer()
   if (cache.size >= CACHE_MAX) cache.delete(cache.keys().next().value as string)
   cache.set(key, png)
   return png
