@@ -265,6 +265,14 @@ export interface Media {
    * The file was cropped or edited. CC 3.0 and 4.0 require saying so; the credit adds “cropped”.
    */
   modified?: boolean | null;
+  /**
+   * Made by Flamingo County. Empty for a licensed photo from an archive.
+   */
+  origin?: ('own-illustration' | 'own-photo') | null;
+  /**
+   * What our artwork was drawn from, as the credit says it, e.g. "basada en fotos del Historic American Buildings Survey (dominio público)".
+   */
+  basedOn?: string | null;
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -1553,6 +1561,10 @@ export interface PayloadMcpApiKey {
      */
     hqAddSiteMediaFromUrl?: boolean | null;
     /**
+     * Add artwork Flamingo County made itself (a drawn cover or illustration, or our own photo) to the public site’s media library and return its id, for a listing’s `gallery`, a story’s cover or an event’s `image` (set it in a draft; it shows only once the owner publishes). Never a third party’s picture: an archive photo goes through hqAddSiteMediaFromUrl. Send the file as base64 (JPEG or PNG, checked by its real bytes, at least 1000 px wide); it is re-encoded within the site’s 400 KB image budget. The credit is always "Flamingo County" ("Ilustración: Flamingo County" for an illustration), followed by `basedOn`: what it was drawn from, in each language, so that source keeps its credit; "original" for work drawn from nothing. Returns {id, filename, width, height, filesize}.
+     */
+    hqAddSiteArtworkFromUpload?: boolean | null;
+    /**
      * Add a photo or video from the caller's own computer to HQ media and return its id, for the `media` field of an hq-social-drafts document. Use it when the file is not on a public URL, for example a finished video. Send the file as base64 in `dataBase64` and its type in `mimeType`: JPEG, PNG or MP4 (H.264; not .mov), up to 50 MB (about 67 MB of base64). The file is checked by its real bytes. Sending the same file again returns the stored one. Instagram and TikTok drafts need at least one media. Nothing is posted by this tool.
      */
     hqAddDraftMediaFromUpload?: boolean | null;
@@ -1882,6 +1894,8 @@ export interface MediaSelect<T extends boolean = true> {
   licenseUrl?: T;
   sourceUrl?: T;
   modified?: T;
+  origin?: T;
+  basedOn?: T;
   updatedAt?: T;
   createdAt?: T;
   url?: T;
@@ -2574,6 +2588,7 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         hqSendTelegram?: T;
         hqAddDraftMediaFromUrl?: T;
         hqAddSiteMediaFromUrl?: T;
+        hqAddSiteArtworkFromUpload?: T;
         hqAddDraftMediaFromUpload?: T;
         hqCancelDraft?: T;
         hqRequestPublish?: T;

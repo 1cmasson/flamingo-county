@@ -738,6 +738,150 @@ export async function addSiteMediaFromUrl(req: PayloadRequest, args: SiteMediaAr
 }
 
 /* ------------------------------------------------------------------------ */
+/* Our own artwork, into the public media library                           */
+/* ------------------------------------------------------------------------ */
+
+/** Who made it. Nothing else can be stored through this tool: an archive's photo goes through hqAddSiteMediaFromUrl. */
+export const ARTWORK_ORIGINS = ['own-illustration', 'own-photo'] as const
+export type ArtworkOrigin = (typeof ARTWORK_ORIGINS)[number]
+/** The site's image budget (scripts/check-image-budget.mjs), applied to the stored original. */
+export const ARTWORK_BUDGET = 400 * 1024
+/** What may be sent: a full-size PNG from the drawing pipeline is several MB before it is compressed here. */
+const ARTWORK_UPLOAD_LIMIT = 25 * 1024 * 1024
+/** The credit our artwork carries: it is ours, so the name is not a parameter. */
+export const ARTWORK_CREDIT = 'Flamingo County'
+const BASED_ON_MAX = 160
+
+export type SiteArtworkArgs = {
+  filename: string
+  mimeType: string
+  dataBase64: string
+  origin: string
+  altEs: string
+  altEn: string
+  /** What it was drawn from, as the credit says it, in each language; "original" for work from nothing. */
+  basedOnEs: string
+  basedOnEn: string
+  focalX?: number
+  focalY?: number
+}
+
+/**
+ * Re-encode to a JPEG within the budget: no metadata carried over, longest side
+ * at most 2560, and the quality stepped down until it fits. Refuses rather than
+ * crushing it: past the lowest step the image is too detailed to stay crisp.
+ */
+export async function fitArtwork(data: Buffer, budget: number = ARTWORK_BUDGET): Promise<Buffer> {
+  const steps: [number, number][] = [
+    [SITE_MEDIA_MAX_SIDE, 86],
+    [SITE_MEDIA_MAX_SIDE, 78],
+    [2200, 74],
+    [1920, 72],
+    [1920, 64],
+  ]
+  for (const [side, quality] of steps) {
+    const out = await sharp(data)
+      .rotate()
+      .resize({ width: side, height: side, fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality, mozjpeg: true })
+      .toBuffer()
+    if (out.length <= budget) return out
+  }
+  throw new Error(
+    `Over the site's ${Math.round(budget / 1024)} KB image budget even at 1920 px and quality 64. Simplify or crop the image and send it again.`,
+  )
+}
+
+const isOriginal = (v: string) => v.toLowerCase() === 'original'
+
+/**
+ * Add artwork Flamingo County made (a drawn cover, our own photo) to the public
+ * `media` library and return its id, for a listing's `gallery`, a story's
+ * cover or an event's `image`, set in a draft.
+ *
+ * The archive tool takes only licensed photos from three hosts, which left no
+ * way in for our own drawings. This is that way, and only that:
+ * - `origin` must say we made it, and the credit is always "Flamingo County",
+ *   never a parameter, so a third party's picture cannot be passed off here;
+ * - `basedOn` (both languages) is required: an illustration drawn from an
+ *   archive photo says so, and that archive keeps its credit;
+ * - the bytes decide the type (JPEG or PNG), at least 1000 px wide, and the
+ *   stored file is re-encoded within the 400 KB image budget.
+ *
+ * Like an imported photo, it has a public URL from now on but is on a page only
+ * once something that uses it is published, by the owner's tap.
+ */
+export async function addSiteArtworkFromUpload(req: PayloadRequest, args: SiteArtworkArgs) {
+  if (!(ARTWORK_ORIGINS as readonly string[]).includes(String(args.origin))) {
+    throw new Error(
+      `origin must be one of ${ARTWORK_ORIGINS.join(', ')}: this tool is for artwork Flamingo County made. A photo from an archive goes through hqAddSiteMediaFromUrl.`,
+    )
+  }
+  const altEn = String(args.altEn ?? '').trim()
+  const altEs = String(args.altEs ?? '').trim()
+  if (!altEn || !altEs) throw new Error('Alt text is required in both languages (altEs, altEn).')
+  const basedOnEs = String(args.basedOnEs ?? '').replace(/\s+/g, ' ').trim()
+  const basedOnEn = String(args.basedOnEn ?? '').replace(/\s+/g, ' ').trim()
+  if (!basedOnEs || !basedOnEn) {
+    throw new Error(
+      'basedOnEs and basedOnEn are required: what the artwork was drawn from, as the credit says it (e.g. "basada en fotos del Historic American Buildings Survey (dominio público)"), or "original" for work from nothing.',
+    )
+  }
+  if (basedOnEs.length > BASED_ON_MAX || basedOnEn.length > BASED_ON_MAX) {
+    throw new Error(`basedOn too long (at most ${BASED_ON_MAX} characters each).`)
+  }
+  const focalX = focal(args.focalX, 'focalX')
+  const focalY = focal(args.focalY, 'focalY')
+
+  const { data, type } = decodeUpload(args, ARTWORK_UPLOAD_LIMIT)
+  if (type !== 'image/jpeg' && type !== 'image/png') throw new Error('Artwork must be a JPEG or PNG image.')
+  const meta = await sharp(data)
+    .metadata()
+    .catch(() => null)
+  if (!meta || !meta.width || !meta.height) throw new Error('Not a readable JPEG or PNG.')
+  const wide = meta.orientation && meta.orientation >= 5 ? meta.height : meta.width
+  if (wide < SITE_MEDIA_MIN_WIDTH) throw new Error(`Too small: ${wide} px wide, at least ${SITE_MEDIA_MIN_WIDTH} needed.`)
+  const jpeg = await fitArtwork(data)
+
+  const stem = args.filename.replace(/\.[^.]*$/, '').replace(/[^\w-]+/g, '-').slice(0, 60) || 'artwork'
+  const doc = await req.payload.create({
+    collection: 'media',
+    data: {
+      alt: altEn,
+      credit: ARTWORK_CREDIT,
+      origin: args.origin as ArtworkOrigin,
+      basedOn: isOriginal(basedOnEn) ? null : basedOnEn,
+      modified: false,
+      // Payload takes a focal point only with both values set, and reads 0 as unset.
+      ...(focalX !== undefined || focalY !== undefined
+        ? { focalX: Math.max(1, focalX ?? 50), focalY: Math.max(1, focalY ?? 50) }
+        : {}),
+    },
+    file: { data: jpeg, mimetype: 'image/jpeg', name: `${stem}-${Date.now()}.jpg`, size: jpeg.length },
+    locale: 'en',
+    req,
+    overrideAccess: false,
+  })
+  // Payload stores the original as WebP (Media's formatOptions), so the budget is checked on what it kept.
+  if ((doc.filesize ?? 0) > ARTWORK_BUDGET) {
+    // Only the record this call just made: delete is off over MCP, so it is removed with server rights.
+    await req.payload.delete({ collection: 'media', id: doc.id, overrideAccess: true }).catch(() => undefined)
+    throw new Error(
+      `Stored at ${Math.round((doc.filesize ?? 0) / 1024)} KB, over the site's ${Math.round(ARTWORK_BUDGET / 1024)} KB image budget. Simplify or crop the image and send it again.`,
+    )
+  }
+  await req.payload.update({
+    collection: 'media',
+    id: doc.id,
+    data: { alt: altEs, basedOn: isOriginal(basedOnEs) ? null : basedOnEs },
+    locale: 'es',
+    req,
+    overrideAccess: false,
+  })
+  return { id: doc.id, filename: doc.filename, width: doc.width, height: doc.height, filesize: doc.filesize }
+}
+
+/* ------------------------------------------------------------------------ */
 /* Telegram: results from Claude, to the owner                              */
 /* ------------------------------------------------------------------------ */
 
@@ -873,6 +1017,33 @@ export const hqMcpTools: McpTool[] = [
     },
     handler: (args: Record<string, unknown>, req: PayloadRequest) =>
       guard(async () => text(JSON.stringify(await addSiteMediaFromUrl(req, args as unknown as SiteMediaArgs)))),
+  },
+  {
+    name: 'hqAddSiteArtworkFromUpload',
+    description:
+      'Add artwork Flamingo County made itself (a drawn cover or illustration, or our own photo) to the public site’s media library and return its id, for a listing’s `gallery`, a story’s cover or an event’s `image` (set it in a draft; it shows only once the owner publishes). Never a third party’s picture: an archive photo goes through hqAddSiteMediaFromUrl. Send the file as base64 (JPEG or PNG, checked by its real bytes, at least 1000 px wide); it is re-encoded within the site’s 400 KB image budget. The credit is always "Flamingo County" ("Ilustración: Flamingo County" for an illustration), followed by `basedOn`: what it was drawn from, in each language, so that source keeps its credit; "original" for work drawn from nothing. Returns {id, filename, width, height, filesize}.',
+    parameters: {
+      filename: z.string().min(1).max(120).describe('The file name, e.g. hialeah-park-cover.png'),
+      mimeType: z.enum(['image/jpeg', 'image/png']).describe('The type of the file'),
+      dataBase64: z.string().min(16).max(35_000_000).describe('The file, base64-encoded (up to 25 MB)'),
+      origin: z.enum(ARTWORK_ORIGINS).describe('own-illustration (we drew it) or own-photo (we took it)'),
+      altEs: z.string().min(1).max(300).describe('Alt text in Spanish: what the picture shows'),
+      altEn: z.string().min(1).max(300).describe('Alt text in English'),
+      basedOnEs: z
+        .string()
+        .min(1)
+        .max(160)
+        .describe('What it was drawn from, as the Spanish credit says it, e.g. "basada en fotos del Historic American Buildings Survey (dominio público)"; "original" if from nothing'),
+      basedOnEn: z
+        .string()
+        .min(1)
+        .max(160)
+        .describe('The same in English, e.g. "based on Historic American Buildings Survey photos (public domain)"; "original" if from nothing'),
+      focalX: z.number().min(0).max(100).optional().describe('Where crops centre across, 0–100 (default 50)'),
+      focalY: z.number().min(0).max(100).optional().describe('Where crops centre down, 0–100 (default 50)'),
+    },
+    handler: (args: Record<string, unknown>, req: PayloadRequest) =>
+      guard(async () => text(JSON.stringify(await addSiteArtworkFromUpload(req, args as unknown as SiteArtworkArgs)))),
   },
   {
     name: 'hqAddDraftMediaFromUpload',

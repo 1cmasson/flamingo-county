@@ -24,6 +24,8 @@ import { AnswerBlock } from '../../../../../components/AnswerBlock'
 import { Breadcrumbs, type Crumb } from '../../../../../components/Breadcrumbs'
 import { PageShell } from '../../../../../components/PageShell'
 import { MediaSlot } from '../../../../../components/MediaSlot'
+import { GemBadge } from '../../../../../components/GemBadge'
+import { isGem } from '../../../../../lib/categories'
 import { FreeRidePanel } from '../../../../../components/Transit'
 import { FULL_WIDTH_SIZES } from '../../../../../lib/srcset'
 import s from '../../../../../components/chrome.module.css'
@@ -214,7 +216,12 @@ export default async function BusinessPage({
                 position: 'absolute',
                 left: 18,
                 bottom: 18,
+                // Clear of the mascot disc. A gem's badge is longer than a
+                // category chip, so on a phone it wraps above the city chip
+                // (wrap-reverse) instead of running under the disc.
+                maxWidth: 'calc(100% - 36px - clamp(84px,17vw,132px))',
                 display: 'flex',
+                flexWrap: 'wrap-reverse',
                 gap: 8,
                 alignItems: 'flex-end',
                 pointerEvents: 'none',
@@ -231,18 +238,22 @@ export default async function BusinessPage({
               >
                 {city?.name}
               </div>
-              <div
-                style={{
-                  background: 'var(--grad-pink)',
-                  border: '4px solid var(--ink)',
-                  padding: '8px 12px 5px',
-                  fontFamily: 'var(--display)',
-                  fontSize: 16,
-                  color: 'var(--cream)',
-                }}
-              >
-                {category?.label}
-              </div>
+              {isGem(category?.slug) ? (
+                <GemBadge label={category?.label ?? ''} />
+              ) : (
+                <div
+                  style={{
+                    background: 'var(--grad-pink)',
+                    border: '4px solid var(--ink)',
+                    padding: '8px 12px 5px',
+                    fontFamily: 'var(--display)',
+                    fontSize: 16,
+                    color: 'var(--cream)',
+                  }}
+                >
+                  {category?.label}
+                </div>
+              )}
             </div>
             {mascot?.url ? (
               <div

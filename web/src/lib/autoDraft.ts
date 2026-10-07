@@ -310,7 +310,8 @@ export function creditLine(media: Media | null | undefined): string | null {
   const c = photoCredit(media, 'es')
   if (!c) return null
   const license = c.license ? `, ${c.license}${c.licenseUrl ? ` (${c.licenseUrl})` : ''}` : ''
-  return `📷 ${c.lead}: ${c.credit}${license}`
+  const basedOn = c.basedOn ? `, ${c.basedOn}` : ''
+  return `📷 ${c.lead}: ${c.credit}${basedOn}${license}`
 }
 
 /**

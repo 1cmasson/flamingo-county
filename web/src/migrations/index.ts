@@ -24,6 +24,8 @@ import * as migration_20261006_002646_add_cancel_draft_tool from './20261006_002
 import * as migration_20261006_013746_add_listing_answer from './20261006_013746_add_listing_answer';
 import * as migration_20261006_145921_add_request_kinds from './20261006_145921_add_request_kinds';
 import * as migration_20261007_120000_add_gems_category from './20261007_120000_add_gems_category';
+import * as migration_20261007_125000_gem_label from './20261007_125000_gem_label';
+import * as migration_20261007_170624_add_site_artwork_tool from './20261007_170624_add_site_artwork_tool';
 
 export const migrations = [
   {
@@ -149,11 +151,21 @@ export const migrations = [
   {
     up: migration_20261006_145921_add_request_kinds.up,
     down: migration_20261006_145921_add_request_kinds.down,
-    name: '20261006_145921_add_request_kinds'
+    name: '20261006_145921_add_request_kinds',
   },
   {
     up: migration_20261007_120000_add_gems_category.up,
     down: migration_20261007_120000_add_gems_category.down,
     name: '20261007_120000_add_gems_category',
+  },
+  {
+    up: migration_20261007_125000_gem_label.up,
+    down: migration_20261007_125000_gem_label.down,
+    name: '20261007_125000_gem_label',
+  },
+  {
+    up: migration_20261007_170624_add_site_artwork_tool.up,
+    down: migration_20261007_170624_add_site_artwork_tool.down,
+    name: '20261007_170624_add_site_artwork_tool'
   },
 ];

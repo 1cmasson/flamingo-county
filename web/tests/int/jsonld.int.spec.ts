@@ -60,7 +60,7 @@ describe('listingJsonLd', () => {
   })
   it('types a local gem as a plain LocalBusiness', () => {
     // A racetrack and a bank branch share the category; neither specific type fits both.
-    const gem = { ...base, category: { id: 4, slug: 'gems', label: 'LOCAL GEMS' } } as unknown as Listing
+    const gem = { ...base, category: { id: 4, slug: 'gems', label: 'FLAMINGO COUNTY GEM' } } as unknown as Listing
     expect(listingJsonLd('en', gem, 'hialeah')['@type']).toBe('LocalBusiness')
   })
   const hours = {

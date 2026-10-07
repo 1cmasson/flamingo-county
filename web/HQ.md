@@ -261,8 +261,10 @@ use. `users`, `members`, `subscribers` and the jobs are not in the list, so
 no key can reach member data or visitor emails. The public `media` is there
 for **find** only: it is public-read anyway. Delete is off everywhere.
 
-The one way in to the public `media` is `hqAddSiteMediaFromUrl` (see *Venue
-photos*), which takes licensed photos from three archives only.
+There are two ways in to the public `media`: `hqAddSiteMediaFromUrl` (see
+*Venue photos*), which takes licensed photos from three archives only, and
+`hqAddSiteArtworkFromUpload` (see *Our own artwork*), which takes only artwork
+we made, credited to us.
 
 **Approval stays human.** Claude can create and edit drafts, but a draft's
 `status` and HQ's bookkeeping fields refuse writes that arrive over MCP
@@ -288,6 +290,7 @@ never posted unseen: you get the current version to approve instead.
 | `hqAddDraftMediaFromUrl` | Downloads a public https JPEG, PNG or MP4 into HQ media for a draft. It refuses private and loopback hosts and doesn't follow redirects, so the server can't be pointed at itself. |
 | `hqAddDraftMediaFromUpload` | Adds a JPEG, PNG or MP4 sent straight from the caller's computer (base64) into HQ media, for a finished video that is on no public link. Checked by its real bytes (a mislabelled file or a .mov is refused), up to 50 MB, a PNG is stored as JPEG, and sending the same file twice returns the stored one. The file goes over the authenticated MCP connection only; it is never put on a public address. Nothing is posted. |
 | `hqAddSiteMediaFromUrl` | Imports a licensed venue photo into the public site's media, with its credit, licence and source, for an event's `image`. See *Venue photos*. |
+| `hqAddSiteArtworkFromUpload` | Adds artwork Flamingo County made (a drawn cover, our own photo) to the public site's media, credited to us with what it was drawn from, within the 400 KB image budget. See *Our own artwork*. |
 
 ### Venue photos
 
@@ -344,6 +347,44 @@ licence to its deed. It appears:
 
 The site crops every photo it shows, so "recortada" / "cropped" is always
 there. CC 3.0 and 4.0 require saying a photo was changed.
+
+### Our own artwork
+
+A cover we drew (the Hialeah Park listing's, say) or a photo we took goes into
+the public media library through `hqAddSiteArtworkFromUpload`. The archive tool
+above can't take it, since it only downloads licensed photos from three hosts.
+
+**How Claude adds one.**
+1. Call `hqAddSiteArtworkFromUpload` with:
+   - the file, as base64 (JPEG or PNG)
+   - `origin`: `own-illustration` (we drew it) or `own-photo` (we took it)
+   - alt text in both languages
+   - `basedOnEs` / `basedOnEn`: what it was drawn from, as the credit should
+     say it, e.g. "basada en fotos del Historic American Buildings Survey
+     (dominio público)". Use "original" for a drawing made from nothing.
+   - optionally a focal point for the crop
+2. Set the returned id on the draft: a listing's `gallery`, a story's cover or
+   an event's `image`.
+3. Ask for the publish with `hqRequestPublish`.
+
+**What the tool refuses or decides for you:**
+- **Whose it is.** Only `own-illustration` or `own-photo`. The credit is
+  always "Flamingo County" and is not a parameter, so a third party's picture
+  can't be passed off as ours. An archive photo goes through
+  `hqAddSiteMediaFromUrl`, with its licence.
+- **Where it came from.** `basedOn` is required in both languages, so an
+  illustration drawn from someone else's photos still credits them.
+- **Files.** JPEG or PNG by their real bytes, at least 1000 px wide, up to
+  25 MB sent. It's re-encoded with no metadata, at most 2560 px, stepped down
+  in quality until it fits the site's **400 KB image budget**, then stored as
+  WebP like every upload. The stored file is checked against the budget too.
+  If it can't fit even at 1920 px, it's refused, not crushed.
+
+**The credit** reads "Ilustración: Flamingo County · basada en fotos del
+Historic American Buildings Survey (dominio público)" (or "Foto: Flamingo
+County" for our own photo), wherever the photo credit appears: under an event
+hero, on the board and the cards, and on the auto-drafted social post's last
+line. The media record keeps `origin` and the localized `basedOn`.
 
 ## Growth review
 
