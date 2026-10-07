@@ -3,7 +3,8 @@ import { createInterface } from 'node:readline'
 import { join } from 'node:path'
 import { createClient, type Client, type InStatement } from '@libsql/client'
 
-import { addressKey, boxOf, daysKey, KIND, kindFromDor, parseDayLetters, parseRule, PolygonIndex, ringsContain, simplifyRing, titleCase, type Box, type Ring, type Rule } from './civicGeo'
+import { addressKey, daysKey, KIND, kindFromDor, parseDayLetters, parseRule, PolygonIndex, ringsContain, simplifyRing, titleCase, type Ring, type Rule } from './civicGeo'
+import { buildTiles, labelPoint } from './civicTiles'
 
 /**
  * Builds the address database: every street address in Miami-Dade, with the
@@ -86,11 +87,13 @@ export function civicDir(): string {
 }
 
 export const dbPath = (dir = civicDir()) => join(dir, 'civic.db')
-export const mapDir = (dir = civicDir()) => join(dir, 'map')
 
-/** The map's layers, each a GeoJSON file in mapDir(). */
-export const LENSES = ['garbage', 'flood', 'surge', 'commission', 'precinct', 'polling', 'elementary', 'cities', 'places'] as const
-export type Lens = (typeof LENSES)[number]
+/**
+ * The layout of what this file builds. Bump it whenever the database changes
+ * shape, and every server rebuilds on its next boot instead of waiting a month.
+ */
+export const SCHEMA = 3
+const schemaFile = (dir: string) => join(dir, 'schema')
 
 /* --------------------------------------------------------------- fetch */
 
@@ -288,7 +291,7 @@ function places(features: Feature[], nameOf: (a: Attrs) => string = (a) => str(a
 /** About 9 m: invisible at street zoom, a fraction of the points. */
 const DISPLAY_TOLERANCE = 0.00008
 
-type GeoFeature = { type: 'Feature'; bbox: Box; properties: Record<string, unknown>; geometry: unknown }
+type GeoFeature = { type: 'Feature'; properties: Record<string, unknown>; geometry: { type: string; coordinates: unknown } }
 
 /** Signed area: the county draws outer rings clockwise (negative here) and holes the other way. */
 function area(ring: Ring): number {
@@ -316,19 +319,21 @@ function toGeo(rings: Ring[], properties: Record<string, unknown>): GeoFeature |
     if (home) home.push(h)
   }
   if (!outers.length) return null
-  return { type: 'Feature', bbox: boxOf(simple), properties, geometry: { type: 'MultiPolygon', coordinates: outers } }
+  return { type: 'Feature', properties, geometry: { type: 'MultiPolygon', coordinates: outers } }
 }
 
 function point(at: [number, number], properties: Record<string, unknown>): GeoFeature {
   const [lat, lon] = at
-  return { type: 'Feature', bbox: [lon, lat, lon, lat], properties, geometry: { type: 'Point', coordinates: [lon, lat] } }
+  return { type: 'Feature', properties, geometry: { type: 'Point', coordinates: [lon, lat] } }
 }
 
-function writeLens(dir: string, lens: Lens, features: (GeoFeature | null)[]) {
-  const out = features.filter((f): f is GeoFeature => !!f)
-  writeFileSync(join(mapDir(dir), `${lens}.json.tmp`), JSON.stringify({ type: 'FeatureCollection', features: out }))
-  renameSync(join(mapDir(dir), `${lens}.json.tmp`), join(mapDir(dir), `${lens}.json`))
-  return out.length
+const hash = (t: string) => [...t].reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 7)
+
+/** The label of a polygon layer, as a point of its own: one per zone, not one per tile it crosses. */
+function labelOf(f: GeoFeature | null, lens: string, props: Record<string, unknown>): GeoFeature | null {
+  if (!f) return null
+  const at = labelPoint(f.geometry.coordinates as Ring[][])
+  return at ? { type: 'Feature', properties: { lens, ...props }, geometry: { type: 'Point', coordinates: at } } : null
 }
 
 /* --------------------------------------------------------------- build */
@@ -436,30 +441,62 @@ export async function syncCivic({
   }
 
   log('map layers…')
-  mkdirSync(mapDir(dir), { recursive: true })
   const cityF = await all(L.cities, 'NAME')
   const rings = (f: Feature) => f.geometry?.rings ?? []
-  const counts = {
-    garbage: writeLens(dir, 'garbage', [
+  const keep = <T,>(xs: (T | null)[]) => xs.filter((x): x is T => x != null)
+  const mapLayers: Record<string, GeoFeature[]> = {}
+  const labels: GeoFeature[] = []
+  const polygons = (lens: string, items: { f: Feature; props: Record<string, unknown>; label?: Record<string, unknown> }[]) => {
+    const out: GeoFeature[] = []
+    for (const { f, props, label } of items) {
+      const g = toGeo(rings(f), props)
+      if (!g) continue
+      out.push(g)
+      if (label) {
+        const l = labelOf(g, lens, label)
+        if (l) labels.push(l)
+      }
+    }
+    mapLayers[lens] = out
+  }
+  polygons(
+    'garbage',
+    [
       ...hg.map((f) => ({ f, rule: parseRule(str(f.attributes.SERVICE)), by: 'hialeah' })),
       ...mg.map((f) => ({ f, rule: parseDayLetters(str(f.attributes.GARBDAY)), by: 'miami' })),
       ...cg.map((f) => ({ f, rule: parseRule(str(f.attributes.WEEKDAYS)), by: 'county' })),
-    ].map(({ f, rule, by }) => (rule ? toGeo(rings(f), { days: daysKey(rule.days), by }) : null))),
-    // Only the zones FEMA calls high-risk (A…, V…): the rest of the county is X.
-    flood: writeLens(dir, 'flood', fl.filter((f) => /^[AV]/.test(str(f.attributes.FZONE))).map((f) => toGeo(rings(f), { zone: str(f.attributes.FZONE) }))),
-    surge: writeLens(dir, 'surge', su.filter((f) => str(f.attributes.ZONEID)).map((f) => toGeo(rings(f), { zone: str(f.attributes.ZONEID) }))),
-    commission: writeLens(dir, 'commission', co.map((f) => toGeo(rings(f), { district: Number(f.attributes.ID), name: str(f.attributes.COMMNAME) }))),
-    precinct: writeLens(dir, 'precinct', pr.map((f) => toGeo(rings(f), { precinct: Number(f.attributes.ID) }))),
-    polling: writeLens(dir, 'polling', [...pollingBy].filter(([, p]) => p).map(([n, p]) => point(p.at, { precinct: n, name: p.name, address: p.address }))),
-    elementary: writeLens(dir, 'elementary', el.map((f) => toGeo(rings(f), { name: titleCase(str(f.attributes.NAME)) }))),
-    cities: writeLens(dir, 'cities', cityF.map((f) => toGeo(rings(f), { name: titleCase(str(f.attributes.NAME)) }))),
-    places: writeLens(
-      dir,
-      'places',
-      Object.entries(placeLists).flatMap(([kind, list]) => list.map((p) => point(p.at, { kind, name: p.name, address: p.address, phone: p.phone }))),
-    ),
-  }
-  log(`  ${JSON.stringify(counts)}`)
+    ]
+      .filter((g) => g.rule)
+      .map(({ f, rule, by }) => ({ f, props: { days: daysKey(rule!.days), by }, label: { days: daysKey(rule!.days), minz: 13 } })),
+  )
+  // Only the zones FEMA calls high-risk (A…, V…): the rest of the county is X.
+  polygons('flood', fl.filter((f) => /^[AV]/.test(str(f.attributes.FZONE))).map((f) => ({ f, props: { zone: str(f.attributes.FZONE) } })))
+  polygons('surge', su.filter((f) => str(f.attributes.ZONEID)).map((f) => ({ f, props: { zone: str(f.attributes.ZONEID) }, label: { zone: str(f.attributes.ZONEID), minz: 11 } })))
+  polygons(
+    'commission',
+    co.map((f) => {
+      const p = { district: Number(f.attributes.ID), name: str(f.attributes.COMMNAME) }
+      return { f, props: p, label: p }
+    }),
+  )
+  polygons('precinct', pr.map((f) => ({ f, props: { precinct: Number(f.attributes.ID) }, label: { precinct: Number(f.attributes.ID), minz: 14 } })))
+  polygons(
+    'elementary',
+    el.map((f) => {
+      const name = titleCase(str(f.attributes.NAME))
+      return { f, props: { name, c: Math.abs(hash(name)) % 13 }, label: { name, minz: 12 } }
+    }),
+  )
+  polygons(
+    'cities',
+    cityF.map((f) => {
+      const name = titleCase(str(f.attributes.NAME))
+      return { f, props: { name }, label: /^Unincorporated/.test(name) ? undefined : { name } }
+    }),
+  )
+  mapLayers.polling = keep([...pollingBy].map(([n, p]) => (p ? point(p.at, { precinct: n, name: p.name, address: p.address }) : null)))
+  mapLayers.places = Object.entries(placeLists).flatMap(([kind, list]) => list.map((p) => point(p.at, { kind, name: p.name, address: p.address, phone: p.phone })))
+  log(`  ${JSON.stringify(Object.fromEntries(Object.entries(mapLayers).map(([k, v]) => [k, v.length])))}, ${labels.length} labels`)
 
   /* ---- the database, built beside the live one ---- */
   const live = dbPath(dir)
@@ -589,9 +626,15 @@ export async function syncCivic({
       Object.entries(meta).map(([key, value]) => ({ sql: 'INSERT INTO meta (key, value) VALUES (?, ?)', args: [key, JSON.stringify(value)] })),
       'write',
     )
+    log('map tiles…')
+    const t = await buildTiles(db, mapLayers, labels)
+    log(`  ${t.tiles} tiles, ${Math.round(t.bytes / 1e6)} MB`)
     await db.execute('VACUUM')
     db.close()
     renameSync(tmp, live)
+    writeFileSync(schemaFile(dir), String(SCHEMA))
+    // Schema 1 kept the map as GeoJSON files; the tiles replaced them.
+    rmSync(join(dir, 'map'), { recursive: true, force: true })
     const seconds = Math.round((Date.now() - started) / 1000)
     log(`done: ${n} addresses in ${seconds}s, ${Math.round(statSync(live).size / 1e6)} MB`)
     return { addresses: n, seconds, unmatched }
@@ -639,7 +682,9 @@ async function insertMany<T>(
 /** True when the database is missing or older than `maxAgeDays`. */
 export function civicStale(maxAgeDays = 30, dir = civicDir()): boolean {
   const p = dbPath(dir)
-  if (!existsSync(p) || LENSES.some((l) => !existsSync(join(mapDir(dir), `${l}.json`)))) return true
+  if (!existsSync(p)) return true
+  const schema = existsSync(schemaFile(dir)) ? Number(readFileSync(schemaFile(dir), 'utf8')) : 0
+  if (schema !== SCHEMA) return true
   return Date.now() - statSync(p).mtimeMs > maxAgeDays * 86_400_000
 }
 

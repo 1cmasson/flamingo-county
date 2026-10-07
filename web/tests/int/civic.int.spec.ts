@@ -18,7 +18,7 @@ import {
   simplifyRing,
   slugOf,
 } from '@/lib/civicGeo'
-import { parseBox } from '@/lib/civicMap'
+import { buildTiles, labelPoint } from '@/lib/civicTiles'
 
 /**
  * The address page turns the cities' pickup rules ("1ST and 3RD Tuesday",
@@ -105,11 +105,33 @@ describe('map', () => {
     expect(out[0]).toEqual(out[out.length - 1])
   })
 
-  it('reads a map window and refuses nonsense', () => {
-    expect(parseBox('-80.4,25.7,-80.2,25.9')).toEqual([-80.4, 25.7, -80.2, 25.9])
-    expect(parseBox('1,2,3')).toBeNull()
-    expect(parseBox('-80.2,25.7,-80.4,25.9')).toBeNull()
-    expect(parseBox(null)).toBeNull()
+  it('puts a label inside an L-shaped zone, not in its empty corner', () => {
+    // An L: the bounding box's centre (0.5, 0.5) is outside it.
+    const L: [number, number][] = [[0, 0], [1, 0], [1, 0.3], [0.3, 0.3], [0.3, 1], [0, 1], [0, 0]]
+    const [x, y] = labelPoint([[L]])!
+    expect(x < 0.3 || y < 0.3).toBe(true)
+  })
+})
+
+describe('tiles', () => {
+  it('cuts a zone into gzipped tiles from the county view in, and keeps detail layers off the far-out ones', async () => {
+    const db = createClient({ url: 'file::memory:' })
+    const square = { type: 'Feature' as const, properties: { district: 13 }, geometry: { type: 'MultiPolygon', coordinates: [[[[-80.4, 25.7], [-80.2, 25.7], [-80.2, 25.9], [-80.4, 25.9], [-80.4, 25.7]]]] } }
+    const flood = { ...square, properties: { zone: 'AE' } }
+    const { tiles } = await buildTiles(db, { commission: [square], flood: [flood] }, [])
+    expect(tiles).toBeGreaterThan(7)
+    const zooms = (await db.execute('SELECT DISTINCT z FROM tiles')).rows.map((r) => Number(r.z))
+    expect(zooms).toEqual([8, 9, 10, 11, 12, 13, 14])
+    const z0 = (await db.execute('SELECT data FROM tiles WHERE z = 8 LIMIT 1')).rows[0].data as ArrayBuffer
+    const bytes = new Uint8Array(z0)
+    expect([bytes[0], bytes[1]]).toEqual([0x1f, 0x8b]) // gzip
+    const { gunzipSync } = await import('node:zlib')
+    const far = gunzipSync(bytes).toString('latin1')
+    expect(far).toContain('commission')
+    expect(far).not.toContain('flood') // flood starts at zoom 10
+    const near = (await db.execute('SELECT data FROM tiles WHERE z = 12 LIMIT 1')).rows[0].data as ArrayBuffer
+    expect(gunzipSync(new Uint8Array(near)).toString('latin1')).toContain('flood')
+    db.close()
   })
 })
 

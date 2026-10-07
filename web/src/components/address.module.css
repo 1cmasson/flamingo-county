@@ -488,3 +488,207 @@
     padding: 5px 8px 3px;
   }
 }
+
+/* --- List / map -------------------------------------------------------- */
+
+.tabs {
+  display: flex;
+  gap: 10px;
+}
+.tab {
+  flex: 1 1 0;
+  font-family: var(--display);
+  font-size: 20px;
+  line-height: 1;
+  padding: 14px 12px 11px;
+  border: 4px solid var(--ink);
+  background: var(--cream);
+  color: var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  cursor: pointer;
+}
+.tab[aria-selected='true'] {
+  background: var(--ink);
+  color: var(--yellow);
+  box-shadow: 4px 4px 0 var(--pink);
+}
+.listPanel {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(18px, 3vw, 26px);
+}
+.listPanel[hidden] {
+  display: none;
+}
+
+.mapBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.chips {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 2px 2px 8px;
+  scrollbar-width: thin;
+}
+.chip {
+  flex: 0 0 auto;
+  font-family: var(--body);
+  font-weight: 800;
+  font-size: 15px;
+  padding: 10px 12px 9px;
+  min-height: 44px;
+  border: 3px solid var(--ink);
+  background: var(--cream);
+  color: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.chip[aria-pressed='true'] {
+  background: var(--yellow);
+  box-shadow: 3px 3px 0 var(--pink);
+}
+.mapHint {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.4;
+  color: var(--ink);
+  background: var(--grad-cream);
+  border: 3px solid var(--ink);
+  padding: 10px 12px 9px;
+}
+.legend {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--ink);
+  background: var(--grad-cream);
+  border: 3px solid var(--ink);
+  padding: 10px 12px;
+}
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.swatch {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--ink);
+  flex: 0 0 auto;
+}
+
+/* --- Map: tiles, full screen ------------------------------------------ */
+
+.chipsRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.chipsRow .chips {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.mapWrap {
+  position: relative;
+}
+.fullBtn,
+.closeFull {
+  font-family: var(--display);
+  font-size: 16px;
+  line-height: 1;
+  padding: 11px 12px 8px;
+  min-height: 44px;
+  border: 3px solid var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.fullBtn {
+  position: absolute;
+  left: 10px;
+  top: 10px;
+  z-index: 2;
+  background: var(--ink);
+  color: var(--yellow);
+  box-shadow: 3px 3px 0 var(--pink);
+}
+.closeFull {
+  flex: 0 0 auto;
+  background: var(--ink);
+  color: var(--yellow);
+  box-shadow: 3px 3px 0 var(--pink);
+}
+
+/*
+ * Full screen without the Fullscreen API (iPhones give it only to video): the
+ * map block takes the viewport. dvh follows Safari's toolbars as they come and go.
+ */
+.mapFull {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: var(--ink);
+  padding: max(8px, env(safe-area-inset-top)) 8px max(8px, env(safe-area-inset-bottom));
+  gap: 8px;
+  height: 100dvh;
+}
+.mapFull .mapWrap {
+  flex: 1 1 auto;
+  min-height: 0;
+  box-shadow: none;
+}
+.mapFull .mapCanvas {
+  height: 100%;
+}
+.mapFull .mapHint {
+  font-size: 13px;
+  padding: 6px 10px 5px;
+}
+.mapFull .legend {
+  font-size: 12px;
+  padding: 6px 10px;
+  max-height: 22dvh;
+  overflow-y: auto;
+}
+
+/* With the full-screen button in the top-left corner, "zoom in" sits under it. */
+.hintBelow {
+  top: 64px !important;
+}
+
+/* --- The address box on the home page ---------------------------------- */
+
+.homeAddress {
+  margin-bottom: 20px;
+  box-shadow: 9px 9px 0 var(--yellow);
+}
+@media (min-width: 900px) {
+  .homeAddress {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: clamp(18px, 3vw, 32px);
+    align-items: center;
+  }
+}
+.homeText {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.homeMapLink {
+  align-self: flex-start;
+  color: var(--cyan);
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 1.4px;
+  text-decoration: none;
+}

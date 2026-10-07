@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useId, useRef, useState } from 'react'
 import s from './address.module.css'
 
-type Suggestion = { slug: string; label: string; zip: string }
+type Suggestion = { slug: string; label: string; zip: string; city: string }
 
 export type AddressSearchCopy = {
   placeholder: string
@@ -194,7 +194,9 @@ export function AddressSearch({ lang, copy, initial = '' }: { lang: string; copy
                   onClick={() => setOpen(false)}
                 >
                   <span className={s.optionLabel}>{r.label}</span>
-                  <span className={s.optionZip}>HIALEAH · {r.zip}</span>
+                  <span className={s.optionZip}>
+                    {r.city.toUpperCase()} · {r.zip}
+                  </span>
                 </Link>
               ))}
           </div>
@@ -216,7 +218,7 @@ export function AddressSearch({ lang, copy, initial = '' }: { lang: string; copy
           <div className={s.found}>
             <span className={s.foundQ}>{copy.isThisIt}</span>
             <span className={s.optionLabel}>
-              {found.label} · {found.zip}
+              {found.label}, {found.city} · {found.zip}
             </span>
             <Link href={href(found)} className={s.goBtn} prefetch={false}>
               {copy.yesThis}
