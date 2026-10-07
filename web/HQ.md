@@ -261,8 +261,10 @@ use. `users`, `members`, `subscribers` and the jobs are not in the list, so
 no key can reach member data or visitor emails. The public `media` is there
 for **find** only: it is public-read anyway. Delete is off everywhere.
 
-The one way in to the public `media` is `hqAddSiteMediaFromUrl` (see *Venue
-photos*), which takes licensed photos from three archives only.
+There are two ways in to the public `media`: `hqAddSiteMediaFromUrl` (see
+*Venue photos*), which takes licensed photos from three archives only, and
+`hqStartSiteArtworkUpload` (see *Our own artwork*), which takes only artwork
+we made, credited to us.
 
 **Approval stays human.** Claude can create and edit drafts, but a draft's
 `status` and HQ's bookkeeping fields refuse writes that arrive over MCP
@@ -288,6 +290,9 @@ never posted unseen: you get the current version to approve instead.
 | `hqAddDraftMediaFromUrl` | Downloads a public https JPEG, PNG or MP4 into HQ media for a draft. It refuses private and loopback hosts and doesn't follow redirects, so the server can't be pointed at itself. |
 | `hqAddDraftMediaFromUpload` | Adds a JPEG, PNG or MP4 sent straight from the caller's computer (base64) into HQ media, for a finished video that is on no public link. Checked by its real bytes (a mislabelled file or a .mov is refused), up to 50 MB, a PNG is stored as JPEG, and sending the same file twice returns the stored one. The file goes over the authenticated MCP connection only; it is never put on a public address. Nothing is posted. |
 | `hqAddSiteMediaFromUrl` | Imports a licensed venue photo into the public site's media, with its credit, licence and source, for an event's `image`. See *Venue photos*. |
+| `hqStartSiteArtworkUpload` | Starts adding artwork Flamingo County made (a drawn cover, our own photo) to the public site's media, credited to us with what it was drawn from, within the 400 KB image budget. Returns a one-time upload link the file is PUT to with curl. See *Our own artwork*. |
+| `hqSiteArtworkUploadChunk` / `hqFinishSiteArtworkUpload` | The pieces of an upload, for a client with no shell, and the upload's result. |
+| `hqAddSiteArtworkFromUpload` | The same in one call, with the file as base64 in the call: for a small file only. |
 
 ### Venue photos
 
@@ -344,6 +349,99 @@ licence to its deed. It appears:
 
 The site crops every photo it shows, so "recortada" / "cropped" is always
 there. CC 3.0 and 4.0 require saying a photo was changed.
+
+### Our own artwork
+
+A cover we drew (the Hialeah Park listing's, say) or a photo we took goes into
+the public media library through an upload link. The archive tool above can't
+take it, since it only downloads licensed photos from three hosts.
+
+**How Claude adds one.**
+1. Call `hqStartSiteArtworkUpload` with the picture's details (no file):
+   - `filename` and `mimeType` (`image/jpeg` or `image/png`)
+   - `origin`: `own-illustration` (we drew it) or `own-photo` (we took it)
+   - alt text in both languages
+   - `basedOnEs` / `basedOnEn`: what it was drawn from, as the credit should
+     say it, e.g. "basada en fotos del Historic American Buildings Survey
+     (dominio público)". Use "original" for a drawing made from nothing.
+   - optionally a focal point for the crop
+
+   It checks them and returns `uploadId`, a one-time `uploadUrl`
+   (`https://flamingocounty.com/api/hq/artwork-upload/<token>`) and the exact
+   command to send the file.
+2. Send the file from the shell:
+
+   ```sh
+   curl -sS -X PUT --data-binary @hialeah-park-clubhouse.jpg \
+     -H 'Content-Type: image/jpeg' '<uploadUrl>'
+   ```
+
+   The answer is `{id, filename, width, height, filesize}`.
+   `hqFinishSiteArtworkUpload(uploadId)` reads the same result over MCP.
+3. Set the id on the draft: a listing's `gallery`, a story's cover or an
+   event's `image`.
+4. Ask for the publish with `hqRequestPublish`.
+
+**Why a link and not the file in the call.** `hqAddSiteArtworkFromUpload`
+takes the file as base64 inside the tool call, and a model has to write that
+argument out character by character. A 72 KB drawing is about 96,000
+characters, and one wrong character corrupts the picture, so in practice it
+only works for a tiny file. It is still there for one, but the link is the way.
+
+**The link.** A random 32-byte token in the path is the only credential, so
+the PUT needs no API key. It works once, for 15 minutes, and only its sha256 is
+stored (`hq-artwork-uploads`, hidden in the admin), so the table can't be
+turned back into working links. Neither the route nor anything else logs it.
+The route refuses cheaply and in order: a rate limit (20 tries per address and
+100 overall in 10 minutes), the token's shape, one indexed lookup, and only
+then reads the body, cut off past 25 MB as it streams in.
+
+| Answer | Means |
+| --- | --- |
+| 201 | Stored. The body is the media record's id and size. |
+| 400 | Empty body. |
+| 404 | No such link. |
+| 410 | The link was used, or expired. Start a new one. |
+| 413 | Over 25 MB. |
+| 415 | Not a JPEG or PNG, or not the type the link was started for. The link isn't spent: send the right file. |
+| 422 | The picture failed a check (too small, over budget even at 1920 px). The link is spent: fix the file and start again. |
+| 429 | Too many tries. Wait a few minutes. |
+
+**Cloudflare.** Checked on 2026-10-07: a plain curl PUT to `/api/hq/...`
+reaches the site (Next answered 404 for an unknown path, with no Cloudflare
+challenge), so no WAF rule is needed. Use curl: a script's default user agent
+(Python's `urllib`, for one) can be refused by Cloudflare with a 403 before
+it reaches the site.
+
+**No shell?** Send the file over MCP in pieces instead. Base64 it, cut the
+base64 into pieces of at most 20,000 characters (on a multiple of 4), and send
+each with `hqSiteArtworkUploadChunk`: `uploadId`, `index` from 0, `total`, the
+piece, and the sha256 of that piece's decoded bytes. A piece that doesn't
+match its sha256 is refused, and only that piece needs resending. Then
+`hqFinishSiteArtworkUpload` puts them together, checks the whole file against
+its `sha256` when given, and stores it. Pieces are kept server-side, never on
+a public address, up to 2 MB in all; anything bigger goes by the link.
+
+Rows are removed a day after they expire, whenever a new link is issued.
+
+**What every way in refuses or decides for you:**
+- **Whose it is.** Only `own-illustration` or `own-photo`. The credit is
+  always "Flamingo County" and is not a parameter, so a third party's picture
+  can't be passed off as ours. An archive photo goes through
+  `hqAddSiteMediaFromUrl`, with its licence.
+- **Where it came from.** `basedOn` is required in both languages, so an
+  illustration drawn from someone else's photos still credits them.
+- **Files.** JPEG or PNG by their real bytes, at least 1000 px wide, up to
+  25 MB sent. It's re-encoded with no metadata, at most 2560 px, stepped down
+  in quality until it fits the site's **400 KB image budget**, then stored as
+  WebP like every upload. The stored file is checked against the budget too.
+  If it can't fit even at 1920 px, it's refused, not crushed.
+
+**The credit** reads "Ilustración: Flamingo County · basada en fotos del
+Historic American Buildings Survey (dominio público)" (or "Foto: Flamingo
+County" for our own photo), wherever the photo credit appears: under an event
+hero, on the board and the cards, and on the auto-drafted social post's last
+line. The media record keeps `origin` and the localized `basedOn`.
 
 ## Growth review
 

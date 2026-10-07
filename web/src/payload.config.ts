@@ -30,6 +30,7 @@ import { HqPublishRequests } from './collections/HqPublishRequests'
 import { HqChatTurns } from './collections/HqChatTurns'
 import { HqVisits } from './collections/HqVisits'
 import { HqExperiments } from './collections/HqExperiments'
+import { HqArtworkUploads } from './collections/HqArtworkUploads'
 import { eveningWrap } from './jobs/eveningWrap'
 import { morningBrief } from './jobs/morningBrief'
 import { socialStats } from './jobs/socialStats'
@@ -91,6 +92,7 @@ export default buildConfig({
     HqChatTurns,
     HqVisits,
     HqExperiments,
+    HqArtworkUploads,
   ],
   globals: [SiteSettings, AboutPage, ListYourSpotPage, HqPlaybook],
 
@@ -148,10 +150,12 @@ export default buildConfig({
      * is unreachable whatever a key says — and `users`, `members`,
      * `subscribers` and the jobs are deliberately missing: no account data, no
      * visitor emails. The public `media` is here for find only (it is
-     * public-read already); the one way to add to it is the
-     * hqAddSiteMediaFromUrl tool, which takes allowlisted hosts and licences
-     * only. A photo there shows on a page only once an event using it is
-     * published by the owner's tap.
+     * public-read already); the two ways to add to it are tools:
+     * hqAddSiteMediaFromUrl, which takes allowlisted hosts and licences only,
+     * and the artwork upload (hqStartSiteArtworkUpload, then a PUT to a one-time
+     * link; lib/artworkUpload.ts) for artwork Flamingo County made, always
+     * credited to us with what it was drawn from. A picture there shows on a
+     * page only once something using it is published by the owner's tap.
      *
      * Delete is off everywhere. Drafts can be written and edited but their
      * status cannot be changed over MCP (see `humanOnly` in fields/shared.ts):
@@ -215,17 +219,18 @@ export default buildConfig({
         categories: { enabled: { find: true } },
         // Read-only, to reuse a venue photo already imported (credit, licence,
         // source) rather than download it again. The public media library is
-        // public-read anyway; new photos come in only through
-        // hqAddSiteMediaFromUrl, which checks the host and the licence.
+        // public-read anyway; new pictures come in only through
+        // hqAddSiteMediaFromUrl, which checks the host and the licence, and
+        // the artwork upload (hqStartSiteArtworkUpload), which takes only our own artwork.
+        media: {
+          enabled: { find: true },
+          description:
+            'The public site’s photos and artwork (read-only). Use it to find a venue photo already imported with hqAddSiteMediaFromUrl (credit, license, sourceUrl) or artwork added with hqStartSiteArtworkUpload (origin, basedOn), and set its id on a draft.',
+        },
         videos: {
           enabled: { find: true },
           description:
             'Reels on the public site (read-only). Add one with hqAddSiteVideo, then set its id as a story’s `video` in that language, in a draft.',
-        },
-        media: {
-          enabled: { find: true },
-          description:
-            'The public site’s photos (read-only). Use it to find a venue photo already imported with hqAddSiteMediaFromUrl (credit, license, sourceUrl) and set its id as an event’s image, in a draft.',
         },
       },
       globals: {

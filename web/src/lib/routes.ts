@@ -32,6 +32,8 @@ export const routes = {
   privacy: (lang: Lang) => `/${lang}/privacy`,
   freeRides: (lang: Lang) => `/${lang}/free-rides`,
   freeRoute: (lang: Lang, route: string) => `/${lang}/free-rides/${route}`,
+  /** What the city and county know about a Hialeah address; `?a=<slug>` picks one. */
+  address: (lang: Lang) => `/${lang}/address`,
 } as const
 
 /** Append query params, skipping empties — filters keep living in the query. */

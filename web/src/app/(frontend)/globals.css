@@ -109,7 +109,11 @@ textarea {
 }
 
 /*
- * 1120, not the 1020 this was ported with, because the bar gained a tab.
+ * 1230 since YOUR ADDRESS joined the bar (2026-10-07): measured in Spanish it
+ * wants 1191px, plus the 34px kept for MY WEEK's saved count below. Before
+ * that it was 1120, and 1020 when ported.
+ *
+ * The history of that number: 1120, not the 1020 this was ported with, because the bar gained a tab.
  *
  * The desktop row is `nowrap` and every item in it is `flex: 0 0 auto`, so it
  * has no way to fail gracefully — it overflows the document and the page
@@ -125,10 +129,10 @@ textarea {
  * The extra 34px over the measured 1086 is for that saved count: the badge is
  * a number, and it is one character wide today.
  *
- * The burger is a complete equivalent, EVENTS included, so handing 1021–1120
+ * The burger is a complete equivalent, EVENTS included, so handing 1021–1230
  * to it costs nothing.
  */
-@media (max-width: 1120px) {
+@media (max-width: 1230px) {
   [data-navdesk] {
     display: none !important;
   }

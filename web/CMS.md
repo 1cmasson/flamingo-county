@@ -216,7 +216,7 @@ to import.
 The ES label is `ORGANIZACIONES`, not the club's own *sin fines de lucro*, which
 is accurate but three words too long for a filter chip.
 
-A fourth, `gems` → **LOCAL GEMS** / **JOYAS LOCALES**, is the same kind of row:
+A fourth, `gems` → **FLAMINGO COUNTY GEM** / **JOYA DE FLAMINGO COUNTY**, is the same kind of row:
 places that have been part of a city long enough to be landmarks (Hialeah Park,
 a bank branch in its thirtieth year). It differs in two ways:
 
@@ -228,8 +228,16 @@ a bank branch in its thirtieth year). It differs in two ways:
   entry keeps a fresh database in step; the seed's upsert finds the
   migration's row by slug.
 
-The label names no city because a category is shared by all of them. "Joya de
-Hialeah" is how a Hialeah story or caption says it, not the chip.
+- **It wears a badge, not a chip.** In a listing's hero the category chip is
+  replaced by the diamond badge (`src/components/GemBadge.tsx`: a cartoon cut
+  diamond, cyan crown, pink pavilion, ink outline, sparkle) with the label
+  beside it, and a gem's card puts a small diamond before its meta line. The
+  wording is still the category's label, so it is translated in the database
+  and reads the same in the meta line and the search dropdown. It was LOCAL
+  GEMS / JOYAS LOCALES until `20261007_125000_gem_label` renamed it.
+
+The label names the directory, not a city, because a category is shared by all
+of them. "Joya de Hialeah" is how a Hialeah story or caption says it.
 
 The seed only upserts, so `pruneCategories` deletes rows that fall out of
 `CAT_KEEP` — without it a database seeded before the trim keeps offering
@@ -471,6 +479,19 @@ the array as replaced and rebuilds it instead of translating in place.
 Ported so far: the chrome (nav, footer), **Home**, **City**, **Business**,
 **Story**, **Events**, **Event**, **Stories index**, **My Week**,
 **List Your Spot** and **About**.
+
+### A mascot on a picture is a bust, never a disc
+
+When a city's mascot sits on a photo or poster it stands free at the side of
+the picture with its ink shadow: `components/MascotBust.tsx`. `top` hangs it
+from inside the frame so the frame's `overflow: hidden` crops it at the waist
+(the directory card, the business masthead); `bottom` stands a full figure on
+the lower edge (the event and season heroes). The business masthead used to
+put the mascot in a cyan circle over the photo's corner; the owner retired
+that on 2026-10-07, so no mascot goes in a circle anywhere. Keep chips and
+badges out of the side the mascot stands on (the masthead's chips stop
+`MASTHEAD_CHIPS_RIGHT` short of it and wrap). Tinted rectangular panels with a
+mascot (`lib/castBg.ts`: About, City, the crew box) are a separate treatment.
 
 ### How to check a port is faithful
 

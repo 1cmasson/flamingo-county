@@ -156,6 +156,10 @@ export async function Nav({ lang }: { lang: Lang }) {
             {t('EVENTS')}
           </Link>
 
+          <Link href={routes.address(lang)} className={s.chip} style={linkChip}>
+            {t('YOUR ADDRESS')}
+          </Link>
+
           {/* The only plain label that needs explaining: nobody can guess
               what MY WEEK holds until they have saved something to it. */}
           <Tooltip text={t('YOUR SAVED EVENTS')} rotate={1.4}>
@@ -198,6 +202,10 @@ export async function Nav({ lang }: { lang: Lang }) {
               {
                 href: routes.freeRides(lang),
                 label: t('FREE RIDES'),
+              },
+              {
+                href: routes.address(lang),
+                label: t('YOUR ADDRESS'),
               },
               {
                 href: routes.myWeek(lang),

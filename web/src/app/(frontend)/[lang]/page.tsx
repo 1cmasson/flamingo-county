@@ -19,6 +19,7 @@ import { BusinessCard } from '../../../components/BusinessCard'
 import { NewsletterForm } from '../../../components/NewsletterForm'
 import { MediaSlot } from '../../../components/MediaSlot'
 import { SearchForm } from '../../../components/SearchForm'
+import { HomeAddress } from '../../../components/HomeAddress'
 import s from '../../../components/chrome.module.css'
 import { buildSrcSet } from '../../../lib/srcset'
 
@@ -203,6 +204,9 @@ export default async function HomePage({
               ) : null}
             </div>
           </div>
+
+          {/* --- Your address: trash days, flood zone, who represents you --- */}
+          <HomeAddress lang={lang as Lang} />
 
           {/* --- Spotlight --- */}
           {settings.showSpotlight !== false && spots.length ? (

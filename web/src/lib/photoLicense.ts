@@ -67,9 +67,11 @@ function safeHref(v: string | null | undefined): string | null {
 }
 
 export type PhotoCredit = {
-  /** "Foto" / "Photo". */
+  /** "Foto" / "Photo", or "Ilustración" / "Illustration" for our own drawn artwork. */
   lead: string
   credit: string
+  /** What our own artwork was drawn from, e.g. "basada en fotos del HABS (dominio público)". */
+  basedOn: string | null
   /** The description page, when there is one. */
   sourceUrl: string | null
   /** "CC BY 2.0", or null for a photo with no licence on file (the owner's or a partner's own). */
@@ -107,9 +109,11 @@ export function photoCredit(
   const license = isPhotoLicense(m.license) ? m.license : null
   const label = license ? licenseLabel(license, lang) : null
   const cropped = opts.cropped || m.modified
+  const drawn = m.origin === 'own-illustration'
   return {
-    lead: lang === 'es' ? 'Foto' : 'Photo',
+    lead: drawn ? (lang === 'es' ? 'Ilustración' : 'Illustration') : lang === 'es' ? 'Foto' : 'Photo',
     credit,
+    basedOn: m.basedOn?.trim() || null,
     sourceUrl: safeHref(m.sourceUrl),
     license: label,
     licenseUrl: license ? (safeHref(m.licenseUrl) ?? canonicalLicenseUrl(license)) : null,
@@ -118,7 +122,10 @@ export function photoCredit(
   }
 }
 
-/** The credit as one line of plain text: "Foto: Phillip Pessar · CC BY 2.0 · recortada". */
+/**
+ * The credit as one line of plain text: "Foto: Phillip Pessar · CC BY 2.0 · recortada",
+ * or "Ilustración: Flamingo County · basada en fotos del HABS (dominio público)".
+ */
 export function photoCreditText(c: PhotoCredit, sep = ' · '): string {
-  return [`${c.lead}: ${c.credit}`, c.license, c.cropped, c.derivative].filter(Boolean).join(sep)
+  return [`${c.lead}: ${c.credit}`, c.basedOn, c.license, c.cropped, c.derivative].filter(Boolean).join(sep)
 }

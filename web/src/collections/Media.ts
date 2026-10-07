@@ -65,6 +65,32 @@ export const Media: CollectionConfig = {
       type: 'checkbox',
       admin: { description: 'The file was cropped or edited. CC 3.0 and 4.0 require saying so; the credit adds “cropped”.' },
     },
+    /**
+     * Artwork Flamingo County made itself (a drawn cover, our own photo), as
+     * opposed to a licensed photo from an archive. Set by the
+     * artwork upload tools (lib/artworkUpload.ts). An illustration is credited
+     * "Ilustración: Flamingo County" and, when it was drawn from someone
+     * else's pictures, says which (`basedOn`), so the archive still gets its
+     * credit. See lib/photoLicense.ts.
+     */
+    {
+      name: 'origin',
+      type: 'select',
+      options: [
+        { value: 'own-illustration', label: 'Our illustration' },
+        { value: 'own-photo', label: 'Our photo' },
+      ],
+      admin: { description: 'Made by Flamingo County. Empty for a licensed photo from an archive.' },
+    },
+    {
+      name: 'basedOn',
+      type: 'text',
+      localized: true,
+      admin: {
+        description:
+          'What our artwork was drawn from, as the credit says it, e.g. "basada en fotos del Historic American Buildings Survey (dominio público)".',
+      },
+    },
   ],
   upload: {
     /**

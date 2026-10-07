@@ -120,6 +120,18 @@ export function Footer({ lang }: { lang: Lang }) {
           {t('FREE RIDES')}
         </Link>
         <Link
+          href={routes.address(lang)}
+          style={{
+            fontWeight: 800,
+            fontSize: 12,
+            letterSpacing: '1.6px',
+            color: 'var(--cyan)',
+            textDecoration: 'none',
+          }}
+        >
+          {t('YOUR ADDRESS')}
+        </Link>
+        <Link
           href={routes.about(lang)}
           style={{
             fontWeight: 800,

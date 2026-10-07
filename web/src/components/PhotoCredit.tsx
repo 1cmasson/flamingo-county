@@ -14,6 +14,7 @@ import type { PhotoCredit as Credit } from '../lib/photoLicense'
 export function PhotoCredit({ credit, style }: { credit: Credit; style?: CSSProperties }) {
   const link = { color: 'inherit', textDecorationThickness: '1px', textUnderlineOffset: '2px' } as const
   const parts = [
+    credit.basedOn,
     credit.license
       ? credit.licenseUrl
         ? <a key="l" href={credit.licenseUrl} rel="license noopener" target="_blank" style={link}>{credit.license}</a>

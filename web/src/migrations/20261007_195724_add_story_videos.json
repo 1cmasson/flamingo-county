@@ -226,6 +226,13 @@
           "notNull": false,
           "autoincrement": false
         },
+        "origin": {
+          "name": "origin",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "updated_at": {
           "name": "updated_at",
           "type": "text",
@@ -489,6 +496,13 @@
           "type": "text",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "based_on": {
+          "name": "based_on",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "id": {
@@ -10273,6 +10287,160 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "hq_artwork_uploads": {
+      "name": "hq_artwork_uploads",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "token_hash": {
+          "name": "token_hash",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "'pending'"
+        },
+        "expires_at": {
+          "name": "expires_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "meta": {
+          "name": "meta",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "chunks": {
+          "name": "chunks",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "chunk_total": {
+          "name": "chunk_total",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "media_id": {
+          "name": "media_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "result": {
+          "name": "result",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "error": {
+          "name": "error",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+        }
+      },
+      "indexes": {
+        "hq_artwork_uploads_token_hash_idx": {
+          "name": "hq_artwork_uploads_token_hash_idx",
+          "columns": [
+            "token_hash"
+          ],
+          "isUnique": true
+        },
+        "hq_artwork_uploads_status_idx": {
+          "name": "hq_artwork_uploads_status_idx",
+          "columns": [
+            "status"
+          ],
+          "isUnique": false
+        },
+        "hq_artwork_uploads_expires_at_idx": {
+          "name": "hq_artwork_uploads_expires_at_idx",
+          "columns": [
+            "expires_at"
+          ],
+          "isUnique": false
+        },
+        "hq_artwork_uploads_media_idx": {
+          "name": "hq_artwork_uploads_media_idx",
+          "columns": [
+            "media_id"
+          ],
+          "isUnique": false
+        },
+        "hq_artwork_uploads_updated_at_idx": {
+          "name": "hq_artwork_uploads_updated_at_idx",
+          "columns": [
+            "updated_at"
+          ],
+          "isUnique": false
+        },
+        "hq_artwork_uploads_created_at_idx": {
+          "name": "hq_artwork_uploads_created_at_idx",
+          "columns": [
+            "created_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "hq_artwork_uploads_media_id_media_id_fk": {
+          "name": "hq_artwork_uploads_media_id_media_id_fk",
+          "tableFrom": "hq_artwork_uploads",
+          "tableTo": "media",
+          "columnsFrom": [
+            "media_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "payload_mcp_api_keys": {
       "name": "payload_mcp_api_keys",
       "columns": {
@@ -10584,16 +10752,16 @@
           "autoincrement": false,
           "default": false
         },
-        "videos_find": {
-          "name": "videos_find",
+        "media_find": {
+          "name": "media_find",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
           "autoincrement": false,
           "default": false
         },
-        "media_find": {
-          "name": "media_find",
+        "videos_find": {
+          "name": "videos_find",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -10674,6 +10842,38 @@
         },
         "payload_mcp_tool_hq_add_site_video": {
           "name": "payload_mcp_tool_hq_add_site_video",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": true
+        },
+        "payload_mcp_tool_hq_add_site_artwork_from_upload": {
+          "name": "payload_mcp_tool_hq_add_site_artwork_from_upload",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": true
+        },
+        "payload_mcp_tool_hq_start_site_artwork_upload": {
+          "name": "payload_mcp_tool_hq_start_site_artwork_upload",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": true
+        },
+        "payload_mcp_tool_hq_site_artwork_upload_chunk": {
+          "name": "payload_mcp_tool_hq_site_artwork_upload_chunk",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": true
+        },
+        "payload_mcp_tool_hq_finish_site_artwork_upload": {
+          "name": "payload_mcp_tool_hq_finish_site_artwork_upload",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -11379,6 +11579,13 @@
           "notNull": false,
           "autoincrement": false
         },
+        "hq_artwork_uploads_id": {
+          "name": "hq_artwork_uploads_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "payload_mcp_api_keys_id": {
           "name": "payload_mcp_api_keys_id",
           "type": "integer",
@@ -11574,6 +11781,13 @@
           "name": "payload_locked_documents_rels_hq_experiments_id_idx",
           "columns": [
             "hq_experiments_id"
+          ],
+          "isUnique": false
+        },
+        "payload_locked_documents_rels_hq_artwork_uploads_id_idx": {
+          "name": "payload_locked_documents_rels_hq_artwork_uploads_id_idx",
+          "columns": [
+            "hq_artwork_uploads_id"
           ],
           "isUnique": false
         },
@@ -11904,6 +12118,19 @@
           "tableTo": "hq_experiments",
           "columnsFrom": [
             "hq_experiments_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "payload_locked_documents_rels_hq_artwork_uploads_fk": {
+          "name": "payload_locked_documents_rels_hq_artwork_uploads_fk",
+          "tableFrom": "payload_locked_documents_rels",
+          "tableTo": "hq_artwork_uploads",
+          "columnsFrom": [
+            "hq_artwork_uploads_id"
           ],
           "columnsTo": [
             "id"
@@ -13083,6 +13310,6 @@
   "internal": {
     "indexes": {}
   },
-  "id": "8454840e-34d9-4ad1-80e1-047ad48fb869",
+  "id": "121d0069-ae10-4367-b878-236eb5c9a4ee",
   "prevId": "00000000-0000-0000-0000-000000000000"
 }

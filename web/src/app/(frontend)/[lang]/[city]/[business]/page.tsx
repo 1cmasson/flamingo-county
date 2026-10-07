@@ -24,6 +24,9 @@ import { AnswerBlock } from '../../../../../components/AnswerBlock'
 import { Breadcrumbs, type Crumb } from '../../../../../components/Breadcrumbs'
 import { PageShell } from '../../../../../components/PageShell'
 import { MediaSlot } from '../../../../../components/MediaSlot'
+import { GemBadge } from '../../../../../components/GemBadge'
+import { MascotBust } from '../../../../../components/MascotBust'
+import { isGem } from '../../../../../lib/categories'
 import { FreeRidePanel } from '../../../../../components/Transit'
 import { FULL_WIDTH_SIZES } from '../../../../../lib/srcset'
 import s from '../../../../../components/chrome.module.css'
@@ -41,6 +44,17 @@ import s from '../../../../../components/chrome.module.css'
  * does not.
  */
 export const dynamic = 'force-dynamic'
+
+/**
+ * The masthead's mascot bust. The frame is `clamp(190px,42vw,330px)` tall and
+ * the bust as tall as the frame, so its width is the art's aspect times that:
+ * the widest cast art (the rooster) is about 0.52 wide per unit of height. The
+ * chips stop that far plus the inset short of the right edge, so a long badge
+ * wraps instead of running under the character.
+ */
+const MASTHEAD_BUST_INSET = 16
+const MASTHEAD_BUST_MAX_WIDTH = '34%'
+const MASTHEAD_CHIPS_RIGHT = 'calc(clamp(99px, 22vw, 172px) + 32px)'
 
 
 export async function generateStaticParams() {
@@ -122,6 +136,7 @@ export default async function BusinessPage({
 
   const category = rel<Category>(listing.category)
   const mascot = city ? rel<Media>(city.solo) : null
+  const gem = isGem(category?.slug)
   const gallery = (Array.isArray(listing.gallery) ? listing.gallery : []).map((g) => rel<Media>(g))
 
   const d = listing.detail ?? {}
@@ -202,6 +217,7 @@ export default async function BusinessPage({
               position: 'relative',
               height: 'clamp(190px,42vw,330px)',
               borderBottom: '4px solid var(--ink)',
+              overflow: 'hidden',
             }}
           >
             <MediaSlot
@@ -209,12 +225,26 @@ export default async function BusinessPage({
               sizes={FULL_WIDTH_SIZES}
               priority
             />
+            {gem ? (
+              // A gem's badge owns the photo's top-left corner, as on its
+              // directory card. It cannot wrap (one 34px line) and is longer
+              // than the room the bottom row leaves beside the bust, so it sits
+              // above the bust instead: the bust hangs from 30% down, and the
+              // badge (sticker included) ends above that on the 190px phone
+              // frame.
+              <div style={{ position: 'absolute', top: 20, left: 18, pointerEvents: 'none' }}>
+                <GemBadge label={category?.label ?? ''} />
+              </div>
+            ) : null}
             <div
               style={{
                 position: 'absolute',
                 left: 18,
                 bottom: 18,
+                // The chips stop short of the mascot's side and wrap there.
+                right: mascot?.url ? MASTHEAD_CHIPS_RIGHT : 18,
                 display: 'flex',
+                flexWrap: 'wrap-reverse',
                 gap: 8,
                 alignItems: 'flex-end',
                 pointerEvents: 'none',
@@ -231,40 +261,33 @@ export default async function BusinessPage({
               >
                 {city?.name}
               </div>
-              <div
-                style={{
-                  background: 'var(--grad-pink)',
-                  border: '4px solid var(--ink)',
-                  padding: '8px 12px 5px',
-                  fontFamily: 'var(--display)',
-                  fontSize: 16,
-                  color: 'var(--cream)',
-                }}
-              >
-                {category?.label}
-              </div>
+              {gem ? null : (
+                <div
+                  style={{
+                    background: 'var(--grad-pink)',
+                    border: '4px solid var(--ink)',
+                    padding: '8px 12px 5px',
+                    fontFamily: 'var(--display)',
+                    fontSize: 16,
+                    color: 'var(--cream)',
+                  }}
+                >
+                  {category?.label}
+                </div>
+              )}
             </div>
-            {mascot?.url ? (
-              <div
-                style={{
-                  position: 'absolute',
-                  right: 16,
-                  bottom: -30,
-                  background: city?.castBg ?? 'var(--cyan)',
-                  border: '4px solid var(--ink)',
-                  width: 'clamp(84px,17vw,132px)',
-                  height: 'clamp(84px,17vw,132px)',
-                  borderRadius: '50%',
-                  overflow: 'hidden',
-                  display: 'flex',
-                  alignItems: 'flex-end',
-                  justifyContent: 'center',
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={mascot.url} alt="" style={{ height: '91%', width: 'auto' }} />
-              </div>
-            ) : null}
+            {/* The city's mascot as a bust leaning into the photo, as on the
+                directory card this page opens from: hung a third of the way
+                down and as tall as the frame, so the frame's overflow crops it
+                at the waist. */}
+            <MascotBust
+              media={mascot}
+              inset={MASTHEAD_BUST_INSET}
+              top="30%"
+              height="100%"
+              maxWidth={MASTHEAD_BUST_MAX_WIDTH}
+              sizes="(max-width: 700px) 30vw, 240px"
+            />
           </div>
           <div
             style={{

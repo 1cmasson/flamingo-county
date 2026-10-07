@@ -68,8 +68,8 @@ async function main() {
     const esLabels = Object.fromEntries(es.docs.map((d: any) => [d.slug, d.label]))
     check('food ES is RESTAURANTES', esLabels.food === 'RESTAURANTES', `got ${esLabels.food}`)
     check('night ES is BARES', esLabels.night === 'BARES', `got ${esLabels.night}`)
-    check('gems is labelled LOCAL GEMS', labels.gems === 'LOCAL GEMS', `got ${labels.gems}`)
-    check('gems ES is JOYAS LOCALES', esLabels.gems === 'JOYAS LOCALES', `got ${esLabels.gems}`)
+    check('gems is labelled FLAMINGO COUNTY GEM', labels.gems === 'FLAMINGO COUNTY GEM', `got ${labels.gems}`)
+    check('gems ES is JOYA DE FLAMINGO COUNTY', esLabels.gems === 'JOYA DE FLAMINGO COUNTY', `got ${esLabels.gems}`)
   }
 
   /* --- the researched imports ------------------------------------------- */

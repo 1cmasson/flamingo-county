@@ -50,6 +50,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...both(routes.listYourSpot, undefined, 0.4),
     ...both(routes.freeRides, undefined, 0.7),
     ...ROUTE_SLUGS.flatMap((r) => both((l) => routes.freeRoute(l, r), undefined, 0.6)),
+    // The search page only: a single address (`?a=`) is noindex.
+    ...both(routes.address, undefined, 0.7),
     ...cities.flatMap((c) => both((l) => routes.city(l, c.slug), c.updatedAt, 0.9)),
     ...listings.flatMap((b) => {
       // The page 404s unless the city matches, so a listing with no city has no URL.
