@@ -275,3 +275,147 @@ export function ruleText(rule: { days: number[]; weeks: number[] | null }, lang:
   const weeks = rule.weeks.map(nth).join(and)
   return lang === 'es' ? `${weeks} ${days} del mes` : `${weeks} ${days} of the month`
 }
+
+/** The map's words: plain strings, since they cross into a client component. */
+export type MapCopy = {
+  list: string
+  map: string
+  explore: string
+  exploreLead: string
+  label: string
+  layers: string
+  lens: Record<'garbage' | 'flood' | 'surge' | 'commission' | 'polling' | 'elementary' | 'places' | 'bus', string>
+  you: string
+  closer: string
+  loading: string
+  failed: string
+  zoomIn: string
+  zoomOut: string
+  close: string
+  credits: string
+  twoFingers: string
+  days: string[]
+  and: string
+  otherDays: string
+  district: string
+  precinct: string
+  pollingPlace: string
+  surgeZone: string
+  surgeNote: string
+  floodZone: string
+  floodHigh: string
+  floodCoastal: string
+  schoolZone: string
+  eachColor: string
+  place: Record<'fire' | 'police' | 'hospital' | 'library' | 'park', string>
+  free: string
+  hint: Record<'garbage' | 'flood' | 'surge' | 'commission' | 'polling' | 'elementary' | 'places' | 'bus', string>
+}
+
+export function mapCopy(lang: Lang): MapCopy {
+  return lang === 'es'
+    ? {
+        list: 'LISTA',
+        map: 'MAPA',
+        explore: 'EXPLORA EL MAPA DEL CONDADO',
+        exploreLead: 'Escoge una capa: días de basura, inundación, marejada, comisionados, dónde votar, escuelas.',
+        label: 'Mapa de Miami-Dade',
+        layers: 'Capas del mapa',
+        lens: {
+          garbage: '🗑️ Basura',
+          flood: '🌊 Inundación',
+          surge: '🌀 Marejada',
+          commission: '🏛️ Comisionados',
+          polling: '🗳️ Dónde votar',
+          elementary: '🏫 Escuelas',
+          places: '📍 Servicios',
+          bus: '🚌 Guagua gratis',
+        },
+        you: 'Tu casa',
+        closer: 'Acércate para ver esta capa',
+        loading: 'Cargando el mapa…',
+        failed: 'El mapa no cargó. Todo lo que dice también está en la lista.',
+        zoomIn: 'Acercar',
+        zoomOut: 'Alejar',
+        close: 'Cerrar',
+        credits: 'Créditos del mapa',
+        twoFingers: 'Usa dos dedos para mover el mapa',
+        days: ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'],
+        and: ' y ',
+        otherDays: 'Otros días',
+        district: 'Distrito',
+        precinct: 'Precinto',
+        pollingPlace: 'Lugar de votación',
+        surgeZone: 'Zona de marejada',
+        surgeNote: 'La A sale primero, la E de última.',
+        floodZone: 'Zona de FEMA',
+        floodHigh: 'Alto riesgo de inundación',
+        floodCoastal: 'Alto riesgo con oleaje (costa)',
+        schoolZone: 'Zona de la escuela primaria',
+        eachColor: 'Cada color es un distrito; toca uno para ver quién lo representa.',
+        place: { fire: 'Bomberos', police: 'Policía', hospital: 'Hospital', library: 'Biblioteca', park: 'Parque' },
+        free: 'Gratis, sin tarjeta',
+        hint: {
+          garbage: 'Cada color es un horario de recogida. Toca una zona.',
+          flood: 'Solo se pintan las zonas de alto riesgo de FEMA; el resto es zona X.',
+          surge: 'Si el condado ordena evacuar tu zona, te toca salir.',
+          commission: 'Los 13 distritos del condado. Toca uno.',
+          polling: 'Cada línea es un precinto; los puntos amarillos son donde se vota el día de las elecciones.',
+          elementary: 'La zona de cada escuela primaria. Toca una.',
+          places: 'Bomberos, policía, hospitales, bibliotecas y parques.',
+          bus: 'Las dos rutas gratis de Hialeah: Flamingo y Marlin.',
+        },
+      }
+    : {
+        list: 'LIST',
+        map: 'MAP',
+        explore: 'EXPLORE THE COUNTY MAP',
+        exploreLead: 'Pick a layer: trash days, flood, storm surge, commissioners, where to vote, schools.',
+        label: 'Map of Miami-Dade',
+        layers: 'Map layers',
+        lens: {
+          garbage: '🗑️ Trash',
+          flood: '🌊 Flood',
+          surge: '🌀 Storm surge',
+          commission: '🏛️ Commissioners',
+          polling: '🗳️ Where to vote',
+          elementary: '🏫 Schools',
+          places: '📍 Services',
+          bus: '🚌 Free bus',
+        },
+        you: 'Your home',
+        closer: 'Zoom in to see this layer',
+        loading: 'Loading the map…',
+        failed: 'The map didn’t load. Everything it shows is also in the list.',
+        zoomIn: 'Zoom in',
+        zoomOut: 'Zoom out',
+        close: 'Close',
+        credits: 'Map credits',
+        twoFingers: 'Use two fingers to move the map',
+        days: ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'],
+        and: ' & ',
+        otherDays: 'Other days',
+        district: 'District',
+        precinct: 'Precinct',
+        pollingPlace: 'Polling place',
+        surgeZone: 'Storm-surge zone',
+        surgeNote: 'A leaves first, E last.',
+        floodZone: 'FEMA zone',
+        floodHigh: 'High flood risk',
+        floodCoastal: 'High risk with waves (coast)',
+        schoolZone: 'Elementary school zone',
+        eachColor: 'Each color is a district; tap one to see who represents it.',
+        place: { fire: 'Fire station', police: 'Police', hospital: 'Hospital', library: 'Library', park: 'Park' },
+        free: 'Free, no card',
+        hint: {
+          garbage: 'Each color is a pickup schedule. Tap a zone.',
+          flood: 'Only FEMA’s high-risk zones are painted; everywhere else is zone X.',
+          surge: 'If the county orders your zone to evacuate, you have to leave.',
+          commission: 'The county’s 13 districts. Tap one.',
+          polling: 'Each line is a precinct; yellow dots are Election Day polling places.',
+          elementary: 'Each elementary school’s zone. Tap one.',
+          places: 'Fire stations, police, hospitals, libraries and parks.',
+          bus: 'Hialeah’s two free lines: Flamingo and Marlin.',
+        },
+      }
+}
