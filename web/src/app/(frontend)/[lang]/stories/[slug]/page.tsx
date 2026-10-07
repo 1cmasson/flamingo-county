@@ -4,10 +4,14 @@ import type { Metadata } from 'next'
 import { isLang, translator, type Lang } from '../../../../../i18n'
 import { routes } from '../../../../../lib/routes'
 import { getCity, getStories, getStory, rel } from '../../../../../lib/data'
-import type { City, Listing, Media } from '../../../../../payload-types'
+import type { City, Listing, Media, Video } from '../../../../../payload-types'
 import { PageShell } from '../../../../../components/PageShell'
 import { StoryBlocks } from '../../../../../components/StoryBlocks'
-import { MediaSlot } from '../../../../../components/MediaSlot'
+import { StoryArt } from '../../../../../components/StoryArt'
+import { StoryVideo } from '../../../../../components/StoryVideo'
+import { JsonLd } from '../../../../../components/JsonLd'
+import { mediaUrl, storyJsonLd, videoJsonLd } from '../../../../../lib/jsonld'
+import { openGraph, twitterCard } from '../../../../../lib/site'
 import { FULL_WIDTH_SIZES } from '../../../../../lib/srcset'
 import chrome from '../../../../../components/chrome.module.css'
 
@@ -24,7 +28,6 @@ import chrome from '../../../../../components/chrome.module.css'
  * does not.
  */
 export const dynamic = 'force-dynamic'
-
 
 const mono = 'ui-monospace, SFMono-Regular, Menlo, monospace'
 
@@ -45,9 +48,20 @@ export async function generateMetadata({
   if (!isLang(lang)) return {}
   const story = await getStory(lang, slug)
   if (!story) return {}
+  // The cover photo; failing that, the reel's cover card, so a shared link
+  // always carries a picture.
+  const image = mediaUrl(story.cover) ?? mediaUrl(rel<Video>(story.video)?.poster)
   return {
     title: story.title,
     description: story.dek ?? undefined,
+    openGraph: openGraph(lang, {
+      title: story.title,
+      description: story.dek ?? undefined,
+      url: routes.story(lang, slug),
+      image,
+      imageAlt: rel<Media>(story.cover)?.alt ?? story.title,
+    }),
+    twitter: twitterCard(image),
     alternates: {
       canonical: routes.story(lang, slug),
       languages: { en: routes.story('en', slug), es: routes.story('es', slug) },
@@ -76,9 +90,17 @@ export default async function StoryPage({
   const mascot = city ? rel<Media>(city.solo) : null
 
   const others = (await getStories(lang)).filter((s) => s.slug !== slug)
+  const video = rel<Video>(story.video)
+  const videoLd = video ? videoJsonLd(lang, video, story.dek) : null
 
   return (
     <PageShell>
+      <JsonLd
+        data={storyJsonLd(lang, story, {
+          image: mediaUrl(story.cover) ?? mediaUrl(video?.poster),
+          video: videoLd,
+        })}
+      />
       <div style={{ position: 'relative' }}>
         {/* Scroll progress. Chromium drives it from the root scroller; elsewhere
             the `both` fill leaves it full, which is a harmless resting state. */}
@@ -236,48 +258,66 @@ export default async function StoryPage({
             </div>
           </header>
 
-          {/* --- Cover --- */}
-          <div
-            style={{
-              position: 'relative',
-              border: '4px solid var(--ink)',
-              borderTop: 0,
-              boxShadow: '9px 9px 0 var(--ink)',
-              height: 'clamp(240px,52vw,520px)',
-              overflow: 'hidden',
-            }}
-          >
+          {/* --- Cover ---
+              Skipped when there is no photo but there is a reel: its poster
+              is the same DID YOU KNOW? card the empty frame would draw, so
+              the page would say it twice in a row. */}
+          {story.cover || !video?.url ? (
             <div
               style={{
-                position: 'absolute',
-                inset: 0,
-                animation: 'clipIn 1s ease-out both',
-                animationTimeline: 'view()',
-                animationRange: 'entry 0% cover 26%',
+                position: 'relative',
+                border: '4px solid var(--ink)',
+                borderTop: 0,
+                boxShadow: '9px 9px 0 var(--ink)',
+                height: 'clamp(240px,52vw,520px)',
+                overflow: 'hidden',
               }}
             >
-              <MediaSlot
-                media={story.cover}
-                sizes={FULL_WIDTH_SIZES}
-                priority
-              />
+              <div
+                style={{
+                  position: 'absolute',
+                  inset: 0,
+                  animation: 'clipIn 1s ease-out both',
+                  animationTimeline: 'view()',
+                  animationRange: 'entry 0% cover 26%',
+                }}
+              >
+                <StoryArt
+                  media={story.cover}
+                  label={t('DID YOU KNOW?')}
+                  sizes={FULL_WIDTH_SIZES}
+                  priority
+                  size="lg"
+                />
+              </div>
             </div>
-          </div>
-          <div
-            style={{
-              background: 'var(--ink)',
-              color: 'var(--cream)',
-              fontFamily: mono,
-              fontSize: 12,
-              letterSpacing: '0.6px',
-              padding: '9px 14px',
-              border: '4px solid var(--ink)',
-              borderTop: 0,
-              boxShadow: '9px 9px 0 var(--ink)',
-            }}
-          >
-            {story.coverCap}
-          </div>
+          ) : null}
+          {story.coverCap ? (
+            <div
+              style={{
+                background: 'var(--ink)',
+                color: 'var(--cream)',
+                fontFamily: mono,
+                fontSize: 12,
+                letterSpacing: '0.6px',
+                padding: '9px 14px',
+                border: '4px solid var(--ink)',
+                borderTop: 0,
+                boxShadow: '9px 9px 0 var(--ink)',
+              }}
+            >
+              {story.coverCap}
+            </div>
+          ) : null}
+
+          {video?.url ? (
+            <StoryVideo
+              video={video}
+              heading={t('WATCH THE VIDEO')}
+              note={t('The same story, as the short video we made of it.')}
+              fallback={t('Your browser cannot play this video.')}
+            />
+          ) : null}
 
           {/* --- Body, with the mascot rail --- */}
           <div
@@ -325,8 +365,7 @@ export default async function StoryPage({
                 background: 'var(--grad-cream)',
                 border: '4px solid var(--ink)',
                 boxShadow: '10px 10px 0 var(--ink)',
-                padding:
-                  'clamp(20px,4vw,46px) clamp(18px,4vw,40px) clamp(26px,5vw,52px)',
+                padding: 'clamp(20px,4vw,46px) clamp(18px,4vw,40px) clamp(26px,5vw,52px)',
                 display: 'flex',
                 flexDirection: 'column',
                 gap: 'clamp(20px,3.4vw,30px)',

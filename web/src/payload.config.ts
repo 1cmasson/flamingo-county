@@ -8,6 +8,7 @@ import sharp from 'sharp'
 
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
+import { Videos } from './collections/Videos'
 import { Cities } from './collections/Cities'
 import { Categories } from './collections/Categories'
 import { EventKinds } from './collections/EventKinds'
@@ -68,6 +69,7 @@ export default buildConfig({
   collections: [
     Users,
     Media,
+    Videos,
     Cities,
     Categories,
     EventKinds,
@@ -215,6 +217,11 @@ export default buildConfig({
         // source) rather than download it again. The public media library is
         // public-read anyway; new photos come in only through
         // hqAddSiteMediaFromUrl, which checks the host and the licence.
+        videos: {
+          enabled: { find: true },
+          description:
+            'Reels on the public site (read-only). Add one with hqAddSiteVideo, then set its id as a story’s `video` in that language, in a draft.',
+        },
         media: {
           enabled: { find: true },
           description:

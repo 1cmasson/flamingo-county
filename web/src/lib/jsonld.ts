@@ -1,5 +1,5 @@
 import type { Lang } from '../i18n'
-import type { Category, City, Event, Listing, Media } from '../payload-types'
+import type { Category, City, Event, Listing, Media, Story, Video } from '../payload-types'
 import { eventEndDay } from './dates'
 import { eventDirections } from './eventVenue'
 import { routes } from './routes'
@@ -342,4 +342,50 @@ export function itemListJsonLd(name: string, items: { name: string; path: string
       url: absUrl(it.path),
     })),
   }
+}
+
+/**
+ * A story's reel. Google requires name, thumbnailUrl and uploadDate; the
+ * thumbnail is the cover card, and the upload date is the day the reel came
+ * onto the site (its own record), not a guess at when it was filmed.
+ */
+export function videoJsonLd(lang: Lang, video: Video, description?: string | null): Obj | null {
+  const thumb = mediaUrl(video.poster)
+  if (!video.url || !thumb) return null
+  return clean({
+    '@context': 'https://schema.org',
+    '@type': 'VideoObject',
+    name: video.title,
+    description: description || video.title,
+    thumbnailUrl: [thumb],
+    uploadDate: video.createdAt,
+    contentUrl: absUrl(video.url),
+    duration: video.durationSeconds ? `PT${Math.floor(video.durationSeconds / 60)}M${video.durationSeconds % 60}S` : undefined,
+    inLanguage: lang,
+    publisher: { '@id': `${SITE_URL}/#organization` },
+  })
+}
+
+/**
+ * The story as an Article. `datePublished` is when the story record was
+ * made; `dateModified` is left out because `updatedAt` moves on every save,
+ * including a re-seed, and would claim an edit nobody made.
+ */
+export function storyJsonLd(lang: Lang, story: Story, opts: { image?: string; video?: Obj | null }): Obj {
+  const url = absUrl(routes.story(lang, story.slug))
+  return clean({
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    '@id': `${url}#article`,
+    headline: story.title,
+    description: story.dek,
+    url,
+    mainEntityOfPage: url,
+    image: opts.image ? [opts.image] : undefined,
+    datePublished: story.createdAt,
+    inLanguage: lang,
+    author: { '@id': `${SITE_URL}/#organization` },
+    publisher: { '@id': `${SITE_URL}/#organization` },
+    video: opts.video ? (({ '@context': _c, ...v }) => v)(opts.video) : undefined,
+  })
 }

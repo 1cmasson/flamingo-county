@@ -181,6 +181,16 @@ export const Stories: CollectionConfig = {
       ],
     },
     {
+      name: 'video',
+      type: 'upload',
+      relationTo: 'videos',
+      localized: true,
+      admin: {
+        description:
+          'The reel this story was made from, in this language. Plays under the cover. Add one with the hqAddSiteVideo tool.',
+      },
+    },
+    {
       name: 'blocks',
       type: 'blocks',
       blocks: [DropCap, Paragraph, PullQuote, StoryImage, ImagePair, CalloutNote, SectionBreak],
