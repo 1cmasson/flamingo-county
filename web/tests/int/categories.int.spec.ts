@@ -48,6 +48,12 @@ describe('the gem badge', () => {
     expect(html).toContain('data-testid="gem-badge"')
     expect(html).toMatch(/<svg[^>]*aria-hidden="true"/)
   })
+  it('hangs a 44px sticker off the corner without changing the chip height', () => {
+    const html = renderToStaticMarkup(createElement(GemBadge, { label: 'FLAMINGO COUNTY GEM' }))
+    expect(html).toMatch(/<svg[^>]*width="44"/)
+    expect(html).toMatch(/height:34px/)
+    expect(html).toMatch(/position:absolute;left:-14px;top:-17px/)
+  })
   it('sizes the diamond as asked', () => {
     const html = renderToStaticMarkup(createElement(GemDiamond, { size: 15 }))
     expect(html).toMatch(/width="15"/)
@@ -76,7 +82,7 @@ describe('a business card', () => {
     )
   it('puts a small diamond before a gem meta line', () => {
     const html = card('gems', 'JOYA DE FLAMINGO COUNTY')
-    expect(html).toMatch(/<svg[^>]*width="15"/)
+    expect(html).toMatch(/<svg[^>]*width="22"/)
     expect(html).toContain('JOYA DE FLAMINGO COUNTY')
   })
   it('leaves every other card as it was', () => {

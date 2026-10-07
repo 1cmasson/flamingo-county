@@ -156,10 +156,16 @@ export function BusinessCard({
             display: 'flex',
             // The diamond sits on the first line when the label wraps to two.
             alignItems: 'flex-start',
-            gap: 5,
+            gap: 7,
           }}
         >
-          {isGem(category?.slug) ? <GemDiamond size={15} /> : null}
+          {isGem(category?.slug) ? (
+            // A sticker, not an emoji: larger than the text, at the mascots' ink weight. The
+            // negative margins keep the meta line as tall as the text alone.
+            <span style={{ margin: '-6px 0 -5px 1px' }}>
+              <GemDiamond size={22} />
+            </span>
+          ) : null}
           <span>{metaLine(category?.label, listing.hood)}</span>
         </div>
         <p style={{ margin: 0, fontSize: 14, lineHeight: 1.45, fontWeight: 600, textWrap: 'pretty' }}>
