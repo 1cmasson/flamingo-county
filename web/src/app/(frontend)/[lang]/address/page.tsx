@@ -24,6 +24,7 @@ import {
   mapCopy,
   pickupDay,
   ruleText,
+  searchCopy,
   type AddressCopy,
   type MapCopy,
 } from '../../../../lib/addressCopy'
@@ -92,20 +93,7 @@ export default async function AddressPage({ params, searchParams }: Props) {
   const version = (await civicVersion()) ?? '0'
   const webview = report ? detectWebview((await headers()).get('user-agent')) : null
 
-  const searchCopy = {
-    placeholder: c.placeholder,
-    inputLabel: c.inputLabel,
-    listLabel: c.listLabel,
-    go: c.go,
-    locate: c.locate,
-    locating: c.locating,
-    isThisIt: c.isThisIt,
-    yesThis: c.yesThis,
-    noLocation: c.noLocation,
-    notNear: c.notNear,
-    noMatch: c.noMatch,
-    privacy: c.privacy,
-  }
+  const searchCopyText = searchCopy(lang)
 
   return (
     <PageShell>
@@ -129,7 +117,7 @@ export default async function AddressPage({ params, searchParams }: Props) {
           ) : slug && !report ? (
             <p className={s.note}>{c.notFound}</p>
           ) : null}
-          <AddressSearch lang={lang} copy={searchCopy} />
+          <AddressSearch lang={lang} copy={searchCopyText} />
           <p className={s.coverage}>{c.coverage}</p>
         </header>
 

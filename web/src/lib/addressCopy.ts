@@ -244,6 +244,40 @@ const ES: AddressCopy = {
   sheetFooter: 'flamingocounty.com · de los registros públicos del condado y las ciudades',
 }
 
+/** The address box's words, as plain strings for the client component. Shared by the address page and home. */
+export function searchCopy(lang: Lang) {
+  const c = addressCopy(lang)
+  return {
+    placeholder: c.placeholder,
+    inputLabel: c.inputLabel,
+    listLabel: c.listLabel,
+    go: c.go,
+    locate: c.locate,
+    locating: c.locating,
+    isThisIt: c.isThisIt,
+    yesThis: c.yesThis,
+    noLocation: c.noLocation,
+    notNear: c.notNear,
+    noMatch: c.noMatch,
+    privacy: c.privacy,
+  }
+}
+
+/** The home page's invitation to the address page. */
+export function homeAddressCopy(lang: Lang) {
+  return lang === 'es'
+    ? {
+        kicker: 'TU CASA EN MIAMI-DADE',
+        title: '¿Qué día recogen la basura en tu casa?',
+        lead: 'Escribe tu dirección: días de basura y reciclaje, zona de inundación y de evacuación, quién te representa, dónde votas y tus escuelas. Con mapa.',
+      }
+    : {
+        kicker: 'YOUR HOME IN MIAMI-DADE',
+        title: 'What day is trash pickup at your house?',
+        lead: 'Type your address: trash and recycling days, flood and evacuation zone, who represents you, where you vote and your schools. With a map.',
+      }
+}
+
 /** "Thu, Oct 8" / "jue 8 oct" — a pickup day, read on Miami's calendar. */
 export function pickupDay(iso: string, lang: Lang): string {
   const d = parseISO(iso)

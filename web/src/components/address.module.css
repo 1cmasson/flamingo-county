@@ -664,3 +664,31 @@
 .hintBelow {
   top: 64px !important;
 }
+
+/* --- The address box on the home page ---------------------------------- */
+
+.homeAddress {
+  margin-bottom: 20px;
+  box-shadow: 9px 9px 0 var(--yellow);
+}
+@media (min-width: 900px) {
+  .homeAddress {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: clamp(18px, 3vw, 32px);
+    align-items: center;
+  }
+}
+.homeText {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.homeMapLink {
+  align-self: flex-start;
+  color: var(--cyan);
+  font-weight: 800;
+  font-size: 14px;
+  letter-spacing: 1.4px;
+  text-decoration: none;
+}
