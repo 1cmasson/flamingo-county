@@ -90,7 +90,7 @@ const ES = {
   cities: 'CIUDADES',
   unincorporated: 'MIAMI-DADE NO INCORPORADO, POR DISTRITO DE LA COMISIÓN',
   unincorporatedNote:
-    'Las zonas que no son parte de ninguna ciudad votan por distrito de la Comisión del condado. ¿No sabes en cuál estás? Escribe tu dirección.',
+    'Las zonas que no son parte de ninguna ciudad aparecen aquí por distrito de la Comisión del condado. ¿No sabes en cuál estás? Escribe tu dirección.',
   counts: (precincts: number, places: number) => `${n(precincts, 'precinto', 'precintos')} · ${n(places, 'lugar', 'lugares')}`,
   commissioner: (d: number, name: string) => `Distrito ${d} de la Comisión: ${name}`,
   precinct: 'Precinto',
