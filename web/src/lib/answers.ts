@@ -29,6 +29,7 @@ const CATEGORY_NOUN: Record<string, Record<Lang, string>> = {
   food: { en: 'a restaurant', es: 'un restaurante' },
   night: { en: 'a bar', es: 'un bar' },
   nonprofit: { en: 'a nonprofit organization', es: 'una organización sin fines de lucro' },
+  gems: { en: 'a local institution', es: 'una institución local' },
 }
 const BUSINESS_NOUN: Record<Lang, string> = { en: 'a local business', es: 'un negocio local' }
 

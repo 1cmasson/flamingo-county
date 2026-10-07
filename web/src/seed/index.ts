@@ -156,11 +156,12 @@ function withIds(rows: Dict[] | undefined, enRows: Dict[] | undefined): Dict[] {
  * source: a re-pull would put the five back. `night` is relabelled too — its
  * two listings are a taproom and a liquor lounge, not night clubs.
  */
-const CAT_KEEP = ['food', 'night', 'nonprofit']
+const CAT_KEEP = ['food', 'night', 'nonprofit', 'gems']
 const CAT_RELABEL: Record<string, { en: string; es: string }> = {
   food: { en: 'RESTAURANTS', es: 'RESTAURANTES' },
   night: { en: 'BARS', es: 'BARES' },
   nonprofit: { en: 'NONPROFITS', es: 'ORGANIZACIONES' },
+  gems: { en: 'LOCAL GEMS', es: 'JOYAS LOCALES' },
 }
 
 /**
@@ -176,8 +177,20 @@ const CAT_RELABEL: Record<string, { en: string; es: string }> = {
  * outside it, and then throws once a listing references one. The ES label is
  * `ORGANIZACIONES` rather than the club's own `sin fines de lucro`, which is
  * accurate but three words too long for a filter chip.
+ *
+ * `gems` → LOCAL GEMS / JOYAS LOCALES is the same kind of row: the places that
+ * have stood long enough to be part of the city — a 1925 racetrack, a bank
+ * branch in its thirtieth year. It is an editorial choice, not a trade, so the
+ * List Your Spot form never offers it (`EDITORIAL_CATEGORIES` in
+ * `lib/categories.ts`). The label names no city because a category is shared by
+ * all of them: "Joya de Hialeah" is how a Hialeah story says it, not the chip.
+ * Migration `20261007_120000_add_gems_category` creates the row on a database
+ * that is not re-seeded (production); this entry keeps a fresh seed in step.
  */
-const EXTRA_CATS = [{ key: 'nonprofit', label: 'NONPROFITS' }]
+const EXTRA_CATS = [
+  { key: 'nonprofit', label: 'NONPROFITS' },
+  { key: 'gems', label: 'LOCAL GEMS' },
+]
 
 
 /**

@@ -4,6 +4,7 @@ import { getPayload } from 'payload'
 import config from '../payload.config'
 import type { Lang } from '../i18n'
 import { isRequestKind, type RequestKind } from '../lib/requestKinds'
+import { isSelfServeCategory } from '../lib/categories'
 import { sendRequestConfirmation } from '../lib/requestEmail'
 import { emailConfigured } from '../lib/resend'
 
@@ -120,8 +121,9 @@ export async function sendRequest(_prev: FormState, formData: FormData): Promise
   const email = text('email') || (EMAIL.test(phone) ? phone : '')
   const lang: Lang = text('lang') === 'en' ? 'en' : 'es'
   const citySlug = String(formData.get('city') ?? '').trim()
-  // Only a listing has a category; ignore one smuggled in on another kind.
-  const categorySlug = kind === 'listing' ? text('category') : ''
+  // Only a listing has a category; ignore one smuggled in on another kind, and
+  // one the site assigns itself (`EDITORIAL_CATEGORIES`).
+  const categorySlug = kind === 'listing' && isSelfServeCategory(text('category')) ? text('category') : ''
 
   const payload = await getPayload({ config })
 

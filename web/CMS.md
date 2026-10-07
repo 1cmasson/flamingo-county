@@ -216,6 +216,21 @@ to import.
 The ES label is `ORGANIZACIONES`, not the club's own *sin fines de lucro*, which
 is accurate but three words too long for a filter chip.
 
+A fourth, `gems` → **LOCAL GEMS** / **JOYAS LOCALES**, is the same kind of row:
+places that have been part of a city long enough to be landmarks (Hialeah Park,
+a bank branch in its thirtieth year). It differs in two ways:
+
+- **It is editorial.** The site assigns it; a business cannot pick it.
+  `EDITORIAL_CATEGORIES` in `src/lib/categories.ts` keeps it out of the List
+  Your Spot dropdown, and `sendRequest` drops it if a request names it anyway.
+- **A migration creates it** (`20261007_120000_add_gems_category`, plain SQL,
+  a no-op on re-run), because production is not re-seeded on deploy. The seed
+  entry keeps a fresh database in step; the seed's upsert finds the
+  migration's row by slug.
+
+The label names no city because a category is shared by all of them. "Joya de
+Hialeah" is how a Hialeah story or caption says it, not the chip.
+
 The seed only upserts, so `pruneCategories` deletes rows that fall out of
 `CAT_KEEP` — without it a database seeded before the trim keeps offering
 CONTRACTORS, HOME CLEANING and BANQUET HALLS in the List Your Spot dropdown,
