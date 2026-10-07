@@ -480,6 +480,19 @@ Ported so far: the chrome (nav, footer), **Home**, **City**, **Business**,
 **Story**, **Events**, **Event**, **Stories index**, **My Week**,
 **List Your Spot** and **About**.
 
+### A mascot on a picture is a bust, never a disc
+
+When a city's mascot sits on a photo or poster it stands free at the side of
+the picture with its ink shadow: `components/MascotBust.tsx`. `top` hangs it
+from inside the frame so the frame's `overflow: hidden` crops it at the waist
+(the directory card, the business masthead); `bottom` stands a full figure on
+the lower edge (the event and season heroes). The business masthead used to
+put the mascot in a cyan circle over the photo's corner; the owner retired
+that on 2026-10-07, so no mascot goes in a circle anywhere. Keep chips and
+badges out of the side the mascot stands on (the masthead's chips stop
+`MASTHEAD_CHIPS_RIGHT` short of it and wrap). Tinted rectangular panels with a
+mascot (`lib/castBg.ts`: About, City, the crew box) are a separate treatment.
+
 ### How to check a port is faithful
 
 The reference implementation is still in this worktree, so serve it and compare:
