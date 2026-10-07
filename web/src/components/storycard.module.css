@@ -155,6 +155,11 @@
     text-align: center;
   }
 
+  /* Stacked and centred, two lines read fine; one line clips at 320px. */
+  .kick {
+    white-space: normal;
+  }
+
   .photo {
     width: min(100%, 520px);
   }
