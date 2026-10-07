@@ -740,6 +740,14 @@ export interface Story {
   coverHint?: string | null;
   coverCap?: string | null;
   /**
+   * Set it to show the cover as the DID YOU KNOW? card, like the reel’s thumbnail: the photo in a polaroid with the caption as its credit, the card title, and this line under it. e.g. "At the races “nearly every afternoon”".
+   */
+  cardTagline?: string | null;
+  /**
+   * The big title on the card, when it should differ from the headline. e.g. "HARD ROCK STADIUM".
+   */
+  cardTitle?: string | null;
+  /**
    * The reel this story was made from, in this language. Plays under the cover. Add one with the hqAddSiteVideo tool.
    */
   video?: (number | null) | Video;
@@ -2324,6 +2332,8 @@ export interface StoriesSelect<T extends boolean = true> {
   cover?: T;
   coverHint?: T;
   coverCap?: T;
+  cardTagline?: T;
+  cardTitle?: T;
   video?: T;
   blocks?:
     | T

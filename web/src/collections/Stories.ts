@@ -311,6 +311,24 @@ export const Stories: CollectionConfig = {
         { name: 'cover', type: 'upload', relationTo: 'media' },
         { name: 'coverHint', type: 'text', localized: true },
         { name: 'coverCap', type: 'text', localized: true },
+        {
+          name: 'cardTagline',
+          type: 'text',
+          localized: true,
+          admin: {
+            description:
+              'Set it to show the cover as the DID YOU KNOW? card, like the reel’s thumbnail: the photo in a polaroid with the caption as its credit, the card title, and this line under it. e.g. "At the races “nearly every afternoon”".',
+          },
+        },
+        {
+          name: 'cardTitle',
+          type: 'text',
+          localized: true,
+          admin: {
+            description: 'The big title on the card, when it should differ from the headline. e.g. "HARD ROCK STADIUM".',
+            condition: (data, sibling) => Boolean(sibling?.cardTagline),
+          },
+        },
       ],
     },
     {

@@ -1,0 +1,169 @@
+/*
+ * The DID YOU KNOW? / ¿SABÍAS QUE? reel cover card, laid out for a page.
+ *
+ * The values are the card's own (content-marketing-system scripts/cover_card.mjs):
+ * the 26px pink halftone faded in the middle, the stray pink rules, the
+ * two-tone kicker, the cream polaroid at -2.2deg, the yellow title on a pink
+ * shadow, the cream tagline on a cyan one. The card is 9:16; a page is wide,
+ * so on a desktop the words sit left of the photo. Under 760px it stacks in
+ * the card's own order.
+ */
+.card {
+  position: relative;
+  overflow: hidden;
+  background: var(--ink);
+  border: 4px solid var(--ink);
+  border-top: 0;
+  box-shadow: 9px 9px 0 var(--ink);
+  padding: clamp(46px, 7vw, 76px) clamp(18px, 5vw, 64px);
+}
+
+.dots {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, var(--pink) 0 42%, transparent 46%) 0 0 / 22px 22px;
+  -webkit-mask: linear-gradient(180deg, #000 0, rgba(0, 0, 0, 0.15) 30%, rgba(0, 0, 0, 0.05) 50%, rgba(0, 0, 0, 0.15) 70%, #000 100%);
+  mask: linear-gradient(180deg, #000 0, rgba(0, 0, 0, 0.15) 30%, rgba(0, 0, 0, 0.05) 50%, rgba(0, 0, 0, 0.15) 70%, #000 100%);
+}
+
+.rules {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(var(--pink), var(--pink)) 0 16px / 32% 5px no-repeat,
+    linear-gradient(var(--pink), var(--pink)) 7% 30px / 48% 5px no-repeat,
+    linear-gradient(var(--pink), var(--pink)) 100% calc(100% - 30px) / 34% 5px no-repeat,
+    linear-gradient(var(--pink), var(--pink)) 100% calc(100% - 16px) / 62% 5px no-repeat;
+}
+
+.grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.05fr);
+  grid-template-areas:
+    'kick kick'
+    'title photo'
+    'tag photo'
+    'url photo';
+  grid-template-rows: auto auto auto 1fr;
+  column-gap: clamp(28px, 4vw, 56px);
+  align-items: start;
+}
+
+.noPhoto .grid {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-areas: 'kick' 'title' 'tag' 'url';
+  justify-items: center;
+  text-align: center;
+}
+
+.kick {
+  grid-area: kick;
+  justify-self: center;
+  margin-bottom: clamp(22px, 3vw, 34px);
+  white-space: nowrap;
+  font-family: var(--display);
+  font-size: clamp(34px, 9.6vw, 84px);
+  line-height: 1;
+  letter-spacing: 1px;
+  text-shadow: 4px 4px 0 var(--ink);
+}
+
+.kickA {
+  color: var(--yellow);
+}
+
+.kickB {
+  color: var(--pink);
+}
+
+.title {
+  grid-area: title;
+  margin: clamp(10px, 2vw, 24px) 0 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(40px, 6.2vw, 80px);
+  line-height: 0.95;
+  color: var(--yellow);
+  text-shadow: 5px 5px 0 var(--pink);
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.tag {
+  grid-area: tag;
+  justify-self: start;
+  margin-top: clamp(20px, 2.8vw, 32px);
+  max-width: 30ch;
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--body);
+  font-weight: 800;
+  font-size: clamp(18px, 2.2vw, 27px);
+  line-height: 1.2;
+  padding: 12px 20px;
+  border: 4px solid var(--ink);
+  box-shadow: 7px 7px 0 var(--cyan);
+  text-wrap: balance;
+}
+
+.noPhoto .tag {
+  justify-self: center;
+}
+
+.url {
+  grid-area: url;
+  margin-top: clamp(20px, 2.6vw, 30px);
+  font-family: var(--display);
+  font-size: clamp(17px, 1.9vw, 22px);
+  letter-spacing: 2px;
+  color: var(--cyan);
+}
+
+.photo {
+  grid-area: photo;
+  align-self: center;
+  margin: 0;
+  background: var(--cream);
+  padding: clamp(10px, 1.4vw, 16px) clamp(10px, 1.4vw, 16px) clamp(9px, 1.2vw, 13px);
+  transform: rotate(-2.2deg);
+  box-shadow: 11px 11px 0 var(--ink);
+}
+
+.frame {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  background: var(--ink);
+}
+
+.cap {
+  margin-top: 9px;
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: clamp(12px, 1.2vw, 14px);
+  line-height: 1.3;
+  color: var(--ink);
+}
+
+@media (max-width: 759px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: 'kick' 'photo' 'title' 'tag' 'url';
+    grid-template-rows: none;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .photo {
+    width: min(100%, 520px);
+  }
+
+  .title {
+    margin-top: 30px;
+  }
+
+  .tag {
+    justify-self: center;
+  }
+}

@@ -8,6 +8,7 @@ import type { City, Listing, Media, Video } from '../../../../../payload-types'
 import { PageShell } from '../../../../../components/PageShell'
 import { StoryBlocks } from '../../../../../components/StoryBlocks'
 import { StoryArt } from '../../../../../components/StoryArt'
+import { StoryCard } from '../../../../../components/StoryCard'
 import { StoryVideo } from '../../../../../components/StoryVideo'
 import { JsonLd } from '../../../../../components/JsonLd'
 import { faqJsonLd, mediaUrl, storyJsonLd, videoJsonLd } from '../../../../../lib/jsonld'
@@ -264,10 +265,21 @@ export default async function StoryPage({
           </header>
 
           {/* --- Cover ---
-              Skipped when there is no photo but there is a reel: its poster
-              is the same DID YOU KNOW? card the empty frame would draw, so
-              the page would say it twice in a row. */}
-          {story.cover || !video?.url ? (
+              A story with a card tagline gets the reel's cover card, photo
+              and credit inside it. Otherwise the photo; skipped when there is
+              no photo but there is a reel, whose poster is the same DID YOU
+              KNOW? card the empty frame would draw, so the page would say it
+              twice in a row. */}
+          {story.cardTagline ? (
+            <StoryCard
+              photo={story.cover}
+              credit={story.coverCap}
+              title={story.cardTitle || story.title}
+              tagline={story.cardTagline}
+              kicker={[t('DID YOU'), t('KNOW?')]}
+              sizes="(min-width: 760px) 560px, 100vw"
+            />
+          ) : story.cover || !video?.url ? (
             <div
               style={{
                 position: 'relative',
@@ -297,7 +309,7 @@ export default async function StoryPage({
               </div>
             </div>
           ) : null}
-          {story.coverCap ? (
+          {story.coverCap && !story.cardTagline ? (
             <div
               style={{
                 background: 'var(--ink)',
