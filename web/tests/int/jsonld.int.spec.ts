@@ -58,6 +58,11 @@ describe('listingJsonLd', () => {
     expect(ld).not.toHaveProperty('openingHoursSpecification')
     expect(ld).not.toHaveProperty('priceRange')
   })
+  it('types a local gem as a plain LocalBusiness', () => {
+    // A racetrack and a bank branch share the category; neither specific type fits both.
+    const gem = { ...base, category: { id: 4, slug: 'gems', label: 'LOCAL GEMS' } } as unknown as Listing
+    expect(listingJsonLd('en', gem, 'hialeah')['@type']).toBe('LocalBusiness')
+  })
   const hours = {
     openingHours: [
       { days: ['Monday', 'Tuesday'], opens: '11:30', closes: '22:00' },
