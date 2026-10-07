@@ -109,9 +109,11 @@ textarea {
 }
 
 /*
- * 1230 since YOUR ADDRESS joined the bar (2026-10-07): measured in Spanish it
- * wants 1191px, plus the 34px kept for MY WEEK's saved count below. Before
- * that it was 1120, and 1020 when ported.
+ * 1330 since STORIES joined the bar (2026-10-07, after EVENTS): measured in
+ * Spanish (HISTORIAS) it wants 1290px, English 1214px, plus the 34px kept for
+ * MY WEEK's saved count below. Measured by forcing the bar on and narrowing
+ * the window until the page scrolled sideways. Before that it was 1230 (YOUR
+ * ADDRESS, 1191px), 1120, and 1020 when ported.
  *
  * The history of that number: 1120, not the 1020 this was ported with, because the bar gained a tab.
  *
@@ -129,10 +131,10 @@ textarea {
  * The extra 34px over the measured 1086 is for that saved count: the badge is
  * a number, and it is one character wide today.
  *
- * The burger is a complete equivalent, EVENTS included, so handing 1021–1230
+ * The burger is a complete equivalent, EVENTS and STORIES included, so handing 1021–1330
  * to it costs nothing.
  */
-@media (max-width: 1230px) {
+@media (max-width: 1330px) {
   [data-navdesk] {
     display: none !important;
   }

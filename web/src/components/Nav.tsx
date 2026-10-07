@@ -32,13 +32,13 @@ const linkChip = {
  * listings dropdown, the burger panel and the language toggle. The hover
  * tooltips that each needed their own state flag are CSS now.
  *
- * STORIES is deliberately absent — the section is routed and rendered, but
- * nothing is seeded into it, so it stays out of the nav until something is.
- *
- * EVENTS sat under the same rule and no longer does: the board has a real
- * record on it (`REAL_EVENTS`, see CMS.md), which was the stated condition, so
- * it is a tab. Its chip goes before MY WEEK because My Week is a list of what
- * you saved off that board — the board has to be reachable first.
+ * EVENTS and STORIES were both held out of the nav until each had something
+ * real in it. EVENTS came in once the board had a real record (`REAL_EVENTS`,
+ * see CMS.md); its chip goes before MY WEEK because My Week is a list of what
+ * you saved off that board, so the board has to be reachable first. STORIES
+ * came in on 2026-10-07, with three published stories (Six Inches, Al Capone,
+ * Hialeah Park), right after EVENTS. Both are plain chips: same `linkChip`,
+ * same `s.chip` hover, nothing of their own.
  *
  * The tabs carry no active flag: `NavMenus` derives it from the pathname on the
  * client, because a layout does not re-render on a navigation within its own
@@ -156,6 +156,10 @@ export async function Nav({ lang }: { lang: Lang }) {
             {t('EVENTS')}
           </Link>
 
+          <Link href={routes.stories(lang)} className={s.chip} style={linkChip}>
+            {t('STORIES')}
+          </Link>
+
           <Link href={routes.address(lang)} className={s.chip} style={linkChip}>
             {t('YOUR ADDRESS')}
           </Link>
@@ -198,6 +202,10 @@ export async function Nav({ lang }: { lang: Lang }) {
               {
                 href: routes.events(lang),
                 label: t('EVENTS'),
+              },
+              {
+                href: routes.stories(lang),
+                label: t('STORIES'),
               },
               {
                 href: routes.freeRides(lang),
