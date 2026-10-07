@@ -5,6 +5,8 @@ import { metaLine } from '../lib/search'
 import { routes } from '../lib/routes'
 import type { Lang } from '../i18n'
 import { MediaSlot } from './MediaSlot'
+import { GemDiamond } from './GemBadge'
+import { isGem } from '../lib/categories'
 import s from './chrome.module.css'
 import { buildSrcSet } from '../lib/srcset'
 
@@ -151,9 +153,14 @@ export function BusinessCard({
             fontSize: 11,
             letterSpacing: '1.5px',
             color: 'var(--magenta)',
+            display: 'flex',
+            // The diamond sits on the first line when the label wraps to two.
+            alignItems: 'flex-start',
+            gap: 5,
           }}
         >
-          {metaLine(category?.label, listing.hood)}
+          {isGem(category?.slug) ? <GemDiamond size={15} /> : null}
+          <span>{metaLine(category?.label, listing.hood)}</span>
         </div>
         <p style={{ margin: 0, fontSize: 14, lineHeight: 1.45, fontWeight: 600, textWrap: 'pretty' }}>
           {listing.tag}

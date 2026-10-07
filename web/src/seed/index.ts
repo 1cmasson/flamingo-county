@@ -161,7 +161,7 @@ const CAT_RELABEL: Record<string, { en: string; es: string }> = {
   food: { en: 'RESTAURANTS', es: 'RESTAURANTES' },
   night: { en: 'BARS', es: 'BARES' },
   nonprofit: { en: 'NONPROFITS', es: 'ORGANIZACIONES' },
-  gems: { en: 'LOCAL GEMS', es: 'JOYAS LOCALES' },
+  gems: { en: 'FLAMINGO COUNTY GEM', es: 'JOYA DE FLAMINGO COUNTY' },
 }
 
 /**
@@ -178,18 +178,20 @@ const CAT_RELABEL: Record<string, { en: string; es: string }> = {
  * `ORGANIZACIONES` rather than the club's own `sin fines de lucro`, which is
  * accurate but three words too long for a filter chip.
  *
- * `gems` → LOCAL GEMS / JOYAS LOCALES is the same kind of row: the places that
+ * `gems` → FLAMINGO COUNTY GEM / JOYA DE FLAMINGO COUNTY is the same kind of row: the places that
  * have stood long enough to be part of the city — a 1925 racetrack, a bank
  * branch in its thirtieth year. It is an editorial choice, not a trade, so the
  * List Your Spot form never offers it (`EDITORIAL_CATEGORIES` in
- * `lib/categories.ts`). The label names no city because a category is shared by
- * all of them: "Joya de Hialeah" is how a Hialeah story says it, not the chip.
+ * `lib/categories.ts`). The label names the directory, not a city, because a
+ * category is shared by all of them: "Joya de Hialeah" is how a Hialeah story
+ * says it. The listing hero draws it as the diamond badge (`GemBadge.tsx`).
  * Migration `20261007_120000_add_gems_category` creates the row on a database
- * that is not re-seeded (production); this entry keeps a fresh seed in step.
+ * that is not re-seeded (production) and `20261007_125000_gem_label` renames it
+ * from LOCAL GEMS; this entry keeps a fresh seed in step.
  */
 const EXTRA_CATS = [
   { key: 'nonprofit', label: 'NONPROFITS' },
-  { key: 'gems', label: 'LOCAL GEMS' },
+  { key: 'gems', label: 'FLAMINGO COUNTY GEM' },
 ]
 
 
