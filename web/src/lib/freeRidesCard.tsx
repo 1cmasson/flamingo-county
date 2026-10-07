@@ -1,10 +1,9 @@
-import { ImageResponse } from 'next/og'
-
 import { translator, type Lang } from '../i18n'
 import { ARCHIVO_800, LUCKIEST_GUY } from './cardMetrics'
 import { cityMap, type CityMapModel } from './citymap'
 import { cardFonts } from './eventCard'
 import { FREE_RIDES_CARD_SIZE } from './freeRidesCardUrl'
+import { renderOgPng } from './ogImage'
 import { TRANSIT, lineEnds, type TransitRoute } from './transit'
 
 /**
@@ -521,12 +520,11 @@ export async function renderFreeRidesCard(lang: Lang, route?: TransitRoute): Pro
   const key = `${lang}:${route?.slug ?? 'hub'}`
   const hit = cache.get(key)
   if (hit) return hit
-  const res = new ImageResponse(<FreeRidesCard lang={lang} m={cityMap([], lang)} route={route} />, {
+  const png = await renderOgPng(<FreeRidesCard lang={lang} m={cityMap([], lang)} route={route} />, {
     width: W,
     height: H,
     fonts: await cardFonts(),
   })
-  const png = await res.arrayBuffer()
   cache.set(key, png)
   return png
 }
