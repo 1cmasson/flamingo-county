@@ -87,6 +87,7 @@ export const ES_OVERRIDES: Record<string, string> = {
   // "Guagua" on purpose: it is what Hialeah calls a bus. Stop names stay in
   // the county's English in both languages, since that is what the pole says.
   'FREE RIDES': 'RUTAS GRATIS',
+  'YOUR ADDRESS': 'TU DIRECCIÓN',
   'HIALEAH · FREE TRANSIT': 'HIALEAH · TRANSPORTE GRATIS',
   'RIDE THE CITY': 'RECORRE LA CIUDAD',
   'FOR FREE.': 'GRATIS.',

@@ -1,6 +1,6 @@
 /**
- * Runs once when the Next server starts. Its one job: start Payload's cron
- * runner, which `jobs.autoRun` in payload.config needs and which Payload only
+ * Runs once when the Next server starts. It starts the address-data sync if
+ * that is due, and Payload's cron runner, which `jobs.autoRun` in payload.config needs and which Payload only
  * starts for `getPayload({ cron: true })`. See src/jobs/morningBrief.ts.
  *
  * Node runtime only — Payload cannot load on the edge. A failure is logged, not
@@ -8,6 +8,15 @@
  */
 export async function register() {
   if (process.env.NEXT_RUNTIME !== 'nodejs') return
+  // The address database (src/lib/civicSync.ts): built in the background when
+  // it's missing or a month old. The site serves meanwhile; the address page
+  // says the records are loading until the first build lands.
+  try {
+    const { ensureCivic } = await import('./lib/civicSync')
+    ensureCivic()
+  } catch (err) {
+    console.error('[civic] could not start the address sync:', err)
+  }
   // CI's test container only (.github/workflows/lighthouse.yml). The runner
   // writes to the database every minute, and SQLite gives a second process no
   // wait: CI's `pnpm seed`, running beside the server, failed "database is
