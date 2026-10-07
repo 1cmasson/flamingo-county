@@ -16,6 +16,10 @@ const EN = {
   metaTitle: 'Your Miami-Dade address: trash days, flood zone, who represents you',
   metaDescription:
     'Type your address and see your garbage, recycling and bulk trash days, your flood and storm-surge zone, who represents you, where you vote, your schools and the nearest fire station, from the city’s and county’s own records.',
+  /** Structured data: the tool's records, as a dataset. */
+  datasetName: 'Miami-Dade street addresses with their public service zones',
+  datasetDescription:
+    'Every street address in Miami-Dade County matched to its garbage, recycling and bulk trash route, FEMA flood zone, hurricane storm-surge evacuation zone, county commission district, Florida House and Senate district, voting precinct and Election Day polling place, and public school attendance zones. Compiled by Flamingo County from the public records of Miami-Dade County, the City of Hialeah, the City of Miami and FEMA; no owner, sale or property-value data.',
   kicker: 'YOUR HOME IN MIAMI-DADE',
   title: 'Everything the city knows about your address.',
   lead: 'Trash days, flood zone, who represents you, where you vote, your schools. One search, from the city’s and county’s own records.',
@@ -133,6 +137,9 @@ const ES: AddressCopy = {
   metaTitle: 'Tu dirección en Miami-Dade: días de basura, zona de inundación, quién te representa',
   metaDescription:
     'Escribe tu dirección y ve tus días de basura, reciclaje y basura grande, tu zona de inundación y de evacuación, quién te representa, dónde votas, tus escuelas y la estación de bomberos más cerca, según los registros de la ciudad y el condado.',
+  datasetName: 'Direcciones de Miami-Dade con sus zonas de servicios públicos',
+  datasetDescription:
+    'Cada dirección del condado Miami-Dade con su ruta de basura, reciclaje y basura grande, su zona de inundación de FEMA, su zona de evacuación por marejada ciclónica, su distrito de la Comisión del condado, sus distritos de la Cámara y el Senado de Florida, su precinto y lugar de votación del día de las elecciones, y sus zonas escolares. Recopilado por Flamingo County a partir de los registros públicos del condado Miami-Dade, la Ciudad de Hialeah, la Ciudad de Miami y FEMA; sin datos de dueños, ventas ni valor de la propiedad.',
   kicker: 'TU CASA EN MIAMI-DADE',
   title: 'Todo lo que la ciudad sabe de tu dirección.',
   lead: 'Días de basura, zona de inundación, quién te representa, dónde votas, tus escuelas. Una sola búsqueda, con los registros de la ciudad y el condado.',

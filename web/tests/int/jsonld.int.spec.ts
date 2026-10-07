@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { clean, titleCase, eventJsonLd, eventStart, listingJsonLd, miamiOffset, postalAddress } from '../../src/lib/jsonld'
+import { addressToolJsonLd, clean, titleCase, eventJsonLd, eventStart, listingJsonLd, miamiOffset, postalAddress } from '../../src/lib/jsonld'
 import { eventDirections } from '../../src/lib/eventVenue'
 import type { City, Event, Listing } from '../../src/payload-types'
 
@@ -246,5 +246,27 @@ describe('eventDirections', () => {
   })
   it('has nothing to point at without a venue name', () => {
     expect(eventDirections({ ...park, place: null } as unknown as Event)).toBeNull()
+  })
+})
+
+describe('addressToolJsonLd', () => {
+  const page = {
+    path: '/en/address',
+    name: 'Your Miami-Dade address',
+    description: 'Trash days, flood zone, who represents you.',
+    datasetName: 'Miami-Dade street addresses',
+    datasetDescription: 'Every street address in Miami-Dade County matched to its public service zones.',
+  }
+  it('serves Miami-Dade and makes no cost claim', () => {
+    const [app, data] = addressToolJsonLd('en', { ...page, fetchedAt: '2026-10-07' })
+    expect(app).toMatchObject({ '@type': 'WebApplication', areaServed: { name: 'Miami-Dade County, Florida' } })
+    expect(data).toMatchObject({ '@type': 'Dataset', dateModified: '2026-10-07' })
+    const text = JSON.stringify([app, data])
+    expect(text).not.toMatch(/offers|isAccessibleForFree|price/i)
+    expect((data.isBasedOn as string[]).length).toBeGreaterThanOrEqual(3)
+  })
+  it('claims no date before the first sync', () => {
+    const [, data] = addressToolJsonLd('es', { ...page, fetchedAt: null })
+    expect(data).not.toHaveProperty('dateModified')
   })
 })

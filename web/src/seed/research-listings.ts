@@ -287,14 +287,49 @@ function clock(hhmm: string): string {
   return m ? `${h12}:${String(m).padStart(2, '0')}${suffix}` : `${h12}${suffix}`
 }
 
-/** [Mon..Sun] → "Mon – Sun"; non-contiguous sets stay comma separated. */
-function dayLabel(days: string[]): string {
-  const short = days.map((d) => DAY_SHORT[d] ?? d)
-  if (short.length <= 2) return short.join(' & ')
-  const order = Object.values(DAY_SHORT)
+/** The same days in Spanish, in the dictionary's spelling ("Lun – Vie", "Vie – Sáb"). */
+const DAY_SHORT_ES: Record<string, string> = {
+  Monday: 'Lun',
+  Tuesday: 'Mar',
+  Wednesday: 'Mié',
+  Thursday: 'Jue',
+  Friday: 'Vie',
+  Saturday: 'Sáb',
+  Sunday: 'Dom',
+}
+
+/** [Mon..Sun] → "Mon – Sun" (ES "Lun – Dom"); non-contiguous sets stay comma separated. */
+export function dayLabel(days: string[], lang: 'en' | 'es' = 'en'): string {
+  const names = lang === 'es' ? DAY_SHORT_ES : DAY_SHORT
+  const short = days.map((d) => names[d] ?? d)
+  if (short.length <= 2) return short.join(lang === 'es' ? ' y ' : ' & ')
+  const order = Object.values(names)
   const idx = short.map((d) => order.indexOf(d)).sort((a, b) => a - b)
   const contiguous = idx.every((n, i) => i === 0 || n === idx[i - 1] + 1)
   return contiguous ? `${order[idx[0]]} – ${order[idx[idx.length - 1]]}` : short.join(', ')
+}
+
+/**
+ * The Spanish half of a researched listing: the hours labels only.
+ *
+ * `detail.hours[].d` is localized and required, so a listing seeded with
+ * English labels alone fails the moment anyone saves its `es` locale ("Detail
+ * page > Hours n > D"), and the Spanish page falls back to "Sun, Mon". The
+ * rows are not localized, only the label inside them, so each row carries the
+ * English row's id or the ES write would rebuild the array.
+ */
+export function toListingEs(r: ResearchListing, enHours: { id?: string | null }[] | null | undefined) {
+  const schedule = Array.isArray(r.hours?.schedule) ? r.hours.schedule : []
+  if (!schedule.length) return {}
+  return {
+    detail: {
+      hours: schedule.map((s: { days?: string[]; opens: string; closes: string }, i: number) => ({
+        id: enHours?.[i]?.id,
+        d: dayLabel(s.days ?? [], 'es'),
+        t: `${clock(s.opens)} – ${clock(s.closes)}`,
+      })),
+    },
+  }
 }
 
 export type ResearchListing = Record<string, any>
