@@ -6,6 +6,7 @@ import { createClient, type Client, type InStatement } from '@libsql/client'
 import { addressKey, daysKey, KIND, kindFromDor, parseDayLetters, parseRule, PolygonIndex, ringsContain, simplifyRing, titleCase, type Ring, type Rule } from './civicGeo'
 import { buildTiles, labelPoint } from './civicTiles'
 import { todayISO } from './dates'
+import { civicDir, civicSchemaOnDisk, dbPath, SCHEMA, schemaFile } from './civicStatus'
 
 /**
  * Builds the address database: every street address in Miami-Dade, with the
@@ -79,22 +80,9 @@ export const PARCEL_FIELDS = 'FOLIO,DOR_CODE_CUR'
 const SIMPLIFY = '0.00002'
 const UA = 'flamingocounty.com civic sync (+https://flamingocounty.com)'
 
-/** Where the database and its raw caches live: the data volume in production. */
-export function civicDir(): string {
-  if (process.env.CIVIC_DIR) return process.env.CIVIC_DIR
-  const db = process.env.DATABASE_URL ?? ''
-  if (db.startsWith('file:')) return join(db.slice(5).replace(/[^/]*$/, ''), 'civic')
-  return join(process.cwd(), '.civic')
-}
-
-export const dbPath = (dir = civicDir()) => join(dir, 'civic.db')
-
-/**
- * The layout of what this file builds. Bump it whenever the database changes
- * shape, and every server rebuilds on its next boot instead of waiting a month.
- */
-export const SCHEMA = 4
-const schemaFile = (dir: string) => join(dir, 'schema')
+// Where the database lives and its layout version (SCHEMA): civicStatus.ts,
+// which proxy.ts reads without loading this file.
+export { civicDir, dbPath, SCHEMA }
 
 /* --------------------------------------------------------------- fetch */
 
@@ -302,14 +290,63 @@ type OfficialPolling = {
   rows: { precinct: number; sub: number; name: string; address: string; city: string; zip: string }[]
 }
 
-export function officialPolling(today: string = todayISO(), dir = join(process.cwd(), 'src/data/civic')): OfficialPolling | null {
-  if (!existsSync(dir)) return null
-  const lists = readdirSync(dir)
+const OFFICIAL_DIR = join(process.cwd(), 'src/data/civic')
+
+/** Every saved list, oldest election first. */
+function officialLists(dir: string): OfficialPolling[] {
+  if (!existsSync(dir)) return []
+  return readdirSync(dir)
     .filter((f) => /^polling-\d{4}-\d{2}-\d{2}\.json$/.test(f))
     .map((f) => JSON.parse(readFileSync(join(dir, f), 'utf8')) as OfficialPolling)
-    .filter((l) => l.election >= today)
     .sort((a, b) => (a.election < b.election ? -1 : 1))
-  return lists[0] ?? null
+}
+
+export function officialPolling(today: string = todayISO(), dir = OFFICIAL_DIR): OfficialPolling | null {
+  return officialLists(dir).find((l) => l.election >= today) ?? null
+}
+
+/**
+ * The newest list we hold, upcoming or past. The vote pages use it to say an
+ * election is over: after its date `officialPolling` returns nothing, and
+ * the sites fall back to the county layer.
+ */
+export function latestOfficialPolling(dir = OFFICIAL_DIR): OfficialPolling | null {
+  return officialLists(dir).at(-1) ?? null
+}
+
+/* --------------------------------------------------------------- where to vote */
+
+/** One precinct in one place: a municipality, and for unincorporated Miami-Dade, a commission district. */
+export type VotePlacement = { precinct: number; munic: string; district: number | null }
+/** A "where to vote" page: its slug, and the precincts with addresses (or area) in it. */
+export type VoteArea = { slug: string; munic: string; district: number | null; precincts: number[] }
+
+export const UNINCORPORATED = 'UNINCORPORATED MIAMI-DADE'
+
+/**
+ * The vote pages: one per municipality, and unincorporated Miami-Dade split
+ * by commission district. A precinct is listed in every place it has
+ * addresses, so one that crosses a city line is on both cities' pages.
+ * Municipalities come first, by name; then the districts, by number.
+ */
+export function voteAreas(placements: VotePlacement[]): VoteArea[] {
+  const areas = new Map<string, VoteArea>()
+  for (const p of placements) {
+    if (!p.munic) continue
+    const uninc = p.munic === UNINCORPORATED
+    const slug = uninc
+      ? p.district != null
+        ? `unincorporated-district-${p.district}`
+        : 'unincorporated'
+      : p.munic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+    const area = areas.get(slug) ?? { slug, munic: p.munic, district: uninc ? p.district : null, precincts: [] }
+    if (!area.precincts.includes(p.precinct)) area.precincts.push(p.precinct)
+    areas.set(slug, area)
+  }
+  const rank = (a: VoteArea) => (a.munic === UNINCORPORATED ? 1 : 0)
+  return [...areas.values()]
+    .map((a) => ({ ...a, precincts: [...a.precincts].sort((x, y) => x - y) }))
+    .sort((a, b) => rank(a) - rank(b) || (rank(a) ? (a.district ?? 99) - (b.district ?? 99) : a.munic.localeCompare(b.munic)))
 }
 
 function places(features: Feature[], nameOf: (a: Attrs) => string = (a) => str(a.NAME || a.BRANCH), keep: (a: Attrs) => boolean = () => true): Place[] {
@@ -691,6 +728,40 @@ export async function syncCivic({
     `)
     n = Number((await db.execute('SELECT COUNT(*) AS n FROM addr')).rows[0].n)
 
+    log('where to vote…')
+    // Each precinct goes wherever its addresses are: the municipality the
+    // county writes on each address, and for unincorporated addresses the
+    // commission district they fall in.
+    const spread = (await db.execute('SELECT DISTINCT precinct, munic, commission FROM addr WHERE precinct >= 0')).rows
+    const placements: VotePlacement[] = spread.map((r) => ({
+      precinct: z.precinct.rows[Number(r.precinct)].precinct,
+      munic: names[Number(r.munic)] ?? '',
+      district: r.commission != null && Number(r.commission) >= 0 ? (z.commission.rows[Number(r.commission)]?.district ?? null) : null,
+    }))
+    // A precinct with no address point in it (nine on 2026-10-07, each with a
+    // polling place) goes by where its own area lies: the city boundary and
+    // the commission district around a point inside it.
+    const placed = new Set(placements.map((p) => p.precinct))
+    const cityZones = new Zones<string>().add(cityF, (a) => str(a.NAME) || null, (a) => str(a.NAME).toUpperCase())
+    const byArea: number[] = []
+    for (const f of pr) {
+      const precinct = Number(f.attributes.ID)
+      if (placed.has(precinct)) continue
+      const g = toGeo(rings(f), {})
+      const at = g ? labelPoint(g.geometry.coordinates as Ring[][]) : null
+      if (!at) continue
+      const ci = cityZones.find(at[0], at[1])
+      if (ci < 0) continue
+      const co = z.commission.find(at[0], at[1])
+      placements.push({ precinct, munic: cityZones.rows[ci], district: co >= 0 ? z.commission.rows[co].district : null })
+      placed.add(precinct)
+      byArea.push(precinct)
+    }
+    const areas = voteAreas(placements)
+    const unplaced = z.precinct.rows.map((r) => r.precinct).filter((p) => !placed.has(p))
+    log(`  ${areas.length} pages; by area: ${byArea.join(', ') || 'none'}; unplaced: ${unplaced.join(', ') || 'none'}`)
+    const latest = latestOfficialPolling()
+
     const fetchedAt = new Date().toISOString().slice(0, 10)
     const meta: Record<string, unknown> = {
       fetchedAt,
@@ -702,6 +773,16 @@ export async function syncCivic({
       pollingSource: official
         ? { by: official.by, url: official.source, election: official.election, electionName: official.electionName, published: official.published }
         : { by: 'Miami-Dade County', url: LAYERS.polling, election: null, electionName: null, published: null },
+      // The "where to vote" pages. `lastElection` is the newest official list
+      // we hold, past or not, so the pages can say when its election is over.
+      vote: {
+        areas,
+        byArea,
+        unplaced,
+        lastElection: latest
+          ? { election: latest.election, electionName: latest.electionName, published: latest.published, url: latest.source, by: latest.by }
+          : null,
+      },
       counts: { addresses: n, unmatched },
     }
     await db.batch(
@@ -765,8 +846,7 @@ async function insertMany<T>(
 export function civicStale(maxAgeDays = 30, dir = civicDir()): boolean {
   const p = dbPath(dir)
   if (!existsSync(p)) return true
-  const schema = existsSync(schemaFile(dir)) ? Number(readFileSync(schemaFile(dir), 'utf8')) : 0
-  if (schema !== SCHEMA) return true
+  if (civicSchemaOnDisk(dir) !== SCHEMA) return true
   return Date.now() - statSync(p).mtimeMs > maxAgeDays * 86_400_000
 }
 

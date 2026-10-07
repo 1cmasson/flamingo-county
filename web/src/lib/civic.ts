@@ -4,7 +4,7 @@ import { createClient, type Client } from '@libsql/client'
 import { todayISO } from './dates'
 import { meters, nearestServing, TRANSIT, walkMinutes, type LatLng, type NearestStop, type TransitRoute } from './transit'
 import { nextDates, normalizeAddress, prettyAddress, slugOf, titleCase, type Rule } from './civicGeo'
-import { dbPath, type Pickup as StoredPickup } from './civicSync'
+import { dbPath, type Pickup as StoredPickup, type VoteArea } from './civicSync'
 
 export { KIND, normalizeAddress, parseRule, matchesRule, nextDates, rrule, prettyAddress } from './civicGeo'
 export { slugOf }
@@ -46,6 +46,13 @@ type Meta = {
   }
   places: Record<'fire' | 'police' | 'library' | 'park' | 'hospital', Place[]>
   pollingSource?: PollingSource
+  /** The "where to vote" pages; absent from a database built before SCHEMA 5. */
+  vote?: {
+    areas: VoteArea[]
+    byArea: number[]
+    unplaced: number[]
+    lastElection: { election: string; electionName: string; published: string; url: string; by: string } | null
+  }
 }
 
 /** Where the Election Day sites came from: the Supervisor of Elections' list for `election`, or the county layer. */
@@ -119,6 +126,50 @@ export async function tileAt(z: number, x: number, y: number): Promise<Uint8Arra
 /** False until the first sync has finished. */
 export async function civicReady(): Promise<boolean> {
   return !!(await open())
+}
+
+/* --------------------------------------------------------- where to vote */
+
+export type { VoteArea }
+export type VotePrecinct = { precinct: number; polling: PollingPlace | null }
+export type VoteData = {
+  areas: VoteArea[]
+  /** Every precinct the county draws, by number, with its Election Day site. */
+  precincts: Map<number, VotePrecinct>
+  commission: Official[]
+  pollingSource: PollingSource | null
+  lastElection: NonNullable<Meta['vote']>['lastElection']
+  fetchedAt: string
+}
+
+/** What the vote pages need, or null until a database with the `vote` key is in place. */
+export async function voteData(): Promise<VoteData | null> {
+  const c = await open()
+  if (!c?.meta.vote) return null
+  return {
+    areas: c.meta.vote.areas,
+    precincts: new Map(c.meta.zones.precinct.map((p) => [p.precinct, p])),
+    commission: c.meta.zones.commission,
+    pollingSource: c.meta.pollingSource ?? null,
+    lastElection: c.meta.vote.lastElection,
+    fetchedAt: c.meta.fetchedAt,
+  }
+}
+
+/**
+ * Whether the sites on the vote pages are the ones for an election still to
+ * come. They are while the Supervisor of Elections' list for that election is
+ * the source and its date has not passed (Election Day itself counts). After
+ * it, `over` names the election that has passed.
+ */
+export function electionState(
+  source: PollingSource | null,
+  last: VoteData['lastElection'],
+  today: string = todayISO(),
+): { upcoming: boolean; election: string | null; over: string | null } {
+  if (source?.election && today <= source.election) return { upcoming: true, election: source.election, over: null }
+  const past = [source?.election, last?.election].filter((d): d is string => !!d && d < today).sort().pop() ?? null
+  return { upcoming: false, election: null, over: past }
 }
 
 /** The day the records were read from the agencies, or null before the first sync. */

@@ -1,5 +1,6 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { DEFAULT_LANG, detectLang, isLang } from './i18n'
+import { civicCurrent } from './lib/civicStatus'
 
 export const LANG_COOKIE = 'fc.lang'
 
@@ -65,6 +66,25 @@ function hasSessionCookie(req: NextRequest): boolean {
   return req.cookies.getAll().some((c) => c.name.endsWith('better-auth.session_token'))
 }
 
+/**
+ * The "where to vote" pages read only the address database. Until a database
+ * in the current layout is on disk (the first sync, or the rebuild after a
+ * deploy that changed it, about ten minutes) they answer 503 with
+ * Retry-After: never an empty page with a 200 a crawler would keep.
+ */
+const VOTE_PATH = /^\/(en|es)\/vote(\/|$)/
+
+function notReady() {
+  const body =
+    '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Flamingo County</title>' +
+    '<p>Estamos actualizando los datos de votación. Vuelve en unos minutos.</p>' +
+    '<p>We are updating the voting data. Please come back in a few minutes.</p>'
+  return new NextResponse(body, {
+    status: 503,
+    headers: { 'Content-Type': 'text/html; charset=utf-8', 'Retry-After': '600', 'Cache-Control': 'no-store' },
+  })
+}
+
 export function proxy(req: NextRequest) {
   logAiTraffic(req)
   const host = (req.headers.get('x-forwarded-host') ?? req.headers.get('host') ?? '').split(':')[0]
@@ -80,6 +100,7 @@ export function proxy(req: NextRequest) {
 
   const first = pathname.split('/')[1]
   if (isLang(first)) {
+    if (VOTE_PATH.test(pathname) && !civicCurrent()) return notReady()
     const res = NextResponse.next()
     // `[lang]/layout.tsx` is `force-dynamic` because it reads the member's
     // session on every request (the nav needs signed-in state), and Next's

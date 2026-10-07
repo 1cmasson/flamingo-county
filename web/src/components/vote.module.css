@@ -1,0 +1,302 @@
+/**
+ * The "where to vote" pages: the address page's look (ink hero, cream cards
+ * with a hard shadow) around a table that has to read on a phone. The table
+ * stays a real table, for screen readers and crawlers; under 560px each row
+ * is drawn as a small card instead of three squeezed columns.
+ */
+
+.main {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: clamp(16px, 4vw, 26px) clamp(12px, 3.5vw, 22px) 70px;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(18px, 3vw, 26px);
+}
+
+.hero {
+  background: var(--ink);
+  color: var(--cream);
+  border: 4px solid var(--ink);
+  box-shadow: 9px 9px 0 var(--cream);
+  padding: clamp(20px, 4.5vw, 36px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.kicker {
+  align-self: flex-start;
+  background: var(--yellow);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 2px;
+  padding: 6px 10px 5px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(34px, 7vw, 60px);
+  line-height: 0.98;
+  color: var(--cream);
+  overflow-wrap: anywhere;
+}
+
+.sub {
+  margin: 0;
+  font-size: clamp(16px, 2.2vw, 19px);
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--yellow);
+}
+
+.notice {
+  margin: 0;
+  padding: 10px 12px 9px;
+  background: var(--yellow);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.notice a {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.over {
+  margin: 0;
+  padding: 12px 14px 11px;
+  background: var(--pink);
+  color: var(--cream);
+  border: 3px solid var(--ink);
+  font-weight: 700;
+  font-size: 16px;
+  line-height: 1.4;
+}
+.over strong {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 22px;
+  display: block;
+  margin-bottom: 4px;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.action {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 10px 14px 8px;
+  border: 4px solid var(--ink);
+  background: var(--cream);
+  color: var(--ink);
+  box-shadow: 4px 4px 0 var(--cyan);
+  font-family: var(--display);
+  font-size: 17px;
+  line-height: 1.05;
+  text-decoration: none;
+}
+.actionAlt {
+  background: var(--cyan);
+  box-shadow: 4px 4px 0 var(--cream);
+}
+
+.card {
+  background: var(--grad-cream);
+  color: var(--ink);
+  border: 4px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
+  padding: clamp(14px, 3vw, 22px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.cardTag {
+  align-self: flex-start;
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 1.05;
+  padding: 8px 12px 5px;
+  background: var(--ink);
+  color: var(--yellow);
+}
+
+.note {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+/* --- The hub's list of places --- */
+
+.areas {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr));
+  gap: 10px;
+}
+.areaLink {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 100%;
+  padding: 12px 14px 10px;
+  background: var(--cream);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  text-decoration: none;
+}
+.areaName {
+  font-family: var(--display);
+  font-size: 21px;
+  line-height: 1.05;
+}
+.areaMeta {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+/* --- The precinct table --- */
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+  line-height: 1.35;
+}
+.table caption {
+  text-align: left;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  padding-bottom: 8px;
+}
+.table th {
+  text-align: left;
+  font-size: 12px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  padding: 8px 10px;
+  background: var(--ink);
+  color: var(--cream);
+}
+.table td,
+.table tbody th {
+  padding: 10px;
+  border-top: 2px dotted var(--ink);
+  vertical-align: top;
+  text-align: left;
+}
+.table tbody th {
+  background: none;
+  color: inherit;
+  letter-spacing: 0;
+  text-transform: none;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1;
+  white-space: nowrap;
+}
+.table tr:target td {
+  background: var(--yellow);
+}
+.place {
+  font-weight: 800;
+  display: block;
+}
+.address {
+  font-weight: 600;
+  display: block;
+}
+.missing {
+  font-weight: 600;
+  font-style: italic;
+}
+.also {
+  font-weight: 600;
+}
+.also a {
+  color: var(--ink);
+  font-weight: 800;
+}
+.alsoCell {
+  min-width: 7em;
+}
+.alsoLabel {
+  display: none;
+}
+
+@media (max-width: 560px) {
+  .table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .table tr {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: 4px 12px;
+    padding: 12px 0 10px;
+    border-top: 2px dotted var(--ink);
+  }
+  .table td,
+  .table tbody th {
+    display: block;
+    padding: 0;
+    border-top: 0;
+  }
+  .table td.alsoCell {
+    grid-column: 2;
+  }
+  .table td.alsoCell:empty {
+    display: none;
+  }
+  .alsoLabel {
+    display: inline;
+    font-weight: 800;
+  }
+  .table tr:target {
+    background: var(--yellow);
+  }
+}
+
+.sources {
+  background: var(--ink);
+  color: var(--cream);
+  border: 4px solid var(--ink);
+  padding: clamp(16px, 3vw, 22px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.sources p {
+  margin: 0;
+}
+.sources a {
+  color: var(--cyan);
+  font-weight: 700;
+}

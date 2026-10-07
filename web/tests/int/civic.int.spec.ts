@@ -222,4 +222,76 @@ describe('lookups', () => {
     expect((await nearestAddress([25.87172, -80.29677]))?.slug).toBe('5410-w-6-ln-33012')
     expect(await nearestAddress([25.5, -80.6])).toBeNull()
   })
+
+  it('has no vote pages until a database with them is in place', async () => {
+    const { voteData } = await import('@/lib/civic')
+    expect(await voteData()).toBeNull()
+  })
+})
+
+/** The "where to vote" pages: which precincts go on which page, and when an election is over. */
+describe('where to vote', () => {
+  it('lists a precinct in every place it has addresses, and splits unincorporated by district', async () => {
+    const { voteAreas, UNINCORPORATED } = await import('@/lib/civicSync')
+    const areas = voteAreas([
+      { precinct: 327, munic: 'HIALEAH', district: 5 },
+      { precinct: 327, munic: 'HIALEAH GARDENS', district: 5 },
+      { precinct: 318, munic: 'HIALEAH', district: 13 },
+      { precinct: 318, munic: 'HIALEAH', district: 6 },
+      { precinct: 801, munic: UNINCORPORATED, district: 11 },
+      { precinct: 802, munic: UNINCORPORATED, district: 9 },
+      { precinct: 803, munic: UNINCORPORATED, district: 11 },
+      { precinct: 803, munic: UNINCORPORATED, district: 9 },
+      { precinct: 9, munic: 'OPA-LOCKA', district: 2 },
+    ])
+    expect(areas.map((a) => a.slug)).toEqual([
+      'hialeah',
+      'hialeah-gardens',
+      'opa-locka',
+      'unincorporated-district-9',
+      'unincorporated-district-11',
+    ])
+    expect(areas[0]).toMatchObject({ munic: 'HIALEAH', district: null, precincts: [318, 327] })
+    expect(areas[1].precincts).toEqual([327])
+    expect(areas[3].precincts).toEqual([802, 803])
+    expect(areas[4]).toMatchObject({ district: 11, precincts: [801, 803] })
+  })
+
+  it('says the election is upcoming through Election Day, and over the day after', async () => {
+    const { electionState } = await import('@/lib/civic')
+    const list = { by: 'Supervisor', url: 'x.pdf', election: '2026-11-03', electionName: '2026 General Election', published: '2026-09-30' }
+    const last = { election: '2026-11-03', electionName: '2026 General Election', published: '2026-09-30', url: 'x.pdf', by: 'Supervisor' }
+    expect(electionState(list, last, '2026-10-07')).toEqual({ upcoming: true, election: '2026-11-03', over: null })
+    expect(electionState(list, last, '2026-11-03').upcoming).toBe(true)
+    expect(electionState(list, last, '2026-11-04')).toEqual({ upcoming: false, election: null, over: '2026-11-03' })
+    // A sync after the election falls back to the county layer; the pages still know which election passed.
+    const layer = { by: 'Miami-Dade County', url: 'layer', election: null, electionName: null, published: null }
+    expect(electionState(layer, last, '2026-12-01')).toEqual({ upcoming: false, election: null, over: '2026-11-03' })
+    expect(electionState(layer, null, '2026-12-01')).toEqual({ upcoming: false, election: null, over: null })
+  })
+
+  it('finds the other precincts that vote at the same site, and counts sites once', async () => {
+    const { areaRows, counts } = await import('@/lib/vote')
+    const site = (name: string, address: string) => ({ name, address, phone: '', at: null })
+    const precincts = new Map([
+      [318, { precinct: 318, polling: site('Jose Marti MAST 6-12 Academy', '5701 W 24 Ave') }],
+      [327, { precinct: 327, polling: site('Jose Marti Mast 6-12 Academy', '5701  W 24 Ave') }],
+      [330, { precinct: 330, polling: site('Hialeah Middle School', '6027 E 7 Ave') }],
+      [100, { precinct: 100, polling: null }],
+    ])
+    const rows = areaRows({ slug: 'hialeah', munic: 'HIALEAH', district: null, precincts: [318, 330, 100] }, { precincts })
+    expect(rows.map((r) => [r.precinct, r.alsoHere])).toEqual([
+      [318, [327]],
+      [330, []],
+      [100, []],
+    ])
+    expect(counts(rows)).toEqual({ precincts: 3, places: 2 })
+  })
+
+  it('keeps one layout number for the sync and for proxy.ts', async () => {
+    const sync = await import('@/lib/civicSync')
+    const status = await import('@/lib/civicStatus')
+    expect(sync.SCHEMA).toBe(status.SCHEMA)
+    expect(status.SCHEMA).toBeGreaterThanOrEqual(5)
+  })
 })
