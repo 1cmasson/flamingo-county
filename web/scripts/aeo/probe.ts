@@ -5,6 +5,11 @@
  *   pnpm aeo:probe                       # default models, 3 runs per question
  *   pnpm aeo:probe --dry                 # show what would run, call nothing
  *   pnpm aeo:probe --runs 1 --only perplexity/sonar
+ *   pnpm aeo:probe --runs 1 --intent civic   # only the civic block
+ *   pnpm aeo:probe --ids best-cuban-hialeah,late-night-hialeah
+ *
+ * `--only` picks models. `--intent` and `--ids` pick questions: `--ids` takes
+ * exact ids, comma-separated.
  *
  * One key: OPENROUTER_API_KEY (read from the environment or web/.env.local).
  * Models come from OPENROUTER_MODELS (comma-separated) or the defaults below.
@@ -73,7 +78,11 @@ const host = (u: string) => {
 }
 
 async function main() {
-  const { questions } = JSON.parse(readFileSync(join(here, 'questions.json'), 'utf8')) as { questions: Question[] }
+  const bank = (JSON.parse(readFileSync(join(here, 'questions.json'), 'utf8')) as { questions: Question[] }).questions
+  const intents = opt('intent')?.split(',')
+  const ids = opt('ids')?.split(',')
+  const questions = bank.filter((q) => (!intents || intents.includes(q.intent)) && (!ids || ids.includes(q.id)))
+  if (!questions.length) throw new Error('No question matches --intent / --ids')
   const runs = Number(opt('runs') ?? 3)
   const key = loadKey()
   const models = (opt('only') ?? process.env.OPENROUTER_MODELS ?? DEFAULT_MODELS.join(',')).split(',')
