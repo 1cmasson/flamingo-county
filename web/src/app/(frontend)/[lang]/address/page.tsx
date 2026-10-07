@@ -438,6 +438,9 @@ function Report({
               >
                 {c.elections} ↗
               </a>
+              <Link className={`${s.link} ${s.noPrint}`} href={routes.vote(lang)}>
+                {c.allPolling} →
+              </Link>
             </section>
           ) : null}
 

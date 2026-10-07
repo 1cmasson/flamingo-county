@@ -107,6 +107,7 @@ const EN = {
   voteText: 'This is your Election Day polling place. Early voting uses other sites.',
   voteFor: (election: string, published: string) => `For the ${election} election, from the Supervisor of Elections' polling place list of ${published}.`,
   elections: 'MIAMI-DADE ELECTIONS',
+  allPolling: 'EVERY POLLING PLACE, BY CITY',
 
   schools: 'YOUR SCHOOLS',
   schoolNote: 'Assigned by address. Magnet and charter schools are separate.',
@@ -227,6 +228,7 @@ const ES: AddressCopy = {
   voteText: 'Aquí votas el día de las elecciones. La votación temprana es en otros lugares.',
   voteFor: (election: string, published: string) => `Para la elección del ${election}, según la lista de lugares de votación del Supervisor de Elecciones del ${published}.`,
   elections: 'ELECCIONES DE MIAMI-DADE',
+  allPolling: 'TODOS LOS LUGARES DE VOTACIÓN, POR CIUDAD',
 
   schools: 'TUS ESCUELAS',
   schoolNote: 'Asignadas por dirección. Las escuelas magnet y chárter son aparte.',

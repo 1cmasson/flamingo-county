@@ -81,19 +81,26 @@ These pages are only worth it if they're crawled well before Election Day. **Shi
 
 **Done when:** the pages are live, in the sitemap and submitted, with 10/10 spot checks matching and the after-election behavior coded.
 
-**Status 2026-10-07: blocked, not built.** The county's polling-place data is stale for this election.
-- **The check.** It covered all 767 rows, not 10. The Elections Department's own list for this election (`2026-11-03-general-election-polling-place-list.pdf` on miamidade.gov/elections, election 914, dated 2026-09-30) was compared with `PollingPlace_gdb` as synced on 2026-10-07. The layer was last edited 2026-08-03.
-- **Two precincts moved:**
-
-  | Precinct | Elections Department, Nov 3 | County layer (`PollingPlace_gdb`) |
-  | --- | --- | --- |
-  | 99 | Williams Island Building 2800, 2800 Island Blvd | Williams Island Club House, 4500 Island Blvd |
-  | 253 | New Shiloh Missionary Baptist Church, 1350 NW 95 St | Palm Court Apartments, 930 NW 95 St |
-
-- **Everything else matches.** The layer equals the 2026-08-18 primary list row for row.
-- **Precinct 100** exists only in the county layer, with no polling place.
-- **The live `/address` voting card** shows the old site for addresses in precincts 99 and 253.
-- **To unblock:** if `PollingPlace_gdb`'s `dataLastEditDate` moves before 2026-10-14, re-run the comparison. Taking the PDF as a source is the owner's call, since it is not an Open Data `*_gdb` layer.
+**Status 2026-10-07: built (PR "Where to vote").** It is unblocked by #97, which made the Supervisor of Elections' own list the source.
+- **Why #97 was needed.** On 2026-10-07 the county layer `PollingPlace_gdb` (last edited 2026-08-03) still held the August primary's sites for precincts 99 and 253.
+- **The source.** While an election is upcoming, its list wins over the layer: `src/data/civic/polling-<date>.json`, read by `officialPolling()`. `pollingSource` in `meta` says which source was used. 756 precincts match the list.
+- **The pages.** `/[lang]/vote` is the hub, and `/[lang]/vote/<area>` covers each of the 34 municipalities and the 13 commission districts of unincorporated Miami-Dade (slug `unincorporated-district-N`). That is 47 area pages plus the hub, 96 URLs across both languages.
+- **The table.** Each row is a precinct, its Election Day site and the other precincts that vote at the same site.
+- **The page data.** `civicSync.ts` builds the `meta.vote` key; SCHEMA is 5.
+  - A precinct is listed wherever its addresses are, so one that crosses a city line is on both pages.
+  - The nine precincts with no address point go by the city and commission district around a point inside them.
+  - While the official list is the source, a precinct missing from it (100) is on no page.
+- **After the election.** `electionState()` in `civic.ts` compares today with the list's election date. From the day after:
+  - the pages say «La elección del 3 de noviembre ya pasó»;
+  - they drop the Election Day framing in the answers, the meta descriptions and `llms.txt`;
+  - they say where the sites now come from: that list, or, after a later sync, the county layer;
+  - they stay up.
+  - **For the next election:** add its list as a new `polling-<date>.json`.
+- **While `civic.db` is missing or in an older layout,** `proxy.ts` answers 503 with Retry-After (via `civicStatus.ts`). The sitemap and `llms.txt` leave the pages out until the data is there.
+- **After deploy:**
+  1. Wait for the SCHEMA 5 rebuild, about 10 minutes, until `https://flamingocounty.com/es/vote` returns 200.
+  2. Then run `pnpm aeo:indexnow`.
+  3. Then inspect `/es/vote` and `/es/vote/hialeah` in Search Console.
 
 ### Phase 3: civic answer pages (a few dozen, each with data that really differs)
 Every page:

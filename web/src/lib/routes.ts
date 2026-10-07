@@ -34,6 +34,9 @@ export const routes = {
   freeRoute: (lang: Lang, route: string) => `/${lang}/free-rides/${route}`,
   /** What the city and county know about a Hialeah address; `?a=<slug>` picks one. */
   address: (lang: Lang) => `/${lang}/address`,
+  /** Election Day polling places: the hub, and one page per municipality or unincorporated commission district. */
+  vote: (lang: Lang) => `/${lang}/vote`,
+  voteArea: (lang: Lang, area: string) => `/${lang}/vote/${area}`,
 } as const
 
 /** Append query params, skipping empties — filters keep living in the query. */
