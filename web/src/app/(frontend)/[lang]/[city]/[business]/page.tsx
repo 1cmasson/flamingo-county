@@ -136,6 +136,7 @@ export default async function BusinessPage({
 
   const category = rel<Category>(listing.category)
   const mascot = city ? rel<Media>(city.solo) : null
+  const gem = isGem(category?.slug)
   const gallery = (Array.isArray(listing.gallery) ? listing.gallery : []).map((g) => rel<Media>(g))
 
   const d = listing.detail ?? {}
@@ -224,14 +225,23 @@ export default async function BusinessPage({
               sizes={FULL_WIDTH_SIZES}
               priority
             />
+            {gem ? (
+              // A gem's badge owns the photo's top-left corner, as on its
+              // directory card. It cannot wrap (one 34px line) and is longer
+              // than the room the bottom row leaves beside the bust, so it sits
+              // above the bust instead: the bust hangs from 30% down, and the
+              // badge (sticker included) ends above that on the 190px phone
+              // frame.
+              <div style={{ position: 'absolute', top: 20, left: 18, pointerEvents: 'none' }}>
+                <GemBadge label={category?.label ?? ''} />
+              </div>
+            ) : null}
             <div
               style={{
                 position: 'absolute',
                 left: 18,
                 bottom: 18,
-                // The chips stop short of the mascot's side. A gem's badge is
-                // longer than a category chip, so on a phone it wraps above the
-                // city chip (wrap-reverse) instead of running under the bust.
+                // The chips stop short of the mascot's side and wrap there.
                 right: mascot?.url ? MASTHEAD_CHIPS_RIGHT : 18,
                 display: 'flex',
                 flexWrap: 'wrap-reverse',
@@ -251,9 +261,7 @@ export default async function BusinessPage({
               >
                 {city?.name}
               </div>
-              {isGem(category?.slug) ? (
-                <GemBadge label={category?.label ?? ''} />
-              ) : (
+              {gem ? null : (
                 <div
                   style={{
                     background: 'var(--grad-pink)',
