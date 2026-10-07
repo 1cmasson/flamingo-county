@@ -32,6 +32,7 @@ jobs:
         run: |
           docker run -d --name fc-ci -p 3000:3000 \
             -e HQ_JOBS=off \
+            -e CIVIC_SYNC=off \
             -e DATABASE_URL=file:/data/content.db \
             -e MEDIA_DIR=/data/media \
             -e PAYLOAD_SECRET=ci-only-secret-not-for-prod \

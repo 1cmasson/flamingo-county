@@ -200,6 +200,10 @@ export async function Nav({ lang }: { lang: Lang }) {
                 label: t('FREE RIDES'),
               },
               {
+                href: routes.address(lang),
+                label: t('YOUR ADDRESS'),
+              },
+              {
                 href: routes.myWeek(lang),
                 label: t('MY WEEK'),
                 badge: <MyWeekCount big />,

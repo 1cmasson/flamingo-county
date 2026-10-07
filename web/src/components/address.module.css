@@ -1,0 +1,490 @@
+/**
+ * The address page. Same language as the free-rides hub: an ink hero, cream
+ * cards with a hard ink shadow, Luckiest Guy for the answers. Type is a size
+ * up from the rest of the site: the people this is for read without glasses
+ * as often as with.
+ */
+
+.main {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: clamp(16px, 4vw, 26px) clamp(12px, 3.5vw, 22px) 70px;
+  display: flex;
+  flex-direction: column;
+  gap: clamp(18px, 3vw, 26px);
+}
+
+.hero {
+  background: var(--ink);
+  color: var(--cream);
+  border: 4px solid var(--ink);
+  box-shadow: 9px 9px 0 var(--cream);
+  padding: clamp(20px, 4.5vw, 40px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.kicker {
+  align-self: flex-start;
+  background: var(--yellow);
+  color: var(--ink);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 2px;
+  padding: 6px 10px 5px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(32px, 6.4vw, 60px);
+  line-height: 0.98;
+  color: var(--cream);
+}
+
+.lead {
+  margin: 0;
+  font-size: clamp(16px, 2.2vw, 19px);
+  font-weight: 600;
+  line-height: 1.4;
+  max-width: 60ch;
+}
+
+/* --- Search ------------------------------------------------------------- */
+
+.search {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-width: 720px;
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.input {
+  width: 100%;
+  font-family: var(--body);
+  font-size: clamp(19px, 2.6vw, 22px);
+  font-weight: 700;
+  padding: 16px 16px 14px;
+  border: 4px solid var(--ink);
+  background: var(--grad-cream);
+  color: var(--ink);
+  outline: none;
+  box-shadow: 5px 5px 0 var(--pink);
+}
+.input::placeholder {
+  color: #6b6358;
+  font-weight: 600;
+}
+.input:focus-visible {
+  box-shadow: 5px 5px 0 var(--cyan);
+}
+
+.list {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  right: 0;
+  z-index: 60;
+  background: var(--grad-cream);
+  border: 4px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
+  display: flex;
+  flex-direction: column;
+  max-height: min(60vh, 460px);
+  overflow-y: auto;
+  transition:
+    opacity 140ms ease,
+    visibility 0s linear 140ms;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+.list[data-open='1'] {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    opacity 140ms ease,
+    visibility 0s;
+}
+
+.option {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 13px 14px 11px;
+  min-height: 56px;
+  text-decoration: none;
+  color: var(--ink);
+  border-top: 2px dotted var(--ink);
+}
+.option:first-child {
+  border-top: 0;
+}
+.option[data-active='1'] {
+  background: var(--yellow);
+}
+
+.optionLabel {
+  font-family: var(--display);
+  font-size: 21px;
+  line-height: 1.05;
+}
+.optionZip {
+  font-weight: 800;
+  font-size: 11px;
+  letter-spacing: 1.6px;
+  color: var(--magenta);
+}
+
+.searchRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.goBtn,
+.locateBtn,
+.action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-family: var(--display);
+  font-size: 18px;
+  line-height: 1;
+  padding: 14px 16px 11px;
+  min-height: 50px;
+  border: 4px solid var(--ink);
+  cursor: pointer;
+  text-decoration: none;
+  transition:
+    transform 160ms cubic-bezier(0.23, 1, 0.32, 1),
+    box-shadow 160ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+.goBtn {
+  background: var(--yellow);
+  color: var(--ink);
+  box-shadow: 4px 4px 0 var(--pink);
+}
+.goBtn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.locateBtn {
+  background: var(--cyan);
+  color: var(--ink);
+  box-shadow: 4px 4px 0 var(--cream);
+}
+.goBtn:active:not(:disabled),
+.locateBtn:active,
+.action:active {
+  transform: translate(2px, 2px);
+}
+
+.note {
+  margin: 4px 0 0;
+  font-weight: 700;
+  font-size: 16px;
+  color: var(--yellow);
+}
+
+.found {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px 14px;
+  margin-top: 8px;
+  padding: 14px;
+  background: var(--grad-cream);
+  color: var(--ink);
+  border: 4px solid var(--ink);
+  box-shadow: 5px 5px 0 var(--yellow);
+}
+.foundQ {
+  width: 100%;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 1.4px;
+}
+
+.privacy,
+.coverage {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  opacity: 0.85;
+}
+
+/* --- The report --------------------------------------------------------- */
+
+.addrHead {
+  background: var(--grad-cream);
+  border: 4px solid var(--ink);
+  box-shadow: 9px 9px 0 var(--ink);
+  padding: clamp(18px, 3.5vw, 28px);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.addrTitle {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(30px, 6vw, 54px);
+  line-height: 1;
+}
+.addrSub {
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 1.8px;
+  color: var(--magenta);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.action {
+  background: var(--ink);
+  color: var(--yellow);
+  box-shadow: 4px 4px 0 var(--pink);
+  font-size: 16px;
+}
+.actionAlt {
+  background: var(--cream);
+  color: var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.hint {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(16px, 2.6vw, 22px);
+}
+@media (min-width: 820px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .wide {
+    grid-column: 1 / -1;
+  }
+}
+
+.card {
+  background: var(--grad-cream);
+  color: var(--ink);
+  border: 4px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
+  padding: clamp(16px, 3vw, 22px);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+  break-inside: avoid;
+}
+
+.cardTag {
+  align-self: flex-start;
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 1;
+  padding: 8px 12px 5px;
+  background: var(--ink);
+  color: var(--yellow);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+}
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 12px 0 10px;
+  border-top: 2px dotted var(--ink);
+}
+.row:first-child {
+  border-top: 0;
+  padding-top: 2px;
+}
+.rowLabel {
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 1.6px;
+  text-transform: uppercase;
+  grid-column: 1 / -1;
+}
+.big {
+  font-family: var(--display);
+  font-size: clamp(22px, 3.4vw, 27px);
+  line-height: 1.05;
+}
+.next {
+  justify-self: end;
+  font-weight: 800;
+  font-size: 15px;
+  background: var(--yellow);
+  border: 3px solid var(--ink);
+  padding: 4px 8px 3px;
+  white-space: nowrap;
+}
+.small {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.meta {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  opacity: 0.8;
+}
+.alert {
+  margin: 0;
+  padding: 10px 12px 9px;
+  background: var(--yellow);
+  border: 3px solid var(--ink);
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.tel {
+  color: var(--ink);
+  font-weight: 800;
+  white-space: nowrap;
+}
+.link {
+  align-self: flex-start;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 1.4px;
+  color: var(--ink);
+}
+
+.sources {
+  background: var(--ink);
+  color: var(--cream);
+  border: 4px solid var(--ink);
+  padding: clamp(16px, 3vw, 22px);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.sources a {
+  color: var(--cyan);
+  font-weight: 700;
+}
+.sourceList {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sheetOnly {
+  display: none;
+}
+
+/*
+ * "Print my sheet": one page for the fridge. Everything that isn't an answer
+ * goes, the cards lose their shadows, and the page is black on white so a home
+ * printer doesn't burn a cartridge on the backdrop.
+ */
+@media print {
+  /* The sticky bar holds the nav and the ticker; the fixed div is the halftone backdrop. */
+  :global(div:has(> nav[data-navrow])),
+  :global(nav),
+  :global(footer),
+  :global([aria-hidden='true'][style*='position:fixed']),
+  :global([aria-hidden='true'][style*='position: fixed']),
+  .hero,
+  .actions,
+  .hint,
+  .sources,
+  .noPrint {
+    display: none !important;
+  }
+  .sheetOnly {
+    display: block;
+  }
+  :global(html),
+  :global(body) {
+    background: #fff !important;
+  }
+  .main {
+    padding: 0;
+    gap: 10px;
+    max-width: none;
+  }
+  .addrHead,
+  .card {
+    background: #fff;
+    box-shadow: none;
+    border-width: 2px;
+    padding: 10px 12px;
+    gap: 6px;
+  }
+  .grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .wide {
+    grid-column: 1 / -1;
+  }
+  .addrTitle {
+    font-size: 30px;
+  }
+  .big {
+    font-size: 19px;
+  }
+  .small,
+  .alert {
+    font-size: 12px;
+  }
+  .meta {
+    font-size: 10px;
+  }
+  .row {
+    padding: 6px 0 5px;
+  }
+  .next,
+  .alert {
+    background: #fff;
+  }
+  .cardTag {
+    font-size: 15px;
+    padding: 5px 8px 3px;
+  }
+}

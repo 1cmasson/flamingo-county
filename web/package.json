@@ -25,7 +25,8 @@
     "aeo:indexnow": "tsx scripts/aeo/indexnow-submit.ts",
     "gen:dictionary": "cross-env NODE_OPTIONS=--no-deprecation tsx src/i18n/generate.ts",
     "transit:sync": "tsx scripts/transit/sync.ts",
-    "transit:basemap": "tsx scripts/transit/basemap.ts"
+    "transit:basemap": "tsx scripts/transit/basemap.ts",
+    "civic:sync": "tsx scripts/civic/sync.ts"
   },
   "dependencies": {
     "@libsql/kysely-libsql": "0.4.1",
