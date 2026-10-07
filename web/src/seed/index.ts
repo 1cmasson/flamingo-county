@@ -710,8 +710,13 @@ async function seed() {
         ...(logoId ? { logo: logoId } : {}),
       }
       // Spanish hours labels ride on the English rows' ids (see toListingEs).
-      const doc = await upsert(payload, 'listings', r.slug, data, (enDoc: any) =>
-        toListingEs(r, enDoc?.detail?.hours),
+      const doc = await upsert(
+        payload,
+        'listings',
+        r.slug,
+        data,
+        (enDoc: { detail?: { hours?: { id?: string | null }[] | null } | null }) =>
+          toListingEs(r, enDoc?.detail?.hours),
       )
       id.listings[r.slug] = doc.id
     }
