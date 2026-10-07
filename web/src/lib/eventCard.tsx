@@ -1024,7 +1024,10 @@ function Card({
         padding: `${Math.round(L.ticket.max * 0.32) + 3}px ${ticketPadX}px ${Math.round(L.ticket.max * 0.32) - 1}px`,
       }}
     >
-      {ticketText}
+      {/* Satori draws a space after Luckiest Guy's Y about twice as wide, and
+          every English weekday ends in Y ("SATURDAY,  OCTOBER 31"). A
+          no-break space draws at its real width; the ticket never wraps. */}
+      {ticketText.replace(/ /g, ' ')}
     </div>
   )
   const meta = d.meta ? (
