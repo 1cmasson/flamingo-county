@@ -352,6 +352,13 @@ export const ES_OVERRIDES: Record<string, string> = {
   'Our AI receptionist answers your phone in English or Spanish, takes reservations and texts you the details. Add your business above and tell us you want in.':
     'Nuestra recepcionista de IA contesta en inglés o español, toma reservaciones y te manda los detalles por mensaje. Agrega tu negocio arriba y dinos que te interesa.',
 
+  // --- Stories -----------------------------------------------------------
+  // The series name on the reels and on a story with no cover photo.
+  'DID YOU KNOW?': '¿SABÍAS QUE?',
+  'WATCH THE VIDEO': 'MIRA EL VIDEO',
+  'The same story, as the short video we made of it.': 'La misma historia, en el video corto que hicimos.',
+  'Your browser cannot play this video.': 'Tu navegador no puede reproducir este video.',
+
   // --- Metadata ----------------------------------------------------------
   'A directory of the restaurants and bars the locals actually vouch for.':
     'Un directorio de los restaurantes y bares que la gente de aquí de verdad respalda.',

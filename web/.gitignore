@@ -64,6 +64,7 @@ auth.db-wal
 shots/
 *.local.mjs
 /hq-media
+/videos
 scripts/aeo/results/
 
 # MapLibre browser build, copied by scripts/vendor-maplibre.mjs

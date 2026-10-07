@@ -8,6 +8,7 @@ import sharp from 'sharp'
 
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
+import { Videos } from './collections/Videos'
 import { Cities } from './collections/Cities'
 import { Categories } from './collections/Categories'
 import { EventKinds } from './collections/EventKinds'
@@ -69,6 +70,7 @@ export default buildConfig({
   collections: [
     Users,
     Media,
+    Videos,
     Cities,
     Categories,
     EventKinds,
@@ -224,6 +226,11 @@ export default buildConfig({
           enabled: { find: true },
           description:
             'The public site’s photos and artwork (read-only). Use it to find a venue photo already imported with hqAddSiteMediaFromUrl (credit, license, sourceUrl) or artwork added with hqStartSiteArtworkUpload (origin, basedOn), and set its id on a draft.',
+        },
+        videos: {
+          enabled: { find: true },
+          description:
+            'Reels on the public site (read-only). Add one with hqAddSiteVideo, then set its id as a story’s `video` in that language, in a draft.',
         },
       },
       globals: {

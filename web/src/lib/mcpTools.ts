@@ -1,4 +1,6 @@
 import { createHash } from 'crypto'
+import { readFile } from 'fs/promises'
+import path from 'path'
 import { lookup } from 'dns/promises'
 import { isIP } from 'net'
 import type { MCPPluginConfig } from '@payloadcms/plugin-mcp'
@@ -8,6 +10,7 @@ import { z } from 'zod'
 
 import { PUBLISHED } from '../fields/shared'
 import type { Event, HqSocialDraft, Story } from '../payload-types'
+import { hqMediaDir } from '../collections/HqMedia'
 import { CHUNK_MAX_CHARS, MAX_CHUNKS, addArtworkChunk, finishArtworkUpload, startArtworkUpload } from './artworkUpload'
 import { buildBrief } from './brief'
 import { trafficReport } from './growth'
@@ -30,6 +33,7 @@ import {
   type ArtworkOrigin,
 } from './siteArtwork'
 import { routes } from './routes'
+import { SITE_NAME } from './site'
 import { MESSAGE_LIMIT, esc, sendMessage, telegramConfigured } from './telegram'
 
 /**
@@ -748,6 +752,94 @@ export async function addSiteMediaFromUrl(req: PayloadRequest, args: SiteMediaAr
 }
 
 /* ------------------------------------------------------------------------ */
+/* Story reels, into the public videos library                              */
+/* ------------------------------------------------------------------------ */
+
+export type SiteVideoArgs = {
+  hqMediaId: number | string
+  posterHqMediaId: number | string
+  language: 'en' | 'es'
+  title: string
+  posterAlt: string
+  durationSeconds?: number
+  credits?: string
+}
+
+/** The poster is a phone-shaped cover card; anything much wider is the wrong file. */
+const POSTER_MIN_WIDTH = 720
+const POSTER_MAX_RATIO = 0.8
+
+/** An `hq-media` file's bytes, read off the volume like the Postiz upload does. */
+async function readHqMedia(req: PayloadRequest, id: number | string, what: string) {
+  const doc = await req.payload.findByID({ collection: 'hq-media', id, depth: 0, req, overrideAccess: false }).catch(() => null)
+  if (!doc?.filename) throw new Error(`${what}: no HQ media with id ${id}.`)
+  const data = await readFile(path.join(hqMediaDir(), path.basename(doc.filename)))
+  return { doc, data, type: sniffMediaType(data) }
+}
+
+/**
+ * Put a finished reel on the public site: copy an `hq-media` MP4 into `videos`,
+ * with its cover card (an `hq-media` JPEG or PNG) as the poster, and return the
+ * video's id for a story's localized `video` field.
+ *
+ * The reel and the card are the site's own production, already uploaded to HQ
+ * for the social drafts; that is why this takes HQ ids and no URL. A third
+ * party's photo still comes in only through hqAddSiteMediaFromUrl.
+ *
+ * The poster lands in `media` (credited to Flamingo County) so it gets the
+ * WebP sizes, and doubles as the story's link preview when the story has no
+ * cover of its own. Nothing shows on a page until a story using the video is
+ * published by the owner's tap.
+ */
+export async function addSiteVideo(req: PayloadRequest, args: SiteVideoArgs) {
+  const title = String(args.title ?? '').replace(/\s+/g, ' ').trim()
+  if (!title || title.length > 160) throw new Error('A title of 1–160 characters is required.')
+  const posterAlt = String(args.posterAlt ?? '').trim()
+  if (!posterAlt) throw new Error('posterAlt is required: what the cover card shows.')
+  if (args.language !== 'en' && args.language !== 'es') throw new Error('language must be en or es.')
+  const duration = args.durationSeconds === undefined ? undefined : Math.round(Number(args.durationSeconds))
+  if (duration !== undefined && !(duration > 0 && duration < 3600)) throw new Error('durationSeconds must be 1–3599.')
+
+  const video = await readHqMedia(req, args.hqMediaId, 'hqMediaId')
+  if (video.type !== 'video/mp4') throw new Error('hqMediaId is not an MP4.')
+  const poster = await readHqMedia(req, args.posterHqMediaId, 'posterHqMediaId')
+  if (poster.type !== 'image/jpeg' && poster.type !== 'image/png') throw new Error('posterHqMediaId is not a JPEG or PNG.')
+  const meta = await sharp(poster.data).metadata()
+  if (!meta.width || !meta.height || meta.width < POSTER_MIN_WIDTH || meta.width / meta.height > POSTER_MAX_RATIO) {
+    throw new Error(`The poster should be the 1080×1920 cover card; this one is ${meta.width}×${meta.height}.`)
+  }
+  const jpeg = await sharp(poster.data).jpeg({ quality: 90 }).toBuffer()
+  const stem = path.basename(video.doc.filename as string).replace(/\.[^.]*$/, '').replace(/-\d{10,}$/, '').slice(0, 60)
+
+  const posterDoc = await req.payload.create({
+    collection: 'media',
+    data: { alt: posterAlt, credit: SITE_NAME, modified: false },
+    file: { data: jpeg, mimetype: 'image/jpeg', name: `${stem}-cover-${Date.now()}.jpg`, size: jpeg.length },
+    locale: args.language,
+    req,
+    overrideAccess: false,
+  })
+  // `alt` is localized and required; the card is in one language, so both carry its text.
+  const other = args.language === 'en' ? 'es' : 'en'
+  await req.payload.update({ collection: 'media', id: posterDoc.id, data: { alt: posterAlt }, locale: other, req, overrideAccess: false })
+
+  const doc = await req.payload.create({
+    collection: 'videos',
+    data: {
+      title,
+      language: args.language,
+      poster: posterDoc.id,
+      ...(duration ? { durationSeconds: duration } : {}),
+      ...(args.credits?.trim() ? { credits: args.credits.trim().slice(0, 300) } : {}),
+    },
+    file: { data: video.data, mimetype: 'video/mp4', name: `${stem}-${Date.now()}.mp4`, size: video.data.length },
+    req,
+    overrideAccess: false,
+  })
+  return { id: doc.id, filename: doc.filename, posterMediaId: posterDoc.id, url: doc.url }
+}
+
+/* ------------------------------------------------------------------------ */
 /* Our own artwork, into the public media library                           */
 /* ------------------------------------------------------------------------ */
 
@@ -906,6 +998,22 @@ export const hqMcpTools: McpTool[] = [
     },
     handler: (args: Record<string, unknown>, req: PayloadRequest) =>
       guard(async () => text(JSON.stringify(await addSiteMediaFromUrl(req, args as unknown as SiteMediaArgs)))),
+  },
+  {
+    name: 'hqAddSiteVideo',
+    description:
+      "Put a story's finished reel on the public site: copies an HQ media MP4 (already uploaded with hqAddDraftMediaFromUpload) into the site's videos, with its cover card (an HQ media JPEG or PNG, 1080×1920, the ¿SABÍAS QUE? / DID YOU KNOW card) as the poster. Returns {id, posterMediaId}: set `id` as the story's `video` in that language with updateStories and draft: true (the Spanish cut on locale es), then hqRequestPublish. Only Flamingo County's own reels and cards; a third party's photo goes through hqAddSiteMediaFromUrl. Each call makes a new copy, so call it once per cut.",
+    parameters: {
+      hqMediaId: z.union([z.number(), z.string()]).describe('The HQ media id of the MP4'),
+      posterHqMediaId: z.union([z.number(), z.string()]).describe('The HQ media id of the cover card image'),
+      language: z.enum(['en', 'es']).describe('The language spoken in the video'),
+      title: z.string().min(1).max(160).describe('The video title in that language, e.g. "Al Capone en Hialeah"'),
+      posterAlt: z.string().min(1).max(300).describe('What the cover card shows, in that language'),
+      durationSeconds: z.number().int().min(1).max(3599).optional().describe('Length in seconds'),
+      credits: z.string().max(300).optional().describe('Archive credits, as the captions give them'),
+    },
+    handler: (args: Record<string, unknown>, req: PayloadRequest) =>
+      guard(async () => text(JSON.stringify(await addSiteVideo(req, args as unknown as SiteVideoArgs)))),
   },
   {
     name: 'hqAddSiteArtworkFromUpload',

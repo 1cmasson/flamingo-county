@@ -6,7 +6,7 @@ import { routes } from '../../../../lib/routes'
 import { getCity, getStories, rel } from '../../../../lib/data'
 import type { City, Listing } from '../../../../payload-types'
 import { PageShell } from '../../../../components/PageShell'
-import { MediaSlot } from '../../../../components/MediaSlot'
+import { StoryArt } from '../../../../components/StoryArt'
 import s from '../../../../components/chrome.module.css'
 
 export async function generateMetadata({
@@ -161,10 +161,12 @@ export default async function StoriesPage({
                 borderRight: '4px solid var(--ink)',
               }}
             >
-              <MediaSlot
+              <StoryArt
                 media={feature.cover}
+                label={t('DID YOU KNOW?')}
                 sizes="(max-width: 900px) 100vw, 640px"
                 priority
+                size="lg"
               />
               <div
                 style={{
@@ -232,18 +234,20 @@ export default async function StoriesPage({
                   marginTop: 2,
                 }}
               >
-                <div
-                  style={{
-                    background: 'var(--ink)',
-                    color: 'var(--cyan)',
-                    fontWeight: 800,
-                    fontSize: 11,
-                    letterSpacing: '1.4px',
-                    padding: '6px 9px',
-                  }}
-                >
-                  {cityOf(0)?.name}
-                </div>
+                {cityOf(0) ? (
+                  <div
+                    style={{
+                      background: 'var(--ink)',
+                      color: 'var(--cyan)',
+                      fontWeight: 800,
+                      fontSize: 11,
+                      letterSpacing: '1.4px',
+                      padding: '6px 9px',
+                    }}
+                  >
+                    {cityOf(0)?.name}
+                  </div>
+                ) : null}
                 <div style={{ fontWeight: 800, fontSize: 12, letterSpacing: '1.2px' }}>
                   {feature.readTime}
                 </div>
@@ -318,26 +322,30 @@ export default async function StoriesPage({
                       borderBottom: '4px solid var(--ink)',
                     }}
                   >
-                    <MediaSlot
+                    <StoryArt
                       media={st.cover}
+                      label={t('DID YOU KNOW?')}
                       sizes="(max-width: 700px) 100vw, 300px"
+                      size="sm"
                     />
-                    <div
-                      style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        left: 0,
-                        background: 'var(--ink)',
-                        color: 'var(--cyan)',
-                        fontWeight: 800,
-                        fontSize: 10,
-                        letterSpacing: '1.5px',
-                        padding: '6px 9px',
-                        pointerEvents: 'none',
-                      }}
-                    >
-                      {cityOf(i + 1)?.name}
-                    </div>
+                    {cityOf(i + 1) ? (
+                      <div
+                        style={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          background: 'var(--ink)',
+                          color: 'var(--cyan)',
+                          fontWeight: 800,
+                          fontSize: 10,
+                          letterSpacing: '1.5px',
+                          padding: '6px 9px',
+                          pointerEvents: 'none',
+                        }}
+                      >
+                        {cityOf(i + 1)?.name}
+                      </div>
+                    ) : null}
                   </div>
                   <div
                     style={{

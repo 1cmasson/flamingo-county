@@ -70,6 +70,7 @@ export interface Config {
   collections: {
     users: User;
     media: Media;
+    videos: Video;
     cities: City;
     categories: Category;
     'event-kinds': EventKind;
@@ -103,6 +104,7 @@ export interface Config {
   collectionsSelect: {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
+    videos: VideosSelect<false> | VideosSelect<true>;
     cities: CitiesSelect<false> | CitiesSelect<true>;
     categories: CategoriesSelect<false> | CategoriesSelect<true>;
     'event-kinds': EventKindsSelect<false> | EventKindsSelect<true>;
@@ -312,6 +314,43 @@ export interface Media {
       filename?: string | null;
     };
   };
+}
+/**
+ * Reels shown on story pages. Public once a story using one is published.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "videos".
+ */
+export interface Video {
+  id: number;
+  /**
+   * In the language of the video. Used as the VideoObject name.
+   */
+  title: string;
+  language: 'en' | 'es';
+  /**
+   * The cover card (¿SABÍAS QUE? / DID YOU KNOW), 1080×1920. Shown before the video plays, and the thumbnail search engines see.
+   */
+  poster: number | Media;
+  /**
+   * Length in seconds, for the VideoObject duration.
+   */
+  durationSeconds?: number | null;
+  /**
+   * Who the archive images belong to, as the captions credit them.
+   */
+  credits?: string | null;
+  updatedAt: string;
+  createdAt: string;
+  url?: string | null;
+  thumbnailURL?: string | null;
+  filename?: string | null;
+  mimeType?: string | null;
+  filesize?: number | null;
+  width?: number | null;
+  height?: number | null;
+  focalX?: number | null;
+  focalY?: number | null;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -692,6 +731,10 @@ export interface Story {
   cover?: (number | null) | Media;
   coverHint?: string | null;
   coverCap?: string | null;
+  /**
+   * The reel this story was made from, in this language. Plays under the cover. Add one with the hqAddSiteVideo tool.
+   */
+  video?: (number | null) | Video;
   blocks?:
     | (
         | {
@@ -1567,6 +1610,12 @@ export interface PayloadMcpApiKey {
      */
     find?: boolean | null;
   };
+  videos?: {
+    /**
+     * Allow clients to find videos.
+     */
+    find?: boolean | null;
+  };
   hqPlaybook?: {
     /**
      * Allow clients to find hq-playbook global.
@@ -1606,6 +1655,10 @@ export interface PayloadMcpApiKey {
      * Import a LICENSED photo of a venue into the public site’s media library, with its credit, and return its id for an event’s `image` (set it with updateEvents and draft: true; it shows on the site only once the owner publishes that event). Only public domain or Creative Commons that allows commercial reuse (no NC, no ND), with attribution. Only direct file URLs on upload.wikimedia.org, live.staticflickr.com, tile.loc.gov, loc.gov (Wikimedia Commons, Flickr, Library of Congress), JPEG or PNG, at least 1000 px wide; no redirects. Never Google Maps/Street View, Yelp, news sites or organizer flyers. Read the licence on the description page yourself; check `findMedia` first for a photo already imported. Returns {id, filename, width, height}.
      */
     hqAddSiteMediaFromUrl?: boolean | null;
+    /**
+     * Put a story's finished reel on the public site: copies an HQ media MP4 (already uploaded with hqAddDraftMediaFromUpload) into the site's videos, with its cover card (an HQ media JPEG or PNG, 1080×1920, the ¿SABÍAS QUE? / DID YOU KNOW card) as the poster. Returns {id, posterMediaId}: set `id` as the story's `video` in that language with updateStories and draft: true (the Spanish cut on locale es), then hqRequestPublish. Only Flamingo County's own reels and cards; a third party's photo goes through hqAddSiteMediaFromUrl. Each call makes a new copy, so call it once per cut.
+     */
+    hqAddSiteVideo?: boolean | null;
     /**
      * Add artwork Flamingo County made itself (a drawn cover or illustration, or our own photo) to the public site’s media library and return its id, for a listing’s `gallery`, a story’s cover or an event’s `image` (set it in a draft; it shows only once the owner publishes). Never a third party’s picture: an archive photo goes through hqAddSiteMediaFromUrl. Send the file as base64 (JPEG or PNG, checked by its real bytes, at least 1000 px wide); it is re-encoded within the site’s 400 KB image budget. Only for a SMALL file: the whole file must fit in this one call, and a 70 KB drawing is already about 95,000 characters. Anything bigger: use hqStartSiteArtworkUpload (a one-time upload link you PUT the file to with curl) instead. The credit is always "Flamingo County" ("Ilustración: Flamingo County" for an illustration), followed by `basedOn`: what it was drawn from, in each language, so that source keeps its credit; "original" for work drawn from nothing. Returns {id, filename, width, height, filesize}.
      */
@@ -1778,6 +1831,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'media';
         value: number | Media;
+      } | null)
+    | ({
+        relationTo: 'videos';
+        value: number | Video;
       } | null)
     | ({
         relationTo: 'cities';
@@ -2006,6 +2063,28 @@ export interface MediaSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "videos_select".
+ */
+export interface VideosSelect<T extends boolean = true> {
+  title?: T;
+  language?: T;
+  poster?: T;
+  durationSeconds?: T;
+  credits?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  url?: T;
+  thumbnailURL?: T;
+  filename?: T;
+  mimeType?: T;
+  filesize?: T;
+  width?: T;
+  height?: T;
+  focalX?: T;
+  focalY?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "cities_select".
  */
 export interface CitiesSelect<T extends boolean = true> {
@@ -2171,6 +2250,7 @@ export interface StoriesSelect<T extends boolean = true> {
   cover?: T;
   coverHint?: T;
   coverCap?: T;
+  video?: T;
   blocks?:
     | T
     | {
@@ -2651,6 +2731,11 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
     | {
         find?: T;
       };
+  videos?:
+    | T
+    | {
+        find?: T;
+      };
   hqPlaybook?:
     | T
     | {
@@ -2667,6 +2752,7 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         hqSendTelegram?: T;
         hqAddDraftMediaFromUrl?: T;
         hqAddSiteMediaFromUrl?: T;
+        hqAddSiteVideo?: T;
         hqAddSiteArtworkFromUpload?: T;
         hqStartSiteArtworkUpload?: T;
         hqSiteArtworkUploadChunk?: T;
