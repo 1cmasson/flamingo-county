@@ -13,6 +13,7 @@ import { openGraph, twitterCard } from '../lib/site'
 import { EventCard } from './EventCard'
 import { JsonLd } from './JsonLd'
 import { PageShell } from './PageShell'
+import { MascotBust } from './MascotBust'
 import s from './chrome.module.css'
 
 /**
@@ -120,23 +121,14 @@ export async function SeasonGuide({ season, lang }: { season: Season; lang: Lang
               fetchPriority="high"
               style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', display: 'block' }}
             />
-            {mascot?.url && !scene ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={mascot.url}
-                alt=""
-                style={{
-                  position: 'absolute',
-                  right: '3%',
-                  bottom: -14,
-                  height: '72%',
-                  width: 'auto',
-                  maxWidth: '24%',
-                  objectFit: 'contain',
-                  objectPosition: 'bottom',
-                  pointerEvents: 'none',
-                  filter: 'drop-shadow(3px 3px 0 rgba(255,122,26,0.55))',
-                }}
+            {!scene ? (
+              <MascotBust
+                media={mascot}
+                inset="3%"
+                height="72%"
+                maxWidth="24%"
+                sizes="25vw"
+                shadow="drop-shadow(3px 3px 0 rgba(255,122,26,0.55))"
               />
             ) : null}
           </div>

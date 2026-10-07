@@ -25,6 +25,7 @@ import { Breadcrumbs, type Crumb } from '../../../../../components/Breadcrumbs'
 import { PageShell } from '../../../../../components/PageShell'
 import { MediaSlot } from '../../../../../components/MediaSlot'
 import { GemBadge } from '../../../../../components/GemBadge'
+import { MascotBust } from '../../../../../components/MascotBust'
 import { isGem } from '../../../../../lib/categories'
 import { FreeRidePanel } from '../../../../../components/Transit'
 import { FULL_WIDTH_SIZES } from '../../../../../lib/srcset'
@@ -43,6 +44,17 @@ import s from '../../../../../components/chrome.module.css'
  * does not.
  */
 export const dynamic = 'force-dynamic'
+
+/**
+ * The masthead's mascot bust. The frame is `clamp(190px,42vw,330px)` tall and
+ * the bust as tall as the frame, so its width is the art's aspect times that:
+ * the widest cast art (the rooster) is about 0.52 wide per unit of height. The
+ * chips stop that far plus the inset short of the right edge, so a long badge
+ * wraps instead of running under the character.
+ */
+const MASTHEAD_BUST_INSET = 16
+const MASTHEAD_BUST_MAX_WIDTH = '34%'
+const MASTHEAD_CHIPS_RIGHT = 'calc(clamp(99px, 22vw, 172px) + 32px)'
 
 
 export async function generateStaticParams() {
@@ -204,6 +216,7 @@ export default async function BusinessPage({
               position: 'relative',
               height: 'clamp(190px,42vw,330px)',
               borderBottom: '4px solid var(--ink)',
+              overflow: 'hidden',
             }}
           >
             <MediaSlot
@@ -216,10 +229,10 @@ export default async function BusinessPage({
                 position: 'absolute',
                 left: 18,
                 bottom: 18,
-                // Clear of the mascot disc. A gem's badge is longer than a
-                // category chip, so on a phone it wraps above the city chip
-                // (wrap-reverse) instead of running under the disc.
-                maxWidth: 'calc(100% - 36px - clamp(84px,17vw,132px))',
+                // The chips stop short of the mascot's side. A gem's badge is
+                // longer than a category chip, so on a phone it wraps above the
+                // city chip (wrap-reverse) instead of running under the bust.
+                right: mascot?.url ? MASTHEAD_CHIPS_RIGHT : 18,
                 display: 'flex',
                 flexWrap: 'wrap-reverse',
                 gap: 8,
@@ -255,27 +268,18 @@ export default async function BusinessPage({
                 </div>
               )}
             </div>
-            {mascot?.url ? (
-              <div
-                style={{
-                  position: 'absolute',
-                  right: 16,
-                  bottom: -30,
-                  background: city?.castBg ?? 'var(--cyan)',
-                  border: '4px solid var(--ink)',
-                  width: 'clamp(84px,17vw,132px)',
-                  height: 'clamp(84px,17vw,132px)',
-                  borderRadius: '50%',
-                  overflow: 'hidden',
-                  display: 'flex',
-                  alignItems: 'flex-end',
-                  justifyContent: 'center',
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={mascot.url} alt="" style={{ height: '91%', width: 'auto' }} />
-              </div>
-            ) : null}
+            {/* The city's mascot as a bust leaning into the photo, as on the
+                directory card this page opens from: hung a third of the way
+                down and as tall as the frame, so the frame's overflow crops it
+                at the waist. */}
+            <MascotBust
+              media={mascot}
+              inset={MASTHEAD_BUST_INSET}
+              top="30%"
+              height="100%"
+              maxWidth={MASTHEAD_BUST_MAX_WIDTH}
+              sizes="(max-width: 700px) 30vw, 240px"
+            />
           </div>
           <div
             style={{

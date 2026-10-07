@@ -6,9 +6,9 @@ import { routes } from '../lib/routes'
 import type { Lang } from '../i18n'
 import { MediaSlot } from './MediaSlot'
 import { GemBadge } from './GemBadge'
+import { MascotBust } from './MascotBust'
 import { isGem } from '../lib/categories'
 import s from './chrome.module.css'
-import { buildSrcSet } from '../lib/srcset'
 
 /**
  * The business card, used on Home, City and the "also in" rails.
@@ -124,24 +124,7 @@ export function BusinessCard({
         </div>
         {/* Deliberately taller than its 168px frame — the mascot is cropped by
             the overflow, which is how it reads as leaning into the card. */}
-        {mascot?.url ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={mascot.url}
-            srcSet={buildSrcSet(mascot)}
-            sizes="200px"
-            alt=""
-            style={{
-              position: 'absolute',
-              right: 8,
-              top: 54,
-              height: 170,
-              width: 'auto',
-              pointerEvents: 'none',
-              filter: 'drop-shadow(3px 3px 0 rgba(12,15,20,0.35))',
-            }}
-          />
-        ) : null}
+        <MascotBust media={mascot} inset={8} top={54} height={170} />
       </div>
 
       <div

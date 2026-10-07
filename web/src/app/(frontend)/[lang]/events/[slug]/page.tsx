@@ -23,6 +23,7 @@ import { EVENT_CARD_SIZES, eventCardUrl } from '../../../../../lib/eventCardUrl'
 import { getSeason } from '../../../../../lib/seasons'
 import { EventSource } from '../../../../../components/EventSource'
 import { EventDirections } from '../../../../../components/EventDirections'
+import { MascotBust } from '../../../../../components/MascotBust'
 import s from '../../../../../components/chrome.module.css'
 
 /**
@@ -344,54 +345,23 @@ export default async function EventPage({
               </div>
             </div>
             )}
-            {mascot?.url && heroCard ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={mascot.url}
-                alt=""
-                style={{
-                  position: 'absolute',
-                  // In the right 28% the card leaves clear. The hero keeps the
-                  // card's proportions, so a share of its height scales with
-                  // it at every width, and there is no date flag to clear.
-                  right: '3%',
-                  bottom: -14,
-                  height: '72%',
-                  width: 'auto',
-                  maxWidth: '24%',
-                  objectFit: 'contain',
-                  objectPosition: 'bottom',
-                  pointerEvents: 'none',
-                  filter: 'drop-shadow(3px 3px 0 rgba(12,15,20,0.35))',
-                }}
-              />
-            ) : mascot?.url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={mascot.url}
-                alt=""
-                style={{
-                  position: 'absolute',
-                  right: 12,
-                  bottom: -14,
-                  /**
-                   * Shrinks with the hero so it never reaches the date badge.
-                   *
-                   * Both are anchored to the same right edge, and the hero
-                   * bottoms out at 190px while a fixed 170px mascot did not —
-                   * so under ~800px wide the flamingo's head covered the day
-                   * and month. `40vw - 100px` tracks the hero's own
-                   * `clamp(190px,40vw,320px)` and keeps the mascot's top below
-                   * the badge at every width. Nobody had seen it: the site had
-                   * no events, so this page had nothing to render.
-                   */
-                  height: 'clamp(92px, calc(40vw - 100px), 170px)',
-                  width: 'auto',
-                  pointerEvents: 'none',
-                  filter: 'drop-shadow(3px 3px 0 rgba(12,15,20,0.35))',
-                }}
-              />
-            ) : null}
+            {heroCard ? (
+              // In the right 28% the card leaves clear. The hero keeps the
+              // card's proportions, so a share of its height scales with it at
+              // every width, and there is no date flag to clear.
+              <MascotBust media={mascot} inset="3%" height="72%" maxWidth="24%" sizes="25vw" />
+            ) : (
+              /**
+               * Shrinks with the hero so it never reaches the date badge.
+               *
+               * Both are anchored to the same right edge, and the hero bottoms
+               * out at 190px while a fixed 170px mascot did not — so under
+               * ~800px wide the flamingo's head covered the day and month.
+               * `40vw - 100px` tracks the hero's own `clamp(190px,40vw,320px)`
+               * and keeps the mascot's top below the badge at every width.
+               */
+              <MascotBust media={mascot} height="clamp(92px, calc(40vw - 100px), 170px)" />
+            )}
           </div>
           {credit ? (
             <PhotoCredit credit={credit} style={{ padding: '8px clamp(16px,3.5vw,26px) 0' }} />
