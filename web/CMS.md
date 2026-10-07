@@ -686,3 +686,26 @@ restores authored order without a schema change, but it is **not** editor
 controllable, so re-ordering the stories shelf from the admin is not possible
 today. Promoting them to a real `order` field is the proper fix whenever
 someone needs to reorder content without re-seeding.
+
+## Writing a story as a blog post
+
+A story told for a reel is a chain of short narration paragraphs. A story meant to be found in search
+(and quoted by answer engines) is built from the blog blocks added on 2026-10-07:
+
+- **Short answer** (`quickAnswer`): first block. The question as people search it and a two-or-three
+  sentence answer with the key date and who says so. It also becomes the Article's `abstract`.
+- **Subheading** (`heading`): an `<h2>` with an anchor (`#como-visitarlo-hoy`). One per section.
+- **List** (`list`): bullets, numbered, or a **timeline** (a year beside each point).
+- **Questions & answers** (`faq`): take the questions from real search suggestions
+  (`research-seo-keywords.md`). Every pair is printed and emitted as `FAQPage` JSON-LD.
+- **Links** (`links`): `sources` (numbered, each source's site shown) or `related` (buttons to pages on
+  this site). A URL must be a site path (`/es/...`) or `https://`.
+
+The **Search** fields (`metaTitle`, `metaDescription`) set the title and snippet search engines show,
+when they should differ from the headline and dek.
+
+Order that works: short answer, then sections (subheading, paragraphs, an image), a timeline, how to
+visit, related links, questions, sources. Every fact needs a source in the list; never promise what the
+research did not confirm (Hialeah Park: whether visitors can see the flamingos without entering the
+casino is unknown, so the page does not say they can). The importer (`scripts/import-story-pack.ts`)
+does not emit these blocks; a blog story is written as an HQ draft.

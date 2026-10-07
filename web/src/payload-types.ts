@@ -717,6 +717,14 @@ export interface Story {
    */
   readTime?: string | null;
   /**
+   * The title search engines show, if it should differ from the headline. Aim for the words people search; under 60 characters.
+   */
+  metaTitle?: string | null;
+  /**
+   * The snippet under the title in search results; the dek when empty. Under 155 characters.
+   */
+  metaDescription?: string | null;
+  /**
    * e.g. "AS TOLD TO FLAMINGO COUNTY".
    */
   byline?: string | null;
@@ -809,6 +817,70 @@ export interface Story {
             id?: string | null;
             blockName?: string | null;
             blockType: 'sectionBreak';
+          }
+        | {
+            /**
+             * The question the page answers, as people search it, e.g. "¿Hay flamencos en Hialeah Park?"
+             */
+            question: string;
+            /**
+             * Two or three sentences: the plain answer, the key date and who says so. Answer engines quote this.
+             */
+            answer: string;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'quickAnswer';
+          }
+        | {
+            text: string;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'heading';
+          }
+        | {
+            style?: ('bullets' | 'numbered' | 'timeline') | null;
+            items?:
+              | {
+                  /**
+                   * Timeline only: the year or date, e.g. "1932".
+                   */
+                  label?: string | null;
+                  text: string;
+                  id?: string | null;
+                }[]
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'list';
+          }
+        | {
+            items?:
+              | {
+                  question: string;
+                  answer: string;
+                  id?: string | null;
+                }[]
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'faq';
+          }
+        | {
+            /**
+             * e.g. "Fuentes" or "Visítalo".
+             */
+            title?: string | null;
+            style?: ('sources' | 'related') | null;
+            items?:
+              | {
+                  label: string;
+                  url: string;
+                  id?: string | null;
+                }[]
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'links';
           }
       )[]
     | null;
@@ -2244,6 +2316,8 @@ export interface StoriesSelect<T extends boolean = true> {
   dek?: T;
   kicker?: T;
   readTime?: T;
+  metaTitle?: T;
+  metaDescription?: T;
   byline?: T;
   listing?: T;
   bizCta?: T;
@@ -2317,6 +2391,63 @@ export interface StoriesSelect<T extends boolean = true> {
         sectionBreak?:
           | T
           | {
+              id?: T;
+              blockName?: T;
+            };
+        quickAnswer?:
+          | T
+          | {
+              question?: T;
+              answer?: T;
+              id?: T;
+              blockName?: T;
+            };
+        heading?:
+          | T
+          | {
+              text?: T;
+              id?: T;
+              blockName?: T;
+            };
+        list?:
+          | T
+          | {
+              style?: T;
+              items?:
+                | T
+                | {
+                    label?: T;
+                    text?: T;
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        faq?:
+          | T
+          | {
+              items?:
+                | T
+                | {
+                    question?: T;
+                    answer?: T;
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        links?:
+          | T
+          | {
+              title?: T;
+              style?: T;
+              items?:
+                | T
+                | {
+                    label?: T;
+                    url?: T;
+                    id?: T;
+                  };
               id?: T;
               blockName?: T;
             };

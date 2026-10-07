@@ -109,6 +109,120 @@ const SectionBreak: Block = {
   fields: [],
 }
 
+/*
+ * The blog shapes (2026-10-07). A story told for the reel reads as a chain of
+ * short paragraphs; a page written to be found in search needs the answer up
+ * top, headings to scan, lists, questions people actually type and a real
+ * source list. These five give it that. See web/CMS.md, "Writing a story as a
+ * blog post".
+ */
+
+/** A link is a path on this site or an https page; nothing else renders. */
+const linkUrl = (v: unknown) =>
+  typeof v === 'string' && (/^\/(?!\/)/.test(v) || /^https?:\/\/[^\s]+$/i.test(v))
+    ? true
+    : 'A path on this site (/es/...) or a full https:// address.'
+
+const QuickAnswer: Block = {
+  slug: 'quickAnswer',
+  labels: { singular: 'Short answer', plural: 'Short answers' },
+  fields: [
+    {
+      name: 'question',
+      type: 'text',
+      required: true,
+      localized: true,
+      admin: { description: 'The question the page answers, as people search it, e.g. "¿Hay flamencos en Hialeah Park?"' },
+    },
+    {
+      name: 'answer',
+      type: 'textarea',
+      required: true,
+      localized: true,
+      admin: { description: 'Two or three sentences: the plain answer, the key date and who says so. Answer engines quote this.' },
+    },
+  ],
+}
+
+const Heading: Block = {
+  slug: 'heading',
+  labels: { singular: 'Subheading', plural: 'Subheadings' },
+  fields: [{ name: 'text', type: 'text', required: true, localized: true }],
+}
+
+const List: Block = {
+  slug: 'list',
+  labels: { singular: 'List', plural: 'Lists' },
+  fields: [
+    {
+      name: 'style',
+      type: 'select',
+      defaultValue: 'bullets',
+      options: [
+        { value: 'bullets', label: 'Bullets' },
+        { value: 'numbered', label: 'Numbered' },
+        { value: 'timeline', label: 'Timeline (a year or date beside each point)' },
+      ],
+    },
+    {
+      name: 'items',
+      type: 'array',
+      minRows: 1,
+      fields: [
+        {
+          name: 'label',
+          type: 'text',
+          localized: true,
+          admin: { description: 'Timeline only: the year or date, e.g. "1932".' },
+        },
+        { name: 'text', type: 'textarea', required: true, localized: true },
+      ],
+    },
+  ],
+}
+
+const Faq: Block = {
+  slug: 'faq',
+  labels: { singular: 'Questions & answers', plural: 'Questions & answers' },
+  fields: [
+    {
+      name: 'items',
+      type: 'array',
+      minRows: 1,
+      fields: [
+        { name: 'question', type: 'text', required: true, localized: true },
+        { name: 'answer', type: 'textarea', required: true, localized: true },
+      ],
+    },
+  ],
+}
+
+const Links: Block = {
+  slug: 'links',
+  labels: { singular: 'Links', plural: 'Links' },
+  fields: [
+    { name: 'title', type: 'text', localized: true, admin: { description: 'e.g. "Fuentes" or "Visítalo".' } },
+    {
+      name: 'style',
+      type: 'select',
+      defaultValue: 'sources',
+      options: [
+        { value: 'sources', label: 'Sources (numbered, opens the source)' },
+        { value: 'related', label: 'Related pages on this site' },
+      ],
+    },
+    {
+      name: 'items',
+      type: 'array',
+      minRows: 1,
+      fields: [
+        { name: 'label', type: 'text', required: true, localized: true },
+        { name: 'url', type: 'text', required: true, validate: linkUrl },
+      ],
+    },
+  ],
+}
+
 const indexNow = indexNowHooks('stories')
 
 export const Stories: CollectionConfig = {
@@ -155,6 +269,25 @@ export const Stories: CollectionConfig = {
       ],
     },
     {
+      type: 'collapsible',
+      label: 'Search',
+      admin: { initCollapsed: true },
+      fields: [
+        {
+          name: 'metaTitle',
+          type: 'text',
+          localized: true,
+          admin: { description: 'The title search engines show, if it should differ from the headline. Aim for the words people search; under 60 characters.' },
+        },
+        {
+          name: 'metaDescription',
+          type: 'textarea',
+          localized: true,
+          admin: { description: 'The snippet under the title in search results; the dek when empty. Under 155 characters.' },
+        },
+      ],
+    },
+    {
       name: 'byline',
       type: 'text',
       admin: { description: 'e.g. "AS TOLD TO FLAMINGO COUNTY".' },
@@ -193,7 +326,7 @@ export const Stories: CollectionConfig = {
     {
       name: 'blocks',
       type: 'blocks',
-      blocks: [DropCap, Paragraph, PullQuote, StoryImage, ImagePair, CalloutNote, SectionBreak],
+      blocks: [DropCap, Paragraph, PullQuote, StoryImage, ImagePair, CalloutNote, SectionBreak, QuickAnswer, Heading, List, Faq, Links],
     },
     {
       name: 'outro',
