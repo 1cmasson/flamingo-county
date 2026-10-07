@@ -3,7 +3,7 @@ import { createInterface } from 'node:readline'
 import { join } from 'node:path'
 import { createClient, type Client, type InStatement } from '@libsql/client'
 
-import { addressKey, KIND, kindFromDor, parseDayLetters, parseRule, PolygonIndex, titleCase, type Ring, type Rule } from './civicGeo'
+import { addressKey, boxOf, daysKey, KIND, kindFromDor, parseDayLetters, parseRule, PolygonIndex, ringsContain, simplifyRing, titleCase, type Box, type Ring, type Rule } from './civicGeo'
 
 /**
  * Builds the address database: every street address in Miami-Dade, with the
@@ -27,40 +27,45 @@ import { addressKey, KIND, kindFromDor, parseDayLetters, parseRule, PolygonIndex
 
 const HIA = 'https://hgis.hialeahfl.gov/arcgis/rest/services/Government_Services/Solid_Waste/MapServer'
 const MIA = 'https://gis.miami.gov/gis/rest/services/SolidWaste'
-const MDC = 'https://gisweb.miamidade.gov/arcgis/rest/services/MD_Emaps/MapServer'
-const CRM = 'https://giswspro.miamidade.gov/arcgis/rest/services/311/311CRM/MapServer'
-const HOSTED = 'https://services.arcgis.com/8Pc9XBTAsYuxx9Ny/arcgis/rest/services'
+/**
+ * The county's published Open Data services, addressed by name. (Its 311 map
+ * service renumbered and dropped most layers overnight on 2026-10-07; these
+ * are the ones the county publishes for reuse.)
+ */
+const OD = 'https://services.arcgis.com/8Pc9XBTAsYuxx9Ny/arcgis/rest/services'
+const od = (name: string) => `${OD}/${name}/FeatureServer/0`
 
 export const LAYERS = {
-  addresses: `${HOSTED}/GeoAddress_gdb/FeatureServer/0`,
-  parcels: `${HOSTED}/PaGISView_gdb/FeatureServer/0`,
+  addresses: od('GeoAddress_gdb'),
+  parcels: od('PaGISView_gdb'),
   hialeahGarbage: `${HIA}/2`,
   hialeahRecycling: `${HIA}/0`,
   hialeahBulk: `${HIA}/1`,
   miamiGarbage: `${MIA}/GarbageRoutes/MapServer/0`,
   miamiRecycling: `${MIA}/RecycleRoutes/MapServer/0`,
   miamiBulk: `${MIA}/BulkTrash_4Day_Plan/MapServer/0`,
-  countyGarbage: `${CRM}/22`,
-  countyRecycling: `${CRM}/43`,
-  flood: `${MDC}/85`,
-  surge: `${MDC}/88`,
-  commission: `${MDC}/29`,
-  precinct: `${MDC}/28`,
-  polling: `${MDC}/27`,
-  elementary: `${CRM}/18`,
-  middle: `${CRM}/29`,
-  high: `${CRM}/25`,
-  house: `${CRM}/27`,
-  senate: `${CRM}/47`,
-  countyFire: `${CRM}/4`,
-  cityFire: `${CRM}/73`,
-  countyPolice: `${CRM}/6`,
-  cityPolice: `${CRM}/72`,
-  countyLibrary: `${CRM}/5`,
-  cityLibrary: `${CRM}/77`,
-  countyPark: `${CRM}/1`,
-  cityPark: `${CRM}/82`,
-  hospital: `${CRM}/69`,
+  countyGarbage: od('GarbagePickupRoute_gdb'),
+  countyRecycling: od('RecyclingRoute_gdb'),
+  flood: od('FEMAFloodZone_gdb'),
+  surge: od('HurricaneEvacZone_gdb'),
+  commission: od('CommissionDistrict_gdb'),
+  precinct: od('Precinct_gdb'),
+  polling: od('PollingPlace_gdb'),
+  elementary: od('ElementaryAttendanceBoundary_gdb'),
+  middle: od('MiddleAttendanceBoundary_gdb'),
+  high: od('HighAttendanceBoundary_gdb'),
+  house: od('HouseDistrict_gdb'),
+  senate: od('SenateDistrict_gdb'),
+  countyFire: od('FireStation_gdb'),
+  cityFire: od('MunicipalFireStation_gdb'),
+  countyPolice: od('PoliceStation_gdb'),
+  cityPolice: od('MunicipalPoliceStation_gdb'),
+  countyLibrary: od('Library_gdb'),
+  cityLibrary: od('MunicipalLibrary_gdb'),
+  countyPark: od('CountyParkCenterpoints_PROS_View_for_ALWAYS_ON'),
+  cityPark: od('MunicipalPark_gdb'),
+  hospital: od('Hospital_gdb'),
+  cities: od('Municipalitypoly_gdb'),
 } as const
 
 /** The only address fields requested. FOLIO joins a parcel's land use, then is dropped. */
@@ -81,6 +86,11 @@ export function civicDir(): string {
 }
 
 export const dbPath = (dir = civicDir()) => join(dir, 'civic.db')
+export const mapDir = (dir = civicDir()) => join(dir, 'map')
+
+/** The map's layers, each a GeoJSON file in mapDir(). */
+export const LENSES = ['garbage', 'flood', 'surge', 'commission', 'precinct', 'polling', 'elementary', 'cities', 'places'] as const
+export type Lens = (typeof LENSES)[number]
 
 /* --------------------------------------------------------------- fetch */
 
@@ -123,9 +133,16 @@ async function lastEdit(layer: string): Promise<number | null> {
   }
 }
 
+/** How many features the layer hands out per request. */
+async function maxRecords(layer: string): Promise<number> {
+  const res = await fetch(`${layer}?f=json`, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(60_000) })
+  return Math.min(2000, Number(((await res.json()) as { maxRecordCount?: number }).maxRecordCount) || 1000)
+}
+
 /** Every feature, in OBJECTID order, a few pages at a time. */
-async function each(layer: string, params: Record<string, string>, onPage: (f: Feature[]) => void, pageSize = 2000, parallel = 4) {
+async function each(layer: string, params: Record<string, string>, onPage: (f: Feature[]) => void, parallel = 4) {
   const total = await count(layer)
+  const pageSize = await maxRecords(layer)
   const offsets: number[] = []
   for (let o = 0; o < total; o += pageSize) offsets.push(o)
   for (let i = 0; i < offsets.length; i += parallel) {
@@ -138,10 +155,15 @@ async function each(layer: string, params: Record<string, string>, onPage: (f: F
   }
 }
 
-/** A small layer whole: polygons simplified, points as they are, all in lat/lon. */
+/**
+ * A small layer whole: polygons simplified, points as they are, all in
+ * lat/lon. Pages advance by what the server actually sent: some layers cap a
+ * page at 100 however many are asked for, and skipping by the asked-for size
+ * would silently drop most of the layer.
+ */
 async function all(layer: string, fields: string, geometry = true): Promise<Feature[]> {
   const out: Feature[] = []
-  for (let offset = 0; ; offset += 1000) {
+  for (;;) {
     const { features, exceeded } = await query(layer, {
       where: '1=1',
       outFields: fields,
@@ -149,12 +171,16 @@ async function all(layer: string, fields: string, geometry = true): Promise<Feat
       outSR: '4326',
       maxAllowableOffset: SIMPLIFY,
       orderByFields: 'OBJECTID',
-      resultOffset: String(offset),
+      resultOffset: String(out.length),
       resultRecordCount: '1000',
     })
     out.push(...features)
-    if (!exceeded && features.length < 1000) return out
+    if (!features.length || !exceeded) break
   }
+  // The safety net: a layer that came back short fails the sync, and the last good data stays.
+  const expected = await count(layer)
+  if (out.length < expected) throw new Error(`${layer}: got ${out.length} of ${expected} features`)
+  return out
 }
 
 /* --------------------------------------------------------------- raw caches */
@@ -255,6 +281,54 @@ function places(features: Feature[], nameOf: (a: Attrs) => string = (a) => str(a
       phone: phone(f.attributes.PHONE),
       at: [Math.round(f.geometry!.y! * 1e6) / 1e6, Math.round(f.geometry!.x! * 1e6) / 1e6] as [number, number],
     }))
+}
+
+/* --------------------------------------------------------------- map */
+
+/** About 9 m: invisible at street zoom, a fraction of the points. */
+const DISPLAY_TOLERANCE = 0.00008
+
+type GeoFeature = { type: 'Feature'; bbox: Box; properties: Record<string, unknown>; geometry: unknown }
+
+/** Signed area: the county draws outer rings clockwise (negative here) and holes the other way. */
+function area(ring: Ring): number {
+  let a = 0
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) a += (ring[j][0] - ring[i][0]) * (ring[j][1] + ring[i][1])
+  return a / 2
+}
+
+/**
+ * ArcGIS rings → a GeoJSON MultiPolygon. ArcGIS lists outer rings and holes
+ * together and tells them apart by direction; GeoJSON wants each hole inside
+ * its own polygon, or the map would paint the hole in.
+ */
+function toGeo(rings: Ring[], properties: Record<string, unknown>): GeoFeature | null {
+  const simple = rings.map((r) => simplifyRing(r, DISPLAY_TOLERANCE)).filter((r) => r.length >= 4)
+  if (!simple.length) return null
+  const outers: Ring[][] = []
+  const holes: Ring[] = []
+  for (const r of simple) {
+    if (area(r) > 0) holes.push(r)
+    else outers.push([r])
+  }
+  for (const h of holes) {
+    const home = outers.find((poly) => ringsContain([poly[0]], h[0][0], h[0][1]))
+    if (home) home.push(h)
+  }
+  if (!outers.length) return null
+  return { type: 'Feature', bbox: boxOf(simple), properties, geometry: { type: 'MultiPolygon', coordinates: outers } }
+}
+
+function point(at: [number, number], properties: Record<string, unknown>): GeoFeature {
+  const [lat, lon] = at
+  return { type: 'Feature', bbox: [lon, lat, lon, lat], properties, geometry: { type: 'Point', coordinates: [lon, lat] } }
+}
+
+function writeLens(dir: string, lens: Lens, features: (GeoFeature | null)[]) {
+  const out = features.filter((f): f is GeoFeature => !!f)
+  writeFileSync(join(mapDir(dir), `${lens}.json.tmp`), JSON.stringify({ type: 'FeatureCollection', features: out }))
+  renameSync(join(mapDir(dir), `${lens}.json.tmp`), join(mapDir(dir), `${lens}.json`))
+  return out.length
 }
 
 /* --------------------------------------------------------------- build */
@@ -360,6 +434,32 @@ export async function syncCivic({
     park: [...places(ck, undefined, developed), ...places(mk, undefined, developed)],
     hospital: places(hs),
   }
+
+  log('map layers…')
+  mkdirSync(mapDir(dir), { recursive: true })
+  const cityF = await all(L.cities, 'NAME')
+  const rings = (f: Feature) => f.geometry?.rings ?? []
+  const counts = {
+    garbage: writeLens(dir, 'garbage', [
+      ...hg.map((f) => ({ f, rule: parseRule(str(f.attributes.SERVICE)), by: 'hialeah' })),
+      ...mg.map((f) => ({ f, rule: parseDayLetters(str(f.attributes.GARBDAY)), by: 'miami' })),
+      ...cg.map((f) => ({ f, rule: parseRule(str(f.attributes.WEEKDAYS)), by: 'county' })),
+    ].map(({ f, rule, by }) => (rule ? toGeo(rings(f), { days: daysKey(rule.days), by }) : null))),
+    // Only the zones FEMA calls high-risk (A…, V…): the rest of the county is X.
+    flood: writeLens(dir, 'flood', fl.filter((f) => /^[AV]/.test(str(f.attributes.FZONE))).map((f) => toGeo(rings(f), { zone: str(f.attributes.FZONE) }))),
+    surge: writeLens(dir, 'surge', su.filter((f) => str(f.attributes.ZONEID)).map((f) => toGeo(rings(f), { zone: str(f.attributes.ZONEID) }))),
+    commission: writeLens(dir, 'commission', co.map((f) => toGeo(rings(f), { district: Number(f.attributes.ID), name: str(f.attributes.COMMNAME) }))),
+    precinct: writeLens(dir, 'precinct', pr.map((f) => toGeo(rings(f), { precinct: Number(f.attributes.ID) }))),
+    polling: writeLens(dir, 'polling', [...pollingBy].filter(([, p]) => p).map(([n, p]) => point(p.at, { precinct: n, name: p.name, address: p.address }))),
+    elementary: writeLens(dir, 'elementary', el.map((f) => toGeo(rings(f), { name: titleCase(str(f.attributes.NAME)) }))),
+    cities: writeLens(dir, 'cities', cityF.map((f) => toGeo(rings(f), { name: titleCase(str(f.attributes.NAME)) }))),
+    places: writeLens(
+      dir,
+      'places',
+      Object.entries(placeLists).flatMap(([kind, list]) => list.map((p) => point(p.at, { kind, name: p.name, address: p.address, phone: p.phone }))),
+    ),
+  }
+  log(`  ${JSON.stringify(counts)}`)
 
   /* ---- the database, built beside the live one ---- */
   const live = dbPath(dir)
@@ -539,7 +639,7 @@ async function insertMany<T>(
 /** True when the database is missing or older than `maxAgeDays`. */
 export function civicStale(maxAgeDays = 30, dir = civicDir()): boolean {
   const p = dbPath(dir)
-  if (!existsSync(p)) return true
+  if (!existsSync(p) || LENSES.some((l) => !existsSync(join(mapDir(dir), `${l}.json`)))) return true
   return Date.now() - statSync(p).mtimeMs > maxAgeDays * 86_400_000
 }
 

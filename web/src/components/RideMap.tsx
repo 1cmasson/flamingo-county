@@ -297,7 +297,7 @@ export default function RideMap({ only, origin, target, vehicles, yourBus, descr
  * how someone finds their own block — but it reads as the same design as the
  * map at the top of the page.
  */
-function inkAndSand(m: ML.Map) {
+export function inkAndSand(m: ML.Map) {
   const set = (id: string, prop: Parameters<ML.Map['setPaintProperty']>[1], value: string | number) => {
     try {
       m.setPaintProperty(id, prop, value)

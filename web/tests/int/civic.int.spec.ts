@@ -15,8 +15,10 @@ import {
   PolygonIndex,
   prettyAddress,
   rrule,
+  simplifyRing,
   slugOf,
 } from '@/lib/civicGeo'
+import { parseBox } from '@/lib/civicMap'
 
 /**
  * The address page turns the cities' pickup rules ("1ST and 3RD Tuesday",
@@ -92,6 +94,22 @@ describe('addresses', () => {
     expect(idx.find(-80.29, 25.81)).toBe(7)
     expect(idx.find(-80.25, 25.85)).toBe(-1)
     expect(idx.find(-80.1, 25.85)).toBe(-1)
+  })
+})
+
+describe('map', () => {
+  it('drops points that barely bend a line, and keeps the shape', () => {
+    const wobbly: [number, number][] = [[0, 0], [0.5, 0.000001], [1, 0], [1, 1], [0, 1], [0, 0]]
+    const out = simplifyRing(wobbly, 0.0001)
+    expect(out).toHaveLength(5)
+    expect(out[0]).toEqual(out[out.length - 1])
+  })
+
+  it('reads a map window and refuses nonsense', () => {
+    expect(parseBox('-80.4,25.7,-80.2,25.9')).toEqual([-80.4, 25.7, -80.2, 25.9])
+    expect(parseBox('1,2,3')).toBeNull()
+    expect(parseBox('-80.2,25.7,-80.4,25.9')).toBeNull()
+    expect(parseBox(null)).toBeNull()
   })
 })
 

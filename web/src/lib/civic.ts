@@ -318,5 +318,7 @@ export const LINKS = {
   knowYourZone: 'https://www.miamidade.gov/global/emergency/hurricane/evacuation-zones.page',
   elections: 'https://www.miamidade.gov/global/elections/home.page',
   femaFlood: 'https://msc.fema.gov/portal/search',
+  findHouse: 'https://www.myfloridahouse.gov/FindYourRepresentative',
+  findSenate: 'https://www.flsenate.gov/Senators/Find',
   openData: 'https://gis-mdc.opendata.arcgis.com',
 }

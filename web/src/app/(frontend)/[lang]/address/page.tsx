@@ -263,8 +263,10 @@ function Report({ r, lang, c, webview }: { r: AddressReport; lang: Lang; c: Addr
               <Person label={c.yourCity} name={munic} />
             )}
             {r.commission ? <Person label={c.commissioner(r.commission.district)} name={r.commission.name} /> : null}
-            {r.house ? <Person label={c.house(r.house.district)} name={r.house.name} /> : null}
-            {r.senate ? <Person label={c.senate(r.senate.district)} name={r.senate.name} /> : null}
+            {/* The county's state-district layers date from 2022, so a name there may be
+                out of date: the district is certain, the person is looked up at the source. */}
+            {r.house ? <District label={c.houseLabel} district={r.house.district} c={c} href={LINKS.findHouse} /> : null}
+            {r.senate ? <District label={c.senateLabel} district={r.senate.district} c={c} href={LINKS.findSenate} /> : null}
           </div>
           <p className={s.meta}>{c.repsAsOf(asOf)}</p>
         </section>
@@ -399,6 +401,18 @@ function PickupRow({ label, p, lang, c, extra }: { label: string; p: Pickup | nu
       ) : (
         <p className={s.small}>{c.noPickup}</p>
       )}
+    </div>
+  )
+}
+
+function District({ label, district, c, href }: { label: string; district: number; c: AddressCopy; href: string }) {
+  return (
+    <div className={s.row}>
+      <span className={s.rowLabel}>{label}</span>
+      <span className={s.big}>{c.districtN(district)}</span>
+      <a className={`${s.link} ${s.noPrint}`} href={href} target="_blank" rel="noopener noreferrer">
+        {c.whoIsIt} ↗
+      </a>
     </div>
   )
 }

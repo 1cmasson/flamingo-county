@@ -233,3 +233,61 @@ export class PolygonIndex {
     return -1
   }
 }
+
+/* ---------------------------------------------------------- map display */
+
+/**
+ * Douglas–Peucker on one ring, in degrees: drops points that bend the line
+ * less than `tol`. A ring that would collapse below four points is kept whole.
+ */
+export function simplifyRing(ring: Ring, tol: number): Ring {
+  if (ring.length <= 4) return ring
+  const keep = new Uint8Array(ring.length)
+  keep[0] = keep[ring.length - 1] = 1
+  const stack: [number, number][] = [[0, ring.length - 1]]
+  while (stack.length) {
+    const [a, b] = stack.pop()!
+    const [ax, ay] = ring[a]
+    const [bx, by] = ring[b]
+    const dx = bx - ax
+    const dy = by - ay
+    const len = Math.hypot(dx, dy)
+    let worst = -1
+    let far = 0
+    for (let i = a + 1; i < b; i++) {
+      // A closed ring starts and ends on one point: there, distance is to that point.
+      const d = len
+        ? Math.abs(dy * ring[i][0] - dx * ring[i][1] + bx * ay - by * ax) / len
+        : Math.hypot(ring[i][0] - ax, ring[i][1] - ay)
+      if (d > far) {
+        far = d
+        worst = i
+      }
+    }
+    if (worst > 0 && far > tol) {
+      keep[worst] = 1
+      stack.push([a, worst], [worst, b])
+    }
+  }
+  const out = ring.filter((_, i) => keep[i]).map(([x, y]) => [Math.round(x * 1e5) / 1e5, Math.round(y * 1e5) / 1e5] as [number, number])
+  return out.length >= 4 ? out : ring
+}
+
+export type Box = [number, number, number, number]
+
+export function boxOf(rings: Ring[]): Box {
+  let [x0, y0, x1, y1] = [Infinity, Infinity, -Infinity, -Infinity]
+  for (const ring of rings)
+    for (const [x, y] of ring) {
+      if (x < x0) x0 = x
+      if (y < y0) y0 = y
+      if (x > x1) x1 = x
+      if (y > y1) y1 = y
+    }
+  return [x0, y0, x1, y1]
+}
+
+export const boxesMeet = (a: Box, b: Box) => a[0] <= b[2] && a[2] >= b[0] && a[1] <= b[3] && a[3] >= b[1]
+
+/** A weekday set as a key the map colours by: [1, 4] → "1-4". */
+export const daysKey = (days: number[]) => days.join('-')
