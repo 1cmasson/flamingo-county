@@ -68,7 +68,7 @@ export const Media: CollectionConfig = {
     /**
      * Artwork Flamingo County made itself (a drawn cover, our own photo), as
      * opposed to a licensed photo from an archive. Set by the
-     * hqAddSiteArtworkFromUpload tool. An illustration is credited
+     * artwork upload tools (lib/artworkUpload.ts). An illustration is credited
      * "Ilustración: Flamingo County" and, when it was drawn from someone
      * else's pictures, says which (`basedOn`), so the archive still gets its
      * credit. See lib/photoLicense.ts.
