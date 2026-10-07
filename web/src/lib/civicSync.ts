@@ -732,12 +732,18 @@ export async function syncCivic({
     // Each precinct goes wherever its addresses are: the municipality the
     // county writes on each address, and for unincorporated addresses the
     // commission district they fall in.
+    // While the Supervisor of Elections' list is the source, a precinct the
+    // county still draws but the list leaves out (100 on 2026-10-07) votes
+    // nowhere this election, so it is on no page.
+    const listed = official ? new Set(official.rows.map((r) => r.precinct)) : null
     const spread = (await db.execute('SELECT DISTINCT precinct, munic, commission FROM addr WHERE precinct >= 0')).rows
-    const placements: VotePlacement[] = spread.map((r) => ({
-      precinct: z.precinct.rows[Number(r.precinct)].precinct,
-      munic: names[Number(r.munic)] ?? '',
-      district: r.commission != null && Number(r.commission) >= 0 ? (z.commission.rows[Number(r.commission)]?.district ?? null) : null,
-    }))
+    const placements: VotePlacement[] = spread
+      .map((r) => ({
+        precinct: z.precinct.rows[Number(r.precinct)].precinct,
+        munic: names[Number(r.munic)] ?? '',
+        district: r.commission != null && Number(r.commission) >= 0 ? (z.commission.rows[Number(r.commission)]?.district ?? null) : null,
+      }))
+      .filter((p) => !listed || listed.has(p.precinct))
     // A precinct with no address point in it (nine on 2026-10-07, each with a
     // polling place) goes by where its own area lies: the city boundary and
     // the commission district around a point inside it.
@@ -746,7 +752,7 @@ export async function syncCivic({
     const byArea: number[] = []
     for (const f of pr) {
       const precinct = Number(f.attributes.ID)
-      if (placed.has(precinct)) continue
+      if (placed.has(precinct) || (listed && !listed.has(precinct))) continue
       const g = toGeo(rings(f), {})
       const at = g ? labelPoint(g.geometry.coordinates as Ring[][]) : null
       if (!at) continue
@@ -758,8 +764,11 @@ export async function syncCivic({
       byArea.push(precinct)
     }
     const areas = voteAreas(placements)
-    const unplaced = z.precinct.rows.map((r) => r.precinct).filter((p) => !placed.has(p))
-    log(`  ${areas.length} pages; by area: ${byArea.join(', ') || 'none'}; unplaced: ${unplaced.join(', ') || 'none'}`)
+    const unlisted = listed ? z.precinct.rows.map((r) => r.precinct).filter((p) => !listed.has(p)) : []
+    const unplaced = z.precinct.rows.map((r) => r.precinct).filter((p) => !placed.has(p) && !unlisted.includes(p))
+    log(
+      `  ${areas.length} pages; by area: ${byArea.join(', ') || 'none'}; not on the list: ${unlisted.join(', ') || 'none'}; unplaced: ${unplaced.join(', ') || 'none'}`,
+    )
     const latest = latestOfficialPolling()
 
     const fetchedAt = new Date().toISOString().slice(0, 10)
@@ -778,6 +787,7 @@ export async function syncCivic({
       vote: {
         areas,
         byArea,
+        unlisted,
         unplaced,
         lastElection: latest
           ? { election: latest.election, electionName: latest.electionName, published: latest.published, url: latest.source, by: latest.by }

@@ -6,7 +6,7 @@ import type { City } from '../../payload-types'
 import { allSeasons, seasonWindow } from '../../lib/seasons'
 import { todayISO } from '../../lib/dates'
 import { TRANSIT } from '../../lib/transit'
-import { voteData } from '../../lib/civic'
+import { electionState, voteData } from '../../lib/civic'
 import { areaName } from '../../lib/voteCopy'
 
 // Built from the database on request; a container build runs against an empty one.
@@ -24,12 +24,18 @@ export async function GET() {
     getEvents('en'),
     voteData(),
   ])
+  const state = vote ? electionState(vote.pollingSource, vote.lastElection) : null
+  const src = vote?.pollingSource
+  // Says what the pages say: current sites only while the list's election is still to come.
+  const voteAbout = state?.upcoming
+    ? `the Election Day polling place of every precinct for the ${state.election} election, by municipality, with unincorporated Miami-Dade by county commission district, from the Miami-Dade Supervisor of Elections’ polling place list of ${src?.published}. Election Day only; early voting uses other sites.`
+    : `polling places of every precinct, by municipality, with unincorporated Miami-Dade by county commission district${state?.over ? `. The ${state.over} election is over` : ''}; the sites are ${src?.election ? `from the Supervisor of Elections’ list for that election` : 'from Miami-Dade County’s open-data layer'}. Confirm a site with the Miami-Dade Elections Department before voting.`
   const voteLines = vote
     ? [
-        `- [Where to vote in Miami-Dade](${absUrl(routes.vote('en'))}): the Election Day polling place of every precinct, by municipality, with unincorporated Miami-Dade by county commission district${vote.pollingSource?.published ? `, from the Miami-Dade Supervisor of Elections’ polling place list of ${vote.pollingSource.published}${vote.pollingSource.election ? ` for the ${vote.pollingSource.election} election` : ''}` : ', from Miami-Dade County’s records'}. Election Day only; early voting uses other sites. Spanish: ${absUrl(routes.vote('es'))}`,
+        `- [Where to vote in Miami-Dade](${absUrl(routes.vote('en'))}): ${voteAbout} Spanish: ${absUrl(routes.vote('es'))}`,
         ...vote.areas.map(
           (a) =>
-            `- [Where to vote in ${areaName(a, 'en')}](${absUrl(routes.voteArea('en', a.slug))}): ${a.precincts.length} ${a.precincts.length === 1 ? 'precinct' : 'precincts'} and their Election Day polling places. Spanish: ${absUrl(routes.voteArea('es', a.slug))}`,
+            `- [Where to vote in ${areaName(a, 'en')}](${absUrl(routes.voteArea('en', a.slug))}): ${a.precincts.length} ${a.precincts.length === 1 ? 'precinct' : 'precincts'} and their ${state?.upcoming ? 'Election Day ' : ''}polling places. Spanish: ${absUrl(routes.voteArea('es', a.slug))}`,
         ),
       ]
     : []

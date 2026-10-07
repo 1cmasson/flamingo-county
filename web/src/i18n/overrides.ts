@@ -88,6 +88,7 @@ export const ES_OVERRIDES: Record<string, string> = {
   // the county's English in both languages, since that is what the pole says.
   'FREE RIDES': 'RUTAS GRATIS',
   'YOUR ADDRESS': 'TU DIRECCIÓN',
+  'WHERE TO VOTE': 'DÓNDE VOTAR',
   'HIALEAH · FREE TRANSIT': 'HIALEAH · TRANSPORTE GRATIS',
   'RIDE THE CITY': 'RECORRE LA CIUDAD',
   'FOR FREE.': 'GRATIS.',

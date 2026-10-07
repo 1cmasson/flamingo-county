@@ -57,8 +57,10 @@ const ES = {
   hubTitle: '¿Dónde voto?',
   hubMetaTitle: (date: string | null) =>
     date ? `¿Dónde voto en Miami-Dade? Lugares de votación del ${date}, por ciudad` : '¿Dónde voto en Miami-Dade? Lugares de votación por ciudad',
-  hubMetaDescription:
-    'El lugar de votación del día de las elecciones de cada precinto de Miami-Dade, por ciudad, y el condado no incorporado por distrito de la Comisión. Según la lista del Supervisor de Elecciones.',
+  hubMetaDescription: (upcoming: boolean): string =>
+    upcoming
+      ? 'El lugar de votación del día de las elecciones de cada precinto de Miami-Dade, por ciudad, y el condado no incorporado por distrito de la Comisión. Según la lista del Supervisor de Elecciones.'
+      : 'Los lugares de votación de los precintos de Miami-Dade, por ciudad, con la fuente y la fecha de los datos. Antes de votar, confirma tu lugar con el Departamento de Elecciones.',
   hubQuestion: '¿Dónde voto el día de las elecciones en Miami-Dade?',
   hubAnswer: (date: string, precincts: number, places: number) =>
     `El día de las elecciones, ${date}, cada precinto vota en su lugar asignado. Miami-Dade tiene ${n(precincts, 'precinto', 'precintos')} y ${n(places, 'lugar de votación', 'lugares de votación')}; abajo están por ciudad, y el condado no incorporado por distrito de la Comisión. La votación temprana es en otros lugares.`,
@@ -67,8 +69,10 @@ const ES = {
   areaTitle: (name: string) => `Dónde votar en ${name}`,
   areaMetaTitle: (name: string, date: string | null) =>
     date ? `Dónde votar en ${name} el ${date}: lugares por precinto` : `Dónde votar en ${name}: lugares por precinto`,
-  areaMetaDescription: (name: string, precincts: number, places: number) =>
-    `Los ${n(precincts, 'precinto', 'precintos')} de ${name} y sus ${n(places, 'lugar', 'lugares')} de votación del día de las elecciones, según la lista del Supervisor de Elecciones de Miami-Dade.`,
+  areaMetaDescription: (name: string, precincts: number, places: number, upcoming: boolean) =>
+    upcoming
+      ? `Los ${n(precincts, 'precinto', 'precintos')} de ${name} y sus ${n(places, 'lugar', 'lugares')} de votación del día de las elecciones, según la lista del Supervisor de Elecciones de Miami-Dade.`
+      : `Los ${n(precincts, 'precinto', 'precintos')} de ${name} y sus lugares de votación, con la fuente y la fecha de los datos. Antes de votar, confirma tu lugar con el Departamento de Elecciones.`,
   areaQuestion: (name: string) => `¿Dónde voto en ${name} el día de las elecciones?`,
   areaAnswer: (name: string, precincts: number, places: number, date: string) =>
     `${name} tiene ${n(precincts, 'precinto', 'precintos')}, que votan en ${n(places, 'lugar', 'lugares')} el día de las elecciones, ${date}. Busca tu precinto en la tabla, o escribe tu dirección para encontrarlo. La votación temprana es en otros lugares.`,
@@ -116,8 +120,10 @@ const EN: VoteCopy = {
   hubTitle: 'Where do I vote?',
   hubMetaTitle: (date) =>
     date ? `Where do I vote in Miami-Dade? ${date} polling places, by city` : 'Where do I vote in Miami-Dade? Polling places by city',
-  hubMetaDescription:
-    'The Election Day polling place for every precinct in Miami-Dade, by city, with unincorporated Miami-Dade by commission district. From the Supervisor of Elections’ list.',
+  hubMetaDescription: (upcoming) =>
+    upcoming
+      ? 'The Election Day polling place for every precinct in Miami-Dade, by city, with unincorporated Miami-Dade by commission district. From the Supervisor of Elections’ list.'
+      : 'Polling places for Miami-Dade’s precincts, by city, with the source and date of the data. Before you vote, confirm your site with the Elections Department.',
   hubQuestion: 'Where do I vote on Election Day in Miami-Dade?',
   hubAnswer: (date, precincts, places) =>
     `On Election Day, ${date}, each precinct votes at its assigned polling place. Miami-Dade has ${n(precincts, 'precinct', 'precincts')} and ${n(places, 'polling place', 'polling places')}; they are listed below by city, with unincorporated Miami-Dade by commission district. Early voting uses other sites.`,
@@ -125,8 +131,10 @@ const EN: VoteCopy = {
     `Each precinct votes at its assigned polling place. The county’s records hold ${n(precincts, 'precinct', 'precincts')} and ${n(places, 'polling place', 'polling places')}, listed below by city. Before an election, confirm your site with the Elections Department.`,
   areaTitle: (name) => `Where to vote in ${name}`,
   areaMetaTitle: (name, date) => (date ? `Where to vote in ${name} on ${date}: polling places by precinct` : `Where to vote in ${name}: polling places by precinct`),
-  areaMetaDescription: (name, precincts, places) =>
-    `${name}’s ${n(precincts, 'precinct', 'precincts')} and their ${n(places, 'Election Day polling place', 'Election Day polling places')}, from the Miami-Dade Supervisor of Elections’ list.`,
+  areaMetaDescription: (name, precincts, places, upcoming) =>
+    upcoming
+      ? `${name}’s ${n(precincts, 'precinct', 'precincts')} and their ${n(places, 'Election Day polling place', 'Election Day polling places')}, from the Miami-Dade Supervisor of Elections’ list.`
+      : `${name}’s ${n(precincts, 'precinct', 'precincts')} and their polling places, with the source and date of the data. Before you vote, confirm your site with the Elections Department.`,
   areaQuestion: (name) => `Where do I vote in ${name} on Election Day?`,
   areaAnswer: (name, precincts, places, date) =>
     `${name} has ${n(precincts, 'precinct', 'precincts')}, voting at ${n(places, 'polling place', 'polling places')} on Election Day, ${date}. Find your precinct in the table, or type your address to look it up. Early voting uses other sites.`,

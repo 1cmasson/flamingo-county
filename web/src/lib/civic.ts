@@ -50,6 +50,7 @@ type Meta = {
   vote?: {
     areas: VoteArea[]
     byArea: number[]
+    unlisted: number[]
     unplaced: number[]
     lastElection: { election: string; electionName: string; published: string; url: string; by: string } | null
   }

@@ -42,11 +42,10 @@ A full run now costs more. It is about 160 x 3 runs x 3 models, or 1,440 calls, 
 ## 2026-10-07 — Civic answers (AEO round 3), baseline
 
 - Hypothesis: If we publish pages that answer civic questions from the county's and cities' records (where to vote, storm-surge zones, trash zones, commission districts), then the civic probe cited-rate and Search Console impressions will go up, because answer engines today cite only the agencies' own pages and map viewers, which hold no quotable answer.
-- Pages changed: none yet.
-  - Phase 2 ("where to vote") is blocked: the county's polling-place layer is stale for 2026-11-03 (see `AEO-HANDOFF.md`, Phase 2 status).
+- Pages changed:
+  - Phase 2 ("where to vote"): `/es/vote` and `/en/vote`, plus `/{es,en}/vote/<area>` for the 34 municipalities and the 13 unincorporated commission districts (`unincorporated-district-N`). That is 96 URLs. The start date is the day they deploy.
   - Phase 3 is not built.
   - Phase 1 changed only `llms.txt` and the JSON-LD on `/en/address` and `/es/address`.
-  - Record the URLs here when the pages ship.
 - Control pages: listings and events (unchanged by this round).
 - Start date: the day the first civic pages deploy. This entry is the "before".
 - Metric: probe cited-rate on the 56 `intent: "civic"` ids (`pnpm aeo:probe --intent civic`), and Search Console impressions and clicks for the civic pages against the control pages.

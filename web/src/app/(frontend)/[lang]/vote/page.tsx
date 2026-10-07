@@ -39,10 +39,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const data = await voteData()
   const state = data ? electionState(data.pollingSource, data.lastElection) : null
   const title = c.hubMetaTitle(state?.upcoming && state.election ? dayMonth(state.election, lang) : null)
+  const description = c.hubMetaDescription(!!state?.upcoming)
   return {
     title,
-    description: c.hubMetaDescription,
-    openGraph: openGraph(lang, { title, description: c.hubMetaDescription, url: routes.vote(lang) }),
+    description,
+    openGraph: openGraph(lang, { title, description, url: routes.vote(lang) }),
     alternates: { canonical: routes.vote(lang), languages: { en: routes.vote('en'), es: routes.vote('es') } },
   }
 }

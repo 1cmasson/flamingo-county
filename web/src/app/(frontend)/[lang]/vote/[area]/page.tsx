@@ -40,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const state = electionState(data.pollingSource, data.lastElection)
   const n = counts(areaRows(area, data))
   const title = c.areaMetaTitle(name, state.upcoming && state.election ? dayMonth(state.election, lang) : null)
-  const description = c.areaMetaDescription(name, n.precincts, n.places)
+  const description = c.areaMetaDescription(name, n.precincts, n.places, state.upcoming)
   return {
     title,
     description,
