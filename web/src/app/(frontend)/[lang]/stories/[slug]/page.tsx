@@ -10,7 +10,7 @@ import { StoryBlocks } from '../../../../../components/StoryBlocks'
 import { StoryArt } from '../../../../../components/StoryArt'
 import { StoryVideo } from '../../../../../components/StoryVideo'
 import { JsonLd } from '../../../../../components/JsonLd'
-import { mediaUrl, storyJsonLd, videoJsonLd } from '../../../../../lib/jsonld'
+import { faqJsonLd, mediaUrl, storyJsonLd, videoJsonLd } from '../../../../../lib/jsonld'
 import { openGraph, twitterCard } from '../../../../../lib/site'
 import { FULL_WIDTH_SIZES } from '../../../../../lib/srcset'
 import chrome from '../../../../../components/chrome.module.css'
@@ -51,12 +51,15 @@ export async function generateMetadata({
   // The cover photo; failing that, the reel's cover card, so a shared link
   // always carries a picture.
   const image = mediaUrl(story.cover) ?? mediaUrl(rel<Video>(story.video)?.poster)
+  // The search title and snippet, when the story has its own; the headline and dek otherwise.
+  const title = story.metaTitle || story.title
+  const description = story.metaDescription || story.dek || undefined
   return {
-    title: story.title,
-    description: story.dek ?? undefined,
+    title,
+    description,
     openGraph: openGraph(lang, {
-      title: story.title,
-      description: story.dek ?? undefined,
+      title,
+      description,
       url: routes.story(lang, slug),
       image,
       imageAlt: rel<Media>(story.cover)?.alt ?? story.title,
@@ -92,9 +95,11 @@ export default async function StoryPage({
   const others = (await getStories(lang)).filter((s) => s.slug !== slug)
   const video = rel<Video>(story.video)
   const videoLd = video ? videoJsonLd(lang, video, story.dek) : null
+  const faqLd = faqJsonLd(story.blocks)
 
   return (
     <PageShell>
+      {faqLd ? <JsonLd data={faqLd} /> : null}
       <JsonLd
         data={storyJsonLd(lang, story, {
           image: mediaUrl(story.cover) ?? mediaUrl(video?.poster),
@@ -371,7 +376,7 @@ export default async function StoryPage({
                 gap: 'clamp(20px,3.4vw,30px)',
               }}
             >
-              <StoryBlocks blocks={story.blocks} />
+              <StoryBlocks blocks={story.blocks} lang={lang as Lang} />
 
               <div
                 style={{

@@ -1,5 +1,6 @@
 import React from 'react'
 import type { Story } from '../payload-types'
+import { translator, type Lang } from '../i18n'
 import { MediaSlot } from './MediaSlot'
 
 type Block = NonNullable<Story['blocks']>[number]
@@ -21,18 +22,39 @@ const column = { maxWidth: '66ch', margin: '0 auto', width: '100%' } as const
  * shows immediately. That degradation is graceful, so it is left as CSS rather
  * than reimplemented with IntersectionObserver.
  */
-export function StoryBlocks({ blocks }: { blocks?: Story['blocks'] }) {
+export function StoryBlocks({ blocks, lang = 'es' }: { blocks?: Story['blocks']; lang?: Lang }) {
   if (!blocks?.length) return null
   return (
     <>
       {blocks.map((b, i) => (
-        <StoryBlock key={b.id ?? i} block={b} />
+        <StoryBlock key={b.id ?? i} block={b} lang={lang} />
       ))}
     </>
   )
 }
 
-function StoryBlock({ block: b }: { block: Block }) {
+/** An anchor for a subheading, so a section can be linked: "Cómo visitarlo" -> "como-visitarlo". */
+export function headingId(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+}
+
+const external = (url: string) => /^https?:\/\//i.test(url)
+const host = (url: string) => {
+  try {
+    return new URL(url).hostname.replace(/^www\./, '')
+  } catch {
+    return ''
+  }
+}
+
+function StoryBlock({ block: b, lang }: { block: Block; lang: Lang }) {
+  const t = translator(lang)
   switch (b.blockType) {
     case 'dropCap': {
       const text = b.text ?? ''
@@ -266,6 +288,168 @@ function StoryBlock({ block: b }: { block: Block }) {
           <div style={{ flex: 1, height: 4, background: 'var(--ink)' }} />
         </div>
       )
+
+    case 'quickAnswer':
+      return (
+        <section
+          aria-label={t('SHORT ANSWER')}
+          style={{
+            ...column,
+            background: 'var(--yellow)',
+            border: '4px solid var(--ink)',
+            boxShadow: '7px 7px 0 var(--ink)',
+            padding: 'clamp(16px,3.5vw,24px)',
+          }}
+        >
+          <div style={{ fontWeight: 800, fontSize: 11, letterSpacing: '2px' }}>{t('SHORT ANSWER')}</div>
+          <h2
+            style={{
+              margin: '8px 0 0',
+              fontFamily: 'var(--display)',
+              fontWeight: 400,
+              fontSize: 'clamp(24px,5.5vw,32px)',
+              lineHeight: 1,
+              textWrap: 'balance',
+            }}
+          >
+            {b.question}
+          </h2>
+          <p style={{ margin: '10px 0 0', fontSize: 'clamp(16px,4vw,18px)', fontWeight: 700, lineHeight: 1.55, textWrap: 'pretty' }}>
+            {b.answer}
+          </p>
+        </section>
+      )
+
+    case 'heading':
+      return (
+        <h2
+          id={headingId(b.text ?? '')}
+          style={{
+            ...column,
+            margin: 'clamp(8px,2vw,14px) auto 0',
+            fontFamily: 'var(--display)',
+            fontWeight: 400,
+            fontSize: 'clamp(28px,6.5vw,40px)',
+            lineHeight: 0.98,
+            textWrap: 'balance',
+            scrollMarginTop: 120,
+          }}
+        >
+          <span style={{ boxShadow: 'inset 0 -0.32em 0 var(--pink)', paddingBottom: 2 }}>{b.text}</span>
+        </h2>
+      )
+
+    case 'list': {
+      const items = b.items ?? []
+      if (b.style === 'timeline') {
+        return (
+          <ol style={{ ...column, listStyle: 'none', padding: 0, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 0 }}>
+            {items.map((it, i) => (
+              <li
+                key={it.id ?? i}
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'minmax(64px,auto) 1fr',
+                  gap: 14,
+                  padding: '12px 0',
+                  borderTop: i ? '3px dotted var(--ink)' : 0,
+                }}
+              >
+                <span style={{ fontFamily: 'var(--display)', fontSize: 22, lineHeight: 1.1, color: 'var(--magenta)' }}>{it.label}</span>
+                <span style={{ fontSize: 'clamp(15px,3.8vw,17px)', fontWeight: 600, lineHeight: 1.55, textWrap: 'pretty' }}>{it.text}</span>
+              </li>
+            ))}
+          </ol>
+        )
+      }
+      const Tag = b.style === 'numbered' ? 'ol' : 'ul'
+      return (
+        <Tag
+          style={{
+            ...column,
+            margin: '0 auto',
+            paddingLeft: '1.4em',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 8,
+            fontSize: 'clamp(16px,4vw,19px)',
+            fontWeight: 600,
+            lineHeight: 1.6,
+          }}
+        >
+          {items.map((it, i) => (
+            <li key={it.id ?? i} style={{ textWrap: 'pretty' }}>
+              {it.label ? <strong>{it.label}: </strong> : null}
+              {it.text}
+            </li>
+          ))}
+        </Tag>
+      )
+    }
+
+    case 'faq':
+      return (
+        <div style={{ ...column, display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {(b.items ?? []).map((it, i) => (
+            <div key={it.id ?? i} style={{ border: '4px solid var(--ink)', background: 'var(--cream)', padding: '14px 16px' }}>
+              <h3 style={{ margin: 0, fontSize: 'clamp(17px,4.2vw,19px)', fontWeight: 800, lineHeight: 1.3 }}>{it.question}</h3>
+              <p style={{ margin: '6px 0 0', fontSize: 'clamp(15px,3.8vw,17px)', fontWeight: 600, lineHeight: 1.55, textWrap: 'pretty' }}>
+                {it.answer}
+              </p>
+            </div>
+          ))}
+        </div>
+      )
+
+    case 'links': {
+      const items = b.items ?? []
+      const sources = b.style !== 'related'
+      return (
+        <nav aria-label={b.title ?? undefined} style={{ ...column }}>
+          {b.title ? (
+            <div style={{ fontWeight: 800, fontSize: 12, letterSpacing: '2px', marginBottom: 8 }}>{b.title}</div>
+          ) : null}
+          {sources ? (
+            <ol style={{ margin: 0, paddingLeft: '1.6em', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14, fontWeight: 600, lineHeight: 1.5 }}>
+              {items.map((it, i) => (
+                <li key={it.id ?? i}>
+                  <a
+                    href={it.url}
+                    {...(external(it.url) ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                    style={{ color: 'inherit', textDecorationColor: 'var(--pink)', textDecorationThickness: 2 }}
+                  >
+                    {it.label}
+                  </a>
+                  {external(it.url) ? <span style={{ fontFamily: mono, fontSize: 12, color: '#5b636c' }}> · {host(it.url)}</span> : null}
+                </li>
+              ))}
+            </ol>
+          ) : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+              {items.map((it, i) => (
+                <a
+                  key={it.id ?? i}
+                  href={it.url}
+                  {...(external(it.url) ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+                  style={{
+                    textDecoration: 'none',
+                    color: 'var(--ink)',
+                    background: 'var(--grad-cream)',
+                    border: '4px solid var(--ink)',
+                    boxShadow: '4px 4px 0 var(--ink)',
+                    fontFamily: 'var(--display)',
+                    fontSize: 16,
+                    padding: '10px 14px 7px',
+                  }}
+                >
+                  {it.label} →
+                </a>
+              ))}
+            </div>
+          )}
+        </nav>
+      )
+    }
 
     default:
       return null

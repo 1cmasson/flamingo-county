@@ -382,10 +382,35 @@ export function storyJsonLd(lang: Lang, story: Story, opts: { image?: string; vi
     url,
     mainEntityOfPage: url,
     image: opts.image ? [opts.image] : undefined,
+    // The short answer, when the story has one: what an answer engine should quote.
+    abstract: (story.blocks ?? []).find(
+      (b): b is Extract<NonNullable<Story['blocks']>[number], { blockType: 'quickAnswer' }> => b.blockType === 'quickAnswer',
+    )?.answer,
     datePublished: story.createdAt,
     inLanguage: lang,
     author: { '@id': `${SITE_URL}/#organization` },
     publisher: { '@id': `${SITE_URL}/#organization` },
     video: opts.video ? (({ '@context': _c, ...v }) => v)(opts.video) : undefined,
   })
+}
+
+/**
+ * A story's questions and answers. Google stopped showing FAQ rich results in
+ * 2026, but answer engines still read the markup, and it says nothing the page
+ * does not: every pair is printed on the page.
+ */
+export function faqJsonLd(blocks: Story['blocks']): Obj | null {
+  const pairs = (blocks ?? []).flatMap((b) =>
+    b.blockType === 'faq' ? (b.items ?? []).filter((it) => it.question && it.answer) : [],
+  )
+  if (!pairs.length) return null
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: pairs.map((it) => ({
+      '@type': 'Question',
+      name: it.question,
+      acceptedAnswer: { '@type': 'Answer', text: it.answer },
+    })),
+  }
 }

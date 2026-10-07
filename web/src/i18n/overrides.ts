@@ -355,6 +355,7 @@ export const ES_OVERRIDES: Record<string, string> = {
   // --- Stories -----------------------------------------------------------
   // The series name on the reels and on a story with no cover photo.
   'DID YOU KNOW?': '¿SABÍAS QUE?',
+  'SHORT ANSWER': 'RESPUESTA CORTA',
   'WATCH THE VIDEO': 'MIRA EL VIDEO',
   'The same story, as the short video we made of it.': 'La misma historia, en el video corto que hicimos.',
   'Your browser cannot play this video.': 'Tu navegador no puede reproducir este video.',
