@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  hoursLabel,
   eventDaysIn,
   eventEndDay,
   groupIntoBuckets,
@@ -184,5 +185,25 @@ describe('eventDaysIn (calendar)', () => {
         '2026-11-30',
       ),
     ).toEqual(['2026-10-31'])
+  })
+})
+
+/**
+ * Most listings carry only an English hours label, which Spanish pages fall
+ * back to. The page reads it in Spanish instead of showing "Sun" to a
+ * Spanish reader.
+ */
+describe('hoursLabel', () => {
+  it('reads English day labels in Spanish', () => {
+    expect(hoursLabel('Sun', 'es')).toBe('Dom')
+    expect(hoursLabel('Fri & Sat', 'es')).toBe('Vie y Sáb')
+    expect(hoursLabel('Tue – Thu', 'es')).toBe('Mar – Jue')
+    expect(hoursLabel('Sun, Mon, Tue, Wed, Thu', 'es')).toBe('Dom, Lun, Mar, Mié, Jue')
+  })
+
+  it('leaves English pages and Spanish labels alone', () => {
+    expect(hoursLabel('Fri & Sat', 'en')).toBe('Fri & Sat')
+    expect(hoursLabel('Lun – Dom', 'es')).toBe('Lun – Dom')
+    expect(hoursLabel('Vie y Sáb', 'es')).toBe('Vie y Sáb')
   })
 })

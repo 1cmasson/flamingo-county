@@ -415,3 +415,16 @@ export function eventDateLine(ev: EventDates, lang: Lang, today: string = todayI
     ? `${MONTH_SHORT.en[s.month]} ${s.day} to ${e.day}`
     : `${MONTH_SHORT.en[s.month]} ${s.day} to ${MONTH_SHORT.en[e.month]} ${e.day}`
 }
+
+const DAYS_ES: Record<string, string> = { Mon: 'Lun', Tue: 'Mar', Wed: 'Mié', Thu: 'Jue', Fri: 'Vie', Sat: 'Sáb', Sun: 'Dom' }
+
+/**
+ * A listing's hours label on a Spanish page. `detail.hours[].d` is localized,
+ * but most listings only have the English label, and Spanish pages fall back
+ * to it ("Sun", "Fri & Sat"). This reads it in Spanish ("Dom", "Vie y Sáb"),
+ * whole words only, so a label already written in Spanish passes unchanged.
+ */
+export function hoursLabel(label: string, lang: Lang): string {
+  if (lang !== 'es') return label
+  return label.replace(/\b(Mon|Tue|Wed|Thu|Fri|Sat|Sun)\b/g, (d) => DAYS_ES[d]).replace(/ & /g, ' y ')
+}
