@@ -49,7 +49,13 @@ export function GemDiamond({ size = 22 }: { size?: number }) {
         strokeLinecap="round"
       />
       {/* rim-light, inside the left contour */}
-      <path d="M5.6 13.6L14.6 24.6" fill="none" stroke="#b9f7fc" strokeWidth={1.2} strokeLinecap="round" />
+      <path
+        d="M5.6 13.6L14.6 24.6"
+        fill="none"
+        stroke="#b9f7fc"
+        strokeWidth={1.2}
+        strokeLinecap="round"
+      />
       {/* ink outline, the mascots' weight */}
       <polygon
         points="8,6 24,6 29,12 16,28 3,12"
@@ -70,21 +76,47 @@ export function GemDiamond({ size = 22 }: { size?: number }) {
   )
 }
 
-/** The badge's height, the same as the city chip beside it; the sticker hangs outside it. */
-const BADGE_HEIGHT = 34
-/** The diamond is twice the chip text's size and breaks out of the top-left corner. */
-const STICKER = 44
-const STICKER_LEFT = -14
-const STICKER_TOP = -17
+/**
+ * The two places the badge is worn.
+ * - `hero`: the listing hero's chip row, the same 34px as the city chip beside
+ *   it, with a 44px sticker (twice the chip text) and room to clear that chip.
+ * - `card`: the top-left of a directory card's photo, scaled to the card's
+ *   smaller type; it sits first in its stack, so it needs no left margin.
+ * In both the sticker hangs off the top-left corner over the border, so the
+ * badge keeps its height and the label keeps its room.
+ */
+const SIZES = {
+  hero: {
+    height: 34,
+    font: 16,
+    sticker: 44,
+    left: -14,
+    top: -17,
+    border: 4,
+    marginLeft: 10,
+    padRight: 12,
+  },
+  card: {
+    height: 27,
+    font: 12.5,
+    sticker: 34,
+    left: -11,
+    top: -13,
+    border: 3,
+    marginLeft: 0,
+    padRight: 9,
+  },
+} as const
+
+export type GemBadgeSize = keyof typeof SIZES
 
 /**
- * The chip a gem wears in its listing hero in place of the category chip: the
- * same 4px ink border and display face as the chip beside it, on ink with a
- * cyan inner rim. The diamond is a sticker slapped on its top-left corner,
- * overlapping the border, so the badge stays the chip row's height and the
- * label keeps its room.
+ * The badge a gem wears where every other listing shows its category: in the
+ * listing hero and on its directory card. On ink with a cyan inner rim, in the
+ * display face, with the diamond slapped on its top-left corner like a sticker.
  */
-export function GemBadge({ label }: { label: string }) {
+export function GemBadge({ label, size = 'hero' }: { label: string; size?: GemBadgeSize }) {
+  const s = SIZES[size]
   return (
     <div
       data-testid="gem-badge"
@@ -93,15 +125,15 @@ export function GemBadge({ label }: { label: string }) {
         display: 'flex',
         alignItems: 'center',
         boxSizing: 'border-box',
-        height: BADGE_HEIGHT,
-        // Clear of the chip before it: the sticker hangs 14px to the left.
-        marginLeft: 10,
+        height: s.height,
+        // Clear of a chip before it: the sticker hangs off the left edge.
+        marginLeft: s.marginLeft,
         background: 'var(--ink)',
-        border: '4px solid var(--ink)',
+        border: `${s.border}px solid var(--ink)`,
         boxShadow: 'inset 0 0 0 2px var(--cyan)',
-        padding: `3px 12px 0 ${STICKER + STICKER_LEFT + 2}px`,
+        padding: `3px ${s.padRight}px 0 ${s.sticker + s.left + 2}px`,
         fontFamily: 'var(--display)',
-        fontSize: 16,
+        fontSize: s.font,
         color: 'var(--cyan)',
         whiteSpace: 'nowrap',
       }}
@@ -109,13 +141,13 @@ export function GemBadge({ label }: { label: string }) {
       <span
         style={{
           position: 'absolute',
-          left: STICKER_LEFT,
-          top: STICKER_TOP,
+          left: s.left,
+          top: s.top,
           transform: 'rotate(-12deg)',
           filter: 'drop-shadow(2px 2px 0 rgba(12,15,20,0.45))',
         }}
       >
-        <GemDiamond size={STICKER} />
+        <GemDiamond size={s.sticker} />
       </span>
       {label}
     </div>

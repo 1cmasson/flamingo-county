@@ -80,12 +80,18 @@ describe('a business card', () => {
         } as never,
       }),
     )
-  it('puts a small diamond before a gem meta line', () => {
+  it('wears the card-sized gem badge on its photo, and keeps only the address in the meta line', () => {
     const html = card('gems', 'JOYA DE FLAMINGO COUNTY')
-    expect(html).toMatch(/<svg[^>]*width="22"/)
-    expect(html).toContain('JOYA DE FLAMINGO COUNTY')
+    expect(html).toContain('data-testid="gem-badge"')
+    expect(html).toMatch(/<svg[^>]*width="34"/)
+    expect(html).toMatch(/height:27px/)
+    // the label appears once, on the badge; the meta line is the address alone
+    expect(html.match(/JOYA DE FLAMINGO COUNTY/g)).toHaveLength(1)
+    expect(html).toMatch(/>E 32ND ST<|>E 32nd St</)
   })
   it('leaves every other card as it was', () => {
-    expect(card('food', 'RESTAURANTES')).not.toContain('<svg')
+    const html = card('food', 'RESTAURANTES')
+    expect(html).not.toContain('<svg')
+    expect(html).toContain('RESTAURANTES')
   })
 })

@@ -5,7 +5,7 @@ import { metaLine } from '../lib/search'
 import { routes } from '../lib/routes'
 import type { Lang } from '../i18n'
 import { MediaSlot } from './MediaSlot'
-import { GemDiamond } from './GemBadge'
+import { GemBadge } from './GemBadge'
 import { isGem } from '../lib/categories'
 import s from './chrome.module.css'
 import { buildSrcSet } from '../lib/srcset'
@@ -39,6 +39,7 @@ export function BusinessCard({
 }) {
   const city = rel<City>(listing.city)
   const category = rel<Category>(listing.category)
+  const gem = isGem(category?.slug)
   const mascot = city ? rel<Media>(city.solo) : null
   const hero = Array.isArray(listing.gallery) ? rel<Media>(listing.gallery[0]) : null
 
@@ -73,45 +74,53 @@ export function BusinessCard({
           // a card tops out near 330px and goes full-bleed on a phone.
           sizes="(max-width: 700px) 100vw, 330px"
         />
+        {/* A gem's badge leads the stack, so its sticker owns the photo's top-left
+            corner (inset so the frame's overflow does not clip it); the city and
+            partner chips sit under it. The right edge stays clear for the mascot. */}
         <div
           style={{
             position: 'absolute',
-            top: 9,
-            left: 9,
+            top: gem ? 16 : 9,
+            left: gem ? 14 : 9,
             display: 'flex',
-            gap: 6,
+            flexDirection: 'column',
+            alignItems: 'flex-start',
+            gap: 7,
             pointerEvents: 'none',
           }}
         >
-          {showCityBadge ? (
-            <div
-              style={{
-                background: 'var(--ink)',
-                color: 'var(--cyan)',
-                fontWeight: 800,
-                fontSize: 10,
-                letterSpacing: '1.4px',
-                padding: '5px 8px',
-              }}
-            >
-              {city?.name}
-            </div>
-          ) : null}
-          {listing.member && memberBadges ? (
-            <div
-              style={{
-                background: 'var(--yellow)',
-                color: 'var(--ink)',
-                fontWeight: 800,
-                fontSize: 10,
-                letterSpacing: '1.4px',
-                padding: '5px 8px',
-                border: '2px solid var(--ink)',
-              }}
-            >
-              {t('PARTNER')}
-            </div>
-          ) : null}
+          {gem ? <GemBadge label={category?.label ?? ''} size="card" /> : null}
+          <div style={{ display: 'flex', gap: 6 }}>
+            {showCityBadge ? (
+              <div
+                style={{
+                  background: 'var(--ink)',
+                  color: 'var(--cyan)',
+                  fontWeight: 800,
+                  fontSize: 10,
+                  letterSpacing: '1.4px',
+                  padding: '5px 8px',
+                }}
+              >
+                {city?.name}
+              </div>
+            ) : null}
+            {listing.member && memberBadges ? (
+              <div
+                style={{
+                  background: 'var(--yellow)',
+                  color: 'var(--ink)',
+                  fontWeight: 800,
+                  fontSize: 10,
+                  letterSpacing: '1.4px',
+                  padding: '5px 8px',
+                  border: '2px solid var(--ink)',
+                }}
+              >
+                {t('PARTNER')}
+              </div>
+            ) : null}
+          </div>
         </div>
         {/* Deliberately taller than its 168px frame — the mascot is cropped by
             the overflow, which is how it reads as leaning into the card. */}
@@ -153,20 +162,10 @@ export function BusinessCard({
             fontSize: 11,
             letterSpacing: '1.5px',
             color: 'var(--magenta)',
-            display: 'flex',
-            // The diamond sits on the first line when the label wraps to two.
-            alignItems: 'flex-start',
-            gap: 7,
           }}
         >
-          {isGem(category?.slug) ? (
-            // A sticker, not an emoji: larger than the text, at the mascots' ink weight. The
-            // negative margins keep the meta line as tall as the text alone.
-            <span style={{ margin: '-6px 0 -5px 1px' }}>
-              <GemDiamond size={22} />
-            </span>
-          ) : null}
-          <span>{metaLine(category?.label, listing.hood)}</span>
+          {/* A gem's photo already says what it is; its meta line keeps the address. */}
+          {metaLine(gem ? null : category?.label, listing.hood)}
         </div>
         <p style={{ margin: 0, fontSize: 14, lineHeight: 1.45, fontWeight: 600, textWrap: 'pretty' }}>
           {listing.tag}
