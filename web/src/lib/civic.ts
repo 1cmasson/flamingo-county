@@ -23,6 +23,8 @@ export { slugOf }
 type Place = { name: string; address: string; phone: string; at: LatLng }
 type School = { name: string; address: string; zip: string; phone: string; grades: string }
 type Official = { district: number; name: string }
+/** A moved site from the Supervisor of Elections' list can lack coordinates. */
+type PollingPlace = Omit<Place, 'at'> & { at: LatLng | null }
 
 type Meta = {
   fetchedAt: string
@@ -35,7 +37,7 @@ type Meta = {
     flood: string[]
     surge: string[]
     commission: Official[]
-    precinct: { precinct: number; polling: Place | null }[]
+    precinct: { precinct: number; polling: PollingPlace | null }[]
     elementary: School[]
     middle: School[]
     high: School[]
@@ -43,7 +45,11 @@ type Meta = {
     senate: Official[]
   }
   places: Record<'fire' | 'police' | 'library' | 'park' | 'hospital', Place[]>
+  pollingSource?: PollingSource
 }
+
+/** Where the Election Day sites came from: the Supervisor of Elections' list for `election`, or the county layer. */
+export type PollingSource = { by: string; url: string; election: string | null; electionName: string | null; published: string | null }
 
 /** As stored: the zip, the city names and the coordinates are numbers (coordinates in 1e-5 degrees). */
 type Row = {
@@ -218,7 +224,8 @@ export type AddressReport = {
   house: Official | null
   senate: Official | null
   precinct: number | null
-  polling: Place | null
+  polling: PollingPlace | null
+  pollingSource: PollingSource | null
   schools: { elementary: School | null; middle: School | null; high: School | null }
   nearby: Record<'fire' | 'police' | 'library' | 'park' | 'hospital', Nearby | null>
   bus: BusStop[]
@@ -297,6 +304,7 @@ export async function addressReport(slug: string, today: string = todayISO()): P
     senate: pick(z.senate, r.senate),
     precinct: precinct?.precinct ?? null,
     polling: precinct?.polling ?? null,
+    pollingSource: c.meta.pollingSource ?? null,
     schools: { elementary: pick(z.elementary, r.elementary), middle: pick(z.middle, r.middle), high: pick(z.high, r.high) },
     nearby: {
       fire: nearest(c.meta.places.fire, at),

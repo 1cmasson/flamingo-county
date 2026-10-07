@@ -1,10 +1,11 @@
-import { createReadStream, createWriteStream, existsSync, mkdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
+import { createReadStream, createWriteStream, existsSync, mkdirSync, readdirSync, readFileSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { createInterface } from 'node:readline'
 import { join } from 'node:path'
 import { createClient, type Client, type InStatement } from '@libsql/client'
 
 import { addressKey, daysKey, KIND, kindFromDor, parseDayLetters, parseRule, PolygonIndex, ringsContain, simplifyRing, titleCase, type Ring, type Rule } from './civicGeo'
 import { buildTiles, labelPoint } from './civicTiles'
+import { todayISO } from './dates'
 
 /**
  * Builds the address database: every street address in Miami-Dade, with the
@@ -92,7 +93,7 @@ export const dbPath = (dir = civicDir()) => join(dir, 'civic.db')
  * The layout of what this file builds. Bump it whenever the database changes
  * shape, and every server rebuilds on its next boot instead of waiting a month.
  */
-export const SCHEMA = 3
+export const SCHEMA = 4
 const schemaFile = (dir: string) => join(dir, 'schema')
 
 /* --------------------------------------------------------------- fetch */
@@ -274,6 +275,42 @@ class Zones<T> {
 }
 
 type Place = { name: string; address: string; phone: string; at: [number, number] }
+type PollingSite = Omit<Place, 'at'> & { at: [number, number] | null }
+
+/**
+ * The Supervisor of Elections' own polling-place list for an upcoming
+ * election, saved from the PDF it publishes about a month before
+ * (src/data/civic/polling-<election date>.json).
+ *
+ * It wins over the county's Open Data layer, which lags: on 2026-10-07 that
+ * layer still held the August primary's sites for precincts 99 and 253.
+ * Once the election date has passed the file stops counting, and the layer
+ * is used again until the next list is added.
+ *
+ * To add the next one: download the list ("Precinct / Polling Place List",
+ * miamidade.gov/elections/library/), read each page as laid-out text, and
+ * cut the rows by the header's column positions (Place Name, Office Location,
+ * CITY, ZIP). A line without a precinct number continues the row above
+ * (long names wrap). Keep `election`, `published` and `source`.
+ */
+type OfficialPolling = {
+  election: string
+  electionName: string
+  published: string
+  source: string
+  by: string
+  rows: { precinct: number; sub: number; name: string; address: string; city: string; zip: string }[]
+}
+
+export function officialPolling(today: string = todayISO(), dir = join(process.cwd(), 'src/data/civic')): OfficialPolling | null {
+  if (!existsSync(dir)) return null
+  const lists = readdirSync(dir)
+    .filter((f) => /^polling-\d{4}-\d{2}-\d{2}\.json$/.test(f))
+    .map((f) => JSON.parse(readFileSync(join(dir, f), 'utf8')) as OfficialPolling)
+    .filter((l) => l.election >= today)
+    .sort((a, b) => (a.election < b.election ? -1 : 1))
+  return lists[0] ?? null
+}
 
 function places(features: Feature[], nameOf: (a: Attrs) => string = (a) => str(a.NAME || a.BRANCH), keep: (a: Attrs) => boolean = () => true): Place[] {
   return features
@@ -403,13 +440,54 @@ export async function syncCivic({
     },
   )
 
-  const pollingBy = new Map(po.map((f) => [Number(f.attributes.PRECINCT), places([f])[0]]))
+  const pollingBy = new Map<number, PollingSite | null>(po.map((f) => [Number(f.attributes.PRECINCT), places([f])[0]]))
+  const official = officialPolling()
+  if (official) {
+    const sites = new Map<number, OfficialPolling['rows']>()
+    for (const r of official.rows) sites.set(r.precinct, [...(sites.get(r.precinct) ?? []), r])
+    const need = new Map<string, number[]>()
+    for (const p of [...pollingBy.keys()]) if (!sites.has(p)) pollingBy.delete(p)
+    for (const [p, rows] of sites) {
+      // Parts of a split precinct (123.0, 123.1) voting in different places: we can't tell which part an address is in.
+      if (new Set(rows.map((r) => addressKey([r.address]))).size > 1) {
+        pollingBy.set(p, null)
+        continue
+      }
+      const site = rows[0]
+      const layer = pollingBy.get(p)
+      if (layer && addressKey([layer.address]) === addressKey([site.address])) {
+        pollingBy.set(p, { ...layer, name: site.name, address: site.address })
+      } else {
+        pollingBy.set(p, { name: site.name, address: site.address, phone: '', at: null })
+        const key = `${addressKey([site.address])}|${site.zip}`
+        need.set(key, [...(need.get(key) ?? []), p])
+      }
+    }
+    // A moved site has no coordinates in the list: find its address among the county's own address points.
+    if (need.size) {
+      for await (const r of lines(addrFile)) {
+        const [num, pre, name, type, suf, zip5, , , , x, y] = r as [number, string, string, string, string, number, string, string, string, number, number]
+        const key = addressKey([num, pre, name, type, suf])
+        for (const k of [`${key}|${String(zip5 ?? '').slice(0, 5)}`, `${key}|`]) {
+          const ps = need.get(k)
+          if (!ps || typeof x !== 'number') continue
+          for (const p of ps) {
+            const site = pollingBy.get(p)
+            if (site) site.at = [Math.round(y * 1e6) / 1e6, Math.round(x * 1e6) / 1e6]
+          }
+          need.delete(k)
+        }
+        if (!need.size) break
+      }
+    }
+    log(`  polling places: the Supervisor of Elections' list for ${official.election} (${official.rows.length} rows)${need.size ? `; ${need.size} moved sites without coordinates` : ''}`)
+  }
   const school = (a: Attrs) => ({ name: titleCase(str(a.NAME)), address: titleCase(str(a.ADDRESS)), zip: str(a.ZIPCODE), phone: phone(a.PHONE), grades: str(a.GRADES) })
   const z = {
     flood: new Zones<string>().add(fl, (a) => str(a.FZONE) || null, (a) => str(a.FZONE)),
     surge: new Zones<string>().add(su, (a) => str(a.ZONEID) || null, (a) => str(a.ZONEID)),
     commission: new Zones<{ district: number; name: string }>().add(co, (a) => str(a.ID) || null, (a) => ({ district: Number(a.ID), name: str(a.COMMNAME) })),
-    precinct: new Zones<{ precinct: number; polling: Place | null }>().add(pr, (a) => str(a.ID) || null, (a) => ({ precinct: Number(a.ID), polling: pollingBy.get(Number(a.ID)) ?? null })),
+    precinct: new Zones<{ precinct: number; polling: PollingSite | null }>().add(pr, (a) => str(a.ID) || null, (a) => ({ precinct: Number(a.ID), polling: pollingBy.get(Number(a.ID)) ?? null })),
     elementary: new Zones<ReturnType<typeof school>>().add(el, (a) => str(a.ID) || null, school),
     middle: new Zones<ReturnType<typeof school>>().add(mi, (a) => str(a.ID) || null, school),
     high: new Zones<ReturnType<typeof school>>().add(hi, (a) => str(a.ID) || null, school),
@@ -494,7 +572,7 @@ export async function syncCivic({
       return { f, props: { name }, label: /^Unincorporated/.test(name) ? undefined : { name } }
     }),
   )
-  mapLayers.polling = keep([...pollingBy].map(([n, p]) => (p ? point(p.at, { precinct: n, name: p.name, address: p.address }) : null)))
+  mapLayers.polling = keep([...pollingBy].map(([n, p]) => (p?.at ? point(p.at, { precinct: n, name: p.name, address: p.address }) : null)))
   mapLayers.places = Object.entries(placeLists).flatMap(([kind, list]) => list.map((p) => point(p.at, { kind, name: p.name, address: p.address, phone: p.phone })))
   log(`  ${JSON.stringify(Object.fromEntries(Object.entries(mapLayers).map(([k, v]) => [k, v.length])))}, ${labels.length} labels`)
 
@@ -620,6 +698,10 @@ export async function syncCivic({
       zones: { ...merged, ...Object.fromEntries(Object.entries(z).map(([k, v]) => [k, v.rows])) },
       places: placeLists,
       sources: Object.fromEntries(Object.entries(LAYERS).map(([k, v]) => [k, v])),
+      // Where the Election Day sites came from: the Supervisor of Elections' list, or the county layer.
+      pollingSource: official
+        ? { by: official.by, url: official.source, election: official.election, electionName: official.electionName, published: official.published }
+        : { by: 'Miami-Dade County', url: LAYERS.polling, election: null, electionName: null, published: null },
       counts: { addresses: n, unmatched },
     }
     await db.batch(

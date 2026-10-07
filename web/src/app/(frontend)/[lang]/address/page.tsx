@@ -408,6 +408,14 @@ function Report({
                 </>
               ) : null}
               <p className={s.small}>{c.voteText}</p>
+            {r.pollingSource?.election && r.pollingSource.published ? (
+              <p className={s.meta}>
+                {c.voteFor(longDay(r.pollingSource.election, lang), longDay(r.pollingSource.published, lang))}{' '}
+                <a className={s.link} href={r.pollingSource.url} target="_blank" rel="noopener noreferrer">
+                  PDF ↗
+                </a>
+              </p>
+            ) : null}
               <a
                 className={`${s.link} ${s.noPrint}`}
                 href={LINKS.elections}
@@ -502,6 +510,13 @@ function Report({
         </section>
       </ReportTabs>
     </>
+  )
+}
+
+/** "November 3, 2026" / "3 de noviembre de 2026". */
+function longDay(iso: string, lang: Lang): string {
+  return new Intl.DateTimeFormat(lang === 'es' ? 'es-US' : 'en-US', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
+    new Date(`${iso}T12:00:00Z`),
   )
 }
 

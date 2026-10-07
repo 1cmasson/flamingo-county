@@ -135,6 +135,22 @@ describe('tiles', () => {
   })
 })
 
+describe('official polling places', () => {
+  it('uses the Supervisor of Elections list until its election, then lets it go', async () => {
+    const { officialPolling } = await import('@/lib/civicSync')
+    const list = officialPolling('2026-10-07')!
+    expect(list.election).toBe('2026-11-03')
+    // The two precincts the county's Open Data layer still had at their August sites.
+    expect(list.rows.find((r) => r.precinct === 99 && r.sub === 0)).toMatchObject({ name: 'Williams Island Building 2800', address: '2800 Island Blvd' })
+    expect(list.rows.find((r) => r.precinct === 253 && r.sub === 0)).toMatchObject({ address: '1350 NW 95 St' })
+    // A long name that wraps in the PDF is joined back together.
+    expect(list.rows.find((r) => r.precinct === 162)?.name).toBe('Edison West Little River Community Resource Center')
+    expect(list.rows.every((r) => /^\d/.test(r.address))).toBe(true)
+    expect(officialPolling('2026-11-03')?.election).toBe('2026-11-03')
+    expect(officialPolling('2026-11-04')).toBeNull()
+  })
+})
+
 describe('privacy', () => {
   it('never asks the county for owners, mailing addresses, prices or values', async () => {
     const { ADDRESS_FIELDS, PARCEL_FIELDS } = await import('@/lib/civicSync')
