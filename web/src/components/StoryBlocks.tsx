@@ -3,6 +3,12 @@ import type { Story } from '../payload-types'
 import { translator, type Lang } from '../i18n'
 import { MediaSlot } from './MediaSlot'
 
+/** A media file's own shape as a CSS aspect-ratio, or null when its size is unknown. */
+function imageRatio(m: unknown): string | null {
+  const doc = m && typeof m === 'object' ? (m as { width?: number | null; height?: number | null }) : null
+  return doc?.width && doc?.height ? `${doc.width} / ${doc.height}` : null
+}
+
 type Block = NonNullable<Story['blocks']>[number]
 
 const mono = 'ui-monospace, SFMono-Regular, Menlo, monospace'
@@ -169,7 +175,9 @@ function StoryBlock({ block: b, lang }: { block: Block; lang: Lang }) {
             style={{
               position: 'relative',
               width: '100%',
-              aspectRatio: b.aspectRatio ?? '16 / 9',
+              // The photo whole, at its own shape; the block's ratio only
+              // when the file's size is unknown.
+              aspectRatio: imageRatio(b.image) ?? b.aspectRatio ?? '16 / 9',
               border: '4px solid var(--ink)',
               boxShadow: '8px 8px 0 var(--cyan)',
               overflow: 'hidden',
