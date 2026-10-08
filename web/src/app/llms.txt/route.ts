@@ -6,7 +6,8 @@ import type { City } from '../../payload-types'
 import { allSeasons, seasonWindow } from '../../lib/seasons'
 import { todayISO } from '../../lib/dates'
 import { TRANSIT } from '../../lib/transit'
-import { electionState, voteData } from '../../lib/civic'
+import { electionState, surgeData, voteData } from '../../lib/civic'
+import { SURGE_PAGES } from '../../lib/surgeCopy'
 import { areaName } from '../../lib/voteCopy'
 
 // Built from the database on request; a container build runs against an empty one.
@@ -18,11 +19,12 @@ export const dynamic = 'force-dynamic'
  * database because it is generated, not hand-written.
  */
 export async function GET() {
-  const [cities, listings, events, vote] = await Promise.all([
+  const [cities, listings, events, vote, surge] = await Promise.all([
     getCities('en'),
     getListings('en'),
     getEvents('en'),
     voteData(),
+    surgeData(),
   ])
   const state = vote ? electionState(vote.pollingSource, vote.lastElection) : null
   const src = vote?.pollingSource
@@ -62,6 +64,19 @@ export async function GET() {
     `- [Your address](${absUrl(routes.address('en'))}): type any of Miami-Dade County’s street addresses and see its garbage, recycling and bulk trash days with the next dates, its FEMA flood zone and hurricane storm-surge evacuation zone, its county commissioner and Florida House and Senate districts, its Election Day polling place and precinct, its assigned public schools, and the nearest fire station, police station, hospital, library and park. Built from the public records of Miami-Dade County (Open Data), the City of Hialeah, the City of Miami and FEMA; each result shows the date the records were read. Spanish: ${absUrl(routes.address('es'))}`,
     `- [Free buses in Hialeah](${absUrl(routes.freeRides('en'))}): Hialeah’s two free bus lines, the Flamingo and the Marlin: where they go, when they run, live bus positions and the local spots a short walk from a stop. From the City of Hialeah’s ETA SPOT system and Miami-Dade Transit. Spanish: ${absUrl(routes.freeRides('es'))}`,
     ...voteLines,
+    ...(surge
+      ? [
+          `- [Storm-surge evacuation zones in Miami-Dade](${absUrl(routes.evacuation('en'))}): what each of the county's storm-surge planning zones A to E means (the county's own definitions), and how many addresses each city has in each zone, from Miami-Dade County Open Data (data of ${surge.fetchedAt}). Spanish: ${absUrl(routes.evacuation('es'))}`,
+          ...SURGE_PAGES.flatMap((slug) => {
+            const a = surge.areas.find((x) => x.slug === slug)
+            if (!a) return []
+            const name = areaName({ munic: a.munic, district: null }, 'en')
+            return [
+              `- [Is ${name} in an evacuation zone?](${absUrl(routes.evacuationArea('en', slug))}): ${a.addresses.total - a.addresses.none} of ${name}'s ${a.addresses.total} addresses are in a storm-surge evacuation zone, by zone and ZIP code. Spanish: ${absUrl(routes.evacuationArea('es', slug))}`,
+            ]
+          }),
+        ]
+      : []),
     ...TRANSIT.routes.map(
       (r) =>
         `- [${r.name} free bus line](${absUrl(routes.freeRoute('en', r.slug))}): every stop on Hialeah’s free ${r.name} line, with ride times and the spots near each stop. Spanish: ${absUrl(routes.freeRoute('es', r.slug))}`,

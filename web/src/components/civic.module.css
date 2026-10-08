@@ -1,0 +1,135 @@
+/**
+ * Data tables and zone cards for the civic answer pages (evacuation zones,
+ * and later districts and cities). The page frame (hero, cards, sources)
+ * comes from vote.module.css; this adds what those pages need beyond it.
+ * Tables stay real tables, sized to fit 390px without scrolling sideways.
+ */
+
+.data {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+  line-height: 1.3;
+  font-variant-numeric: tabular-nums;
+}
+.data caption {
+  text-align: left;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 1.4px;
+  text-transform: uppercase;
+  padding-bottom: 8px;
+}
+.data th {
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 8px 8px;
+  background: var(--ink);
+  color: var(--cream);
+}
+.data td,
+.data tbody th {
+  padding: 9px 8px;
+  border-top: 2px dotted var(--ink);
+  vertical-align: top;
+  text-align: left;
+}
+.data tbody th {
+  background: none;
+  color: inherit;
+  font-size: 15px;
+  letter-spacing: 0;
+  text-transform: none;
+  font-weight: 800;
+}
+.data .n {
+  text-align: right;
+  white-space: nowrap;
+}
+.data a {
+  color: var(--ink);
+  font-weight: 800;
+}
+.data tfoot td,
+.data tfoot th {
+  font-weight: 800;
+  border-top: 3px solid var(--ink);
+}
+
+.zones {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
+  gap: 14px;
+}
+.zone {
+  background: var(--cream);
+  border: 3px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+}
+.zoneHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.zoneName {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 28px;
+  line-height: 1;
+}
+.zoneCount {
+  font-weight: 800;
+  font-size: 15px;
+}
+.zoneText {
+  margin: 0;
+  font-weight: 600;
+  font-size: 15px;
+  line-height: 1.4;
+}
+.zoneCities {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.5;
+}
+.zoneCities a {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.facts {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.facts a {
+  color: var(--ink);
+  font-weight: 800;
+}
+
+.links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  font-weight: 800;
+  font-size: 14px;
+}
+.links a {
+  color: var(--ink);
+}

@@ -87,6 +87,7 @@ const EN = {
   mobileAlert: 'This is a mobile home. Leave whenever any hurricane evacuation is ordered, whatever the zone.',
   shelters: 'Shelters are announced by the county when they open.',
   knowZone: 'COUNTY EVACUATION INFO',
+  allZones: 'EVACUATION ZONES BY CITY',
 
   reps: 'WHO REPRESENTS YOU',
   mayor: 'Mayor of Hialeah',
@@ -208,6 +209,7 @@ const ES: AddressCopy = {
   mobileAlert: 'Esta es una casa móvil. Sal con cualquier orden de evacuación por huracán, sea cual sea la zona.',
   shelters: 'El condado anuncia los refugios cuando abren.',
   knowZone: 'EVACUACIÓN DEL CONDADO',
+  allZones: 'ZONAS DE EVACUACIÓN POR CIUDAD',
 
   reps: 'QUIÉN TE REPRESENTA',
   mayor: 'Alcalde de Hialeah',

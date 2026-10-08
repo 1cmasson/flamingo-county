@@ -295,3 +295,30 @@ describe('where to vote', () => {
     expect(status.SCHEMA).toBeGreaterThanOrEqual(5)
   })
 })
+
+/** The evacuation-zone pages: addresses counted by city, ZIP and storm-surge zone. */
+describe('storm surge', () => {
+  it('counts addresses by city, zone and ZIP, mobile homes apart, outside-every-zone as none', async () => {
+    const { surgeSummary, UNINCORPORATED } = await import('@/lib/civicSync')
+    const s = surgeSummary(
+      [
+        { munic: 'HIALEAH', zip: '33012', zone: 'D', mobile: false, n: 100 },
+        { munic: 'HIALEAH', zip: '33012', zone: null, mobile: false, n: 50 },
+        { munic: 'HIALEAH', zip: '33010', zone: 'E', mobile: true, n: 7 },
+        { munic: UNINCORPORATED, zip: '33157', zone: 'A', mobile: false, n: 3 },
+        { munic: 'DORAL', zip: '33178', zone: null, mobile: false, n: 9 },
+      ],
+      ['D', 'A', 'E', 'B', 'C'],
+    )
+    expect(s.zones).toEqual(['A', 'B', 'C', 'D', 'E'])
+    expect(s.county).toEqual({ total: 169, none: 59, byZone: { D: 100, E: 7, A: 3 } })
+    expect(s.mobile).toEqual({ total: 7, none: 0, byZone: { E: 7 } })
+    expect(s.areas.map((a) => a.slug)).toEqual(['doral', 'hialeah', 'unincorporated'])
+    const h = s.areas[1]
+    expect(h.addresses).toEqual({ total: 157, none: 50, byZone: { D: 100, E: 7 } })
+    expect(h.zips.map((z) => [z.zip, z.total, z.none])).toEqual([
+      ['33010', 7, 0],
+      ['33012', 150, 50],
+    ])
+  })
+})
