@@ -48,6 +48,8 @@ export const routes = {
   places: (lang: Lang) => `/${lang}/miami-dade`,
   place: (lang: Lang, slug: string) => `/${lang}/miami-dade/${slug}`,
   district: (lang: Lang, n: number) => `/${lang}/miami-dade/commission-district-${n}`,
+  /** How AI assistants connect to the civic tools (the MCP server at /mcp and the OpenAPI JSON API). */
+  ai: (lang: Lang) => `/${lang}/ai`,
 } as const
 
 /** Append query params, skipping empties — filters keep living in the query. */

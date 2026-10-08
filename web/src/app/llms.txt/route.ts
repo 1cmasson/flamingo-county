@@ -61,6 +61,12 @@ export async function GET() {
         return [`- [${b.name}](${absUrl(routes.business('en', city.slug, b.slug))}): ${b.tag ?? ''}`.trimEnd()]
       }),
     '',
+    '## For AI agents',
+    `- MCP server (Streamable HTTP, no auth, read-only): ${absUrl('/mcp')}. Tools: find_address, address_report (pickup days with next dates, FEMA flood zone, storm-surge zone, county commissioner, state district numbers, Election Day polling place, schools, nearby public places), polling_places, evacuation_zone_summary, trash_schedule. Answers in Spanish by default (lang=en for English), each with its sources and the date the records were read.`,
+    `- OpenAPI 3.1 for the same answers as a JSON API (ChatGPT Actions and others): ${absUrl('/api/civic/v1/openapi.json')}`,
+    `- How to connect (Claude custom connector, ChatGPT GPT Actions): ${absUrl(routes.ai('en'))} Spanish: ${absUrl(routes.ai('es'))}`,
+    '- Nothing about the asker is stored or logged, and nothing takes a location: the tools answer about an address someone gives, never about a person.',
+    '',
     '## Living in Miami-Dade',
     `- [Your address](${absUrl(routes.address('en'))}): type any of Miami-Dade County’s street addresses and see its garbage, recycling and bulk trash days with the next dates, its FEMA flood zone and hurricane storm-surge evacuation zone, its county commissioner and Florida House and Senate districts, its Election Day polling place and precinct, its assigned public schools, and the nearest fire station, police station, hospital, library and park. Built from the public records of Miami-Dade County (Open Data), the City of Hialeah, the City of Miami and FEMA; each result shows the date the records were read. Spanish: ${absUrl(routes.address('es'))}`,
     `- [Free buses in Hialeah](${absUrl(routes.freeRides('en'))}): Hialeah’s two free bus lines, the Flamingo and the Marlin: where they go, when they run, live bus positions and the local spots a short walk from a stop. From the City of Hialeah’s ETA SPOT system and Miami-Dade Transit. Spanish: ${absUrl(routes.freeRides('es'))}`,

@@ -136,6 +136,7 @@ export function proxy(req: NextRequest) {
 }
 
 export const config = {
-  // Everything except Payload's admin/API, Next internals and static files.
-  matcher: ['/((?!admin|api|_next|favicon|.*\\.[\\w]+$).*)'],
+  // Everything except Payload's admin/API, Next internals, the public civic
+  // MCP server (/mcp, which must not be sent to /es/mcp) and static files.
+  matcher: ['/((?!admin|api|_next|favicon|mcp|.*\\.[\\w]+$).*)'],
 }
