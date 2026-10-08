@@ -51,7 +51,7 @@ const ES = {
   addresses: (n: string) => `${n} direcciones`,
   inZoneCities: 'Ciudades y zonas con direcciones aquí',
   howOrdered:
-    'El condado evacúa cada zona, o parte de ella, según la trayectoria del huracán y la marejada prevista, no solo por su categoría. Las zonas que deben salir se anuncian en miamidade.gov.',
+    'El condado evacúa cada zona, o parte de ella, según la trayectoria del huracán y la marejada prevista, sin importar su categoría. Las zonas que deben salir se anuncian en miamidade.gov.',
   notFlood: 'Estas zonas son de marejada, no tu zona de inundación de FEMA.',
   mobile:
     'Si vives en una casa móvil o dependes de un equipo médico eléctrico, sal con cualquier orden de evacuación por huracán, sea cual sea tu zona.',
@@ -122,7 +122,7 @@ const EN: SurgeCopy = {
   addresses: (n) => `${n} addresses`,
   inZoneCities: 'Cities and areas with addresses here',
   howOrdered:
-    'The county evacuates each zone, or part of one, depending on the hurricane’s track and projected storm surge, not only its category. The areas that must leave are announced on miamidade.gov.',
+    'The county evacuates each zone, or part of one, depending on the hurricane’s track and projected storm surge, regardless of its category. The areas that must leave are announced on miamidade.gov.',
   notFlood: 'These are storm-surge zones, not your FEMA flood zone.',
   mobile:
     'If you live in a mobile home or depend on electrically powered medical equipment, leave whenever any hurricane evacuation is ordered, whatever your zone.',
