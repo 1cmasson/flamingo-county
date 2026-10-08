@@ -84,6 +84,8 @@ export default async function StoryPage({
 
   const story = await getStory(lang, slug)
   if (!story) notFound()
+  const coverDoc = rel<Media>(story.cover)
+  const coverRatio = coverDoc?.width && coverDoc?.height ? `${coverDoc.width} / ${coverDoc.height}` : null
 
   const listing = rel<Listing>(story.listing)
   // story -> listing -> city populates at depth 2, but the city's own mascot
@@ -286,7 +288,9 @@ export default async function StoryPage({
                 border: '4px solid var(--ink)',
                 borderTop: 0,
                 boxShadow: '9px 9px 0 var(--ink)',
-                height: 'clamp(240px,52vw,520px)',
+                // A cover photo shows whole, at its own shape; the drawn
+                // DID YOU KNOW? mark (no photo) keeps the fixed banner.
+                ...(coverRatio ? { aspectRatio: coverRatio } : { height: 'clamp(240px,52vw,520px)' }),
                 overflow: 'hidden',
               }}
             >
