@@ -134,6 +134,14 @@ Every page:
 - The Rich Results Test is clean on one page of each kind.
 - The civic probe ids are re-run 4–6 weeks after shipping and logged against Phase 0.
 
+**Status 2026-10-08: storm-surge pages built (PR "Evacuation zones").**
+- **The pages.** `/[lang]/evacuation-zones` is the hub, with zones A–E. For each zone it gives the county's meaning, the address count, and the cities and areas with addresses in it, plus a by-city table. `/[lang]/evacuation-zones/hialeah` answers «¿Hialeah está en zona de evacuación?» by zone and by ZIP code.
+- **Adding a city:** add its slug to `SURGE_PAGES` in `src/lib/surgeCopy.ts`.
+- **The data:** the `meta.surge` key, with counts by city, ZIP and zone; SCHEMA 6.
+- **Hialeah's real count** (2026-10-08) is **8,610 of 44,544 addresses**: 7,080 in zone D and 1,530 in zone E, none in A–C. The "~10,500 buildings" figure above came from an earlier count; the pages use the database's number.
+- **Mobile homes are not counted.** A park is usually one parcel and one address: only 279 mobile-home addresses exist countywide.
+- **The county moved its hurricane pages.** `LINKS.knowYourZone` now points at `/initiative/weather-ready/flooding/storm-surge.page`; the old URL answered 404. The county's own wording is used for each zone's meaning, for mobile homes and electrically dependent residents, and for shelters (announced when they open).
+
 ### Phase 4: homestead and senior exemption guide (ship by January; filing closes March 1, the next on 2027-03-01)
 - **An eligibility guide, not a lookup.** A few yes/no questions:
   - Do you own it and live there on January 1?

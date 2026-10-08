@@ -341,6 +341,9 @@ function Report({
             >
               {c.knowZone} ↗
             </a>
+            <Link className={`${s.link} ${s.noPrint}`} href={routes.evacuation(lang)}>
+              {c.allZones} →
+            </Link>
           </section>
 
           {/* --- Representatives --- */}

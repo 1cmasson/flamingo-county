@@ -7,7 +7,8 @@ import { todayISO } from '../lib/dates'
 import { allSeasons, seasonEvents } from '../lib/seasons'
 import { ROUTE_SLUGS } from '../lib/transit'
 import type { City } from '../payload-types'
-import { voteData } from '../lib/civic'
+import { surgeData, voteData } from '../lib/civic'
+import { SURGE_PAGES } from '../lib/surgeCopy'
 
 // Reads Payload at request time; a container build runs against an empty DB.
 export const dynamic = 'force-dynamic'
@@ -26,12 +27,13 @@ function both(path: (lang: Lang) => string, lastModified?: string | Date, priori
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [cities, listings, events, stories, vote] = await Promise.all([
+  const [cities, listings, events, stories, vote, surge] = await Promise.all([
     getCities('en'),
     getListings('en'),
     getEvents('en'),
     getStories('en'),
     voteData(),
+    surgeData(),
   ])
 
   // A seasonal guide's lastmod is its newest listed event's edit: the page
@@ -61,6 +63,15 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       ? [
           ...both(routes.vote, vote.fetchedAt, 0.8),
           ...vote.areas.flatMap((a) => both((l) => routes.voteArea(l, a.slug), vote.fetchedAt, 0.7)),
+        ]
+      : []),
+    // Storm-surge evacuation zones: the hub and the city pages, once the data has them.
+    ...(surge
+      ? [
+          ...both(routes.evacuation, surge.fetchedAt, 0.8),
+          ...SURGE_PAGES.filter((slug) => surge.areas.some((a) => a.slug === slug)).flatMap((slug) =>
+            both((l) => routes.evacuationArea(l, slug), surge.fetchedAt, 0.7),
+          ),
         ]
       : []),
     ...cities.flatMap((c) => both((l) => routes.city(l, c.slug), c.updatedAt, 0.9)),

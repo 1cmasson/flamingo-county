@@ -144,6 +144,18 @@ export function Footer({ lang }: { lang: Lang }) {
           {t('WHERE TO VOTE')}
         </Link>
         <Link
+          href={routes.evacuation(lang)}
+          style={{
+            fontWeight: 800,
+            fontSize: 12,
+            letterSpacing: '1.6px',
+            color: 'var(--cyan)',
+            textDecoration: 'none',
+          }}
+        >
+          {t('EVACUATION ZONES')}
+        </Link>
+        <Link
           href={routes.about(lang)}
           style={{
             fontWeight: 800,

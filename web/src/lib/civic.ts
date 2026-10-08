@@ -4,7 +4,7 @@ import { createClient, type Client } from '@libsql/client'
 import { todayISO } from './dates'
 import { meters, nearestServing, TRANSIT, walkMinutes, type LatLng, type NearestStop, type TransitRoute } from './transit'
 import { nextDates, normalizeAddress, prettyAddress, slugOf, titleCase, type Rule } from './civicGeo'
-import { dbPath, type Pickup as StoredPickup, type VoteArea } from './civicSync'
+import { dbPath, type Pickup as StoredPickup, type SurgeSummary, type VoteArea } from './civicSync'
 
 export { KIND, normalizeAddress, parseRule, matchesRule, nextDates, rrule, prettyAddress } from './civicGeo'
 export { slugOf }
@@ -46,6 +46,8 @@ type Meta = {
   }
   places: Record<'fire' | 'police' | 'library' | 'park' | 'hospital', Place[]>
   pollingSource?: PollingSource
+  /** Storm-surge zone counts; absent from a database built before SCHEMA 6. */
+  surge?: SurgeSummary
   /** The "where to vote" pages; absent from a database built before SCHEMA 5. */
   vote?: {
     areas: VoteArea[]
@@ -171,6 +173,17 @@ export function electionState(
   if (source?.election && today <= source.election) return { upcoming: true, election: source.election, over: null }
   const past = [source?.election, last?.election].filter((d): d is string => !!d && d < today).sort().pop() ?? null
   return { upcoming: false, election: null, over: past }
+}
+
+/* --------------------------------------------------------- storm surge */
+
+export type { SurgeSummary }
+export type SurgeData = SurgeSummary & { fetchedAt: string }
+
+/** The evacuation-zone pages' counts, or null until a database with the `surge` key is in place. */
+export async function surgeData(): Promise<SurgeData | null> {
+  const c = await open()
+  return c?.meta.surge ? { ...c.meta.surge, fetchedAt: c.meta.fetchedAt } : null
 }
 
 /** The day the records were read from the agencies, or null before the first sync. */
@@ -397,7 +410,13 @@ export const LINKS = {
   countySolidWaste: 'https://www.miamidade.gov/global/solidwaste/home.page',
   countyBulky: 'https://www.miamidade.gov/bulkywaste',
   countyRecycling: 'https://www.miamidade.gov/global/solidwaste/recycling.page',
-  knowYourZone: 'https://www.miamidade.gov/global/emergency/hurricane/evacuation-zones.page',
+  // The county moved its hurricane pages under /initiative/weather-ready/; the old
+  // /global/emergency/hurricane/evacuation-zones.page answered 404 on 2026-10-07.
+  knowYourZone: 'https://www.miamidade.gov/initiative/weather-ready/flooding/storm-surge.page',
+  /** The county's own address lookup for the storm-surge zone ("Know Your Zone"). */
+  zoneLookup: 'https://experience.arcgis.com/experience/2ec553211f1e499f859618eee356f879',
+  hurricanes: 'https://www.miamidade.gov/initiative/weather-ready/hurricanes/home.page',
+  alerts: 'https://www.miamidade.gov/global/service.page?Mduid_service=ser149122963708133',
   elections: 'https://www.miamidade.gov/global/elections/home.page',
   femaFlood: 'https://msc.fema.gov/portal/search',
   findHouse: 'https://www.myfloridahouse.gov/FindYourRepresentative',

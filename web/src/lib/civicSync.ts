@@ -175,6 +175,69 @@ async function all(layer: string, fields: string, geometry = true): Promise<Feat
   return out
 }
 
+/* --------------------------------------------------------------- storm surge */
+
+/** Address counts by storm-surge planning zone ("A"…"E"), and outside every zone. */
+export type ZoneCounts = { total: number; none: number; byZone: Record<string, number> }
+export type SurgeArea = {
+  slug: string
+  munic: string
+  addresses: ZoneCounts
+  /**
+   * Addresses whose parcel's land use is a mobile home. Not shown: a mobile
+   * home park is usually one parcel with one address, so this counts parks,
+   * not homes (279 in the county on 2026-10-07).
+   */
+  mobile: ZoneCounts
+  /** The same counts by ZIP code, for "which parts of the city": never by street or house. */
+  zips: ({ zip: string } & ZoneCounts)[]
+}
+export type SurgeSummary = { zones: string[]; county: ZoneCounts; mobile: ZoneCounts; areas: SurgeArea[] }
+
+/** One group of addresses, as counted in the database: municipality, ZIP, zone (null outside every zone), mobile or not. */
+export type SurgeGroup = { munic: string; zip: string; zone: string | null; mobile: boolean; n: number }
+
+const emptyCounts = (): ZoneCounts => ({ total: 0, none: 0, byZone: {} })
+function addTo(c: ZoneCounts, zone: string | null, n: number) {
+  c.total += n
+  if (zone) c.byZone[zone] = (c.byZone[zone] ?? 0) + n
+  else c.none += n
+}
+
+/**
+ * How many addresses each municipality (and the unincorporated county) has
+ * in each storm-surge planning zone. Municipalities by name, the
+ * unincorporated county last; ZIP codes in order.
+ */
+export function surgeSummary(groups: SurgeGroup[], zones: string[]): SurgeSummary {
+  const county = emptyCounts()
+  const mobile = emptyCounts()
+  const areas = new Map<string, SurgeArea & { zipMap: Map<string, { zip: string } & ZoneCounts> }>()
+  for (const g of groups) {
+    if (!g.munic) continue
+    addTo(county, g.zone, g.n)
+    if (g.mobile) addTo(mobile, g.zone, g.n)
+    const a = areas.get(g.munic) ?? { slug: municSlug(g.munic), munic: g.munic, addresses: emptyCounts(), mobile: emptyCounts(), zips: [], zipMap: new Map() }
+    addTo(a.addresses, g.zone, g.n)
+    if (g.mobile) addTo(a.mobile, g.zone, g.n)
+    if (g.zip) {
+      const z = a.zipMap.get(g.zip) ?? { zip: g.zip, ...emptyCounts() }
+      addTo(z, g.zone, g.n)
+      a.zipMap.set(g.zip, z)
+    }
+    areas.set(g.munic, a)
+  }
+  const rank = (m: string) => (m === UNINCORPORATED ? 1 : 0)
+  return {
+    zones: [...zones].sort(),
+    county,
+    mobile,
+    areas: [...areas.values()]
+      .sort((a, b) => rank(a.munic) - rank(b.munic) || a.munic.localeCompare(b.munic))
+      .map(({ zipMap, ...a }) => ({ ...a, zips: [...zipMap.values()].sort((x, y) => x.zip.localeCompare(y.zip)) })),
+  }
+}
+
 /* --------------------------------------------------------------- raw caches */
 
 type CacheState = Record<string, { edited: number | null; rows: number; at: string }>
@@ -323,6 +386,11 @@ export type VoteArea = { slug: string; munic: string; district: number | null; p
 
 export const UNINCORPORATED = 'UNINCORPORATED MIAMI-DADE'
 
+/** A municipality's URL slug: "HIALEAH GARDENS" → "hialeah-gardens", the unincorporated county → "unincorporated". */
+export function municSlug(munic: string): string {
+  return munic === UNINCORPORATED ? 'unincorporated' : munic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+}
+
 /**
  * The vote pages: one per municipality, and unincorporated Miami-Dade split
  * by commission district. A precinct is listed in every place it has
@@ -338,7 +406,7 @@ export function voteAreas(placements: VotePlacement[]): VoteArea[] {
       ? p.district != null
         ? `unincorporated-district-${p.district}`
         : 'unincorporated'
-      : p.munic.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+      : municSlug(p.munic)
     const area = areas.get(slug) ?? { slug, munic: p.munic, district: uninc ? p.district : null, precincts: [] }
     if (!area.precincts.includes(p.precinct)) area.precincts.push(p.precinct)
     areas.set(slug, area)
@@ -771,6 +839,24 @@ export async function syncCivic({
     )
     const latest = latestOfficialPolling()
 
+    log('storm surge…')
+    // Every address counted by municipality, ZIP, surge zone and whether its
+    // parcel is a mobile home. Counts only: no address leaves the database.
+    const surgeRows = (
+      await db.execute(`SELECT munic, zip, surge, kind = ${KIND.mobile} AS mobile, COUNT(*) AS n FROM addr GROUP BY munic, zip, surge, mobile`)
+    ).rows
+    const surge = surgeSummary(
+      surgeRows.map((r) => ({
+        munic: names[Number(r.munic)] ?? '',
+        zip: Number(r.zip) ? String(r.zip).padStart(5, '0') : '',
+        zone: r.surge != null && Number(r.surge) >= 0 ? (z.surge.rows[Number(r.surge)] ?? null) : null,
+        mobile: Number(r.mobile) === 1,
+        n: Number(r.n),
+      })),
+      z.surge.rows,
+    )
+    log(`  ${JSON.stringify(surge.county)}`)
+
     const fetchedAt = new Date().toISOString().slice(0, 10)
     const meta: Record<string, unknown> = {
       fetchedAt,
@@ -784,6 +870,8 @@ export async function syncCivic({
         : { by: 'Miami-Dade County', url: LAYERS.polling, election: null, electionName: null, published: null },
       // The "where to vote" pages. `lastElection` is the newest official list
       // we hold, past or not, so the pages can say when its election is over.
+      // Storm-surge planning zones: address counts by city, ZIP and zone.
+      surge,
       vote: {
         areas,
         byArea,

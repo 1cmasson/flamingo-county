@@ -67,18 +67,19 @@ function hasSessionCookie(req: NextRequest): boolean {
 }
 
 /**
- * The "where to vote" pages read only the address database. Until a database
- * in the current layout is on disk (the first sync, or the rebuild after a
- * deploy that changed it, about ten minutes) they answer 503 with
- * Retry-After: never an empty page with a 200 a crawler would keep.
+ * The civic answer pages ("where to vote", the evacuation zones) read only
+ * the address database. Until a database in the current layout is on disk
+ * (the first sync, or the rebuild after a deploy that changed it, about ten
+ * minutes) they answer 503 with Retry-After: never an empty page with a 200
+ * a crawler would keep.
  */
-const VOTE_PATH = /^\/(en|es)\/vote(\/|$)/
+const CIVIC_PATH = /^\/(en|es)\/(vote|evacuation-zones)(\/|$)/
 
 function notReady() {
   const body =
     '<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Flamingo County</title>' +
-    '<p>Estamos actualizando los datos de votación. Vuelve en unos minutos.</p>' +
-    '<p>We are updating the voting data. Please come back in a few minutes.</p>'
+    '<p>Estamos actualizando estos datos del condado. Vuelve en unos minutos.</p>' +
+    '<p>We are updating this county data. Please come back in a few minutes.</p>'
   return new NextResponse(body, {
     status: 503,
     headers: { 'Content-Type': 'text/html; charset=utf-8', 'Retry-After': '600', 'Cache-Control': 'no-store' },
@@ -100,7 +101,7 @@ export function proxy(req: NextRequest) {
 
   const first = pathname.split('/')[1]
   if (isLang(first)) {
-    if (VOTE_PATH.test(pathname) && !civicCurrent()) return notReady()
+    if (CIVIC_PATH.test(pathname) && !civicCurrent()) return notReady()
     const res = NextResponse.next()
     // `[lang]/layout.tsx` is `force-dynamic` because it reads the member's
     // session on every request (the nav needs signed-in state), and Next's

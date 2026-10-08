@@ -37,6 +37,9 @@ export const routes = {
   /** Election Day polling places: the hub, and one page per municipality or unincorporated commission district. */
   vote: (lang: Lang) => `/${lang}/vote`,
   voteArea: (lang: Lang, area: string) => `/${lang}/vote/${area}`,
+  /** Storm-surge evacuation zones A–E: the hub, and a page for a city (only Hialeah so far). */
+  evacuation: (lang: Lang) => `/${lang}/evacuation-zones`,
+  evacuationArea: (lang: Lang, area: string) => `/${lang}/evacuation-zones/${area}`,
 } as const
 
 /** Append query params, skipping empties — filters keep living in the query. */
