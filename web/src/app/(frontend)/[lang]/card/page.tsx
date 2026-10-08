@@ -11,6 +11,7 @@ import type { City, Media } from '../../../../payload-types'
 import { PageShell } from '../../../../components/PageShell'
 import { CardFlip } from '../../../../components/CardFlip'
 import s from '../../../../components/card.module.css'
+import { CITY_LOOPS } from '../../../../lib/cityLoops'
 
 /**
  * Where the business card's QR code lands (through /go/card, so scans count as
@@ -44,13 +45,6 @@ export async function generateMetadata({
     },
   }
 }
-
-/**
- * Cities with an animated backdrop: each city's hero photo, animated with FAL
- * (Kling image-to-video, static camera) and played forward-then-back so it
- * loops without a seam. Files in public/assets/cities/: <slug>.mp4 + <slug>.jpg.
- */
-const CITY_LOOPS = new Set(['hialeah', 'lakes', 'havana'])
 
 const word = (text: string, from = 0) =>
   [...text].map((ch, i) => (

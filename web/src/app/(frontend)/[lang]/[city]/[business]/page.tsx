@@ -24,6 +24,9 @@ import { AnswerBlock } from '../../../../../components/AnswerBlock'
 import { Breadcrumbs, type Crumb } from '../../../../../components/Breadcrumbs'
 import { PageShell } from '../../../../../components/PageShell'
 import { MediaSlot } from '../../../../../components/MediaSlot'
+import { PhotoCarousel, type CarouselSlide } from '../../../../../components/PhotoCarousel'
+import { photoCredit } from '../../../../../lib/photoLicense'
+import { cityLoop } from '../../../../../lib/cityLoops'
 import { GemBadge } from '../../../../../components/GemBadge'
 import { MascotBust } from '../../../../../components/MascotBust'
 import { isGem } from '../../../../../lib/categories'
@@ -138,6 +141,11 @@ export default async function BusinessPage({
   const mascot = city ? rel<Media>(city.solo) : null
   const gem = isGem(category?.slug)
   const gallery = (Array.isArray(listing.gallery) ? listing.gallery : []).map((g) => rel<Media>(g))
+  // Every photo, the hero's too, whole and credited: the hero above is a crop.
+  const slides: CarouselSlide[] = gallery
+    .filter((m): m is Media => Boolean(m?.url))
+    .map((m) => ({ media: m, caption: m.alt ?? '', credit: photoCredit(m, lang as Lang) }))
+  const loop = cityLoop(city?.slug)
 
   const d = listing.detail ?? {}
   const storyParas = (d.story ?? []).map((p) => p.text).filter(Boolean)
@@ -538,39 +546,20 @@ export default async function BusinessPage({
               </section>
             ) : null}
 
-            {/* One tile per photo that exists, and no grid at all when the only
-                photo is the hero. This was a fixed `[0,1,2].map` over
-                `gallery[i+1]`, which drew three bordered, shadowed, dashed
-                boxes on every listing — none of the thirteen has ever had a
-                second photograph, so the strip was a permanent apology for
-                missing pictures. The frame is drawn here rather than in
-                MediaSlot, so it has to be gated here too. */}
-            {gallery.length > 1 ? (
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,135px),1fr))',
-                  gap: 'clamp(10px,2vw,14px)',
-                }}
-              >
-                {gallery.slice(1).map((shot, i) => (
-                  <div
-                    key={i}
-                    style={{
-                      position: 'relative',
-                      height: 'clamp(130px,22vw,170px)',
-                      border: '4px solid var(--ink)',
-                      boxShadow: '6px 6px 0 var(--ink)',
-                    }}
-                  >
-                    <MediaSlot
-                      media={shot}
-                      // Three-up under the main column, so ~250px on a desktop.
-                      sizes="(max-width: 700px) 33vw, 250px"
-                    />
-                  </div>
-                ))}
-              </div>
+            {/* The photos as a carousel, each whole with its caption and credit,
+                once there is more than the hero. It was a strip of square
+                tiles, which cut the 1996 survey photos down and printed no
+                credit for them. */}
+            {slides.length > 1 ? (
+              <PhotoCarousel
+                slides={slides}
+                label={`${t('Photos')}: ${listing.name}`}
+                prev={t('Previous photo')}
+                next={t('Next photo')}
+                of={t('of')}
+                // The main column: full width on a phone, about 760px beside the sidebar.
+                sizes="(max-width: 900px) 100vw, 760px"
+              />
             ) : null}
           </div>
 
@@ -717,7 +706,10 @@ export default async function BusinessPage({
                   <div
                     style={{
                       marginTop: 12,
-                      background: city?.castBg ?? 'var(--cyan)',
+                      position: 'relative',
+                      // The city's animated backdrop, faded over its colour as on
+                      // the card page's city tiles; the flat colour without one.
+                      background: loop ? (city?.accent ?? 'var(--cyan)') : (city?.castBg ?? 'var(--cyan)'),
                       border: '3px solid var(--ink)',
                       height: 200,
                       display: 'flex',
@@ -726,8 +718,30 @@ export default async function BusinessPage({
                       overflow: 'hidden',
                     }}
                   >
+                    {loop ? (
+                      <video
+                        data-city-loop
+                        src={loop.src}
+                        poster={loop.poster}
+                        autoPlay
+                        muted
+                        loop
+                        playsInline
+                        preload="metadata"
+                        aria-hidden="true"
+                        style={{
+                          position: 'absolute',
+                          inset: 0,
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          opacity: 0.5,
+                          pointerEvents: 'none',
+                        }}
+                      />
+                    ) : null}
                     {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={mascot.url} alt="" style={{ height: '95%', width: 'auto' }} />
+                    <img src={mascot.url} alt="" style={{ position: 'relative', height: '95%', width: 'auto' }} />
                   </div>
                 ) : null}
               </section>
