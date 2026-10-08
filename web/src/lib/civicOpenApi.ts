@@ -87,6 +87,16 @@ export function civicOpenApi() {
           responses: { '200': result, ...errors },
         },
       },
+      '/local-officials': {
+        get: {
+          operationId: 'localOfficials',
+          summary: 'Who governs a Miami-Dade city: mayors and commissioners',
+          description:
+            'The county mayor, the city’s mayor (with how they are chosen, the official source and the date checked), and the county commissioners for the city. Unincorporated areas have no city mayor.',
+          parameters: [city(true, 'A municipality, e.g. "Hialeah", or "unincorporated".'), lang],
+          responses: { '200': result, ...errors },
+        },
+      },
       '/trash-schedule': {
         get: {
           operationId: 'trashSchedule',

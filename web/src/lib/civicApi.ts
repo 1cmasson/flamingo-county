@@ -25,6 +25,7 @@ import { trashMode, trashProviders } from './places'
 import { routes } from './routes'
 import { absUrl } from './site'
 import { todayISO } from './dates'
+import { ballotNote, cityMayor, COUNTY_MAYOR, selectionText, type Mayor } from './mayors'
 
 /**
  * The public civic tools for AI agents: one implementation behind the MCP
@@ -43,7 +44,7 @@ import { todayISO } from './dates'
  *   answer says who handles pickup and stops.
  */
 
-export const TOOL_NAMES = ['find_address', 'address_report', 'polling_places', 'evacuation_zone_summary', 'trash_schedule'] as const
+export const TOOL_NAMES = ['find_address', 'address_report', 'polling_places', 'evacuation_zone_summary', 'trash_schedule', 'local_officials'] as const
 export type ToolName = (typeof TOOL_NAMES)[number]
 
 export type Source = { agency: string; url: string }
@@ -146,6 +147,21 @@ export async function findAddress(query: string, lang: Lang): Promise<ToolResult
     data: { results },
     sources: [SRC.openData],
     fetchedAt,
+  }
+}
+
+/* ---------------------------------------------------------------- mayors */
+
+/** A mayor as an agent gets it: the public fields, how they're chosen, and any ballot note. */
+function mayorOut(m: Mayor & { munic?: string }, lang: Lang, today: string = todayISO()) {
+  return {
+    name: m.name,
+    title: m.title,
+    selection: m.selection,
+    selectionText: selectionText(m.selection, lang),
+    source: m.sourceUrl,
+    checked: m.checked,
+    ballotNote: m.munic ? ballotNote({ ...m, munic: m.munic }, lang, today) : null,
   }
 }
 
@@ -269,7 +285,9 @@ export function reportData(r: AddressReport, lang: Lang, today: string = todayIS
     stateHouseDistrict: r.house?.district ?? null,
     stateSenateDistrict: r.senate?.district ?? null,
     stateLookups: { house: LINKS.findHouse, senate: LINKS.findSenate },
-    cityGovernment: isHialeah ? { mayor: CITY_GOVERNMENT.mayor, url: CITY_GOVERNMENT.mayorUrl, checked: CITY_GOVERNMENT.checked } : null,
+    /** The county mayor governs every address; a city mayor only inside a city (src/data/civic/mayors.json, with source and date). */
+    mayor: { county: mayorOut(COUNTY_MAYOR, lang), city: cityMayor(r.munic) ? mayorOut(cityMayor(r.munic)!, lang, today) : null },
+    cityCouncil: isHialeah ? { url: CITY_GOVERNMENT.councilUrl, checked: CITY_GOVERNMENT.checked } : null,
     electionDay: {
       precinct: r.precinct,
       place: r.polling ? { name: r.polling.name, address: r.polling.address } : null,
@@ -515,5 +533,56 @@ export async function trashSchedule(input: { city?: string }, lang: Lang): Promi
     sources: [SRC.openData, mode.kind === 'own' ? (mode.by === 'hialeah' ? SRC.hialeahWaste : SRC.miamiWaste) : SRC.countyWaste],
     fetchedAt: data.fetchedAt,
     page,
+  }
+}
+
+/* -------------------------------------------------------- local_officials */
+
+/**
+ * Who governs a city: the county mayor (every address), the city's mayor
+ * (none in the unincorporated county), and the county commissioners whose
+ * districts hold its addresses. Each mayor with its source and checked date.
+ */
+export async function localOfficials(input: { city?: string }, lang: Lang, today: string = todayISO()): Promise<ToolResult> {
+  const tool = 'local_officials'
+  const data = await placesData()
+  if (!data) return notReady(tool, lang)
+  const raw = String(input.city ?? '').trim()
+  if (!raw) return badRequest(tool, lang, { es: 'Pasa una ciudad («city»).', en: 'Pass a city.' })
+  const city = data.cities.find((c) => c.slug === citySlug(raw))
+  if (!city) return notFound(tool, lang, raw)
+  const name = areaName({ munic: city.munic, district: null }, lang)
+  const county = mayorOut(COUNTY_MAYOR, lang, today)
+  const m = cityMayor(city.munic)
+  const mayor = m ? mayorOut(m, lang, today) : null
+  const commissioners = city.districts.map((d) => ({
+    district: d.district,
+    name: data.districts.find((x) => x.district === d.district)?.name ?? null,
+    addresses: d.n,
+    page: absUrl(routes.district(lang, d.district)),
+  }))
+  const t = (es: string, en: string) => (lang === 'es' ? es : en)
+  const text = mayor
+    ? t(
+        `${mayor.name} ocupa la alcaldía de ${name} (${mayor.selectionText.toLowerCase()}; ${new URL(mayor.source).hostname}, consultado el ${mayor.checked}). Para todo el condado, la alcaldía es de ${county.name}.${mayor.ballotNote ? ` ${mayor.ballotNote}` : ''}`,
+        `${mayor.name} is the mayor of ${name} (${mayor.selectionText.toLowerCase()}; ${new URL(mayor.source).hostname}, checked ${mayor.checked}). For the whole county, the mayor is ${county.name}.${mayor.ballotNote ? ` ${mayor.ballotNote}` : ''}`,
+      )
+    : t(
+        `El condado no incorporado no tiene alcaldía de ciudad: lo gobiernan el condado, con ${county.name} en la alcaldía, y la Comisión del condado (${commissioners.map((c) => `distrito ${c.district}: ${c.name}`).join('; ')}).`,
+        `Unincorporated Miami-Dade has no city mayor: it is governed by the county, with Mayor ${county.name}, and the county commission (${commissioners.map((c) => `District ${c.district}: ${c.name}`).join('; ')}).`,
+      )
+  return {
+    ok: true,
+    tool,
+    lang,
+    text,
+    data: { city: city.slug, name, countyMayor: county, cityMayor: mayor, commissioners },
+    sources: [
+      { agency: 'Miami-Dade County · Mayor', url: COUNTY_MAYOR.sourceUrl },
+      ...(m ? [{ agency: `${name} · official site`, url: m.sourceUrl }] : []),
+      SRC.openData,
+    ],
+    fetchedAt: data.fetchedAt,
+    page: absUrl(routes.place(lang, city.slug)),
   }
 }

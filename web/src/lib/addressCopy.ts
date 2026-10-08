@@ -89,8 +89,14 @@ const EN = {
   knowZone: 'COUNTY EVACUATION INFO',
   allZones: 'EVACUATION ZONES BY CITY',
 
-  reps: 'WHO REPRESENTS YOU',
-  mayor: 'Mayor of Hialeah',
+  reps: 'WHO GOVERNS HERE',
+  countyMayorLabel: 'Miami-Dade County Mayor',
+  countyMayorText: 'Mayor of Miami-Dade County, for every address in the county, inside a city or not.',
+  cityMayorLabel: (city: string) => `Mayor of ${city}`,
+  checkedAt: (host: string, date: string) => `${host} · checked ${date}`,
+  unincorporatedGov: (mayor: string, name: string, d: number) =>
+    `Not inside a city: your local government is the county. Mayor ${mayor} and your county commissioner, ${name}, District ${d}.`,
+  unincorporatedGovNoDistrict: (mayor: string) => `Not inside a city: your local government is the county, led by Mayor ${mayor}.`,
   council: 'Hialeah City Council',
   councilText: '7 members, all elected citywide, so every one of them represents you.',
   yourCity: 'Your city',
@@ -211,8 +217,14 @@ const ES: AddressCopy = {
   knowZone: 'EVACUACIÓN DEL CONDADO',
   allZones: 'ZONAS DE EVACUACIÓN POR CIUDAD',
 
-  reps: 'QUIÉN TE REPRESENTA',
-  mayor: 'Alcalde de Hialeah',
+  reps: 'QUIÉN GOBIERNA AQUÍ',
+  countyMayorLabel: 'Alcaldía del condado Miami-Dade',
+  countyMayorText: 'Es la alcaldía de todo Miami-Dade: vale para cada dirección del condado, esté dentro de una ciudad o no.',
+  cityMayorLabel: (city: string) => `Alcaldía de ${city}`,
+  checkedAt: (host: string, date: string) => `${host} · consultado el ${date}`,
+  unincorporatedGov: (mayor: string, name: string, d: number) =>
+    `No estás dentro de una ciudad: tu gobierno local es el condado. Al frente están ${mayor}, en la alcaldía, y ${name}, que te representa en la Comisión del condado (distrito ${d}).`,
+  unincorporatedGovNoDistrict: (mayor: string) => `No estás dentro de una ciudad: tu gobierno local es el condado, con ${mayor} en la alcaldía.`,
   council: 'Concejo de Hialeah',
   councilText: '7 miembros elegidos por toda la ciudad, así que todos te representan.',
   yourCity: 'Tu ciudad',

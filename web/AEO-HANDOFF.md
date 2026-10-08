@@ -154,6 +154,29 @@ Every page:
 - **Districts** show the commissioner (county layer), the cities with address counts, and the unincorporated addresses by ZIP code. The records don't name unincorporated places.
 - **Not done:** links to each city's own website. The records don't hold them, and 34 hand-picked URLs would need checking one by one.
 
+### Mayors (2026-10-08)
+- **The file.** Every Miami-Dade mayor is in `src/data/civic/mayors.json`, checked on each government's own site on 2026-10-07: the county (Daniella Levine Cava) and all 34 cities. `lib/mayors.ts` lets only the public fields out: name, title, how the mayor is chosen, the source and the checked date. The file's `confidence`, `termNote` and `sourceSays` are working notes and are never shown.
+- **Where it shows:**
+  - the address card («Quién gobierna aquí»);
+  - the city pages, with a "Who is the mayor of X?" answer and `GovernmentOrganization` JSON-LD;
+  - the hub's mayors table, plus a "Does Kendall have a mayor?" answer;
+  - the AI tools (`address_report.mayor`, `local_officials`).
+- **One rule:** a mayor is never printed without its source link and checked date.
+- **Ballot note:** «El puesto de alcalde está en la boleta del 3 de noviembre de 2026».
+  - It shows for the 12 cities in `ON_BALLOT` in `lib/mayors.ts`: six open seats and six challenged incumbents.
+  - Biscayne Park's mayor is chosen by the council, so it gets «puede cambiar».
+  - The note switches itself off after 2026-12-15.
+- **Re-check every mayor and update `mayors.json`, with its `checked` dates:**
+  1. after the Nov 3, 2026 election;
+  2. again after the runoffs (Nov 17; Dec 1 and Dec 8);
+  3. in November, after Bal Harbour's council picks its mayor at its induction meeting.
+
+  Council-chosen mayors can also change without a citywide vote: Biscayne Park after the November 2026 election, Bay Harbor Islands and Miami Shores in April 2027, and Indian Creek Village after each February election.
+- **Medium confidence on 2026-10-07:**
+  - **Hialeah Gardens:** the city's bio text is old; confirm with the City Clerk.
+  - **West Miami:** confirmed by news reports of the April 2026 election.
+- **Do not use the county's `local-mayors-list.pdf`.** It is years out of date.
+
 ### Phase 4: homestead and senior exemption guide (ship by January; filing closes March 1, the next on 2027-03-01)
 - **An eligibility guide, not a lookup.** A few yes/no questions:
   - Do you own it and live there on January 1?

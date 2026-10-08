@@ -118,6 +118,8 @@ describe('civic tools', () => {
     expect(d).toMatchObject({ floodZone: 'X', surgeZone: 'D', stateHouseDistrict: 110, stateSenateDistrict: 36 })
     expect(d.electionDay).toMatchObject({ precinct: 318, place: { name: 'Hialeah Middle School' }, current: true })
     expect(d.page).toBe('https://flamingocounty.com/en/address?a=5410-w-6-ln-33012')
+    expect(d.mayor.county.name).toBe('Daniella Levine Cava')
+    expect(d.mayor.city).toMatchObject({ name: 'Bryan Calvo', selection: 'elected', source: 'https://www.hialeahfl.gov/195/City-Mayor' })
     const text = JSON.stringify(r)
     expect(text).not.toMatch(/"lat"|"lon"|"at":|A 2022 name|258717|8029677/)
   })
@@ -167,6 +169,21 @@ describe('civic tools', () => {
     if (!g.ok) throw new Error()
     expect((g.data as { schedule: unknown }).schedule).toBeNull()
     expect(g.text).toMatch(/la maneja la ciudad de Coral Gables/)
+  })
+
+  it('local_officials: the county mayor, the city mayor with its source, the commissioners', async () => {
+    const { localOfficials } = await import('@/lib/civicApi')
+    const h = await localOfficials({ city: 'Hialeah' }, 'es', '2026-10-08')
+    shape(h)
+    expect(h.text).toMatch(/^Bryan Calvo ocupa la alcaldía de Hialeah/)
+    expect(h.text).toMatch(/Daniella Levine Cava/)
+    if (!h.ok) throw new Error()
+    expect((h.data as { commissioners: { district: number; name: string }[] }).commissioners).toEqual([
+      expect.objectContaining({ district: 13, name: 'René Garcia' }),
+    ])
+    expect(JSON.stringify(h)).not.toMatch(/confidence|termNote/)
+    const gables = await localOfficials({ city: 'Coral Gables' }, 'en', '2026-10-08')
+    expect(gables.text).toMatch(/Vince C\. Lago .*Nov 3, 2026 ballot/)
   })
 
   it('never logs the query', async () => {
@@ -244,7 +261,7 @@ describe('MCP server', () => {
     expect((await init.json()).result.serverInfo.name).toBe('flamingo-county-civic')
     const list = await (await POST(mcp({ jsonrpc: '2.0', id: 2, method: 'tools/list', params: {} }))).json()
     const tools = list.result.tools as { name: string; annotations: { readOnlyHint: boolean } }[]
-    expect(tools.map((t) => t.name).sort()).toEqual(['address_report', 'evacuation_zone_summary', 'find_address', 'polling_places', 'trash_schedule'])
+    expect(tools.map((t) => t.name).sort()).toEqual(['address_report', 'evacuation_zone_summary', 'find_address', 'local_officials', 'polling_places', 'trash_schedule'])
     expect(tools.every((t) => t.annotations.readOnlyHint)).toBe(true)
     const call = await (
       await POST(mcp({ jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'trash_schedule', arguments: { city: 'Hialeah', lang: 'en' } } }))

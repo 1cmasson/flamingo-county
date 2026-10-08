@@ -9,6 +9,7 @@ import { TRANSIT } from '../../lib/transit'
 import { electionState, placesData, surgeData, voteData } from '../../lib/civic'
 import { SURGE_PAGES } from '../../lib/surgeCopy'
 import { areaName } from '../../lib/voteCopy'
+import { COUNTY_MAYOR } from '../../lib/mayors'
 
 // Built from the database on request; a container build runs against an empty one.
 export const dynamic = 'force-dynamic'
@@ -62,7 +63,7 @@ export async function GET() {
       }),
     '',
     '## For AI agents',
-    `- MCP server (Streamable HTTP, no auth, read-only): ${absUrl('/mcp')}. Tools: find_address, address_report (pickup days with next dates, FEMA flood zone, storm-surge zone, county commissioner, state district numbers, Election Day polling place, schools, nearby public places), polling_places, evacuation_zone_summary, trash_schedule. Answers in Spanish by default (lang=en for English), each with its sources and the date the records were read.`,
+    `- MCP server (Streamable HTTP, no auth, read-only): ${absUrl('/mcp')}. Tools: find_address, address_report (pickup days with next dates, FEMA flood zone, storm-surge zone, county and city mayors, county commissioner, state district numbers, Election Day polling place, schools, nearby public places), polling_places, evacuation_zone_summary, trash_schedule, local_officials (mayors and commissioners for a city). Answers in Spanish by default (lang=en for English), each with its sources and the date the records were read.`,
     `- OpenAPI 3.1 for the same answers as a JSON API (ChatGPT Actions and others): ${absUrl('/api/civic/v1/openapi.json')}`,
     `- How to connect (Claude custom connector, ChatGPT GPT Actions): ${absUrl(routes.ai('en'))} Spanish: ${absUrl(routes.ai('es'))}`,
     '- Flamingo County does not store or log queries, and nothing takes a location: the tools answer about an address someone gives, never about a person. (The hosting providers, Railway and Cloudflare, handle technical request data; on the JSON API the address is in the URL, on the MCP server it is in the request body.)',
@@ -73,10 +74,11 @@ export async function GET() {
     ...voteLines,
     ...(places
       ? [
-          `- [Miami-Dade's cities and commission districts](${absUrl(routes.places('en'))}): each of Miami-Dade's ${places.cities.length - 1} cities and the unincorporated county, and the ${places.districts.length} county commission districts, from Miami-Dade County Open Data (data of ${places.fetchedAt}). Spanish: ${absUrl(routes.places('es'))}`,
+          `- [Miami-Dade's cities and commission districts](${absUrl(routes.places('en'))}): each of Miami-Dade's ${places.cities.length - 1} cities and the unincorporated county, and the ${places.districts.length} county commission districts, from Miami-Dade County Open Data (data of ${places.fetchedAt}), with a table of all 34 city mayors. Spanish: ${absUrl(routes.places('es'))}`,
+          `- Mayor of Miami-Dade County, for every address in the county inside a city or not: ${COUNTY_MAYOR.name} (${COUNTY_MAYOR.sourceUrl}, checked ${COUNTY_MAYOR.checked}). Unincorporated areas such as Kendall, Westchester and Fontainebleau have no city mayor.`,
           ...places.cities.map((c) => {
             const name = areaName({ munic: c.munic, district: null }, 'en')
-            return `- [${name}](${absUrl(routes.place('en', c.slug))}): who picks up the trash (and the pickup zones where the records hold them), how many of its ${c.total} addresses are in FEMA high-risk flood zones and storm-surge evacuation zones, polling places, and the fire and police stations inside its limits. Spanish: ${absUrl(routes.place('es', c.slug))}`
+            return `- [${name}](${absUrl(routes.place('en', c.slug))}): its mayor (from the city's official site, with the date checked), who picks up the trash (and the pickup zones where the records hold them), how many of its ${c.total} addresses are in FEMA high-risk flood zones and storm-surge evacuation zones, polling places, and the fire and police stations inside its limits. Spanish: ${absUrl(routes.place('es', c.slug))}`
           }),
           ...places.districts.map(
             (d) =>

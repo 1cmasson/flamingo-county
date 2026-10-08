@@ -4,6 +4,7 @@ import {
   addressReportTool,
   evacuationSummary,
   findAddress,
+  localOfficials,
   pollingPlaces,
   toLang,
   trashSchedule,
@@ -61,7 +62,7 @@ export function civicMcpServer(): McpServer {
     {
       title: 'What the county and city records say about one address',
       description:
-        'For one Miami-Dade address: garbage, recycling and bulk pickup days with the next dates (Miami time), FEMA flood zone, storm-surge evacuation zone, county commissioner, Florida House and Senate district numbers, the Election Day polling place and its source, assigned public schools, the nearest fire station, police, hospital, library and park, the free Hialeah bus when in reach, and the link to the page a person can open. Pass a slug from find_address, or an address (an ambiguous one returns candidates).',
+        'For one Miami-Dade address: garbage, recycling and bulk pickup days with the next dates (Miami time), FEMA flood zone, storm-surge evacuation zone, county mayor and city mayor, county commissioner, Florida House and Senate district numbers, the Election Day polling place and its source, assigned public schools, the nearest fire station, police, hospital, library and park, the free Hialeah bus when in reach, and the link to the page a person can open. Pass a slug from find_address, or an address (an ambiguous one returns candidates).',
       inputSchema: {
         slug: z.string().max(120).optional().describe('An address slug from find_address, e.g. "5410-w-6-ln-33012".'),
         address: z.string().max(140).optional().describe('A street address, if there is no slug.'),
@@ -110,6 +111,18 @@ export function civicMcpServer(): McpServer {
       annotations: ANNOTATIONS,
     },
     async ({ city, lang }) => reply(await trashSchedule({ city }, toLang(lang))),
+  )
+
+  server.registerTool(
+    'local_officials',
+    {
+      title: 'Who governs a Miami-Dade city',
+      description:
+        'For one municipality, or "unincorporated": the Miami-Dade County mayor (for every address in the county), the city’s mayor with how they are chosen and the official page it was checked on, and the county commissioners whose districts hold its addresses. Unincorporated areas (Kendall, Westchester, Fontainebleau…) have no city mayor.',
+      inputSchema: { city: z.string().min(2).max(80).describe('A municipality, e.g. "Hialeah", "Coral Gables", "unincorporated".'), lang: LANG },
+      annotations: ANNOTATIONS,
+    },
+    async ({ city, lang }) => reply(await localOfficials({ city }, toLang(lang))),
   )
 
   return server

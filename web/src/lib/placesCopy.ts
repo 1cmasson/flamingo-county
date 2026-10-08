@@ -13,7 +13,7 @@ const ES = {
   home: 'Flamingo County',
   hub: 'Ciudades y distritos',
   hubTitle: 'Las ciudades y los distritos de Miami-Dade',
-  hubMetaTitle: 'Ciudades y distritos de la Comisión de Miami-Dade: basura, inundación, evacuación y votación',
+  hubMetaTitle: 'Ciudades y distritos de Miami-Dade: alcaldes, comisionados, basura, inundación y votación',
   hubMetaDescription:
     'Cada ciudad de Miami-Dade y el condado no incorporado: quién recoge la basura, cuántas direcciones están en zonas de inundación y de evacuación, dónde se vota y los 13 distritos de la Comisión. Según los registros del condado.',
   hubQuestion: '¿Cuántas ciudades y distritos de la Comisión tiene Miami-Dade?',
@@ -27,10 +27,20 @@ const ES = {
   districtTitle: (n: number) => `Distrito ${n} de la Comisión de Miami-Dade`,
   // City page
   cityTitle: (name: string) => `${name}: basura, inundación, evacuación y votación`,
-  cityMetaTitle: (name: string) => `${name}: quién recoge la basura, zonas de inundación y evacuación, dónde votar`,
+  cityMetaTitle: (name: string) => `${name}: alcaldía, quién recoge la basura, inundación, evacuación y dónde votar`,
   cityMetaDescription: (name: string) =>
     `Quién recoge la basura en ${name}, cuántas direcciones están en zona de inundación de alto riesgo y de evacuación por marejada, sus lugares de votación y sus estaciones de bomberos y policía. Según los registros del condado Miami-Dade.`,
   cityQuestion: (name: string) => `¿Quién recoge la basura en ${name}?`,
+  governs: 'QUIÉN GOBIERNA',
+  kendallQuestion: '¿Kendall tiene alcalde?',
+  kendallAnswer: (county: string) =>
+    `No. Kendall no es una ciudad: es parte del Miami-Dade no incorporado, así que lo gobierna el condado, con ${county} en la alcaldía, y la Comisión del condado. Lo mismo pasa en Westchester y Fontainebleau.`,
+  mayorQuestion: (name: string) => `¿Quién es el alcalde de ${name}?`,
+  mayorAnswer: (mayor: string, name: string, date: string, county: string) =>
+    `${mayor} ocupa la alcaldía de ${name}, según el sitio oficial de la ciudad (consultado el ${date}). Para todo el condado, la alcaldía es de ${county}.`,
+  unincMayorQuestion: '¿Quién es el alcalde del Miami-Dade no incorporado?',
+  unincMayorAnswer: (county: string) =>
+    `No hay alcaldía de ciudad: el Miami-Dade no incorporado lo gobierna el condado, con ${county} en la alcaldía, y la Comisión del condado, con un miembro por distrito. Lugares como Kendall, Westchester y Fontainebleau son parte del condado no incorporado.`,
   trash: 'BASURA',
   trashOwn: (name: string, city: string) => `La basura de ${name} la recoge la ciudad de ${city}, por zonas.`,
   trashCounty: (name: string, onRoute: string, total: string) =>
@@ -115,7 +125,7 @@ const EN: PlacesCopy = {
   home: 'Flamingo County',
   hub: 'Cities and districts',
   hubTitle: 'Miami-Dade’s cities and districts',
-  hubMetaTitle: 'Miami-Dade cities and commission districts: trash, flooding, evacuation and voting',
+  hubMetaTitle: 'Miami-Dade cities and districts: mayors, commissioners, trash, flooding and voting',
   hubMetaDescription:
     'Every Miami-Dade city and the unincorporated county: who picks up the trash, how many addresses are in flood and evacuation zones, where to vote, and the 13 commission districts. From the county’s records.',
   hubQuestion: 'How many cities and commission districts does Miami-Dade have?',
@@ -128,10 +138,20 @@ const EN: PlacesCopy = {
   district: (n) => `District ${n}`,
   districtTitle: (n) => `Miami-Dade Commission District ${n}`,
   cityTitle: (name) => `${name}: trash, flooding, evacuation and voting`,
-  cityMetaTitle: (name) => `${name}: who picks up the trash, flood and evacuation zones, where to vote`,
+  cityMetaTitle: (name) => `${name}: mayor, who picks up the trash, flood and evacuation zones, where to vote`,
   cityMetaDescription: (name) =>
     `Who picks up the trash in ${name}, how many addresses are in high-risk flood zones and storm-surge evacuation zones, its polling places and its fire and police stations. From Miami-Dade County’s records.`,
   cityQuestion: (name) => `Who picks up the trash in ${name}?`,
+  governs: 'WHO GOVERNS',
+  kendallQuestion: 'Does Kendall have a mayor?',
+  kendallAnswer: (county) =>
+    `No. Kendall is not a city: it is part of unincorporated Miami-Dade, so it is governed by the county, with Mayor ${county}, and by the county commission. The same goes for Westchester and Fontainebleau.`,
+  mayorQuestion: (name) => `Who is the mayor of ${name}?`,
+  mayorAnswer: (mayor, name, date, county) =>
+    `${mayor} is the mayor of ${name}, according to the city’s official site (checked ${date}). For the whole county, the mayor is ${county}.`,
+  unincMayorQuestion: 'Who is the mayor of unincorporated Miami-Dade?',
+  unincMayorAnswer: (county) =>
+    `There is no city mayor: unincorporated Miami-Dade is governed by the county, with Mayor ${county}, and by the county commission, one member per district. Places like Kendall, Westchester and Fontainebleau are part of unincorporated Miami-Dade.`,
   trash: 'TRASH',
   trashOwn: (name, city) => `Trash in ${name} is picked up by the City of ${city}, by zone.`,
   trashCounty: (name, onRoute, total) => `In ${name}, ${onRoute} of ${total} addresses are on Miami-Dade County collection routes.`,

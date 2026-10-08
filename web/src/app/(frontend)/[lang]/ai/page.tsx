@@ -38,6 +38,7 @@ const COPY = {
       ['polling_places', 'Lugares de votación del día de las elecciones por ciudad o precinto, de la lista del Supervisor de Elecciones.'],
       ['evacuation_zone_summary', 'Zonas de evacuación por marejada A–E, para el condado o una ciudad.'],
       ['trash_schedule', 'Quién maneja la recogida de basura en una ciudad y sus zonas, donde los registros las tienen.'],
+      ['local_officials', 'Quién gobierna una ciudad: la alcaldía del condado, la de la ciudad y sus comisionados del condado, con la fuente y la fecha.'],
     ],
     claude: 'CLAUDE',
     claudeSteps: [
@@ -79,6 +80,7 @@ const COPY = {
       ['polling_places', 'Election Day polling places by city or precinct, from the Supervisor of Elections’ list.'],
       ['evacuation_zone_summary', 'Storm-surge evacuation zones A–E, for the county or one city.'],
       ['trash_schedule', 'Who handles trash pickup in a city, and its zones where the records hold them.'],
+      ['local_officials', 'Who governs a city: the county mayor, the city mayor and its county commissioners, with source and date.'],
     ],
     claude: 'CLAUDE',
     claudeSteps: [

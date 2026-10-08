@@ -19,6 +19,8 @@ import {
   type Pickup,
 } from '../../../../lib/civic'
 import { titleCase } from '../../../../lib/civicGeo'
+import { ballotNote, cityMayor, COUNTY_MAYOR, selectionText, sourceHost, type Mayor } from '../../../../lib/mayors'
+import { areaName } from '../../../../lib/voteCopy'
 import {
   addressCopy,
   dayName,
@@ -29,7 +31,7 @@ import {
   type AddressCopy,
   type MapCopy,
 } from '../../../../lib/addressCopy'
-import { addDays } from '../../../../lib/dates'
+import { addDays, todayISO } from '../../../../lib/dates'
 import { PageShell } from '../../../../components/PageShell'
 import { JsonLd } from '../../../../components/JsonLd'
 import { addressToolJsonLd } from '../../../../lib/jsonld'
@@ -176,6 +178,8 @@ function Report({
   const munic = titleCase(r.munic)
   const isHialeah = r.munic === 'HIALEAH'
   const isUnincorporated = r.munic.startsWith('UNINCORPORATED')
+  const cityMayorOf = cityMayor(r.munic)
+  const cityName = areaName({ munic: r.munic, district: null }, lang)
 
   return (
     <>
@@ -352,13 +356,20 @@ function Report({
               🏛️ {c.reps}
             </h3>
             <div className={s.rows}>
+              {/* The county mayor governs every address, inside a city or not. */}
+              <MayorRow label={c.countyMayorLabel} m={COUNTY_MAYOR} lang={lang} c={c} note={c.countyMayorText} />
+              {cityMayorOf ? (
+                <MayorRow
+                  label={c.cityMayorLabel(cityName)}
+                  m={cityMayorOf}
+                  lang={lang}
+                  c={c}
+                  note={selectionText(cityMayorOf.selection, lang)}
+                  ballot={ballotNote(cityMayorOf, lang, todayISO())}
+                />
+              ) : null}
               {isHialeah ? (
                 <>
-                  <Person
-                    label={c.mayor}
-                    name={CITY_GOVERNMENT.mayor}
-                    href={CITY_GOVERNMENT.mayorUrl}
-                  />
                   <div className={s.row}>
                     <span className={s.rowLabel}>{c.council}</span>
                     <p className={s.small}>
@@ -377,11 +388,15 @@ function Report({
               ) : isUnincorporated ? (
                 <div className={s.row}>
                   <span className={s.rowLabel}>{c.unincorporated}</span>
-                  <p className={s.small}>{c.unincorporatedText}</p>
+                  <p className={s.small}>
+                    {r.commission
+                      ? c.unincorporatedGov(COUNTY_MAYOR.name, r.commission.name, r.commission.district)
+                      : c.unincorporatedGovNoDistrict(COUNTY_MAYOR.name)}
+                  </p>
                 </div>
-              ) : (
+              ) : !cityMayorOf ? (
                 <Person label={c.yourCity} name={munic} />
-              )}
+              ) : null}
               {r.commission ? (
                 <Person label={c.commissioner(r.commission.district)} name={r.commission.name} />
               ) : null}
@@ -619,6 +634,40 @@ function District({
       <a className={`${s.link} ${s.noPrint}`} href={href} target="_blank" rel="noopener noreferrer">
         {c.whoIsIt} ↗
       </a>
+    </div>
+  )
+}
+
+/**
+ * A mayor, never without where it comes from: the official site it was
+ * checked on, and when (src/data/civic/mayors.json).
+ */
+function MayorRow({
+  label,
+  m,
+  lang,
+  c,
+  note,
+  ballot,
+}: {
+  label: string
+  m: Mayor
+  lang: Lang
+  c: AddressCopy
+  note: string
+  ballot?: string | null
+}) {
+  return (
+    <div className={s.row}>
+      <span className={s.rowLabel}>{label}</span>
+      <span className={s.big}>{m.name}</span>
+      <p className={s.small}>
+        {note.replace(/\.$/, '')}.{' '}
+        <a className={s.link} href={m.sourceUrl} target="_blank" rel="noopener noreferrer">
+          {c.checkedAt(sourceHost(m.sourceUrl), longDay(m.checked, lang))} ↗
+        </a>
+      </p>
+      {ballot ? <p className={s.alert}>{ballot}</p> : null}
     </div>
   )
 }

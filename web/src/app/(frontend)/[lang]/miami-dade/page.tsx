@@ -10,6 +10,9 @@ import { areaName } from '../../../../lib/voteCopy'
 import { fmt } from '../../../../lib/surgeCopy'
 import { placesCopy } from '../../../../lib/placesCopy'
 import { breadcrumbJsonLd, webPageJsonLd } from '../../../../lib/jsonld'
+import { COUNTY_MAYOR } from '../../../../lib/mayors'
+import { todayISO } from '../../../../lib/dates'
+import { MayorsTable, mayorCopy } from '../../../../components/Mayors'
 import { PageShell } from '../../../../components/PageShell'
 import { JsonLd } from '../../../../components/JsonLd'
 import { AnswerBlock } from '../../../../components/AnswerBlock'
@@ -97,6 +100,15 @@ export default async function PlacesHub({ params }: Props) {
             ))}
           </ul>
         </section>
+
+        <section className={v.card} aria-labelledby="mayors">
+          <h2 id="mayors" className={v.cardTag}>
+            🏛️ {mayorCopy(lang).mayorsTitle}
+          </h2>
+          <MayorsTable lang={lang} today={todayISO()} />
+        </section>
+
+        <AnswerBlock question={c.kendallQuestion} answer={c.kendallAnswer(COUNTY_MAYOR.name)} />
 
         <PlacesSources data={data} lang={lang} c={c} />
       </main>
