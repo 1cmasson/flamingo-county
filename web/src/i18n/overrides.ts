@@ -369,4 +369,10 @@ export const ES_OVERRIDES: Record<string, string> = {
   // --- Metadata ----------------------------------------------------------
   'A directory of the restaurants and bars the locals actually vouch for.':
     'Un directorio de los restaurantes y bares que la gente de aquí de verdad respalda.',
+
+  // --- Listing photo carousel -------------------------------------------
+  Photos: 'Fotos',
+  'Previous photo': 'Foto anterior',
+  'Next photo': 'Foto siguiente',
+  of: 'de',
 }

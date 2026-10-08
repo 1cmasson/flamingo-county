@@ -74,6 +74,17 @@ textarea {
   font-family: inherit;
 }
 
+/* The listing carousel's track scrolls by swipe and buttons, not a bar. */
+[data-photo-track]::-webkit-scrollbar {
+  display: none;
+}
+/* A city's animated backdrop behind a mascot: the flat colour under reduced motion. */
+@media (prefers-reduced-motion: reduce) {
+  [data-city-loop] {
+    display: none;
+  }
+}
+
 /* --- Responsive, driven by data attributes ------------------------------- */
 
 @media (max-width: 1150px) {
@@ -309,12 +320,17 @@ textarea {
     transform: scaleX(1);
   }
 }
+/* The story rail's mascot walks to the rail's foot and stops there, whatever
+   its height: the full-body busts stand about 250px tall at the rail's width,
+   and a fixed stop let their legs hang into "Read another" below. */
 @keyframes walkDown {
   from {
     top: 0;
+    transform: translateY(0);
   }
   to {
-    top: calc(100% - 88px);
+    top: 100%;
+    transform: translateY(-100%);
   }
 }
 
