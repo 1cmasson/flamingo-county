@@ -425,14 +425,12 @@ export async function addressReport(slug: string, today: string = todayISO()): P
 /* ------------------------------------------------------- fixed facts */
 
 /**
- * Hialeah's government, from hialeahfl.gov (checked 2026-10-07). Its council
- * is elected citywide, by numbered group, so every Hialeah address has the
- * same mayor and the same seven council members. Other cities show the
- * county's officials and their own city's name.
+ * Hialeah's council, from hialeahfl.gov (checked 2026-10-07): elected
+ * citywide, by numbered group, so every Hialeah address has the same seven
+ * council members. Mayors, Hialeah's included, come from
+ * src/data/civic/mayors.json (lib/mayors.ts): never name one here.
  */
 export const CITY_GOVERNMENT = {
-  mayor: 'Bryan Calvo',
-  mayorUrl: 'https://www.hialeahfl.gov/195/City-Mayor',
   councilUrl: 'https://www.hialeahfl.gov/435/City-Council',
   governmentUrl: 'https://www.hialeahfl.gov/434/Your-Government',
   checked: '2026-10-07',

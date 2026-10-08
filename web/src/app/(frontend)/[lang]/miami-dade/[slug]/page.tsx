@@ -11,6 +11,10 @@ import { fmt, listOf, pct, SURGE_PAGES } from '../../../../../lib/surgeCopy'
 import { placesCopy, type PlacesCopy } from '../../../../../lib/placesCopy'
 import { cityVote, floodHighRisk, trashMode, trashProviders } from '../../../../../lib/places'
 import { breadcrumbJsonLd, webPageJsonLd } from '../../../../../lib/jsonld'
+import { cityMayor, COUNTY_MAYOR } from '../../../../../lib/mayors'
+import { longDay } from '../../../../../lib/voteCopy'
+import { todayISO } from '../../../../../lib/dates'
+import { cityGovernmentJsonLd, MayorBlock, mayorCopy } from '../../../../../components/Mayors'
 import { PageShell } from '../../../../../components/PageShell'
 import { JsonLd } from '../../../../../components/JsonLd'
 import { AnswerBlock } from '../../../../../components/AnswerBlock'
@@ -86,6 +90,7 @@ function Shell({
   title,
   data,
   children,
+  ld = [],
 }: {
   lang: Lang
   c: PlacesCopy
@@ -94,6 +99,7 @@ function Shell({
   title: string
   data: PlacesData
   children: React.ReactNode
+  ld?: Record<string, unknown>[]
 }) {
   const path = routes.place(lang, slug)
   const crumbs: Crumb[] = [
@@ -103,7 +109,7 @@ function Shell({
   ]
   return (
     <PageShell>
-      <JsonLd data={[webPageJsonLd(lang, path, { name: title, dateModified: data.fetchedAt }), breadcrumbJsonLd(crumbs)]} />
+      <JsonLd data={[webPageJsonLd(lang, path, { name: title, dateModified: data.fetchedAt }), breadcrumbJsonLd(crumbs), ...ld]} />
       <main className={v.main}>
         <Breadcrumbs items={crumbs} label={c.breadcrumb} />
         {children}
@@ -134,11 +140,50 @@ function CityPage({ city, data, lang, c, slug }: { city: CityCivic; data: Places
   const surge = data.surge.areas.find((a) => a.munic === city.munic)
   const surgeIn = surge ? surge.addresses.total - surge.addresses.none : 0
   const vote = cityVote(city, data)
+  const mayor = cityMayor(city.munic)
+  const mc = mayorCopy(lang)
 
   return (
-    <Shell lang={lang} c={c} slug={slug} name={name} title={c.cityTitle(name)} data={data}>
+    <Shell
+      lang={lang}
+      c={c}
+      slug={slug}
+      name={name}
+      title={c.cityTitle(name)}
+      data={data}
+      ld={mayor ? [cityGovernmentJsonLd(mayor, lang, routes.place(lang, slug))] : []}
+    >
       <PlacesHero title={c.cityTitle(name)} lang={lang} c={c} lens="garbage" />
       <AnswerBlock question={c.cityQuestion(name)} answer={trashAnswer} />
+
+      {/* Who governs: the city's mayor (none in the unincorporated county) and the county's. */}
+      <AnswerBlock
+        question={mayor ? c.mayorQuestion(name) : c.unincMayorQuestion}
+        answer={mayor ? c.mayorAnswer(mayor.name, name, longDay(mayor.checked, lang), COUNTY_MAYOR.name) : c.unincMayorAnswer(COUNTY_MAYOR.name)}
+      />
+      <section className={v.card} aria-labelledby="governs">
+        <h2 id="governs" className={v.cardTag}>
+          🏛️ {c.governs}
+        </h2>
+        <table className={s.data}>
+          <tbody>
+            {mayor ? (
+              <tr>
+                <th scope="row">{mc.cityLabel(name)}</th>
+                <td>
+                  <MayorBlock m={mayor} lang={lang} today={todayISO()} />
+                </td>
+              </tr>
+            ) : null}
+            <tr>
+              <th scope="row">{mc.countyLabel}</th>
+              <td>
+                <MayorBlock m={COUNTY_MAYOR} lang={lang} today={todayISO()} note={mc.countyNote.replace(/\.$/, '')} />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </section>
 
       {mode.kind !== 'city' ? (
         <section className={v.card} aria-labelledby="trash">
