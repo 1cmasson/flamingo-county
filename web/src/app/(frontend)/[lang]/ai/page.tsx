@@ -191,7 +191,7 @@ export default async function AiPage({ params }: Props) {
               {c.chatgptSteps[0]} <Url href={OPENAPI} />
             </li>
             <li>
-              {c.chatgptSteps[1]} <Url href={absUrl(routes.privacy(lang))} />
+              {c.chatgptSteps[1]} <Url href={`${absUrl(routes.ai(lang))}#rules`} />
             </li>
             <li>{c.chatgptSteps[2]}</li>
           </ol>
