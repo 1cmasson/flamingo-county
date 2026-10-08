@@ -32,11 +32,13 @@ export function civicOpenApi() {
       title: 'Flamingo County · Miami-Dade civic answers',
       version: '1.0.0',
       description:
-        'Read-only answers about living in Miami-Dade County, Florida, from the county’s, the cities’ and FEMA’s public records: trash, recycling and bulk pickup, flood and storm-surge zones, county commissioners, state district numbers, Election Day polling places, schools and the nearest public places. Spanish by default. Every answer carries its sources and the date the records were read; cite them. No authentication, no location input, and nothing about the asker is stored. The same tools are available as an MCP server at ' +
+        'Read-only answers about living in Miami-Dade County, Florida, from the county’s, the cities’ and FEMA’s public records: trash, recycling and bulk pickup, flood and storm-surge zones, county commissioners, state district numbers, Election Day polling places, schools and the nearest public places. Spanish by default. Every answer carries its sources and the date the records were read; cite them. No authentication and no location input; Flamingo County stores nothing about the asker. The same tools are available as an MCP server at ' +
         `${SITE_URL}/mcp.`,
       contact: { url: `${SITE_URL}/en/ai` },
     },
     servers: [{ url: `${SITE_URL}/api/civic/v1` }],
+    // Public: no authentication on any operation.
+    security: [],
     paths: {
       '/addresses': {
         get: {
@@ -51,8 +53,9 @@ export function civicOpenApi() {
         get: {
           operationId: 'addressReport',
           summary: 'What the county and city records say about one address',
+          // GPT Actions cap an operation's description at 300 characters.
           description:
-            'Pickup days with the next dates (Miami time), FEMA flood zone, storm-surge zone, county commissioner, Florida House and Senate district numbers, the Election Day polling place and its source, schools, nearby public places, the free Hialeah bus, and the human page. Pass slug (from findAddress) or address; an ambiguous address returns ok=false with candidates.',
+            'Pickup days and next dates, FEMA flood zone, storm-surge zone, county commissioner, state district numbers, Election Day polling place, schools, nearby places, free bus. Pass slug (from findAddress) or address; an ambiguous address returns candidates.',
           parameters: [
             { name: 'slug', in: 'query', required: false, description: 'An address slug from findAddress, e.g. "5410-w-6-ln-33012".', schema: { type: 'string', maxLength: 120 } },
             { name: 'address', in: 'query', required: false, description: 'A street address, if there is no slug.', schema: { type: 'string', maxLength: 140 } },

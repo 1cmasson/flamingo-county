@@ -36,7 +36,7 @@ The public, read-only civic tools are approved by the owner (AEO round 3, decisi
 **What we can't control.** Railway's and Cloudflare's own edge logs may record request URLs, and on the JSON API an address arrives in the URL's query string. The MCP server takes its arguments in the POST body, which those logs don't record. If that matters for a client, use MCP.
 
 ## Abuse
-- **Rate limits:**
+- **Rate limits.** They are a soft control, counted per server process. The key is Cloudflare's `CF-Connecting-IP`, or else the last `X-Forwarded-For` hop (the one our proxy appends, never the client-written first hop). That assumes Cloudflare is in front: a client that reaches the Railway origin directly can vary those headers. The limits:
   - 60 requests a minute per client and tool, on both surfaces;
   - 300 a minute per client for the MCP endpoint as a whole, which covers initialize and tools/list;
   - past the limit, **429** with `Retry-After`.

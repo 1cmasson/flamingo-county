@@ -57,7 +57,7 @@ const COPY = {
     rules: 'REGLAS',
     ruleItems: [
       'Solo lectura. Las respuestas dicen lo mismo que la página de direcciones, ni más ni menos.',
-      'No se guarda ni se registra lo que preguntas: ni direcciones ni ubicación. Sin cookies, sin cuentas.',
+      'Nosotros no guardamos ni registramos lo que preguntas: ni direcciones ni ubicación. Sin cookies, sin cuentas. Como en todo el sitio, Railway y Cloudflare, que lo alojan y protegen, manejan datos técnicos de cada solicitud; en la API JSON la dirección va en la URL, así que si eso te importa, usa el servidor MCP, que la recibe en el cuerpo de la solicitud.',
       'No acepta coordenadas: no sirve para ubicar a una persona.',
       `Hasta ${RATE_LIMIT} consultas por minuto por herramienta; si te pasas, responde 429 con Retry-After.`,
       'Mientras se actualizan los datos del condado, responde 503 con Retry-After.',
@@ -98,7 +98,7 @@ const COPY = {
     rules: 'RULES',
     ruleItems: [
       'Read-only. Answers say what the address page says, no more and no less.',
-      'What you ask is not stored or logged: no addresses, no location. No cookies, no accounts.',
+      'We don’t store or log what you ask: no addresses, no location. No cookies, no accounts. As on the whole site, Railway and Cloudflare, which host and protect it, handle technical request data; on the JSON API the address travels in the URL, so if that matters to you, use the MCP server, which takes it in the request body.',
       'No coordinates in: it can’t be used to locate a person.',
       `Up to ${RATE_LIMIT} requests a minute per tool; past that it answers 429 with Retry-After.`,
       'While the county data is being updated it answers 503 with Retry-After.',

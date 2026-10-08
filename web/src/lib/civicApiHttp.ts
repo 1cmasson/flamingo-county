@@ -18,10 +18,16 @@ const MAX_KEYS = 50_000
 type Bucket = { start: number; count: number }
 const buckets = new Map<string, Bucket>()
 
-/** The client's address as the edge reports it (Cloudflare, then the proxy chain). Used only as a limiter key. */
+/**
+ * The client's address as the edge reports it, used only as a limiter key.
+ * Cloudflare's header first; failing that, the LAST X-Forwarded-For hop, the
+ * one the proxy in front of us appended (the first hop is whatever the
+ * client wrote). A soft control: it assumes Cloudflare is in front, and a
+ * client that reaches the origin some other way can vary its headers.
+ */
 export function clientKey(req: Request): string {
   const h = req.headers
-  return h.get('cf-connecting-ip') || h.get('x-forwarded-for')?.split(',')[0]?.trim() || h.get('x-real-ip') || 'unknown'
+  return h.get('cf-connecting-ip') || h.get('x-forwarded-for')?.split(',').pop()?.trim() || h.get('x-real-ip') || 'unknown'
 }
 
 /**
