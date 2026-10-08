@@ -57,6 +57,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...ROUTE_SLUGS.flatMap((r) => both((l) => routes.freeRoute(l, r), undefined, 0.6)),
     // The search page only: a single address (`?a=`) is noindex.
     ...both(routes.address, undefined, 0.7),
+    // How AI assistants connect to the civic tools. (The API endpoints themselves are noindex.)
+    ...both(routes.ai, undefined, 0.4),
     // Where to vote: the hub and one page per municipality or unincorporated
     // commission district, dated by the day their records were read. Left out
     // until the address database has them (the pages answer 503 till then).

@@ -12,6 +12,13 @@ const nextConfig: NextConfig = {
   // the runtime stage copies. Without it the image builds and then fails at
   // `node server.js` because that file is never produced.
   output: 'standalone',
+  // Development logs every request line, query string included. The civic
+  // API and the MCP server take addresses in the query, and nothing about
+  // what someone looks up is written anywhere (docs/civic-api-privacy.md).
+  // Production logs no requests at all.
+  logging: {
+    incomingRequests: { ignore: [/\/api\/civic\//, /^\/mcp/, /\/api\/address\//] },
+  },
   // The event card's fonts and mascots (lib/eventCard.tsx) are read from disk
   // at request time, by the card route and by any route whose publish runs the
   // social auto-draft (the admin, the REST API, the Telegram webhook), so they
