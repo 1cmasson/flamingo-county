@@ -61,7 +61,7 @@ const EN = {
   byAppointment: 'By appointment',
   appointmentText: 'Two free pickups a year. Book first, then put it out no more than 3 days before.',
   bookBulk: 'BOOK A BULK PICKUP',
-  cityRuns: (city: string) => `Trash pickup here is run by the City of ${city}. Check your city’s schedule.`,
+  cityRuns: (city: string) => `Trash pickup here is handled by the City of ${city}, itself or through a contracted hauler. Check your city’s schedule.`,
   mobileNote: 'The city’s home pickup schedule; ask your park if it collects for you.',
   sourceBy: { hialeah: 'City of Hialeah', miami: 'City of Miami', county: 'Miami-Dade County' } as Record<string, string>,
 
@@ -183,7 +183,7 @@ const ES: AddressCopy = {
   byAppointment: 'Con cita',
   appointmentText: 'Dos recogidas gratis al año. Pide la cita primero y sácala no más de 3 días antes.',
   bookBulk: 'PEDIR UNA CITA',
-  cityRuns: (city: string) => `Aquí la basura la recoge la Ciudad de ${city}. Consulta el horario de tu ciudad.`,
+  cityRuns: (city: string) => `Aquí la recogida de basura la maneja la Ciudad de ${city}, directamente o con una empresa contratada. Consulta el horario de tu ciudad.`,
   mobileNote: 'Es el horario de recogida de casas; pregunta en tu parque si te recogen ahí.',
   sourceBy: { hialeah: 'Ciudad de Hialeah', miami: 'Ciudad de Miami', county: 'Condado Miami-Dade' },
 

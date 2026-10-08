@@ -35,7 +35,7 @@ const ES = {
   trashOwn: (name: string, city: string) => `La basura de ${name} la recoge la ciudad de ${city}, por zonas.`,
   trashCounty: (name: string, onRoute: string, total: string) =>
     `En ${name}, ${onRoute} de las ${total} direcciones están en rutas de recogida del condado Miami-Dade.`,
-  trashCity: (name: string) => `La ciudad de ${name} recoge la basura.`,
+  trashCity: (name: string) => `${name} no está en las rutas de basura del condado: la recogida la maneja la ciudad de ${name}, directamente o con una empresa contratada. Consulta el horario con la ciudad.`,
   trashUncovered: (n: string) => `${n} direcciones no están en ninguna ruta del condado.`,
   unincorporatedTrash: (onRoute: string, total: string) =>
     `En el condado no incorporado, ${onRoute} de las ${total} direcciones están en rutas de recogida del condado Miami-Dade.`,
@@ -135,7 +135,7 @@ const EN: PlacesCopy = {
   trash: 'TRASH',
   trashOwn: (name, city) => `Trash in ${name} is picked up by the City of ${city}, by zone.`,
   trashCounty: (name, onRoute, total) => `In ${name}, ${onRoute} of ${total} addresses are on Miami-Dade County collection routes.`,
-  trashCity: (name) => `The City of ${name} picks up the trash.`,
+  trashCity: (name) => `${name} isn't on the county's trash routes: the City of ${name} handles pickup, itself or through a contracted hauler. Check the schedule with the city.`,
   trashUncovered: (n) => `${n} addresses are on no county route.`,
   unincorporatedTrash: (onRoute, total) =>
     `In the unincorporated county, ${onRoute} of ${total} addresses are on Miami-Dade County collection routes.`,
