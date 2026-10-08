@@ -6,6 +6,7 @@ import { routes } from '../../../../../lib/routes'
 import { openGraph } from '../../../../../lib/site'
 import { electionState, voteData, type VoteData } from '../../../../../lib/civic'
 import { areaRows, counts, findArea, sitesOf } from '../../../../../lib/vote'
+import { municSlug } from '../../../../../lib/civicSync'
 import { areaName, dayMonth, electionName, longDay, voteCopy } from '../../../../../lib/voteCopy'
 import { breadcrumbJsonLd, webPageJsonLd } from '../../../../../lib/jsonld'
 import { PageShell } from '../../../../../components/PageShell'
@@ -97,6 +98,12 @@ export default async function VoteArea({ params }: Props) {
         <section className={s.card} aria-label={c.table(name)}>
           {commissioner ? <p className={s.note}>{c.commissioner(commissioner.district, commissioner.name)}</p> : null}
           <PrecinctTable rows={rows} caption={c.table(name)} c={c} onPage={new Set(area.precincts)} />
+          <Link
+            href={area.district != null ? routes.district(lang, area.district) : routes.place(lang, municSlug(area.munic))}
+            style={{ fontWeight: 800, color: 'var(--ink)' }}
+          >
+            {c.morePlace(area.district != null ? `${lang === 'es' ? 'el distrito' : 'District'} ${area.district}` : name)} →
+          </Link>
         </section>
 
         <VoteSources data={data} lang={lang} c={c} />

@@ -6,7 +6,7 @@ import type { City } from '../../payload-types'
 import { allSeasons, seasonWindow } from '../../lib/seasons'
 import { todayISO } from '../../lib/dates'
 import { TRANSIT } from '../../lib/transit'
-import { electionState, surgeData, voteData } from '../../lib/civic'
+import { electionState, placesData, surgeData, voteData } from '../../lib/civic'
 import { SURGE_PAGES } from '../../lib/surgeCopy'
 import { areaName } from '../../lib/voteCopy'
 
@@ -19,12 +19,13 @@ export const dynamic = 'force-dynamic'
  * database because it is generated, not hand-written.
  */
 export async function GET() {
-  const [cities, listings, events, vote, surge] = await Promise.all([
+  const [cities, listings, events, vote, surge, places] = await Promise.all([
     getCities('en'),
     getListings('en'),
     getEvents('en'),
     voteData(),
     surgeData(),
+    placesData(),
   ])
   const state = vote ? electionState(vote.pollingSource, vote.lastElection) : null
   const src = vote?.pollingSource
@@ -64,6 +65,19 @@ export async function GET() {
     `- [Your address](${absUrl(routes.address('en'))}): type any of Miami-Dade County’s street addresses and see its garbage, recycling and bulk trash days with the next dates, its FEMA flood zone and hurricane storm-surge evacuation zone, its county commissioner and Florida House and Senate districts, its Election Day polling place and precinct, its assigned public schools, and the nearest fire station, police station, hospital, library and park. Built from the public records of Miami-Dade County (Open Data), the City of Hialeah, the City of Miami and FEMA; each result shows the date the records were read. Spanish: ${absUrl(routes.address('es'))}`,
     `- [Free buses in Hialeah](${absUrl(routes.freeRides('en'))}): Hialeah’s two free bus lines, the Flamingo and the Marlin: where they go, when they run, live bus positions and the local spots a short walk from a stop. From the City of Hialeah’s ETA SPOT system and Miami-Dade Transit. Spanish: ${absUrl(routes.freeRides('es'))}`,
     ...voteLines,
+    ...(places
+      ? [
+          `- [Miami-Dade's cities and commission districts](${absUrl(routes.places('en'))}): each of Miami-Dade's ${places.cities.length - 1} cities and the unincorporated county, and the ${places.districts.length} county commission districts, from Miami-Dade County Open Data (data of ${places.fetchedAt}). Spanish: ${absUrl(routes.places('es'))}`,
+          ...places.cities.map((c) => {
+            const name = areaName({ munic: c.munic, district: null }, 'en')
+            return `- [${name}](${absUrl(routes.place('en', c.slug))}): who picks up the trash (and the pickup zones where the records hold them), how many of its ${c.total} addresses are in FEMA high-risk flood zones and storm-surge evacuation zones, polling places, and the fire and police stations inside its limits. Spanish: ${absUrl(routes.place('es', c.slug))}`
+          }),
+          ...places.districts.map(
+            (d) =>
+              `- [Miami-Dade Commission District ${d.district}](${absUrl(routes.district('en', d.district))}): commissioner ${d.name} (county records), the cities and unincorporated ZIP codes in the district, ${d.total} addresses. Spanish: ${absUrl(routes.district('es', d.district))}`,
+          ),
+        ]
+      : []),
     ...(surge
       ? [
           `- [Storm-surge evacuation zones in Miami-Dade](${absUrl(routes.evacuation('en'))}): what each of the county's storm-surge planning zones A to E means (the county's own definitions), and how many addresses each city has in each zone, from Miami-Dade County Open Data (data of ${surge.fetchedAt}). Spanish: ${absUrl(routes.evacuation('es'))}`,

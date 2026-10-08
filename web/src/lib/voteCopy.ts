@@ -108,6 +108,7 @@ const ES = {
   pdf: 'Lista (PDF)',
   openData: 'Datos abiertos de Miami-Dade',
   otherAreas: 'Otras ciudades y distritos',
+  morePlace: (name: string) => `Más sobre ${name}: basura, inundación, evacuación`,
 }
 
 export type VoteCopy = typeof ES
@@ -170,6 +171,7 @@ const EN: VoteCopy = {
   pdf: 'The list (PDF)',
   openData: 'Miami-Dade Open Data',
   otherAreas: 'Other cities and districts',
+  morePlace: (name) => `More about ${name}: trash, flooding, evacuation`,
 }
 
 export function voteCopy(lang: Lang): VoteCopy {

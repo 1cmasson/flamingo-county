@@ -9,8 +9,12 @@ import type { Lang } from '../i18n'
  */
 
 export const fmt = (n: number, lang: Lang) => new Intl.NumberFormat(lang === 'es' ? 'es-US' : 'en-US').format(n)
-export const pct = (part: number, whole: number, lang: Lang) =>
-  whole ? new Intl.NumberFormat(lang === 'es' ? 'es-US' : 'en-US', { style: 'percent', maximumFractionDigits: 1 }).format(part / whole) : '—'
+/** A share to one decimal; a share that rounds to nothing but isn't is "<0.1%", never "0%". */
+export const pct = (part: number, whole: number, lang: Lang) => {
+  if (!whole) return '—'
+  const f = new Intl.NumberFormat(lang === 'es' ? 'es-US' : 'en-US', { style: 'percent', maximumFractionDigits: 1 })
+  return part > 0 && part / whole < 0.0005 ? `<${f.format(0.001)}` : f.format(part / whole)
+}
 
 /** "A, B y C" / "A, B and C". */
 export function listOf(items: string[], lang: Lang): string {
@@ -95,6 +99,7 @@ const ES = {
     `Fuente: zonas de planificación de marejada y direcciones del condado Miami-Dade (datos abiertos) · datos del ${date}.`,
   openData: 'Datos abiertos de Miami-Dade',
   otherPages: 'Más sobre tu dirección',
+  morePlace: (name: string) => `Más sobre ${name}: basura, inundación, votación`,
 }
 
 export type SurgeCopy = typeof ES
@@ -166,6 +171,7 @@ const EN: SurgeCopy = {
     `Source: Miami-Dade County storm-surge planning zones and addresses (Open Data) · data of ${date}.`,
   openData: 'Miami-Dade Open Data',
   otherPages: 'More about your address',
+  morePlace: (name) => `More about ${name}: trash, flooding, voting`,
 }
 
 export function surgeCopy(lang: Lang): SurgeCopy {

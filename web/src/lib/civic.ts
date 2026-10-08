@@ -4,7 +4,7 @@ import { createClient, type Client } from '@libsql/client'
 import { todayISO } from './dates'
 import { meters, nearestServing, TRANSIT, walkMinutes, type LatLng, type NearestStop, type TransitRoute } from './transit'
 import { nextDates, normalizeAddress, prettyAddress, slugOf, titleCase, type Rule } from './civicGeo'
-import { dbPath, type Pickup as StoredPickup, type SurgeSummary, type VoteArea } from './civicSync'
+import { dbPath, type CityCivic, type DistrictCivic, type Pickup as StoredPickup, type SurgeSummary, type VoteArea } from './civicSync'
 
 export { KIND, normalizeAddress, parseRule, matchesRule, nextDates, rrule, prettyAddress } from './civicGeo'
 export { slugOf }
@@ -48,6 +48,9 @@ type Meta = {
   pollingSource?: PollingSource
   /** Storm-surge zone counts; absent from a database built before SCHEMA 6. */
   surge?: SurgeSummary
+  /** The city and commission-district pages; absent from a database built before SCHEMA 7. */
+  cities?: CityCivic[]
+  districts?: DistrictCivic[]
   /** The "where to vote" pages; absent from a database built before SCHEMA 5. */
   vote?: {
     areas: VoteArea[]
@@ -184,6 +187,37 @@ export type SurgeData = SurgeSummary & { fetchedAt: string }
 export async function surgeData(): Promise<SurgeData | null> {
   const c = await open()
   return c?.meta.surge ? { ...c.meta.surge, fetchedAt: c.meta.fetchedAt } : null
+}
+
+/* ------------------------------------------------- cities and districts */
+
+export type { CityCivic, DistrictCivic }
+export type PlacesData = {
+  cities: CityCivic[]
+  districts: DistrictCivic[]
+  zones: Pick<Meta['zones'], 'garbage' | 'recycling' | 'bulk' | 'flood'>
+  surge: SurgeSummary
+  vote: NonNullable<Meta['vote']>
+  precincts: Map<number, { precinct: number; polling: PollingPlace | null }>
+  pollingSource: PollingSource | null
+  fetchedAt: string
+}
+
+/** What the city and district pages need, or null until a database with them is in place. */
+export async function placesData(): Promise<PlacesData | null> {
+  const c = await open()
+  const m = c?.meta
+  if (!m?.cities || !m.districts || !m.surge || !m.vote) return null
+  return {
+    cities: m.cities,
+    districts: m.districts,
+    zones: { garbage: m.zones.garbage, recycling: m.zones.recycling, bulk: m.zones.bulk, flood: m.zones.flood },
+    surge: m.surge,
+    vote: m.vote,
+    precincts: new Map(m.zones.precinct.map((p) => [p.precinct, p])),
+    pollingSource: m.pollingSource ?? null,
+    fetchedAt: m.fetchedAt,
+  }
 }
 
 /** The day the records were read from the agencies, or null before the first sync. */

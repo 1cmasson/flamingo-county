@@ -156,6 +156,18 @@ export function Footer({ lang }: { lang: Lang }) {
           {t('EVACUATION ZONES')}
         </Link>
         <Link
+          href={routes.places(lang)}
+          style={{
+            fontWeight: 800,
+            fontSize: 12,
+            letterSpacing: '1.6px',
+            color: 'var(--cyan)',
+            textDecoration: 'none',
+          }}
+        >
+          {t('YOUR CITY')}
+        </Link>
+        <Link
           href={routes.about(lang)}
           style={{
             fontWeight: 800,

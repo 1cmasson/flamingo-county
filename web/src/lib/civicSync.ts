@@ -238,6 +238,82 @@ export function surgeSummary(groups: SurgeGroup[], zones: string[]): SurgeSummar
   }
 }
 
+/* --------------------------------------------------------------- cities and districts */
+
+/** How many addresses point at each row of a zone table (an index into meta.zones.garbage, .flood, …). */
+export type RowCount = { i: number; n: number }
+type Station = { name: string; address: string; phone: string }
+
+/** One municipality (or the unincorporated county), as its civic page shows it. */
+export type CityCivic = {
+  slug: string
+  munic: string
+  total: number
+  /** Addresses on each pickup row; addresses on none are `total` minus the sum. */
+  garbage: RowCount[]
+  recycling: RowCount[]
+  bulk: RowCount[]
+  /** FEMA flood zones; addresses in none are `total` minus the sum. */
+  flood: RowCount[]
+  districts: { district: number; n: number }[]
+  /** Stations whose point lies inside the city limits: not a claim about who serves whom. */
+  fire: Station[]
+  police: Station[]
+}
+export type DistrictCivic = {
+  district: number
+  name: string
+  total: number
+  /** Municipalities (and the unincorporated county) with addresses in the district. */
+  areas: { slug: string; munic: string; n: number }[]
+  /** The district's unincorporated addresses by ZIP code: the records name no unincorporated places. */
+  unincorporatedZips: { zip: string; n: number }[]
+}
+
+/** Grouped counts as the database returns them: a municipality, a row index (or -1/null for none), a count. */
+export type MunicCount = { munic: string; i: number | null; n: number }
+
+function rowCounts(rows: MunicCount[], munic: string): RowCount[] {
+  return rows
+    .filter((r) => r.munic === munic && r.i != null && r.i >= 0)
+    .map((r) => ({ i: r.i as number, n: r.n }))
+    .sort((a, b) => b.n - a.n)
+}
+
+/**
+ * The city pages' numbers, from counts the database grouped by municipality.
+ * Municipalities by name, the unincorporated county last.
+ */
+export function cityCivics(input: {
+  totals: { munic: string; n: number }[]
+  garbage: MunicCount[]
+  recycling: MunicCount[]
+  bulk: MunicCount[]
+  flood: MunicCount[]
+  /** Here `i` is the commission district number. */
+  districts: MunicCount[]
+  stations: { munic: string; kind: 'fire' | 'police'; station: Station }[]
+}): CityCivic[] {
+  const rank = (m: string) => (m === UNINCORPORATED ? 1 : 0)
+  return input.totals
+    .filter((t) => t.munic)
+    .sort((a, b) => rank(a.munic) - rank(b.munic) || a.munic.localeCompare(b.munic))
+    .map(({ munic, n }) => ({
+      slug: municSlug(munic),
+      munic,
+      total: n,
+      garbage: rowCounts(input.garbage, munic),
+      recycling: rowCounts(input.recycling, munic),
+      bulk: rowCounts(input.bulk, munic),
+      flood: rowCounts(input.flood, munic),
+      districts: rowCounts(input.districts, munic)
+        .map((r) => ({ district: r.i, n: r.n }))
+        .sort((a, b) => a.district - b.district),
+      fire: input.stations.filter((x) => x.munic === munic && x.kind === 'fire').map((x) => x.station),
+      police: input.stations.filter((x) => x.munic === munic && x.kind === 'police').map((x) => x.station),
+    }))
+}
+
 /* --------------------------------------------------------------- raw caches */
 
 type CacheState = Record<string, { edited: number | null; rows: number; at: string }>
@@ -839,6 +915,64 @@ export async function syncCivic({
     )
     const latest = latestOfficialPolling()
 
+    log('cities and districts…')
+    // Counts by municipality for each zone table; the indexes point into meta.zones.
+    const byMunic = async (col: string): Promise<MunicCount[]> =>
+      (await db.execute(`SELECT munic, ${col} AS i, COUNT(*) AS n FROM addr GROUP BY munic, ${col}`)).rows.map((r) => ({
+        munic: names[Number(r.munic)] ?? '',
+        i: r.i == null ? null : Number(r.i),
+        n: Number(r.n),
+      }))
+    const [garbageBy, recyclingBy, bulkBy, floodBy, commissionBy] = await Promise.all(
+      ['garbage', 'recycling', 'bulk', 'flood', 'commission'].map(byMunic),
+    )
+    const totals = (await db.execute('SELECT munic, COUNT(*) AS n FROM addr GROUP BY munic')).rows.map((r) => ({
+      munic: names[Number(r.munic)] ?? '',
+      n: Number(r.n),
+    }))
+    // A station is listed in the city whose limits hold its point.
+    const stations = (['fire', 'police'] as const).flatMap((kind) =>
+      placeLists[kind].flatMap((p) => {
+        const ci = cityZones.find(p.at[1], p.at[0])
+        return ci < 0 ? [] : [{ munic: cityZones.rows[ci], kind, station: { name: p.name, address: p.address, phone: p.phone } }]
+      }),
+    )
+    const cities = cityCivics({
+      totals,
+      garbage: garbageBy,
+      recycling: recyclingBy,
+      bulk: bulkBy,
+      flood: floodBy,
+      districts: commissionBy.map((r) => ({ ...r, i: r.i != null && r.i >= 0 ? (z.commission.rows[r.i]?.district ?? null) : null })),
+      stations,
+    })
+    const uninZips = (
+      await db.execute({
+        sql: 'SELECT commission, zip, COUNT(*) AS n FROM addr WHERE munic = ? AND commission >= 0 GROUP BY commission, zip',
+        args: [names.indexOf(UNINCORPORATED)],
+      })
+    ).rows
+    const districts: DistrictCivic[] = z.commission.rows
+      .map((o) => {
+        const areas = cities
+          .map((c) => ({ slug: c.slug, munic: c.munic, n: c.districts.find((d) => d.district === o.district)?.n ?? 0 }))
+          .filter((a) => a.n > 0)
+          .sort((a, b) => b.n - a.n)
+        const index = z.commission.rows.indexOf(o)
+        return {
+          district: o.district,
+          name: o.name,
+          total: areas.reduce((t, a) => t + a.n, 0),
+          areas,
+          unincorporatedZips: uninZips
+            .filter((r) => Number(r.commission) === index && Number(r.zip))
+            .map((r) => ({ zip: String(r.zip).padStart(5, '0'), n: Number(r.n) }))
+            .sort((a, b) => a.zip.localeCompare(b.zip)),
+        }
+      })
+      .sort((a, b) => a.district - b.district)
+    log(`  ${cities.length} cities, ${districts.length} districts, ${stations.length} stations inside city limits`)
+
     log('storm surge…')
     // Every address counted by municipality, ZIP, surge zone and whether its
     // parcel is a mobile home. Counts only: no address leaves the database.
@@ -872,6 +1006,9 @@ export async function syncCivic({
       // we hold, past or not, so the pages can say when its election is over.
       // Storm-surge planning zones: address counts by city, ZIP and zone.
       surge,
+      // The city and commission-district pages.
+      cities,
+      districts,
       vote: {
         areas,
         byArea,

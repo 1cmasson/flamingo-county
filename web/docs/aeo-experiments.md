@@ -44,6 +44,7 @@ A full run now costs more. It is about 160 x 3 runs x 3 models, or 1,440 calls, 
 - Hypothesis: If we publish pages that answer civic questions from the county's and cities' records (where to vote, storm-surge zones, trash zones, commission districts), then the civic probe cited-rate and Search Console impressions will go up, because answer engines today cite only the agencies' own pages and map viewers, which hold no quotable answer.
 - Pages changed:
   - Phase 2 ("where to vote"): `/es/vote` and `/en/vote`, plus `/{es,en}/vote/<area>` for the 34 municipalities and the 13 unincorporated commission districts (`unincorporated-district-N`). That is 96 URLs. The start date is the day they deploy.
+  - Phase 3, cities and districts: `/{es,en}/miami-dade`, `/{es,en}/miami-dade/<city>` (35) and `/{es,en}/miami-dade/commission-district-N` (13). That is 98 URLs.
   - Phase 3, storm surge: `/{es,en}/evacuation-zones` and `/{es,en}/evacuation-zones/hialeah`. That is 4 URLs, starting the day they deploy.
   - Phase 1 changed only `llms.txt` and the JSON-LD on `/en/address` and `/es/address`.
 - Control pages: listings and events (unchanged by this round).
