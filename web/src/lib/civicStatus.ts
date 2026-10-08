@@ -26,8 +26,9 @@ export const dbPath = (dir = civicDir()) => join(dir, 'civic.db')
  *
  * 5: the `vote` meta key (precincts by municipality and commission district).
  * 6: the `surge` meta key (addresses by storm-surge zone, city and ZIP).
+ * 7: the `cities` and `districts` meta keys (the city and commission-district pages).
  */
-export const SCHEMA = 6
+export const SCHEMA = 7
 export const schemaFile = (dir: string) => join(dir, 'schema')
 
 /** The layout the database on disk was built with; 0 when there is none. */

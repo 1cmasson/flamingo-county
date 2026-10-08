@@ -142,6 +142,18 @@ Every page:
 - **Mobile homes are not counted.** A park is usually one parcel and one address: only 279 mobile-home addresses exist countywide.
 - **The county moved its hurricane pages.** `LINKS.knowYourZone` now points at `/initiative/weather-ready/flooding/storm-surge.page`; the old URL answered 404. The county's own wording is used for each zone's meaning, for mobile homes and electrically dependent residents, and for shelters (announced when they open).
 
+**Status 2026-10-08: city and district pages built (PR "Cities and districts", stacked on the evacuation-zones PR).**
+- **The pages:** `/[lang]/miami-dade` is the hub. `/[lang]/miami-dade/<city>` covers the 34 municipalities plus `unincorporated`, and `/[lang]/miami-dade/commission-district-N` covers the 13 districts. That is 49 pages per language, 98 URLs. (`/es/hialeah` stays the directory's city page.)
+- **The data:** `meta.cities` and `meta.districts`; SCHEMA 7.
+- **Trash, per city, is read from the routes:**
+  - **Hialeah and Miami:** their own zone tables.
+  - **Cities mostly on county routes, and the unincorporated county:** the county's day groups with counts. Recycling is every other week with no date; bulk is by appointment. The uncovered remainder is counted, without naming who collects it.
+  - **Every other city:** «La ciudad de X recoge la basura», and nothing more.
+- **Flood high-risk** means FEMA's A and V zones.
+- **Stations** are the ones whose point lies inside the city limits, not "the ones that serve it".
+- **Districts** show the commissioner (county layer), the cities with address counts, and the unincorporated addresses by ZIP code. The records don't name unincorporated places.
+- **Not done:** links to each city's own website. The records don't hold them, and 34 hand-picked URLs would need checking one by one.
+
 ### Phase 4: homestead and senior exemption guide (ship by January; filing closes March 1, the next on 2027-03-01)
 - **An eligibility guide, not a lookup.** A few yes/no questions:
   - Do you own it and live there on January 1?

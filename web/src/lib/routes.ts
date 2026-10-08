@@ -40,6 +40,14 @@ export const routes = {
   /** Storm-surge evacuation zones A–E: the hub, and a page for a city (only Hialeah so far). */
   evacuation: (lang: Lang) => `/${lang}/evacuation-zones`,
   evacuationArea: (lang: Lang, area: string) => `/${lang}/evacuation-zones/${area}`,
+  /**
+   * Miami-Dade's municipalities and commission districts, from the county's
+   * records: `/es/miami-dade/hialeah`, `/es/miami-dade/commission-district-7`.
+   * Not `/es/hialeah`, which is the directory's city page.
+   */
+  places: (lang: Lang) => `/${lang}/miami-dade`,
+  place: (lang: Lang, slug: string) => `/${lang}/miami-dade/${slug}`,
+  district: (lang: Lang, n: number) => `/${lang}/miami-dade/commission-district-${n}`,
 } as const
 
 /** Append query params, skipping empties — filters keep living in the query. */

@@ -67,13 +67,14 @@ function hasSessionCookie(req: NextRequest): boolean {
 }
 
 /**
- * The civic answer pages ("where to vote", the evacuation zones) read only
+ * The civic answer pages ("where to vote", evacuation zones, cities and
+ * commission districts) read only
  * the address database. Until a database in the current layout is on disk
  * (the first sync, or the rebuild after a deploy that changed it, about ten
  * minutes) they answer 503 with Retry-After: never an empty page with a 200
  * a crawler would keep.
  */
-const CIVIC_PATH = /^\/(en|es)\/(vote|evacuation-zones)(\/|$)/
+const CIVIC_PATH = /^\/(en|es)\/(vote|evacuation-zones|miami-dade)(\/|$)/
 
 function notReady() {
   const body =

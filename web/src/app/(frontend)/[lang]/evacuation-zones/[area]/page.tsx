@@ -131,6 +131,9 @@ export default async function EvacuationArea({ params }: Props) {
           </table>
           {absent.length ? <p className={v.note}>{c.notIn(listOf(absent.map(c.zoneTitle), lang))}</p> : null}
           <p className={v.note}>{c.partial}</p>
+          <Link href={routes.place(lang, area.slug)} style={{ fontWeight: 800, color: 'var(--ink)' }}>
+            {c.morePlace(name)} →
+          </Link>
         </section>
 
         {/* No count of mobile homes: a park is usually one parcel and one address,

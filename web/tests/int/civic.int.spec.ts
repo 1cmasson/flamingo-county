@@ -322,3 +322,74 @@ describe('storm surge', () => {
     ])
   })
 })
+
+/** The city pages: who picks up the trash, as the records show it, and FEMA's high-risk share. */
+describe('cities', () => {
+  const zones = {
+    garbage: [
+      { by: 'hialeah' as const, zone: '1', rule: { days: [1, 4], weeks: null } },
+      { by: 'county' as const, zone: 'Monday Thursday', rule: { days: [1, 4], weeks: null } },
+    ],
+    recycling: [],
+    bulk: [],
+    flood: ['AE', 'X', 'VE', 'D'],
+  }
+  const build = async () => {
+    const { cityCivics, UNINCORPORATED } = await import('@/lib/civicSync')
+    return cityCivics({
+      totals: [
+        { munic: 'HIALEAH', n: 100 },
+        { munic: 'DORAL', n: 100 },
+        { munic: 'CORAL GABLES', n: 100 },
+        { munic: UNINCORPORATED, n: 100 },
+      ],
+      garbage: [
+        { munic: 'HIALEAH', i: 0, n: 98 },
+        { munic: 'HIALEAH', i: -1, n: 2 },
+        { munic: 'DORAL', i: 1, n: 81 },
+        { munic: 'DORAL', i: -1, n: 19 },
+        { munic: 'CORAL GABLES', i: 1, n: 1 },
+        { munic: 'CORAL GABLES', i: -1, n: 99 },
+        { munic: UNINCORPORATED, i: 1, n: 40 },
+        { munic: UNINCORPORATED, i: -1, n: 60 },
+      ],
+      recycling: [],
+      bulk: [],
+      flood: [
+        { munic: 'HIALEAH', i: 0, n: 10 },
+        { munic: 'HIALEAH', i: 1, n: 80 },
+        { munic: 'HIALEAH', i: 2, n: 5 },
+        { munic: 'HIALEAH', i: 3, n: 5 },
+      ],
+      districts: [
+        { munic: 'HIALEAH', i: 13, n: 60 },
+        { munic: 'HIALEAH', i: 6, n: 40 },
+      ],
+      stations: [{ munic: 'HIALEAH', kind: 'fire', station: { name: 'Fire Station 1', address: '1 E 1 Ave', phone: '' } }],
+    })
+  }
+
+  it('orders the cities by name, the unincorporated county last', async () => {
+    const cities = await build()
+    expect(cities.map((c) => c.slug)).toEqual(['coral-gables', 'doral', 'hialeah', 'unincorporated'])
+    const h = cities[2]
+    expect(h.districts).toEqual([
+      { district: 6, n: 40 },
+      { district: 13, n: 60 },
+    ])
+    expect(h.fire).toHaveLength(1)
+    expect(h.police).toHaveLength(0)
+  })
+
+  it('says who picks up the trash: the city’s own routes, the county’s, or the city with no schedule', async () => {
+    const { trashMode, floodHighRisk } = await import('@/lib/places')
+    const [gables, doral, hialeah, uninc] = await build()
+    expect(trashMode(hialeah, { zones })).toEqual({ kind: 'own', by: 'hialeah' })
+    expect(trashMode(doral, { zones })).toEqual({ kind: 'county' })
+    expect(trashMode(gables, { zones })).toEqual({ kind: 'city' })
+    // The unincorporated county is county-served, whatever share its routes cover.
+    expect(trashMode(uninc, { zones })).toEqual({ kind: 'county' })
+    // FEMA's high-risk zones are A and V: AE and VE count, X and D don't.
+    expect(floodHighRisk(hialeah, { zones })).toBe(15)
+  })
+})
