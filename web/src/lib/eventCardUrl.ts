@@ -67,3 +67,16 @@ export const SEASON_CARD_VERSION = '2'
 export function seasonCardUrl(key: string, lang: Lang, size: EventCardSize, year: number): string {
   return `/api/og/season/${encodeURIComponent(key)}?lang=${lang}&size=${size}&v=${SEASON_CARD_VERSION}.${year}`
 }
+
+/** Bump when the weekly roundup's cover (lib/weekCover.tsx) changes design. */
+export const WEEK_COVER_VERSION = '1'
+
+/**
+ * The cover of the week holding `monday`: `/api/og/week/<monday>`, at the
+ * `social` size, the first picture of the Monday roundup. It is drawn from
+ * the week's events as they are now; `stamp` (the newest edit among them)
+ * changes the URL when they change.
+ */
+export function weekCoverUrl(monday: string, stamp: string | number = ''): string {
+  return `/api/og/week/${monday}?size=social&v=${WEEK_COVER_VERSION}${stamp === '' ? '' : `.${stamp}`}`
+}

@@ -164,6 +164,7 @@ export interface Config {
       morningBrief: TaskMorningBrief;
       socialStats: TaskSocialStats;
       eveningWrap: TaskEveningWrap;
+      weeklyRoundup: TaskWeeklyRoundup;
       inline: {
         input: unknown;
         output: unknown;
@@ -1251,10 +1252,11 @@ export interface HqSocialDraft {
   pillar?: ('spotlight' | 'event' | 'story' | 'promo' | 'other') | null;
   language?: ('es' | 'en' | 'both') | null;
   /**
-   * Drafted when this page was published. Set by HQ.
+   * Drafted when this page was published, or the weekly roundup. Set by HQ.
    */
   sourceCollection?: string | null;
   sourceId?: string | null;
+  dedupeKey?: string | null;
   /**
    * Why the last approval failed. Set by HQ.
    */
@@ -1860,7 +1862,7 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'morningBrief' | 'socialStats' | 'eveningWrap';
+        taskSlug: 'inline' | 'morningBrief' | 'socialStats' | 'eveningWrap' | 'weeklyRoundup';
         taskID: string;
         input?:
           | {
@@ -1893,7 +1895,7 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'morningBrief' | 'socialStats' | 'eveningWrap') | null;
+  taskSlug?: ('inline' | 'morningBrief' | 'socialStats' | 'eveningWrap' | 'weeklyRoundup') | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -2650,6 +2652,7 @@ export interface HqSocialDraftsSelect<T extends boolean = true> {
   language?: T;
   sourceCollection?: T;
   sourceId?: T;
+  dedupeKey?: T;
   error?: T;
   publishAt?: T;
   postizPosts?:
@@ -3372,6 +3375,16 @@ export interface TaskEveningWrap {
   input?: unknown;
   output: {
     sent?: boolean | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskWeeklyRoundup".
+ */
+export interface TaskWeeklyRoundup {
+  input?: unknown;
+  output: {
+    drafted?: boolean | null;
   };
 }
 /**

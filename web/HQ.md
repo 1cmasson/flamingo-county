@@ -13,6 +13,9 @@ only. Phase 1 has three parts:
 - **Evening wrap.** At 8 PM Miami time, Telegram gets the day's counterpart:
   what happened today, open tasks due by the end of tomorrow (overdue ones
   flagged), tomorrow's calendar, and the social and site drafts waiting on you.
+- **Monday roundup.** Every Monday morning, one social draft for the week's
+  events, Monday to Sunday: a cover, the events' cards and a link to the
+  week's page. Events no longer get a post each. See *The Monday roundup*.
 - **Social approvals.** A draft in `hq-social-drafts` is previewed in Telegram
   with its cover photo or video and **Approve / Reject** buttons. Approve
   uploads the files to Postiz and schedules the post on Facebook, Instagram or
@@ -22,7 +25,7 @@ only. Phase 1 has three parts:
   a hand-made draft (from any agent) sets its own time.
 
 Everything is in the admin under **HQ**. The code is in `src/lib/{hq,brief,telegram,telegramBot,chat,postiz}.ts`,
-`src/lib/{calendar,wrap}.ts`, `src/collections/Hq*.ts`, `src/jobs/{morningBrief,eveningWrap}.ts`
+`src/lib/{calendar,wrap,weeklyRoundup}.ts`, `src/collections/Hq*.ts`, `src/jobs/{morningBrief,eveningWrap,weeklyRoundup}.ts`
 and `src/app/api/telegram/route.ts`.
 
 ## Setting it up
@@ -572,10 +575,20 @@ request. The tap is your Telegram account behind the webhook's secret.
 version, which could be an unapproved draft, so the seed skips any document
 with a pending draft and says so.
 
-**A published event or story gets a social draft.** When an event or story
+**A published story gets a social draft. An event does not.** When a story
 goes from draft to published (your Publish tap, or Publish in the admin),
 `src/lib/autoDraft.ts` writes one pending `hq-social-drafts` entry, and its
-preview arrives in Telegram for Approve / Reject like any other draft:
+preview arrives in Telegram for Approve / Reject like any other draft.
+
+Events used to get one too, and a busy week meant a post per event every
+day. Now the week's events go out together in *The Monday roundup*, and
+publishing an event drafts nothing. The event path is still in
+`autoDraft.ts`, switched off by `EVENT_AUTO_DRAFTS`; setting it to `true`
+brings back the post per event exactly as described below. An event
+published after its week's roundup gets nothing on the grid: the plan is an
+Instagram story for it (a TODO in `autoDraftHook`, not built yet).
+
+What a page's own draft holds:
 - **Caption.** Spanish, then English, made only from the page's own fields:
   title, date, time, venue, who gets in and the note for an event; title and
   standfirst for a story. A field that names a price is left out, and a
@@ -691,6 +704,63 @@ Havana is left off the page for now.
 **Clicks.** Every button goes through `/go/<from>?to=…` and is counted in
 `hq-clicks` with the button's destination as `to`, so the growth review can
 tell which buttons people use. Nothing is stored on the visitor.
+
+## The Monday roundup
+
+One post a week for the week's events, instead of one per event
+(`src/lib/weeklyRoundup.ts`, the `weeklyRoundup` job in `src/jobs`).
+
+- **When.** The job runs every hour at :15 and drafts on Mondays from 7 AM
+  Miami time, so the draft is waiting when the 7:30 brief lists what needs
+  you. Like the brief, the hour is checked in code because croner reads cron
+  in the server's zone. The first run that finds events drafts the week; the
+  later ones find the draft and stop, so a run missed during a deploy is made
+  up an hour later.
+- **Which week.** Monday to Sunday on Miami's calendar. An event is in it if
+  it is published, not cancelled or postponed, and on at some point that
+  week: a one-day event that day, an exhibit running all month once, under
+  Monday. Last Sunday's 9PM–1AM night is not Monday's. A title that names a
+  price leaves the event out. A week with nothing on drafts nothing.
+- **Pictures.** A carousel for Facebook and Instagram:
+  1. **The cover** (`src/lib/weekCover.tsx`, `/api/og/week/<date>?size=social`):
+     ESTA SEMANA / THIS WEEK on the site's ink masthead, the dates on a
+     yellow ticket, the seven days with the ones that have something on lit
+     up, the count and the cities. It is the same layout every week in the
+     brand's shared colours, with no mascot, because each mascot stands for
+     its city. Only the drawn scene behind it changes week to week (Main
+     Street plaza and the Hialeah gateway, in turn). A week whose events are
+     all in Miami Lakes or all in Hialeah uses that city's scene. Little
+     Havana is left out of the cover's branding for now; the cities line
+     names only the cities of that week's events. The headline and
+     dates stay inside the square the profile grid crops to.
+  2. **One Spanish card per event**, the same `social` card an event's own
+     post had, up to nine, so ten pictures at most (Instagram's limit). With
+     more than nine events, starred ones go first, then ones with a photo,
+     then the earliest. The cards are shown in date order.
+  All are 1080×1350 JPEGs in HQ media. If the cover can't be drawn, there is
+  no draft, and the next hourly run tries again.
+- **Caption.** Spanish, then English. A heading with the dates, then one line
+  per event shown: an emoji for its kind, the day, the title, the city
+  ("🤝 Sáb 17 · Clase de ciudadanía · Hialeah"). An exhibit that opened
+  earlier reads "Hasta el lun 19". With more than nine events it adds "…y 2
+  más en la web". It ends with a `/go/fb/<draft id>` link to `/es/this-week`,
+  then any photo credits. No prices and no descriptions, and a missing
+  translation is left out. Within 2,000 characters.
+- **Time.** 11:30 that Monday, or the next free slot by Tuesday evening,
+  keeping 3 hours from other waiting drafts (`pickPostTime`).
+- **Never twice.** The draft carries `dedupeKey` `weekly-roundup:<monday>`,
+  a unique column. The database refuses a second draft for the same week,
+  whatever ran it. Rejecting the draft doesn't bring it back. Deleting it on a
+  Monday does: the next hourly run drafts the week again.
+- It is logged as `social.draft_created` and previewed in Telegram like any
+  draft. Nothing is posted without your Approve.
+
+**The week's page.** `/es/this-week` and `/en/this-week` (English slug in
+both languages, like every route) list this week's events, Monday to
+Sunday, under each day. Past days drop off as the week goes. The page is
+indexable, in the sitemap, with the same event-list structured data as the
+seasonal guides. It is the weekly "what to do this weekend" page from the
+growth review's lever menu.
 
 ## Things that are deliberate
 
@@ -816,7 +886,7 @@ flamingocounty.com link. It is enforced in code, not by habit:
 - Approve checks it again, so an old or edited draft that breaks the rule is
   refused in Telegram instead of reaching Postiz.
 - A page with no picture gets no auto-draft. Give the story a cover and
-  publish it again.
+  publish it again. The Monday roundup always opens on its cover.
 - The Studio's Facebook channel has `requiresMedia: true`.
 
 ## Published status

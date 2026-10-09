@@ -6,7 +6,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
 
-import { draftForPublished, pickPostTime, postDeadline, postWindowStart } from '@/lib/autoDraft'
+import { EVENT_AUTO_DRAFTS, draftForPublished, pickPostTime, postDeadline, postWindowStart } from '@/lib/autoDraft'
 import { HQ_INTERNAL } from '@/lib/hq'
 import type { Event, HqSocialDraft, Story } from '@/payload-types'
 
@@ -233,12 +233,67 @@ describe('auto-drafting a social post when a page goes live', () => {
   const publish = (collection: 'events' | 'stories', id: number) =>
     payload.update({ collection, id, data: { _status: 'published' } as never, draft: false, overrideAccess: true })
 
-  it('saving a draft drafts nothing; publishing it drafts exactly one pending post, from the record alone', async () => {
+  /**
+   * An event's own post. Publishing no longer drafts one (the Monday roundup
+   * does, lib/weeklyRoundup.ts), so these call the event path directly, as
+   * turning `EVENT_AUTO_DRAFTS` back on would.
+   */
+  const publishAndDraft = async (id: number) => {
+    await publish('events', id)
+    return draftForPublished(payload, 'events', id)
+  }
+
+  /** A bilingual story with a cover, saved as a draft. */
+  async function draftStory(): Promise<Story> {
+    const story = (await payload.create({
+      collection: 'stories',
+      data: { slug: `ad-story-${Date.now()}-${Math.round(Math.random() * 1e6)}`, title: 'The last cigar roller', dek: 'Forty years at one bench.', cover: photo, _status: 'draft' } as never,
+      locale: 'en',
+      draft: true,
+      overrideAccess: true,
+    })) as Story
+    made.push({ collection: 'stories', id: story.id })
+    await payload.update({ collection: 'stories', id: story.id, data: { title: 'El último torcedor', dek: 'Cuarenta años en una mesa.' } as never, locale: 'es', draft: true, overrideAccess: true })
+    return story
+  }
+
+  it('publishing an event drafts no post of its own: it goes out in the Monday roundup', async () => {
+    const tg = fakeTelegram()
+    expect(EVENT_AUTO_DRAFTS).toBe(false)
+    const ev = await draftEvent('2099-03-14')
+    await publish('events', ev.id)
+    expect(await draftsFor('events', ev.id)).toHaveLength(0)
+    expect(tg.previews()).toHaveLength(0)
+  })
+
+  it('publishing a story with a cover still drafts one pending post, previewed once', async () => {
+    const tg = fakeTelegram()
+    const story = await draftStory()
+    expect(await draftsFor('stories', story.id)).toHaveLength(0)
+    await publish('stories', story.id)
+    const drafts = await draftsFor('stories', story.id)
+    expect(drafts).toHaveLength(1)
+    expect(drafts[0]).toMatchObject({ status: 'pending', pillar: 'story', language: 'both', platforms: ['facebook', 'instagram'] })
+    expect(drafts[0].caption).toBe(
+      [
+        'El último torcedor',
+        'Cuarenta años en una mesa.',
+        '',
+        'The last cigar roller',
+        'Forty years at one bench.',
+        '',
+        `👉 https://flamingocounty.com/go/fb/${drafts[0].id}?to=/es/stories/${story.slug}`,
+      ].join('\n'),
+    )
+    await vi.waitFor(() => expect(tg.previews()).toHaveLength(1))
+  })
+
+  it("an event's own post, drafted from the record alone", async () => {
     const tg = fakeTelegram()
     const ev = await draftEvent('2099-03-14')
     expect(await draftsFor('events', ev.id)).toHaveLength(0)
 
-    await publish('events', ev.id)
+    await publishAndDraft(ev.id)
     const drafts = await draftsFor('events', ev.id)
     expect(drafts).toHaveLength(1)
     const d = drafts[0]
@@ -281,17 +336,22 @@ describe('auto-drafting a social post when a page goes live', () => {
 
   it('never drafts a page twice: not on a republish, nor on saving the live page again', async () => {
     const tg = fakeTelegram()
-    const ev = await draftEvent('2099-03-14')
-    await publish('events', ev.id)
-    expect(await draftsFor('events', ev.id)).toHaveLength(1)
+    const story = await draftStory()
+    await publish('stories', story.id)
+    expect(await draftsFor('stories', story.id)).toHaveLength(1)
 
     // Edited as a draft, then published again: that is draft → published once more.
-    await payload.update({ collection: 'events', id: ev.id, data: { title: 'Son night, again' } as never, locale: 'en', draft: true, overrideAccess: true })
-    await publish('events', ev.id)
+    await payload.update({ collection: 'stories', id: story.id, data: { title: 'The last roller, again' } as never, locale: 'en', draft: true, overrideAccess: true })
+    await publish('stories', story.id)
     // The live page saved again, published → published.
-    await publish('events', ev.id)
+    await publish('stories', story.id)
+    expect(await draftsFor('stories', story.id)).toHaveLength(1)
+    // And the event path, called twice, drafts once.
+    const ev = await draftEvent('2099-03-14')
+    expect(await publishAndDraft(ev.id)).not.toBeNull()
+    expect(await draftForPublished(payload, 'events', ev.id)).toBeNull()
     expect(await draftsFor('events', ev.id)).toHaveLength(1)
-    await vi.waitFor(() => expect(tg.previews()).toHaveLength(1))
+    await vi.waitFor(() => expect(tg.previews()).toHaveLength(2))
   })
 
   it('makes no draft for a story with no photo: Facebook posts are never text only', async () => {
@@ -314,7 +374,7 @@ describe('auto-drafting a social post when a page goes live', () => {
   it('gives an event with no photo its generated card, so it goes to Instagram too', async () => {
     fakeTelegram()
     const ev = await draftEvent('2099-03-14', { image: null })
-    await publish('events', ev.id)
+    await publishAndDraft(ev.id)
     const [d] = await draftsFor('events', ev.id)
     expect(d.platforms).toEqual(['facebook', 'instagram'])
     const media = d.media?.[0]
@@ -325,7 +385,7 @@ describe('auto-drafting a social post when a page goes live', () => {
     fakeTelegram()
     const card = vi.spyOn(await import('@/lib/eventCard'), 'renderEventCard')
     const ev = await draftEvent('2099-03-14', { image: null })
-    await publish('events', ev.id)
+    await publishAndDraft(ev.id)
     const [d] = await draftsFor('events', ev.id)
     expect(d.media).toHaveLength(2)
     const [first, second] = (d.media ?? []).map((m) => (typeof m === 'object' ? m : null))
@@ -349,7 +409,7 @@ describe('auto-drafting a social post when a page goes live', () => {
       overrideAccess: true,
     })) as Event
     made.push({ collection: 'events', id: ev.id })
-    await publish('events', ev.id)
+    await publishAndDraft(ev.id)
     const [d] = await draftsFor('events', ev.id)
     expect(d.platforms).toEqual(['facebook', 'instagram'])
     const drawn = card.mock.calls.find(([e]) => e.id === ev.id)?.[0]
@@ -361,7 +421,7 @@ describe('auto-drafting a social post when a page goes live', () => {
     fakeTelegram()
     const evs = await Promise.all([draftEvent('2099-03-14'), draftEvent('2099-03-15'), draftEvent('2099-03-16')])
     const before = Date.now()
-    await Promise.all(evs.map((ev) => publish('events', ev.id)))
+    await Promise.all(evs.map((ev) => publishAndDraft(ev.id)))
     const times = (await Promise.all(evs.map((ev) => draftsFor('events', ev.id))))
       .map((ds) => {
         expect(ds).toHaveLength(1)
@@ -377,10 +437,9 @@ describe('auto-drafting a social post when a page goes live', () => {
     fakeTelegram()
     // Two days out, so its 72-hour window is already open and the morning slot is the first free one.
     const ev = await draftEvent('2099-03-03')
-    // Published, its real-time draft dropped, then drafted again as if the
-    // clock read 00:10 on a day with nothing else waiting near it.
+    // Published, then drafted as if the clock read 00:10 on a day with
+    // nothing else waiting near it.
     await publish('events', ev.id)
-    for (const d of await draftsFor('events', ev.id)) await payload.delete({ collection: 'hq-social-drafts', id: d.id, overrideAccess: true })
     const d = await draftForPublished(payload, 'events', ev.id, new Date('2099-03-01T00:10:00-05:00'))
     expect(d?.scheduledFor && new Date(d.scheduledFor).toISOString()).toBe(new Date('2099-03-01T11:30:00-05:00').toISOString())
   })
@@ -388,27 +447,27 @@ describe('auto-drafting a social post when a page goes live', () => {
   it('drafts nothing for an event that is already over, or cancelled', async () => {
     fakeTelegram()
     const past = await draftEvent('2020-01-04')
-    await publish('events', past.id)
+    expect(await publishAndDraft(past.id)).toBeNull()
     const cancelled = await draftEvent('2099-03-14', { eventStatus: 'cancelled' })
-    await publish('events', cancelled.id)
+    expect(await publishAndDraft(cancelled.id)).toBeNull()
     expect(await draftsFor('events', past.id)).toHaveLength(0)
     expect(await draftsFor('events', cancelled.id)).toHaveLength(0)
   })
 
   it('keeps publishing when drafting fails', async () => {
     fakeTelegram()
-    const ev = await draftEvent('2099-03-14')
+    const story = await draftStory()
     const find = payload.find.bind(payload)
     const spy = vi.spyOn(payload, 'find').mockImplementation(((args: { collection: string }) =>
       args.collection === 'hq-social-drafts' ? Promise.reject(new Error('boom')) : find(args as never)) as never)
     const errors = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     try {
-      await expect(publish('events', ev.id)).resolves.toMatchObject({ _status: 'published' })
+      await expect(publish('stories', story.id)).resolves.toMatchObject({ _status: 'published' })
       expect(errors).toHaveBeenCalledWith('[hq] auto-draft failed:', 'boom')
     } finally {
       spy.mockRestore()
       errors.mockRestore()
     }
-    expect(await draftsFor('events', ev.id)).toHaveLength(0)
+    expect(await draftsFor('stories', story.id)).toHaveLength(0)
   })
 })

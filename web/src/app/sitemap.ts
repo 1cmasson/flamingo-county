@@ -49,6 +49,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const entries: Entry[] = [
     ...both(routes.home, undefined, 1),
     ...both(routes.events, undefined, 0.8),
+    // Changes every Monday, and as the week's events are published.
+    ...both(routes.thisWeek, undefined, 0.8),
     ...both(routes.stories, undefined, 0.7),
     ...seasonEntries,
     ...both(routes.about, undefined, 0.4),
