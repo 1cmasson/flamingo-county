@@ -29,6 +29,8 @@ export const routes = {
   about: (lang: Lang) => `/${lang}/about`,
   /** The business card's landing page — where its QR code leads (via /go/card). */
   card: (lang: Lang) => `/${lang}/card`,
+  /** The link-in-bio page; each bio adds its platform, `?from=ig` (lib/links.ts). */
+  links: (lang: Lang) => `/${lang}/links`,
   privacy: (lang: Lang) => `/${lang}/privacy`,
   freeRides: (lang: Lang) => `/${lang}/free-rides`,
   freeRoute: (lang: Lang, route: string) => `/${lang}/free-rides/${route}`,

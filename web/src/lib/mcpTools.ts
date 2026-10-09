@@ -17,7 +17,7 @@ import { trafficReport } from './growth'
 import { addDays, dateOnly, eventEndDay, todayISO } from './dates'
 import { cancelDraft, miamiTime } from './hq'
 import { isRunningCount, type MetricSummary } from './postiz'
-import { PUBLISHABLE, publishStatus, requestPublish } from './publishRequests'
+import { PUBLISHABLE, PUBLISHABLE_GLOBALS, publishStatus, requestPublish } from './publishRequests'
 import { PHOTO_LICENSES, canonicalLicenseUrl, isPhotoLicense, licenseLabel, type PhotoLicense } from './photoLicense'
 import { REQUEST_KINDS, isRequestKind, type RequestKind } from './requestKinds'
 import {
@@ -1173,10 +1173,12 @@ export const hqMcpTools: McpTool[] = [
     description:
       'Ask the owner to publish the current draft of a site document (' +
       PUBLISHABLE.join(', ') +
-      '). Save the draft first with the create/update tool and draft: true — drafts are never visible on the site. The owner sees exactly what changes against the live page in Telegram and taps Publish or Reject. If you edit the draft again before they tap, they are shown the new version instead. Publishes nothing by itself.',
+      ') or of the link page (' +
+      PUBLISHABLE_GLOBALS.join(', ') +
+      ', no id). Save the draft first with the create/update tool and draft: true — drafts are never visible on the site. The owner sees exactly what changes against the live page in Telegram and taps Publish or Reject. If you edit the draft again before they tap, they are shown the new version instead. Publishes nothing by itself.',
     parameters: {
-      collection: z.enum(PUBLISHABLE).describe('Which collection'),
-      id: z.union([z.string(), z.number()]).describe('Document id'),
+      collection: z.enum([...PUBLISHABLE, ...PUBLISHABLE_GLOBALS]).describe('Which collection, or link-page'),
+      id: z.union([z.string(), z.number()]).optional().describe('Document id (not for link-page)'),
       reason: z.string().max(500).optional().describe('One line for the owner: what this is'),
     },
     handler: (args: Record<string, unknown>, req: PayloadRequest) =>

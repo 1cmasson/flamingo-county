@@ -1,4 +1,4 @@
-import type { CollectionBeforeOperationHook, Field } from 'payload'
+import type { CollectionBeforeOperationHook, Field, GlobalBeforeOperationHook } from 'payload'
 
 /**
  * Every content type in fc-data.js already carries a stable string id
@@ -102,6 +102,19 @@ export const mcpDraftsOnly: CollectionBeforeOperationHook = ({ args, operation, 
   if (write.draft !== true) {
     throw new Error(
       'Over MCP, site content can only be saved as a draft: pass draft: true. Publishing needs the owner’s approval — use hqRequestPublish.',
+    )
+  }
+  if (write.data) write.data._status = 'draft'
+  return args
+}
+
+/** `mcpDraftsOnly` for a global with drafts: the link page (globals/LinkPage.ts). */
+export const mcpGlobalDraftsOnly: GlobalBeforeOperationHook = ({ args, operation, req }) => {
+  if (req.payloadAPI !== 'MCP' || operation !== 'update') return args
+  const write = args as { draft?: boolean; data?: Record<string, unknown> }
+  if (write.draft !== true) {
+    throw new Error(
+      'Over MCP, the link page can only be saved as a draft: pass draft: true. Publishing needs the owner’s approval — use hqRequestPublish.',
     )
   }
   if (write.data) write.data._status = 'draft'

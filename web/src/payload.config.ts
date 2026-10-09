@@ -40,6 +40,7 @@ import { SiteSettings } from './globals/SiteSettings'
 import { AboutPage } from './globals/AboutPage'
 import { ListYourSpotPage } from './globals/ListYourSpotPage'
 import { HqPlaybook } from './globals/HqPlaybook'
+import { LinkPage } from './globals/LinkPage'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -94,7 +95,7 @@ export default buildConfig({
     HqExperiments,
     HqArtworkUploads,
   ],
-  globals: [SiteSettings, AboutPage, ListYourSpotPage, HqPlaybook],
+  globals: [SiteSettings, AboutPage, ListYourSpotPage, LinkPage, HqPlaybook],
 
   /**
    * Wired up front, not retrofitted: adding localization later is a schema
@@ -234,6 +235,11 @@ export default buildConfig({
         },
       },
       globals: {
+        'link-page': {
+          enabled: { find: true, update: true },
+          description:
+            'The link-in-bio page (flamingocounty.com/links): taglineEs/taglineEn, then ordered sections (emoji, titleEs, titleEn) of buttons (emoji, labelEs, labelEn, kind "link" with a url or "newestStory", featured, startsOn/endsOn days). Both languages are plain fields: no locale parameter. Internal urls are paths without the language (/events); outside ones are full https:// addresses. To change anything in sections, read the page (findLinkPage with draft: true), then send the WHOLE sections array back with your change: rows not sent are removed. Save with draft: true; drafts are never live. Publish with hqRequestPublish (collection "link-page", no id).',
+        },
         'hq-playbook': {
           enabled: { find: true, update: true },
           description:

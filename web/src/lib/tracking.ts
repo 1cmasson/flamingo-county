@@ -4,6 +4,9 @@
  *   /go/ig                 bio link on Instagram
  *   /go/fb/12              a link in Facebook post (draft) #12
  *   /go/tt?to=/es/events   bio link on TikTok, landing on the events page
+ *   /go/ig?to=https://…    a button on the link page (/links?from=ig) to
+ *                          another site; only an address that is on the
+ *                          published link page is followed (lib/links.ts)
  *
  * The first segment is the source; a short alias for each platform, or any
  * other short slug (`qr`, `flyer`) for offline sources. The optional second
@@ -19,9 +22,14 @@ const ALIASES: Record<string, string> = {
   facebook: 'facebook',
   tt: 'tiktok',
   tiktok: 'tiktok',
+  // The link page's buttons when the bio named no platform (/links, lib/links.ts).
+  bio: 'bio',
 }
 
 const SLUG = /^[a-z0-9-]{1,24}$/
+
+/** A usable source name: the first segment of a /go/ link. */
+export const isSourceSlug = (s: string) => SLUG.test(s)
 
 export type TrackedLink = { source: string; draftId?: number; location: string }
 
@@ -41,7 +49,16 @@ export function safePath(to: string | null): string {
   }
 }
 
-export function parseTrackedLink(segments: string[], to: string | null): TrackedLink | null {
+/**
+ * `external` is the set of outside addresses this link may send a visitor to:
+ * the link page's own (lib/links.ts `externalUrls`). Any other https:// `to`
+ * lands on the link page instead.
+ */
+export function parseTrackedLink(
+  segments: string[],
+  to: string | null,
+  external?: ReadonlySet<string>,
+): TrackedLink | null {
   const [rawSource, rawDraft, ...extra] = segments.map((s) => s.toLowerCase())
   if (!rawSource || !SLUG.test(rawSource) || extra.length) return null
   if (rawDraft !== undefined && !/^\d{1,9}$/.test(rawDraft)) return null
@@ -49,6 +66,10 @@ export function parseTrackedLink(segments: string[], to: string | null): Tracked
   const source = ALIASES[rawSource] ?? rawSource
   const draftId = rawDraft ? Number(rawDraft) : undefined
 
+  if (to && /^https:\/\//i.test(to)) {
+    if (external?.has(to)) return { source, draftId, location: to }
+    to = '/links'
+  }
   const path = safePath(to)
   const url = new URL(path, 'https://x.invalid')
   url.searchParams.set('utm_source', source)
