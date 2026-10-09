@@ -25,6 +25,8 @@ export const routes = {
   /** A seasonal guide, by its `path` in lib/seasons.ts: /es/halloween. */
   season: (lang: Lang, path: string) => `/${lang}/${path}`,
   myWeek: (lang: Lang) => `/${lang}/my-week`,
+  /** This week's events, Monday to Sunday: the page the Monday roundup post links to (lib/weeklyRoundup.ts). */
+  thisWeek: (lang: Lang) => `/${lang}/this-week`,
   listYourSpot: (lang: Lang) => `/${lang}/list-your-spot`,
   about: (lang: Lang) => `/${lang}/about`,
   /** The business card's landing page — where its QR code leads (via /go/card). */

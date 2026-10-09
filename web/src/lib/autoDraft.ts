@@ -11,14 +11,19 @@ import { photoCredit } from './photoLicense'
 import type { Platform } from './postiz'
 import { routes } from './routes'
 import { SITE_URL } from './site'
+import { unshout } from './week'
 
 /**
  * A social draft for a page the moment it goes live.
  *
- * When an event or story moves from draft to published (the owner's Publish
- * tap in Telegram, or Publish in the admin), HQ writes one pending
- * `hq-social-drafts` entry for it. That draft then goes through the normal
- * Approve / Reject preview: nothing is posted or scheduled from here.
+ * When a story moves from draft to published (the owner's Publish tap in
+ * Telegram, or Publish in the admin), HQ writes one pending `hq-social-drafts`
+ * entry for it. That draft then goes through the normal Approve / Reject
+ * preview: nothing is posted or scheduled from here.
+ *
+ * Events no longer get a post each (`EVENT_AUTO_DRAFTS`): the week's events go
+ * out together in the Monday roundup (lib/weeklyRoundup.ts). The event path
+ * below still works when called directly, and is what the switch turns back on.
  *
  * The caption is a template over the record's own fields, Spanish first, then
  * English. It adds no facts, and a field that names a price is left out.
@@ -27,8 +32,15 @@ import { SITE_URL } from './site'
 export type AutoDraftSource = 'events' | 'stories'
 type Lang = 'es' | 'en'
 
+/**
+ * Whether publishing an event drafts a post of its own. Off since the owner
+ * asked for one weekly roundup instead of a post per event per day (the
+ * Monday roundup, lib/weeklyRoundup.ts). Stories are unaffected.
+ */
+export const EVENT_AUTO_DRAFTS: boolean = false
+
 /** TikTok's limit, the tightest of the three platforms. */
-const CAPTION_MAX = 2000
+export const CAPTION_MAX = 2000
 /** A long event note or story dek is cut to this, at a word boundary. */
 const EXCERPT_MAX = 280
 
@@ -40,7 +52,7 @@ const drafting = new Set<string>()
  * the others' times when picking their own slot (see `pickPostTime`).
  */
 let queue: Promise<unknown> = Promise.resolve()
-function oneAtATime<T>(fn: () => Promise<T>): Promise<T> {
+export function oneAtATime<T>(fn: () => Promise<T>): Promise<T> {
   const run = queue.then(fn, fn)
   queue = run.catch(() => undefined)
   return run
@@ -55,6 +67,12 @@ export function autoDraftHook(collection: AutoDraftSource): CollectionAfterChang
     const was = (previousDoc as { _status?: string } | undefined)?._status
     const now = (doc as { _status?: string })._status
     if (operation !== 'update' || was !== 'draft' || now !== 'published') return doc
+    // An event goes out in its week's Monday roundup, not on its own. One
+    // published after that week's roundup was drafted gets nothing on the
+    // grid: the owner chose an Instagram story for those.
+    // TODO(stories): draft an Instagram story here for an event published
+    // after its week's roundup exists (`roundupExists` in lib/weeklyRoundup.ts).
+    if (collection === 'events' && !EVENT_AUTO_DRAFTS) return doc
     try {
       // `req` is not passed on: the draft writes carry HQ's own context, which
       // would otherwise be merged into this publish request's.
@@ -235,7 +253,7 @@ async function create(
 /* ------------------------------------------------------------------------ */
 
 /** A field's text, or nothing if it is empty or names a price. */
-function fact(value: string | null | undefined): string {
+export function fact(value: string | null | undefined): string {
   const text = (value ?? '').trim()
   return text && noPrice(text) === true ? text : ''
 }
@@ -245,11 +263,6 @@ function excerpt(value: string | null | undefined): string {
   if (text.length <= EXCERPT_MAX) return text
   const cut = text.slice(0, EXCERPT_MAX - 1)
   return `${cut.slice(0, Math.max(cut.lastIndexOf(' '), EXCERPT_MAX / 2)).trimEnd()}…`
-}
-
-/** "HIALEAH" → "Hialeah". City names are stored in caps for the design. */
-function unshout(s: string): string {
-  return s === s.toUpperCase() ? s.toLowerCase().replace(/(^|[\s-])(\p{L})/gu, (_, a, b) => a + b.toUpperCase()) : s
 }
 
 function longDate(iso: string, lang: Lang): string {
@@ -431,7 +444,7 @@ export function postWindowStart(ev: Pick<Event, 'date' | 'startTime'>, now: Date
 }
 
 /** The times of drafts already waiting to go out, near enough to matter. */
-async function busyTimes(payload: Payload, now: Date): Promise<Date[]> {
+export async function busyTimes(payload: Payload, now: Date): Promise<Date[]> {
   const { docs } = await payload.find({
     collection: 'hq-social-drafts',
     where: {
@@ -500,12 +513,14 @@ async function copyCover(
  * framed on it when it has one. Null if it cannot be drawn; the draft then
  * takes the bare photo, or goes to Facebook as text.
  */
-async function cardImage(
+export async function cardImage(
   payload: Payload,
   ev: Event,
   lang: 'es' | 'en',
   label: string,
   slug: string,
+  /** What made it, for the note on the HQ media row. */
+  madeFor: string = 'made when it was published',
 ): Promise<number | null> {
   try {
     // Loaded on demand: the renderer pulls in next/og, which the Payload CLI
@@ -516,7 +531,7 @@ async function cardImage(
     const created = await payload.create({
       collection: 'hq-media',
       data: {
-        note: `Generated ${lang.toUpperCase()} card for ${label} (${ev.image ? 'with its photo' : 'no photo'}), made when it was published`,
+        note: `Generated ${lang.toUpperCase()} card for ${label} (${ev.image ? 'with its photo' : 'no photo'}), ${madeFor}`,
       },
       file: {
         data: jpeg,

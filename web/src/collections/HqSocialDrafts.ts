@@ -130,7 +130,8 @@ export const HqSocialDrafts: CollectionConfig = {
       ],
     },
     {
-      // The page a draft was written for when it went live (lib/autoDraft.ts).
+      // The page a draft was written for when it went live (lib/autoDraft.ts),
+      // or `weekly-roundup` and the week's Monday (lib/weeklyRoundup.ts).
       // Republishing that page finds this and drafts nothing new.
       type: 'row',
       fields: [
@@ -138,11 +139,22 @@ export const HqSocialDrafts: CollectionConfig = {
           name: 'sourceCollection',
           type: 'text',
           access: humanOnly,
-          admin: { readOnly: true, description: 'Drafted when this page was published. Set by HQ.' },
+          admin: { readOnly: true, description: 'Drafted when this page was published, or the weekly roundup. Set by HQ.' },
         },
         { name: 'sourceId', type: 'text', index: true, access: humanOnly, admin: { readOnly: true } },
       ],
       admin: { condition: (data) => Boolean(data?.sourceCollection) },
+    },
+    {
+      // At most one draft per key, held by the database: the Monday roundup
+      // writes `weekly-roundup:<monday>`, so a retried run, a restart or a
+      // second process can never draft the same week twice. Empty on every
+      // other draft (SQLite lets any number of rows leave it empty).
+      name: 'dedupeKey',
+      type: 'text',
+      unique: true,
+      access: humanOnly,
+      admin: { hidden: true },
     },
     {
       name: 'error',
