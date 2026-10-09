@@ -493,7 +493,10 @@ async function fetchPublicFile(
 
 /** A filename stem from a URL's last path segment: "Hialeah_Park_Race_Track_-28830740140-". */
 function fileStem(url: URL): string {
-  let last = url.pathname.split('/').pop() || 'media'
+  const parts = url.pathname.split('/')
+  // A IIIF image ends in …/<identifier>/full/<size>/<rotation>/default.jpg: name it by the identifier.
+  const full = parts.lastIndexOf('full')
+  let last = (/^default\./.test(parts.at(-1) ?? '') && full > 0 ? parts[full - 1] : parts.pop()) || 'media'
   try {
     last = decodeURIComponent(last)
   } catch {
@@ -606,12 +609,29 @@ export async function addMediaFromUpload(
 
 /**
  * Where a site photo may be downloaded from: Wikimedia Commons' file server,
- * Flickr's, and the Library of Congress's. Each publishes a licence per file.
- * Exact hostnames, no subdomains.
+ * Flickr's, the Library of Congress's, and the University of Miami Libraries'
+ * digital collections (the Cuban Heritage Collection's IIIF server, e.g. the
+ * public-domain U.S. Cuban Refugee Program photos in CHC0218). Each publishes
+ * a licence per file. Exact hostnames, no subdomains.
  */
-export const SITE_MEDIA_HOSTS = ['upload.wikimedia.org', 'live.staticflickr.com', 'tile.loc.gov', 'loc.gov'] as const
+export const SITE_MEDIA_HOSTS = [
+  'upload.wikimedia.org',
+  'live.staticflickr.com',
+  'tile.loc.gov',
+  'loc.gov',
+  'digitalcollections.library.miami.edu',
+] as const
 /** Where the description page stating the licence may be. It is linked from the public page. */
-const SOURCE_HOSTS = ['commons.wikimedia.org', 'en.wikipedia.org', 'es.wikipedia.org', 'www.flickr.com', 'flickr.com', 'www.loc.gov', 'loc.gov']
+const SOURCE_HOSTS = [
+  'commons.wikimedia.org',
+  'en.wikipedia.org',
+  'es.wikipedia.org',
+  'www.flickr.com',
+  'flickr.com',
+  'www.loc.gov',
+  'loc.gov',
+  'digitalcollections.library.miami.edu',
+]
 const SITE_MEDIA_LIMIT = 40 * 1024 * 1024
 const SITE_MEDIA_TYPES = ['image/jpeg', 'image/png']
 /** Narrower than this and the 1200-wide link card would blow it up. */
@@ -983,7 +1003,7 @@ export const hqMcpTools: McpTool[] = [
     description:
       'Import a LICENSED photo of a venue into the public site’s media library, with its credit, and return its id for an event’s `image` (set it with updateEvents and draft: true; it shows on the site only once the owner publishes that event). Only public domain or Creative Commons that allows commercial reuse (no NC, no ND), with attribution. Only direct file URLs on ' +
       SITE_MEDIA_HOSTS.join(', ') +
-      ' (Wikimedia Commons, Flickr, Library of Congress), JPEG or PNG, at least 1000 px wide; no redirects. Never Google Maps/Street View, Yelp, news sites or organizer flyers. Read the licence on the description page yourself; check `findMedia` first for a photo already imported. Returns {id, filename, width, height}.',
+      ' (Wikimedia Commons, Flickr, Library of Congress, University of Miami Libraries: ask its IIIF server for a size, e.g. …/digital/iiif/chc0218/1449/full/2560,/0/default.jpg), JPEG or PNG, at least 1000 px wide; no redirects. Never Google Maps/Street View, Yelp, news sites or organizer flyers. Read the licence on the description page yourself; check `findMedia` first for a photo already imported. Returns {id, filename, width, height}.',
     parameters: {
       url: z.string().url().describe('Direct https file URL, e.g. https://upload.wikimedia.org/wikipedia/commons/…/File.jpg'),
       altEs: z.string().min(1).max(300).describe('Alt text in Spanish: what the photo shows'),
@@ -991,7 +1011,7 @@ export const hqMcpTools: McpTool[] = [
       credit: z.string().min(1).max(CREDIT_MAX).describe('The author as the licence asks to credit them, e.g. "Phillip Pessar" or "Town of Miami Lakes"'),
       license: z.enum(PHOTO_LICENSES).describe('The licence stated on the description page'),
       licenseUrl: z.string().url().optional().describe('The licence deed; filled in from `license` when left out, and must match it'),
-      sourceUrl: z.string().url().describe('The description page (commons.wikimedia.org, flickr.com or loc.gov) where the licence is stated'),
+      sourceUrl: z.string().url().describe('The description page (commons.wikimedia.org, flickr.com, loc.gov or digitalcollections.library.miami.edu) where the licence is stated'),
       modified: z.boolean().optional().describe('Cropped or edited (default true: the site crops every photo it shows)'),
       focalX: z.number().min(0).max(100).optional().describe('Where crops centre across, 0–100 (default 50)'),
       focalY: z.number().min(0).max(100).optional().describe('Where crops centre down, 0–100 (default 50); e.g. 40 to crop off empty foreground'),

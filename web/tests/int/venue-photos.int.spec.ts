@@ -222,6 +222,21 @@ describe('venue photos against the database', () => {
     expect(es.alt).toBe('La entrada del clubhouse de Hialeah Park')
   })
 
+  it('imports a University of Miami archive photo from its IIIF server, named by its identifier', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(await jpeg(2560, 2080), { headers: { 'content-type': 'image/jpeg' } })))
+    const out = await addSiteMediaFromUrl(
+      mcpReq,
+      args({
+        url: 'https://digitalcollections.library.miami.edu/digital/iiif/chc0218/1245/full/2560,/0/default.jpg',
+        credit: 'U.S. Cuban Refugee Program, University of Miami Libraries',
+        license: 'public-domain',
+        sourceUrl: 'https://digitalcollections.library.miami.edu/digital/collection/chc0218/id/1245',
+      }),
+    )
+    made.push({ collection: 'media', id: out.id })
+    expect(out.filename).toMatch(/^1245-.*\.webp$/)
+  })
+
   it('draws an event card with the photo framed on it, and the plain card without one', async () => {
     const stamp = Date.now()
     const kind = await payload.create({ collection: 'event-kinds', data: { slug: `vp-kind-${stamp}`, label: 'Outdoors', bg: '#000', ink: '#fff' } as never, overrideAccess: true })
