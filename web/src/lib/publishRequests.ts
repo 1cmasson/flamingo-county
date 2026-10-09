@@ -1,4 +1,4 @@
-import type { CollectionSlug, Payload } from 'payload'
+import type { CollectionSlug, GlobalSlug, Payload } from 'payload'
 
 import type { HqPublishRequest } from '../payload-types'
 import { recordEvent } from './hq'
@@ -21,6 +21,15 @@ import { clip, esc, ownerChatId, resolveButtons, sendMessage, telegramConfigured
 
 export const PUBLISHABLE = ['events', 'weekly-events', 'stories', 'spotlights', 'listings'] as const
 export type Publishable = (typeof PUBLISHABLE)[number]
+
+/**
+ * Globals with drafts, published the same way. A global is one document, so
+ * it has no id: its requests carry `targetId: 'global'`.
+ */
+export const PUBLISHABLE_GLOBALS = ['link-page'] as const
+export type PublishableGlobal = (typeof PUBLISHABLE_GLOBALS)[number]
+const GLOBAL_ID = 'global'
+const isGlobal = (slug: string): slug is PublishableGlobal => (PUBLISHABLE_GLOBALS as readonly string[]).includes(slug)
 
 const LOCALES = ['es', 'en'] as const
 type Locale = (typeof LOCALES)[number]
@@ -60,8 +69,18 @@ export function formatValue(v: unknown): string {
       v
         .map((row) =>
           Object.entries(row as Doc)
-            .filter(([k, x]) => k !== 'id' && x !== null && x !== undefined && x !== '')
-            .map(([, x]) => (Array.isArray(x) ? x.join(', ') : typeof x === 'object' ? JSON.stringify(x) : String(x)))
+            .filter(([k, x]) => k !== 'id' && x !== null && x !== undefined && x !== '' && !(Array.isArray(x) && !x.length))
+            // Rows inside rows (the link page's buttons inside its sections) read
+            // as their words, not "[object Object]".
+            .map(([, x]) =>
+              Array.isArray(x)
+                ? x.some((y) => y && typeof y === 'object')
+                  ? `[${strings(x).join(', ')}]`
+                  : x.join(', ')
+                : typeof x === 'object'
+                  ? JSON.stringify(x)
+                  : String(x),
+            )
             .join(' '),
         )
         .join(' | '),
@@ -115,6 +134,13 @@ export function diffLines(
         continue
       }
       const name = prefix + f.name
+      if (f.type === 'array' && !translated(f) && f.flattenedFields?.some((x) => x.type === 'array')) {
+        // Rows holding rows (the link page's sections and their buttons) are
+        // too long to show whole: one line per row that changed.
+        const rows = (d?: Doc) => (at(d)?.[f.name] as Doc[] | null | undefined) ?? []
+        rowLines(lines, name, f.flattenedFields, rows(live[LOCALES[0]]), rows(draft[LOCALES[0]]))
+        continue
+      }
       for (const locale of translated(f) ? LOCALES : ([LOCALES[0]] as const)) {
         const next = at(draft[locale])?.[f.name]
         const prev = at(live[locale])?.[f.name]
@@ -136,14 +162,51 @@ export function diffLines(
   return { lines, warnings: [...warnings] }
 }
 
+/** What a row is called in a preview line: its Spanish title or label. */
+const rowName = (row: Doc) => {
+  const t = row.titleEs ?? row.labelEs ?? row.title ?? row.label
+  return typeof t === 'string' && t ? ` “${t}”` : ''
+}
+
+/**
+ * Compares rows by position: `sections[5] “Síguenos” › buttons[3] “Facebook”.url: … → …`.
+ * A row added or removed is one line with the whole row.
+ */
+function rowLines(out: string[], name: string, defs: FieldDef[], prev: Doc[], next: Doc[]) {
+  for (let i = 0; i < Math.max(prev.length, next.length); i++) {
+    const p = prev[i]
+    const q = next[i]
+    const label = `${name}[${i + 1}]${rowName(q ?? p)}`
+    if (!p) out.push(`• ${label}: added: ${formatValue([q])}`)
+    else if (!q) out.push(`• ${label}: removed: ${formatValue([p])}`)
+    else {
+      for (const f of defs) {
+        if (f.name === 'id') continue
+        if (f.type === 'array' && f.flattenedFields) {
+          rowLines(out, `${label} › ${f.name}`, f.flattenedFields, (p[f.name] as Doc[]) ?? [], (q[f.name] as Doc[]) ?? [])
+        } else if (!same(p[f.name], q[f.name])) {
+          out.push(`• ${label}.${f.name}: ${formatValue(p[f.name])} → ${formatValue(q[f.name])}`)
+        }
+      }
+    }
+  }
+}
+
 /* ------------------------------------------------------------------------ */
 /* Reading drafts and live pages                                             */
 /* ------------------------------------------------------------------------ */
 
-async function readBoth(payload: Payload, collection: Publishable, id: string | number) {
+async function readBoth(payload: Payload, collection: Publishable | PublishableGlobal, id: string | number) {
   const live: Partial<Record<Locale, Doc>> = {}
   const draft: Partial<Record<Locale, Doc>> = {}
   for (const locale of LOCALES) {
+    if (isGlobal(collection)) {
+      const args = { slug: collection as GlobalSlug, locale, fallbackLocale: false as never, depth: 0, overrideAccess: true }
+      const main = (await payload.findGlobal({ ...args, draft: false })) as unknown as Doc
+      if (main._status === 'published') live[locale] = main
+      draft[locale] = (await payload.findGlobal({ ...args, draft: true })) as unknown as Doc
+      continue
+    }
     const args = {
       collection: collection as CollectionSlug,
       id,
@@ -160,6 +223,18 @@ async function readBoth(payload: Payload, collection: Publishable, id: string | 
     draft[locale] = (await payload.findByID({ ...args, draft: true })) as unknown as Doc
   }
   return { live, draft }
+}
+
+/** The latest version of a document or a global, drafts included. */
+async function latestDraft(payload: Payload, collection: string, id: string | number): Promise<Doc | null> {
+  if (isGlobal(collection)) {
+    return (await payload
+      .findGlobal({ slug: collection as GlobalSlug, draft: true, depth: 0, overrideAccess: true })
+      .catch(() => null)) as Doc | null
+  }
+  return (await payload
+    .findByID({ collection: collection as CollectionSlug, id, draft: true, depth: 0, overrideAccess: true })
+    .catch(() => null)) as Doc | null
 }
 
 const titleOf = (d?: Doc) => {
@@ -204,32 +279,40 @@ const setRequest = (payload: Payload, id: number, data: Partial<HqPublishRequest
  */
 export async function requestPublish(
   payload: Payload,
-  input: { collection: string; id: string | number; reason?: string },
+  input: { collection: string; id?: string | number; reason?: string },
   now: Date = new Date(),
 ) {
-  if (!(PUBLISHABLE as readonly string[]).includes(input.collection)) {
-    throw new Error(`"${input.collection}" can't be published this way. Allowed: ${PUBLISHABLE.join(', ')}.`)
+  const allowed = [...PUBLISHABLE, ...PUBLISHABLE_GLOBALS] as readonly string[]
+  if (!allowed.includes(input.collection)) {
+    throw new Error(`"${input.collection}" can't be published this way. Allowed: ${allowed.join(', ')}.`)
   }
-  const collection = input.collection as Publishable
+  const collection = input.collection as Publishable | PublishableGlobal
+  const global = isGlobal(collection)
+  if (global) input = { ...input, id: GLOBAL_ID }
   if (input.id === undefined || input.id === '') throw new Error('Give the id of the document to publish.')
+  const id = input.id
   if (!telegramConfigured()) throw new Error('Telegram is not configured, so the owner cannot be asked. Nothing was filed.')
 
-  const { live, draft } = await readBoth(payload, collection, input.id)
+  const { live, draft } = await readBoth(payload, collection, id)
   const isNew = !live.es && !live.en
   if (!isNew && draft.es?._status === 'published') throw new Error('Nothing to publish: the live page is the latest version.')
 
-  const fields = payload.collections[collection].config.flattenedFields as FieldDef[]
+  const fields = (
+    global ? payload.config.globals.find((g) => g.slug === collection)!.flattenedFields : payload.collections[collection].config.flattenedFields
+  ) as FieldDef[]
   const { lines, warnings } = diffLines(collection, fields, live, draft)
   if (!isNew && !lines.length) throw new Error('Nothing to publish: the draft matches the live page.')
 
   const name = titleOf(draft.es) || titleOf(draft.en)
-  const label = `${isNew ? 'New' : 'Changes to'} ${collection} #${input.id}${name ? ` “${name}”` : ''}`
+  const label = global
+    ? `${isNew ? 'New' : 'Changes to'} the ${collection}`
+    : `${isNew ? 'New' : 'Changes to'} ${collection} #${id}${name ? ` “${name}”` : ''}`
   const older = await payload.find({
     collection: 'hq-publish-requests',
     where: {
       and: [
         { collection: { equals: collection } },
-        { targetId: { equals: String(input.id) } },
+        { targetId: { equals: String(id) } },
         { status: { equals: 'pending' } },
       ],
     },
@@ -244,7 +327,7 @@ export async function requestPublish(
       status: 'pending',
       title: label,
       collection,
-      targetId: String(input.id),
+      targetId: String(id),
       draftStamp: String(draft.es?.updatedAt ?? ''),
       reason: input.reason?.slice(0, 500),
       preview: [...warnings, ...lines].join('\n'),
@@ -254,7 +337,7 @@ export async function requestPublish(
   })
 
   const admin = process.env.BETTER_AUTH_URL
-    ? `\n<a href="${esc(`${process.env.BETTER_AUTH_URL}/admin/collections/${collection}/${input.id}`)}">Open the draft in the admin</a>`
+    ? `\n<a href="${esc(`${process.env.BETTER_AUTH_URL}/admin/${global ? `globals/${collection}` : `collections/${collection}/${id}`}`)}">Open the draft in the admin</a>`
     : ''
   const text = [
     `<b>🌐 Publish? #${request.id}</b>`,
@@ -335,10 +418,8 @@ async function decide(payload: Payload, id: number, action: 'publish' | 'reject'
     return `✖️ Not published. The draft stays a draft.`
   }
 
-  const collection = r.collection as Publishable
-  const latest = (await payload
-    .findByID({ collection: collection as CollectionSlug, id: r.targetId, draft: true, depth: 0, overrideAccess: true })
-    .catch(() => null)) as Doc | null
+  const collection = r.collection as Publishable | PublishableGlobal
+  const latest = await latestDraft(payload, collection, r.targetId)
   if (!latest) {
     await setRequest(payload, id, { status: 'failed', error: 'The document no longer exists.' })
     return `#${id}: the document no longer exists.`
@@ -357,14 +438,24 @@ async function decide(payload: Payload, id: number, action: 'publish' | 'reject'
   try {
     // Publishing builds on the latest version — the draft just checked — so
     // this publishes exactly what the owner was shown, in every language.
-    await payload.update({
-      collection: collection as CollectionSlug,
-      id: r.targetId,
-      data: { _status: 'published' } as never,
-      draft: false,
-      depth: 0,
-      overrideAccess: true,
-    })
+    if (isGlobal(collection)) {
+      await payload.updateGlobal({
+        slug: collection as GlobalSlug,
+        data: { _status: 'published' } as never,
+        draft: false,
+        depth: 0,
+        overrideAccess: true,
+      })
+    } else {
+      await payload.update({
+        collection: collection as CollectionSlug,
+        id: r.targetId,
+        data: { _status: 'published' } as never,
+        draft: false,
+        depth: 0,
+        overrideAccess: true,
+      })
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err)
     await setRequest(payload, id, { status: 'failed', error: message })

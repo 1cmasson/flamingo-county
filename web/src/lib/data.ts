@@ -380,6 +380,31 @@ export async function getAboutPage(lang: Lang) {
   return payload.findGlobal({ slug: 'about-page', locale: lang, depth: 1 })
 }
 
+/**
+ * The link page as published; empty until it has been (globals/LinkPage.ts).
+ * Both languages are on every row (`labelEs`, `labelEn`), so no locale.
+ */
+export async function getLinkPage() {
+  const payload = await db()
+  const doc = await payload.findGlobal({ slug: 'link-page', depth: 0, draft: false })
+  return doc._status === 'published' ? doc : { ...doc, sections: [] }
+}
+
+/** The most recently created published story, for the link page's "new story" button. */
+export async function getNewestStory(lang: Lang): Promise<Pick<Story, 'slug' | 'title'> | null> {
+  const payload = await db()
+  const { docs } = await payload.find({
+    collection: 'stories',
+    where: published(),
+    locale: lang,
+    limit: 1,
+    sort: '-createdAt',
+    depth: 0,
+    select: { slug: true, title: true },
+  })
+  return docs[0] ?? null
+}
+
 export async function getListYourSpotPage(lang: Lang) {
   const payload = await db()
   return payload.findGlobal({ slug: 'list-your-spot-page', locale: lang })

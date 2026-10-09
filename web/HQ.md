@@ -202,14 +202,23 @@ fetches stats live and keeps none:
 
   | Link | Use it for |
   | --- | --- |
-  | `flamingocounty.com/go/ig` | Instagram bio |
-  | `flamingocounty.com/go/tt` | TikTok bio |
+  | `flamingocounty.com/links?from=ig` | Instagram bio (the link page, see *The link page*) |
+  | `flamingocounty.com/links?from=tt` | TikTok bio |
+  | `flamingocounty.com/links?from=fb` | Facebook page's website link |
   | `flamingocounty.com/go/fb/<draft id>` | a link inside Facebook post #id |
   | `flamingocounty.com/go/qr?to=/es/events` | a flyer or QR code, landing on events |
 
   The visitor lands on `to` (the home page by default) tagged with
   `utm_source`, `utm_medium` and `utm_campaign`. `to` must be a path on the
-  site, so the link can't be turned into an open redirect.
+  site, so the link can't be turned into an open redirect. The one exception
+  is an https:// address that is a button on the published link page; any
+  other address lands on the link page.
+
+  A bio link opens the link page and counts nothing by itself; each button
+  tapped there is one click, under the bio's platform (`instagram`,
+  `tiktok`, `facebook`), or `bio` when the link had no `from`. The older
+  `/go/ig` and `/go/tt` still work and land on the home page, counted the
+  same way.
 
 Each draft also has a **pillar** (spotlight, event, story, promo) and a
 **language**, so results can be compared by the kind of post. The weekly
@@ -241,6 +250,8 @@ results for the growth review.
    - **find** on HQ media, social stats and clicks, cities and categories
    - **find and update** on listing requests
    - **find and update** on the HQ playbook (the growth review's notes)
+   - **find and update** on the link page (drafts only; see *The link page*).
+     These start unticked on an existing key.
    - **find** on HQ visits, and **find, create and update** on HQ experiments
      (the growth review's ledger). These start unticked on an existing key.
    - **find** on media (the public site's photos, to reuse a venue photo
@@ -528,7 +539,7 @@ and for social posts.
 | | Claude does freely | Needs your tap in Telegram |
 | --- | --- | --- |
 | Social posts | write and edit drafts | **Approve** schedules it in Postiz |
-| Site content (events, weekly events, stories, spotlights, listings) | create and edit drafts | **Publish** makes it live |
+| Site content (events, weekly events, stories, spotlights, listings, the link page) | create and edit drafts | **Publish** makes it live |
 
 **How site drafts work.** These five collections have Payload drafts:
 - Saving a draft never touches the live page. The public site shows only
@@ -635,6 +646,51 @@ this server:
 
 Branch protection on `main`, and removing `postiz-flamingo-county` once HQ is
 live, make those harder.
+
+## The link page
+
+`flamingocounty.com/links` is what the bios point to, because Instagram and
+TikTok captions can't hold a link. It follows the site's language like every
+page (`/links` goes to `/es/links` or `/en/links`), and each bio adds its
+platform: `/links?from=ig`, `?from=tt`, `?from=fb`.
+
+**What's on it.** The **Link page (bio)** global, under *Page copy* in the
+admin: a one-line tagline, then sections in order, each with an emoji, a title
+in both languages and its buttons. A button has:
+- an emoji and a short label, Spanish and English side by side (two plain
+  fields, not Payload's translations: see below)
+- a link: a path on the site **without** the language (`/events`,
+  `/list-your-spot?type=listing`; the page adds `/es` or `/en`), or a full
+  `https://` address. Or the kind **The newest published story**, which is
+  looked up on every visit and shows the story's title under the label.
+- **Featured**: shown as a big button at the top, above the sections.
+- **Starts on / Ends on** (optional): shown only on those Miami days, both
+  included. Set a seasonal button up ahead and it appears and goes by itself.
+
+A section whose buttons are all featured or out of their dates isn't shown.
+The first version was seeded by the migration `20261009_191159_seed_link_page`.
+"This week" goes to the events board until there is a this-week page. Little
+Havana is left off the page for now.
+
+**Editing it.** It has drafts like the site's content:
+- In the admin: **Save draft**, then **Publish** when it's right.
+- Claude, over MCP: `findLinkPage` (with `draft: true`) to read it, then
+  `updateLinkPage` with `draft: true` (anything else is refused) and the
+  **whole** `sections` array with the change made: rows left out are removed.
+  Then `hqRequestPublish` with `collection: "link-page"` (no id). You get one
+  line per changed button in Telegram and tap Publish, as for any page.
+  A link with `/es` or `/en` in it, or that is neither a site path nor
+  `https://`, is refused even in a draft.
+
+  Why two plain fields per language: the MCP tools drop array rows' ids and
+  write one language per call, so a translated label inside these lists
+  could not be changed over MCP without losing the other language.
+  Tick **find** and **update** on *Link Page* for Claude's API key; new boxes
+  start unticked.
+
+**Clicks.** Every button goes through `/go/<from>?to=…` and is counted in
+`hq-clicks` with the button's destination as `to`, so the growth review can
+tell which buttons people use. Nothing is stored on the visitor.
 
 ## Things that are deliberate
 

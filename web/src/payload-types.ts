@@ -142,6 +142,7 @@ export interface Config {
     'site-settings': SiteSetting;
     'about-page': AboutPage;
     'list-your-spot-page': ListYourSpotPage;
+    'link-page': LinkPage;
     'hq-playbook': HqPlaybook;
     'payload-jobs-stats': PayloadJobsStat;
   };
@@ -149,6 +150,7 @@ export interface Config {
     'site-settings': SiteSettingsSelect<false> | SiteSettingsSelect<true>;
     'about-page': AboutPageSelect<false> | AboutPageSelect<true>;
     'list-your-spot-page': ListYourSpotPageSelect<false> | ListYourSpotPageSelect<true>;
+    'link-page': LinkPageSelect<false> | LinkPageSelect<true>;
     'hq-playbook': HqPlaybookSelect<false> | HqPlaybookSelect<true>;
     'payload-jobs-stats': PayloadJobsStatsSelect<false> | PayloadJobsStatsSelect<true>;
   };
@@ -1696,6 +1698,16 @@ export interface PayloadMcpApiKey {
      */
     find?: boolean | null;
   };
+  linkPage?: {
+    /**
+     * Allow clients to find link-page global.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to update link-page global.
+     */
+    update?: boolean | null;
+  };
   hqPlaybook?: {
     /**
      * Allow clients to find hq-playbook global.
@@ -1764,7 +1776,7 @@ export interface PayloadMcpApiKey {
      */
     hqCancelDraft?: boolean | null;
     /**
-     * Ask the owner to publish the current draft of a site document (events, weekly-events, stories, spotlights, listings). Save the draft first with the create/update tool and draft: true — drafts are never visible on the site. The owner sees exactly what changes against the live page in Telegram and taps Publish or Reject. If you edit the draft again before they tap, they are shown the new version instead. Publishes nothing by itself.
+     * Ask the owner to publish the current draft of a site document (events, weekly-events, stories, spotlights, listings) or of the link page (link-page, no id). Save the draft first with the create/update tool and draft: true — drafts are never visible on the site. The owner sees exactly what changes against the live page in Telegram and taps Publish or Reject. If you edit the draft again before they tap, they are shown the new version instead. Publishes nothing by itself.
      */
     hqRequestPublish?: boolean | null;
     /**
@@ -2877,6 +2889,12 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
     | {
         find?: T;
       };
+  linkPage?:
+    | T
+    | {
+        find?: T;
+        update?: T;
+      };
   hqPlaybook?:
     | T
     | {
@@ -3081,6 +3099,62 @@ export interface ListYourSpotPage {
   createdAt?: string | null;
 }
 /**
+ * flamingocounty.com/links: the page the Instagram, TikTok and Facebook bios point to. Internal links are paths without the language (/events); the page adds /es or /en.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "link-page".
+ */
+export interface LinkPage {
+  id: number;
+  /**
+   * One line under the name.
+   */
+  taglineEs?: string | null;
+  taglineEn?: string | null;
+  sections?:
+    | {
+        emoji?: string | null;
+        titleEs: string;
+        titleEn: string;
+        buttons?:
+          | {
+              emoji?: string | null;
+              /**
+               * Short: two to four words.
+               */
+              labelEs: string;
+              labelEn: string;
+              /**
+               * The newest story is looked up on every visit, so the button never goes stale.
+               */
+              kind: 'link' | 'newestStory';
+              /**
+               * A path on the site without the language (/events, /list-your-spot?type=listing), or a full https:// address.
+               */
+              url?: string | null;
+              /**
+               * A big button at the top.
+               */
+              featured?: boolean | null;
+              /**
+               * Optional: first day shown.
+               */
+              startsOn?: string | null;
+              /**
+               * Optional: last day shown.
+               */
+              endsOn?: string | null;
+              id?: string | null;
+            }[]
+          | null;
+        id?: string | null;
+      }[]
+    | null;
+  _status?: ('draft' | 'published') | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
  * What brings traffic: content, channels, and on social by pillar, language, hour and platform. Rewritten by each Claude growth review; edit it freely.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -3195,6 +3269,39 @@ export interface ListYourSpotPageSelect<T extends boolean = true> {
         text?: T;
         id?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "link-page_select".
+ */
+export interface LinkPageSelect<T extends boolean = true> {
+  taglineEs?: T;
+  taglineEn?: T;
+  sections?:
+    | T
+    | {
+        emoji?: T;
+        titleEs?: T;
+        titleEn?: T;
+        buttons?:
+          | T
+          | {
+              emoji?: T;
+              labelEs?: T;
+              labelEn?: T;
+              kind?: T;
+              url?: T;
+              featured?: T;
+              startsOn?: T;
+              endsOn?: T;
+              id?: T;
+            };
+        id?: T;
+      };
+  _status?: T;
   updatedAt?: T;
   createdAt?: T;
   globalType?: T;

@@ -1,0 +1,208 @@
+/*
+ * The link page (/es/links). Opened mostly inside Instagram's and TikTok's
+ * in-app browsers on a phone, so: one column, big tap targets (every button
+ * is at least 56px tall), no client script, and nothing that moves.
+ */
+.page {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 18px 16px 56px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+
+.head {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+.name {
+  margin: 10px 0 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(34px, 10vw, 44px);
+  line-height: 0.95;
+  color: var(--yellow);
+  -webkit-text-stroke: 2px var(--ink);
+  text-shadow: 3px 3px 0 var(--ink);
+  letter-spacing: 0.5px;
+}
+.tagline {
+  margin: 0;
+  background: var(--ink);
+  color: var(--cream);
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.35;
+  padding: 7px 12px;
+  box-shadow: 4px 4px 0 var(--yellow);
+  text-wrap: balance;
+}
+
+/* Featured: the big ones at the top. One colour for all of them: a city's
+   accent would read as that city's topic (each city owns its colour). */
+.featured {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.big {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  min-height: 76px;
+  padding: 14px 16px;
+  text-decoration: none;
+  color: var(--ink);
+  background: var(--yellow);
+  border: 4px solid var(--ink);
+  border-radius: 16px;
+  box-shadow: 6px 6px 0 var(--ink);
+  transition:
+    transform 140ms cubic-bezier(0.2, 0.8, 0.25, 1),
+    box-shadow 140ms cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+.big .emoji {
+  width: 48px;
+  height: 48px;
+  font-size: 28px;
+  background: var(--cream);
+}
+.big .label {
+  font-family: var(--display);
+  font-size: clamp(21px, 6vw, 25px);
+  line-height: 1.05;
+  padding-top: 3px;
+}
+
+/* A section: its name on an ink tab, its buttons stacked under it. */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.tab {
+  align-self: flex-start;
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--ink);
+  color: var(--yellow);
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1;
+  padding: 9px 13px 6px;
+}
+.tab .tabEmoji {
+  font-family: var(--body);
+  font-size: 19px;
+  line-height: 1;
+  margin-top: -3px;
+}
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.btn {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+  min-height: 60px;
+  padding: 8px 14px 8px 8px;
+  text-decoration: none;
+  color: var(--ink);
+  background: var(--grad-cream);
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 4px 4px 0 var(--ink);
+  transition:
+    transform 140ms cubic-bezier(0.2, 0.8, 0.25, 1),
+    box-shadow 140ms cubic-bezier(0.2, 0.8, 0.25, 1);
+}
+.emoji {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: #fff;
+  border: 2px solid var(--ink);
+  font-size: 22px;
+  line-height: 1;
+}
+.label {
+  font-weight: 800;
+  font-size: 17px;
+  line-height: 1.2;
+  min-width: 0;
+}
+.sub {
+  display: block;
+  margin-top: 3px;
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 13px;
+  line-height: 1.3;
+  color: var(--magenta);
+  overflow-wrap: anywhere;
+}
+.big .sub {
+  font-size: 14px;
+  color: var(--ink);
+}
+.arrow {
+  font-family: var(--display);
+  font-size: 20px;
+  line-height: 1;
+}
+
+@media (hover: hover) {
+  .big:hover,
+  .btn:hover {
+    transform: translate(-2px, -2px);
+    color: var(--ink);
+  }
+  .big:hover {
+    box-shadow: 8px 8px 0 var(--ink);
+  }
+  .btn:hover {
+    box-shadow: 6px 6px 0 var(--ink);
+  }
+}
+.big:active,
+.btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+.big:focus-visible,
+.btn:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .big,
+  .btn {
+    transition: none;
+  }
+}
+
+.empty {
+  margin: 0;
+  text-align: center;
+  font-weight: 700;
+  background: var(--cream);
+  border: 3px solid var(--ink);
+  border-radius: 14px;
+  padding: 16px;
+}

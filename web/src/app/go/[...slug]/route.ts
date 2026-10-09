@@ -1,5 +1,6 @@
 import { getPayload } from 'payload'
 import config from '../../../payload.config'
+import { externalUrls, type LinkPageDoc } from '../../../lib/links'
 import { parseTrackedLink } from '../../../lib/tracking'
 import { notAReader } from '../../../lib/visits'
 
@@ -17,7 +18,8 @@ import { notAReader } from '../../../lib/visits'
  */
 export async function GET(req: Request, ctx: { params: Promise<{ slug: string[] }> }) {
   const { slug } = await ctx.params
-  const link = parseTrackedLink(slug, new URL(req.url).searchParams.get('to'))
+  const to = new URL(req.url).searchParams.get('to')
+  const link = parseTrackedLink(slug, to, /^https:\/\//i.test(to ?? '') ? await linkPageUrls() : undefined)
   if (!link) return redirect('/')
 
   // Same rule as the visit counter: no bots, no owner, no platform link checkers.
@@ -52,4 +54,19 @@ export async function GET(req: Request, ctx: { params: Promise<{ slug: string[] 
 
 function redirect(location: string) {
   return new Response(null, { status: 302, headers: { Location: location, 'Cache-Control': 'no-store' } })
+}
+
+/**
+ * The outside addresses on the published link page: the only places off the
+ * site a /go/ link may send someone. An empty set on failure, which sends the
+ * visitor to the link page instead.
+ */
+async function linkPageUrls(): Promise<Set<string>> {
+  try {
+    const payload = await getPayload({ config })
+    const doc = await payload.findGlobal({ slug: 'link-page', depth: 0, draft: false, overrideAccess: true })
+    return doc._status === 'published' ? externalUrls(doc as LinkPageDoc) : new Set()
+  } catch {
+    return new Set()
+  }
 }
