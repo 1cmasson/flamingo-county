@@ -100,22 +100,36 @@ describe('which events the roundup shows', () => {
     expect(total).toBe(2)
   })
 
-  it('keeps nine of more: starred first, then with a photo, then the earliest, shown by date', () => {
+  it('keeps nine of more: starred first, then the weekend, then with a photo, then the earliest, shown by date', () => {
     const events = [
-      ...Array.from({ length: 9 }, (_, i) => ev(i + 1, '2026-10-12')),
-      ev(20, '2026-10-18', { star: true }),
-      ev(21, '2026-10-17', { image: 5 }),
-      ev(22, '2026-10-16'),
+      ...Array.from({ length: 9 }, (_, i) => ev(i + 1, '2026-10-12', { image: 5 })),
+      ev(20, '2026-10-14', { star: true }),
+      ev(21, '2026-10-17'),
+      ev(22, '2026-10-18'),
+      ev(23, '2026-10-16', { image: 5 }),
     ]
     const { chosen, total } = pickRoundupEvents(weekEvents(events, '2026-10-12'))
-    expect(total).toBe(12)
+    expect(total).toBe(13)
     expect(chosen).toHaveLength(ROUNDUP_MAX_EVENTS)
     const ids = chosen.map((p) => p.ev.id)
+    // Wednesday's starred one, then Saturday's and Sunday's though they have
+    // no photo; Friday's photo ties the Mondays', and they are earlier.
     expect(ids).toContain(20)
     expect(ids).toContain(21)
-    expect(ids).not.toContain(22)
-    // Seven of the Monday ones, then Saturday's, then Sunday's.
-    expect(ids).toEqual([1, 2, 3, 4, 5, 6, 7, 21, 20])
+    expect(ids).toContain(22)
+    expect(ids).not.toContain(23)
+    // Five of the Monday ones, then Wednesday, Saturday, Sunday.
+    expect(ids).toEqual([1, 2, 3, 4, 5, 6, 20, 21, 22])
+  })
+
+  it('puts a photo ahead of the earliest once the weekend is in', () => {
+    const events = [
+      ...Array.from({ length: 9 }, (_, i) => ev(i + 1, '2026-10-12')),
+      ev(21, '2026-10-17'),
+      ev(23, '2026-10-16', { image: 5 }),
+    ]
+    const ids = pickRoundupEvents(weekEvents(events, '2026-10-12')).chosen.map((p) => p.ev.id)
+    expect(ids).toEqual([1, 2, 3, 4, 5, 6, 7, 23, 21])
   })
 })
 
