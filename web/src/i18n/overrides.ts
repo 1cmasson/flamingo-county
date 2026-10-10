@@ -365,6 +365,10 @@ export const ES_OVERRIDES: Record<string, string> = {
   'WATCH THE VIDEO': 'MIRA EL VIDEO',
   'The same story, as the short video we made of it.': 'La misma historia, en el video corto que hicimos.',
   'Your browser cannot play this video.': 'Tu navegador no puede reproducir este video.',
+  // The player's English/Spanish switch, and the line when only the other cut exists.
+  'Video language': 'Idioma del video',
+  'For now, the video is in English.': 'Por ahora, el video está en inglés.',
+  'For now, the video is in Spanish.': 'Por ahora, el video está en español.',
 
   // --- Metadata ----------------------------------------------------------
   'A directory of the restaurants and bars the locals actually vouch for.':

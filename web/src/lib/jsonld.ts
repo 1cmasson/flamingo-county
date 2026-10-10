@@ -361,7 +361,8 @@ export function videoJsonLd(lang: Lang, video: Video, description?: string | nul
     uploadDate: video.createdAt,
     contentUrl: absUrl(video.url),
     duration: video.durationSeconds ? `PT${Math.floor(video.durationSeconds / 60)}M${video.durationSeconds % 60}S` : undefined,
-    inLanguage: lang,
+    // The cut's own language: a Spanish page with only the English cut plays English.
+    inLanguage: video.language || lang,
     publisher: { '@id': `${SITE_URL}/#organization` },
   })
 }
