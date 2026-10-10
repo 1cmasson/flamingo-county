@@ -4,7 +4,7 @@ import sharp from 'sharp'
 import type { City, Event, EventKind, HqSocialDraft, Media } from '../payload-types'
 import { CAPTION_MAX, busyTimes, cardImage, creditLine, fact, oneAtATime, pickPostTime } from './autoDraft'
 import { miamiHour } from './brief'
-import { SITE_TZ, addDays, eventRunEnd, miamiInstant, shortWeekday, todayISO } from './dates'
+import { SITE_TZ, addDays, eventRunEnd, miamiInstant, shortWeekday, todayISO, weekday } from './dates'
 import { eventVenue } from './eventVenue'
 import { HQ_INTERNAL, recordEvent, sendDraftPreview } from './hq'
 import type { Platform } from './postiz'
@@ -74,20 +74,22 @@ export type Placed = { ev: Event; day: string }
 
 /**
  * The events the post shows, in date order, and how many the week has in
- * all. With more than nine, the owner's starred ones go first, then the ones
- * with a photo, then the earliest.
+ * all. With more than nine, the owner's starred ones go first, then the
+ * weekend's (shown on a Saturday or Sunday: the owner's call, 2026-10-10, as
+ * the days people plan for), then the ones with a photo, then the earliest.
  */
 export function pickRoundupEvents(days: WeekDay<Event>[], max: number = ROUNDUP_MAX_EVENTS): { chosen: Placed[]; total: number } {
   const all = days.flatMap((d) => d.items.map((ev) => ({ ev, day: d.iso })))
   const order = new Map(all.map((p, i) => [p, i]))
-  const rank = (p: Placed) => [p.ev.star ? 0 : 1, p.ev.image ? 0 : 1, order.get(p)!]
+  const weekend = (p: Placed) => [0, 6].includes(weekday(p.day))
+  const rank = (p: Placed) => [p.ev.star ? 0 : 1, weekend(p) ? 0 : 1, p.ev.image ? 0 : 1, order.get(p)!]
   const kept =
     all.length <= max
       ? all
       : [...all]
           .sort((a, b) => {
             const [x, y] = [rank(a), rank(b)]
-            return x[0] - y[0] || x[1] - y[1] || x[2] - y[2]
+            return x[0] - y[0] || x[1] - y[1] || x[2] - y[2] || x[3] - y[3]
           })
           .slice(0, max)
           .sort((a, b) => order.get(a)! - order.get(b)!)

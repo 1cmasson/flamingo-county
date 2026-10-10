@@ -735,8 +735,9 @@ One post a week for the week's events, instead of one per event
      dates stay inside the square the profile grid crops to.
   2. **One Spanish card per event**, the same `social` card an event's own
      post had, up to nine, so ten pictures at most (Instagram's limit). With
-     more than nine events, starred ones go first, then ones with a photo,
-     then the earliest. The cards are shown in date order.
+     more than nine events, starred ones go first, then the weekend's
+     (Saturday and Sunday), then ones with a photo, then the earliest. The
+     cards are shown in date order.
   All are 1080×1350 JPEGs in HQ media. If the cover can't be drawn, there is
   no draft, and the next hourly run tries again.
 - **Caption.** Spanish, then English. A heading with the dates, then one line
