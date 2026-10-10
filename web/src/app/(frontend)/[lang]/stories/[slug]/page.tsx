@@ -3,7 +3,7 @@ import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { isLang, translator, type Lang } from '../../../../../i18n'
 import { routes } from '../../../../../lib/routes'
-import { getCity, getStories, getStory, rel } from '../../../../../lib/data'
+import { getCity, getStories, getStory, getStoryVideos, rel } from '../../../../../lib/data'
 import type { City, Listing, Media, Video } from '../../../../../payload-types'
 import { PageShell } from '../../../../../components/PageShell'
 import { StoryBlocks } from '../../../../../components/StoryBlocks'
@@ -96,7 +96,16 @@ export default async function StoryPage({
   const mascot = city ? rel<Media>(city.solo) : null
 
   const others = (await getStories(lang)).filter((s) => s.slug !== slug)
-  const video = rel<Video>(story.video)
+  // Every cut of the reel, the page's own language first: that one plays by
+  // default and is the one search engines are told about.
+  const videos = (await getStoryVideos(slug))
+    .sort((a, b) => Number(b.language === lang) - Number(a.language === lang))
+    .filter((v, i, all) => all.findIndex((w) => w.language === v.language) === i)
+  const video = videos[0] ?? null
+  const videoNote =
+    videos.length === 1 && video && video.language !== lang
+      ? t(video.language === 'en' ? 'For now, the video is in English.' : 'For now, the video is in Spanish.')
+      : t('The same story, as the short video we made of it.')
   const videoLd = video ? videoJsonLd(lang, video, story.dek) : null
   const faqLd = faqJsonLd(story.blocks)
 
@@ -333,10 +342,11 @@ export default async function StoryPage({
 
           {video?.url ? (
             <StoryVideo
-              video={video}
+              videos={videos}
               heading={t('WATCH THE VIDEO')}
-              note={t('The same story, as the short video we made of it.')}
+              note={videoNote}
               fallback={t('Your browser cannot play this video.')}
+              switchLabel={t('Video language')}
             />
           ) : null}
 

@@ -2,7 +2,7 @@ import { getPayload } from 'payload'
 import type { Where } from 'payload'
 import config from '../payload.config'
 import { translator, type Lang } from '../i18n'
-import type { City, Listing, Story, Event, WeeklyEvent, Spotlight, Category, EventKind } from '../payload-types'
+import type { City, Listing, Story, Event, WeeklyEvent, Spotlight, Category, EventKind, Video } from '../payload-types'
 import { PUBLISHED } from '../fields/shared'
 import { routes } from './routes'
 import { todayISO } from './dates'
@@ -273,6 +273,41 @@ export async function getStory(lang: Lang, slug: string): Promise<Story | null> 
     depth: 2,
   })
   return docs[0] ?? null
+}
+
+/**
+ * Every cut of a story's reel, English and Spanish, for the player's language
+ * switch. Read from the raw per-locale ids, not from `getStory`: with locale
+ * fallback on, a Spanish page with no Spanish cut gets the English one in
+ * `video`, and can't tell it from a Spanish cut. Each cut says its own
+ * language in `language`.
+ */
+export async function getStoryVideos(slug: string): Promise<Video[]> {
+  const payload = await db()
+  const { docs } = await payload.find({
+    collection: 'stories',
+    where: published({ slug: { equals: slug } }),
+    locale: 'all',
+    limit: 1,
+    depth: 0,
+    select: { video: true },
+  })
+  const perLocale = (docs[0]?.video ?? {}) as unknown as Record<string, number | Video | null | undefined>
+  const ids = [
+    ...new Set(
+      Object.values(perLocale)
+        .map((v) => (v && typeof v === 'object' ? v.id : v))
+        .filter((v): v is number => typeof v === 'number'),
+    ),
+  ]
+  if (!ids.length) return []
+  const { docs: videos } = await payload.find({
+    collection: 'videos',
+    where: { id: { in: ids } },
+    limit: ids.length,
+    depth: 1,
+  })
+  return videos.filter((v) => v.url)
 }
 
 /** The story written about a given business, if there is one. */

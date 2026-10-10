@@ -1,7 +1,10 @@
+import type { Lang } from '../i18n'
 import type { Media, Video } from '../payload-types'
+import { StoryVideoPlayer, type VideoCut } from './StoryVideoPlayer'
 
 /**
- * The reel a story was made from, under its cover.
+ * The reel a story was made from, under its cover: the page's own language
+ * first, and a switch to the other cut when there is one (StoryVideoPlayer).
  *
  * `preload="none"`: the files are 15–25 MB, and a reader who never presses
  * play should not pay for one. The poster (the reel's DID YOU KNOW? card) is
@@ -9,18 +12,29 @@ import type { Media, Video } from '../payload-types'
  * player. `playsInline` keeps iOS from jumping to fullscreen on play.
  */
 export function StoryVideo({
-  video,
+  videos,
   heading,
   note,
   fallback,
+  switchLabel,
 }: {
-  video: Video
+  /** One per language, the page's own first. */
+  videos: Video[]
   heading: string
   note: string
   fallback: string
+  switchLabel: string
 }) {
-  const poster = video.poster && typeof video.poster === 'object' ? (video.poster as Media) : null
-  const posterUrl = poster?.sizes?.card?.url ?? poster?.url ?? undefined
+  const cuts: VideoCut[] = videos.map((video) => {
+    const poster = video.poster && typeof video.poster === 'object' ? (video.poster as Media) : null
+    return {
+      language: video.language as Lang,
+      url: video.url ?? '',
+      posterUrl: poster?.sizes?.card?.url ?? poster?.url ?? undefined,
+      credits: video.credits,
+    }
+  })
+  if (!cuts.length) return null
   return (
     <section
       aria-label={heading}
@@ -37,41 +51,7 @@ export function StoryVideo({
         justifyContent: 'center',
       }}
     >
-      <video
-        controls
-        playsInline
-        preload="none"
-        poster={posterUrl}
-        style={{
-          width: 'min(100%, 340px)',
-          aspectRatio: '9 / 16',
-          height: 'auto',
-          background: '#000',
-          border: '4px solid var(--cream)',
-          display: 'block',
-        }}
-      >
-        <source src={video.url ?? undefined} type="video/mp4" />
-        {fallback}
-      </video>
-      <div style={{ flex: '1 1 240px', maxWidth: '46ch', display: 'flex', flexDirection: 'column', gap: 10 }}>
-        <h2
-          style={{
-            margin: 0,
-            fontFamily: 'var(--display)',
-            fontWeight: 400,
-            fontSize: 'clamp(26px,6vw,40px)',
-            lineHeight: 0.95,
-            color: 'var(--yellow)',
-          }}
-        >
-          {heading}
-        </h2>
-        <p style={{ margin: 0, color: 'var(--cream)', fontWeight: 600, fontSize: 16, lineHeight: 1.5 }}>{note}</p>
-        {video.credits ? (
-          <p style={{ margin: 0, color: '#8b939c', fontWeight: 600, fontSize: 12, lineHeight: 1.5 }}>{video.credits}</p>
-        ) : null}
-      </div>
+      <StoryVideoPlayer cuts={cuts} heading={heading} note={note} fallback={fallback} switchLabel={switchLabel} />
     </section>
   )
 }
