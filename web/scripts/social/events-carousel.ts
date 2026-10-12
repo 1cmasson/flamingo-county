@@ -434,7 +434,10 @@ async function shoot(browser: Browser, html: string, out: string, transparent = 
 }
 
 /**
- * The overlay over the city's loop, as an MP4 and a JPEG still. The loop
+ * The overlay over the city's loop, as an MP4 and a JPEG still. CRF 27 keeps
+ * a slide near 2 MB: HQ's upload tool fails with "Maximum call stack size
+ * exceeded" on a 3.7 MB file (2026-10-12) and takes 2.3 MB, and a 10-second
+ * loop behind a list loses nothing visible at that size. The loop
  * fills the window above the panel (`panelTop`), sharp and centred on it;
  * behind the panel and any gap it is the same loop, blurred and darkened.
  */
@@ -458,7 +461,7 @@ function compose(loop: string | null, overlay: string, panelTop: number, mp4: st
     `[bg][fg]overlay=0:${y}[base]`,
     `[base][1:v]overlay=0:0,format=yuv420p[v]`,
   ].join(';')
-  execFileSync('ffmpeg', ['-v', 'error', '-y', ...input, '-i', overlay, '-filter_complex', filter, '-map', '[v]', '-t', String(LOOP_SECONDS), '-c:v', 'libx264', '-profile:v', 'high', '-crf', '19', '-preset', 'slow', '-movflags', '+faststart', '-an', mp4])
+  execFileSync('ffmpeg', ['-v', 'error', '-y', ...input, '-i', overlay, '-filter_complex', filter, '-map', '[v]', '-t', String(LOOP_SECONDS), '-c:v', 'libx264', '-profile:v', 'high', '-crf', '27', '-preset', 'slow', '-movflags', '+faststart', '-an', mp4])
   execFileSync('ffmpeg', ['-v', 'error', '-y', '-ss', '2', '-i', mp4, '-frames:v', '1', '-q:v', '2', jpg])
 }
 
