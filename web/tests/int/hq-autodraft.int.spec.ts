@@ -6,7 +6,9 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
 
-import { EVENT_AUTO_DRAFTS, draftForPublished, pickPostTime, postDeadline, postWindowStart } from '@/lib/autoDraft'
+import { EVENT_AUTO_DRAFTS, busyTimes, draftForPublished, pickPostTime, postDeadline, postWindowStart } from '@/lib/autoDraft'
+import { miamiInstant } from '@/lib/dates'
+import { STORY_SIZE, draftEventStory, storyKey, storyTime } from '@/lib/eventStory'
 import { HQ_INTERNAL } from '@/lib/hq'
 import type { Event, HqSocialDraft, Story } from '@/payload-types'
 
@@ -35,7 +37,9 @@ function fakeTelegram() {
         s.body instanceof FormData ? String(s.body.get('caption')) : String((s.body as { text?: string }).text),
       )
       .filter((t) => t.includes('Social draft #'))
-  return { previews }
+  /** The previews of feed posts: an event's Instagram story is previewed too, the moment it is published. */
+  const posts = () => previews().filter((t) => !t.startsWith('📲 Instagram story'))
+  return { previews, posts }
 }
 
 /** A Miami wall-clock time in October 2026 (EDT, UTC-4) as an instant. */
@@ -136,6 +140,34 @@ describe('an event is announced in the days before it', () => {
   })
 })
 
+describe("when an event's Instagram story goes up", () => {
+  const on = (day: number, extra: { startTime?: string; endDate?: string } = {}) => ({
+    date: `2026-10-${String(day).padStart(2, '0')}T12:00:00.000Z`,
+    endDate: extra.endDate ?? null,
+    startTime: extra.startTime ?? null,
+  })
+
+  it('at 9 AM Miami on its first day, however far off', () => {
+    expect(iso(storyTime(on(17), oct(11, '23:50')))).toBe(iso(oct(17, '09:00')))
+    expect(iso(storyTime(on(12, { startTime: '20:00' }), oct(11, '23:50')))).toBe(iso(oct(12, '09:00')))
+    // The same morning, while 9 AM is still half an hour away.
+    expect(iso(storyTime(on(12), oct(12, '08:30')))).toBe(iso(oct(12, '09:00')))
+  })
+
+  it('at the next slot when the event is on today and 9 AM has gone, never after it starts', () => {
+    expect(iso(storyTime(on(12, { startTime: '20:00' }), oct(12, '10:00')))).toBe(iso(oct(12, '11:30')))
+    // Less than 30 minutes' notice for 9 AM.
+    expect(iso(storyTime(on(12, { startTime: '20:00' }), oct(12, '08:45')))).toBe(iso(oct(12, '11:30')))
+    expect(iso(storyTime(on(12, { startTime: '20:00' }), oct(12, '12:00')))).toBe(iso(oct(12, '19:00')))
+    // Starts at 13:00 and it is 11:15: no slot is left before it, so it goes up on approval.
+    expect(iso(storyTime(on(12, { startTime: '13:00' }), oct(12, '11:15')))).toBe(iso(oct(12, '11:15')))
+  })
+
+  it('at the next slot for a run that is already under way', () => {
+    expect(iso(storyTime(on(1, { endDate: '2026-10-19T12:00:00.000Z' }), oct(12, '12:00')))).toBe(iso(oct(12, '19:00')))
+  })
+})
+
 describe('auto-drafting a social post when a page goes live', () => {
   let payload: Payload
   const made: { collection: 'events' | 'stories' | 'event-kinds' | 'cities' | 'media'; id: number }[] = []
@@ -164,7 +196,22 @@ describe('auto-drafting a social post when a page goes live', () => {
     process.env.TELEGRAM_OWNER_CHAT_ID = OWNER
   })
 
-  afterEach(() => {
+  afterEach(async () => {
+    // Previews go out in the background, and publishing an event previews its
+    // story whether or not the test looks at it. Let this test's land before
+    // the next test's Telegram stub is in place, or they are counted there.
+    const ids = made.filter((m) => m.collection === 'events' || m.collection === 'stories').map((m) => String(m.id))
+    await vi.waitFor(
+      async () => {
+        const { totalDocs } = await payload.count({
+          collection: 'hq-social-drafts',
+          where: { and: [{ sourceId: { in: ids } }, { status: { equals: 'pending' } }, { telegramMessageId: { exists: false } }] },
+          overrideAccess: true,
+        })
+        expect(totalDocs).toBe(0)
+      },
+      { timeout: 5000 },
+    )
     vi.unstubAllGlobals()
     delete process.env.TELEGRAM_BOT_TOKEN
     delete process.env.TELEGRAM_OWNER_CHAT_ID
@@ -184,11 +231,29 @@ describe('auto-drafting a social post when a page goes live', () => {
     for (const m of made.reverse()) await payload.delete({ collection: m.collection, id: m.id, overrideAccess: true }).catch(() => undefined)
   })
 
+  /** A page's feed posts. An event's Instagram story is not one of them: see `storiesFor`. */
   const draftsFor = async (collection: string, id: number) =>
     (
       await payload.find({
         collection: 'hq-social-drafts',
-        where: { and: [{ sourceCollection: { equals: collection } }, { sourceId: { equals: String(id) } }] },
+        where: {
+          and: [
+            { sourceCollection: { equals: collection } },
+            { sourceId: { equals: String(id) } },
+            { format: { not_equals: 'story' } },
+          ],
+        },
+        depth: 1,
+        overrideAccess: true,
+      })
+    ).docs as HqSocialDraft[]
+
+  /** An event's Instagram stories. */
+  const storiesFor = async (id: number) =>
+    (
+      await payload.find({
+        collection: 'hq-social-drafts',
+        where: { and: [{ sourceCollection: { equals: 'events' } }, { sourceId: { equals: String(id) } }, { format: { equals: 'story' } }] },
         depth: 1,
         overrideAccess: true,
       })
@@ -234,9 +299,9 @@ describe('auto-drafting a social post when a page goes live', () => {
     payload.update({ collection, id, data: { _status: 'published' } as never, draft: false, overrideAccess: true })
 
   /**
-   * An event's own post. Publishing no longer drafts one (the Monday roundup
-   * does, lib/weeklyRoundup.ts), so these call the event path directly, as
-   * turning `EVENT_AUTO_DRAFTS` back on would.
+   * An event's own post. Publishing no longer drafts one (it drafts the
+   * event's Instagram story instead), so these call the event path directly,
+   * as turning `EVENT_AUTO_DRAFTS` back on would.
    */
   const publishAndDraft = async (id: number) => {
     await publish('events', id)
@@ -257,12 +322,78 @@ describe('auto-drafting a social post when a page goes live', () => {
     return story
   }
 
-  it('publishing an event drafts no post of its own: it goes out in the Monday roundup', async () => {
+  it('publishing an event drafts one Instagram story, and no post of its own', async () => {
     const tg = fakeTelegram()
     expect(EVENT_AUTO_DRAFTS).toBe(false)
     const ev = await draftEvent('2099-03-14')
     await publish('events', ev.id)
     expect(await draftsFor('events', ev.id)).toHaveLength(0)
+
+    const stories = await storiesFor(ev.id)
+    expect(stories).toHaveLength(1)
+    const s = stories[0]
+    expect(s).toMatchObject({
+      status: 'pending',
+      format: 'story',
+      platforms: ['instagram'],
+      pillar: 'event',
+      language: 'es',
+      sourceCollection: 'events',
+      sourceId: String(ev.id),
+      dedupeKey: storyKey(ev.id),
+    })
+    // The Spanish title, day, city and page. The Spanish note named a price,
+    // and no description goes in anyway.
+    expect(s.caption).toBe(
+      ['Noche de son', '🗓 Sábado 14 de marzo', '📍 Little Havana', `👉 https://flamingocounty.com/es/events/${ev.slug}`].join('\n'),
+    )
+    expect(s.caption).not.toContain('$')
+
+    // One file: the Spanish card on a 1080×1920 story, a JPEG in HQ media.
+    expect(s.media).toHaveLength(1)
+    const media = s.media?.[0]
+    expect(typeof media === 'object' && media).toMatchObject({ mimeType: 'image/jpeg', ...STORY_SIZE })
+    expect(typeof media === 'object' && media?.note).toMatch(/Instagram story for event #/)
+
+    // 9 AM Miami on the day, and left out of the feed's spacing.
+    expect(iso(new Date(s.scheduledFor))).toBe(iso(miamiInstant('2099-03-14', '09:00')))
+    expect((await busyTimes(payload, new Date('2099-03-13T12:00:00Z'))).map(iso)).not.toContain(iso(new Date(s.scheduledFor)))
+
+    // Logged, and previewed once, as a story.
+    const logged = await payload.find({
+      collection: 'hq-events',
+      where: { and: [{ refCollection: { equals: 'hq-social-drafts' } }, { refId: { equals: String(s.id) } }, { createdAt: { greater_than_equal: s.createdAt } }] },
+      overrideAccess: true,
+    })
+    expect(logged.docs.map((e) => e.type)).toEqual(['social.draft_created'])
+    expect(logged.docs[0].summary).toMatch(/an Instagram story for the newly published event "Son night"/)
+    await vi.waitFor(() => expect(tg.previews()).toHaveLength(1))
+    expect(tg.previews()[0]).toMatch(/^📲 Instagram story\n/)
+  })
+
+  it('never drafts an event a second story: not on a republish, nor on a retry', async () => {
+    fakeTelegram()
+    const ev = await draftEvent('2099-03-14')
+    await publish('events', ev.id)
+    expect(await storiesFor(ev.id)).toHaveLength(1)
+    await payload.update({ collection: 'events', id: ev.id, data: { title: 'Son night, again' } as never, locale: 'en', draft: true, overrideAccess: true })
+    await publish('events', ev.id)
+    await publish('events', ev.id)
+    expect(await draftEventStory(payload, ev.id)).toBeNull()
+    expect(await Promise.all([draftEventStory(payload, ev.id), draftEventStory(payload, ev.id)])).toEqual([null, null])
+    expect(await storiesFor(ev.id)).toHaveLength(1)
+  })
+
+  it('drafts no story for an event that is over, cancelled or postponed, or whose title names a price', async () => {
+    const tg = fakeTelegram()
+    const evs = await Promise.all([
+      draftEvent('2020-01-04'),
+      draftEvent('2099-03-14', { eventStatus: 'cancelled' }),
+      draftEvent('2099-03-14', { eventStatus: 'postponed' }),
+      draftEvent('2099-03-14', { title: 'Son night, $20 at the door' }),
+    ])
+    for (const ev of evs) await expect(publish('events', ev.id)).resolves.toMatchObject({ _status: 'published' })
+    for (const ev of evs) expect(await storiesFor(ev.id)).toHaveLength(0)
     expect(tg.previews()).toHaveLength(0)
   })
 
@@ -327,8 +458,8 @@ describe('auto-drafting a social post when a page goes live', () => {
     expect(new Date(d.scheduledFor).getTime()).toBeGreaterThan(Date.now())
 
     // One Telegram preview, of the final caption with its link.
-    await vi.waitFor(() => expect(tg.previews()).toHaveLength(1))
-    expect(tg.previews()[0]).toContain(`/go/fb/${d.id}`)
+    await vi.waitFor(() => expect(tg.posts()).toHaveLength(1))
+    expect(tg.posts()[0]).toContain(`/go/fb/${d.id}`)
     await vi.waitFor(async () =>
       expect((await payload.findByID({ collection: 'hq-social-drafts', id: d.id, overrideAccess: true })).telegramMessageId).toBeTruthy(),
     )
@@ -351,7 +482,7 @@ describe('auto-drafting a social post when a page goes live', () => {
     expect(await publishAndDraft(ev.id)).not.toBeNull()
     expect(await draftForPublished(payload, 'events', ev.id)).toBeNull()
     expect(await draftsFor('events', ev.id)).toHaveLength(1)
-    await vi.waitFor(() => expect(tg.previews()).toHaveLength(2))
+    await vi.waitFor(() => expect(tg.posts()).toHaveLength(2))
   })
 
   it('makes no draft for a story with no photo: Facebook posts are never text only', async () => {
@@ -383,9 +514,11 @@ describe('auto-drafting a social post when a page goes live', () => {
 
   it('attaches a two-card carousel: the Spanish card first, then the English one', async () => {
     fakeTelegram()
-    const card = vi.spyOn(await import('@/lib/eventCard'), 'renderEventCard')
     const ev = await draftEvent('2099-03-14', { image: null })
-    await publishAndDraft(ev.id)
+    // Spied after the publish, which draws the Spanish card once for the event's story.
+    await publish('events', ev.id)
+    const card = vi.spyOn(await import('@/lib/eventCard'), 'renderEventCard')
+    await draftForPublished(payload, 'events', ev.id)
     const [d] = await draftsFor('events', ev.id)
     expect(d.media).toHaveLength(2)
     const [first, second] = (d.media ?? []).map((m) => (typeof m === 'object' ? m : null))
@@ -454,20 +587,26 @@ describe('auto-drafting a social post when a page goes live', () => {
     expect(await draftsFor('events', cancelled.id)).toHaveLength(0)
   })
 
-  it('keeps publishing when drafting fails', async () => {
+  it('keeps publishing when drafting fails, for a story page or an event', async () => {
     fakeTelegram()
     const story = await draftStory()
+    const ev = await draftEvent('2099-03-14')
     const find = payload.find.bind(payload)
     const spy = vi.spyOn(payload, 'find').mockImplementation(((args: { collection: string }) =>
       args.collection === 'hq-social-drafts' ? Promise.reject(new Error('boom')) : find(args as never)) as never)
     const errors = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     try {
       await expect(publish('stories', story.id)).resolves.toMatchObject({ _status: 'published' })
-      expect(errors).toHaveBeenCalledWith('[hq] auto-draft failed:', 'boom')
+      await expect(publish('events', ev.id)).resolves.toMatchObject({ _status: 'published' })
+      expect(errors.mock.calls).toEqual([
+        ['[hq] auto-draft failed:', 'boom'],
+        ['[hq] auto-draft failed:', 'boom'],
+      ])
     } finally {
       spy.mockRestore()
       errors.mockRestore()
     }
     expect(await draftsFor('stories', story.id)).toHaveLength(0)
+    expect(await storiesFor(ev.id)).toHaveLength(0)
   })
 })

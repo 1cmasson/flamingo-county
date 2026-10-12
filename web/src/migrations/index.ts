@@ -33,6 +33,7 @@ import * as migration_20261007_230730_story_card_hero from './20261007_230730_st
 import * as migration_20261009_191158_add_link_page from './20261009_191158_add_link_page';
 import * as migration_20261009_191159_seed_link_page from './20261009_191159_seed_link_page';
 import * as migration_20261009_193258_weekly_roundup from './20261009_193258_weekly_roundup';
+import * as migration_20261012_035142_event_story_format from './20261012_035142_event_story_format';
 
 export const migrations = [
   {
@@ -208,6 +209,11 @@ export const migrations = [
   {
     up: migration_20261009_193258_weekly_roundup.up,
     down: migration_20261009_193258_weekly_roundup.down,
-    name: '20261009_193258_weekly_roundup'
+    name: '20261009_193258_weekly_roundup',
+  },
+  {
+    up: migration_20261012_035142_event_story_format.up,
+    down: migration_20261012_035142_event_story_format.down,
+    name: '20261012_035142_event_story_format'
   },
 ];

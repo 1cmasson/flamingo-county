@@ -74,6 +74,26 @@ describe('Postiz post body', () => {
       buildPostBody({ caption: 'x', platforms: ['tiktok'], integrations: {}, media: [], scheduledFor: later, now }),
     ).toThrow(/tiktok/)
   })
+
+  it('sends an Instagram story as post_type story, and a post as before', () => {
+    const media = [{ id: 'm1', path: 'https://postiz.example/m1.jpg' }]
+    const story = buildPostBody({ caption: 'Noche de son', platforms: ['instagram'], integrations, media, scheduledFor: later, format: 'story', now })
+    expect(story.posts).toHaveLength(1)
+    expect(story.posts[0]).toMatchObject({ integration: { id: 'ig-1' }, settings: { __type: 'instagram', post_type: 'story' } })
+    expect(story.posts[0].value[0].image).toEqual(media)
+    const post = buildPostBody({ caption: 'x', platforms: ['instagram', 'facebook'], integrations, media, scheduledFor: later, format: 'post', now })
+    expect(post.posts.map((p) => p.settings)).toEqual([
+      { __type: 'instagram', post_type: 'post' },
+      { __type: 'facebook', post_type: 'post' },
+    ])
+  })
+
+  it('refuses a story anywhere but Instagram', () => {
+    const media = [{ id: 'm1', path: 'https://postiz.example/m1.jpg' }]
+    expect(() =>
+      buildPostBody({ caption: 'x', platforms: ['instagram', 'facebook'], integrations, media, scheduledFor: later, format: 'story', now }),
+    ).toThrow(/Instagram only, not facebook/)
+  })
 })
 
 describe('draft buttons', () => {
@@ -108,6 +128,17 @@ describe('draft buttons', () => {
     expect(text).toContain('⚠️ Within 3 h of draft #18 (Thu, Oct 8, 7:00 PM): 🎃 Halloween en Hialeah 2026: la guía &lt;b&gt;')
     expect(text).not.toContain('NEXTLINE')
     expect(draftPreviewText({ id: 7, caption: 'x', platforms: ['facebook'], scheduledFor: '2026-10-08T23:00:00Z' } as HqSocialDraft, 0)).not.toContain('⚠️')
+  })
+
+  it('says first that a story is an Instagram story', () => {
+    const story = draftPreviewText(
+      { id: 9, caption: 'Noche de son', platforms: ['instagram'], format: 'story', scheduledFor: '2026-10-08T13:00:00Z' } as HqSocialDraft,
+      0,
+    )
+    expect(story.split('\n')[0]).toBe('📲 Instagram story')
+    expect(story).toContain('<b>📣 Social draft #9</b>')
+    const post = draftPreviewText({ id: 9, caption: 'x', platforms: ['instagram'], format: 'post', scheduledFor: '2026-10-08T13:00:00Z' } as HqSocialDraft, 0)
+    expect(post).not.toContain('Instagram story')
   })
 })
 
@@ -231,9 +262,9 @@ type Call = { url: string; body: unknown }
  * answers the three endpoints the approval uses.
  */
 function fakeNetwork(
-  opts: { postStats?: Record<string, unknown[]>; listed?: unknown[] } = {},
+  opts: { postStats?: Record<string, unknown[]>; listed?: unknown[]; instagram?: boolean } = {},
 ) {
-  const { postStats = {}, listed = [] } = opts
+  const { postStats = {}, listed = [], instagram = false } = opts
   const calls: Call[] = []
   const fetchMock = vi.fn(async (input: string | URL | Request, init?: RequestInit) => {
     const url = String(input)
@@ -244,7 +275,7 @@ function fakeNetwork(
     if (url.endsWith('/integrations')) {
       return Response.json([
         { id: 'fb-live', identifier: 'facebook' },
-        { id: 'ig-off', identifier: 'instagram', disabled: true },
+        instagram ? { id: 'ig-live', identifier: 'instagram' } : { id: 'ig-off', identifier: 'instagram', disabled: true },
         { id: 'tt-live', platform: 'tiktok' },
       ])
     }
@@ -417,6 +448,18 @@ describe('HQ against the database', () => {
     const again = await decideDraft(payload, draft.id, 'approve')
     expect(again).toContain('already scheduled')
     expect(net.postiz().filter((c) => c.url.endsWith('/posts'))).toHaveLength(1)
+  })
+
+  it('previews a story as one and schedules it on Instagram as a story', async () => {
+    const net = fakeNetwork({ instagram: true })
+    const draft = await newDraft({ format: 'story', platforms: ['instagram'], caption: 'HQ-TEST Noche de son' })
+    const sent = net.telegram()[0].body
+    expect(String(sent instanceof FormData ? sent.get('caption') : (sent as { text: string }).text)).toMatch(/^📲 Instagram story\n/)
+
+    expect(await decideDraft(payload, draft.id, 'approve')).toContain('scheduled')
+    const post = net.postiz().find((c) => c.url.endsWith('/posts'))!.body as ReturnType<typeof buildPostBody>
+    expect(post.posts).toHaveLength(1)
+    expect(post.posts[0]).toMatchObject({ integration: { id: 'ig-live' }, settings: { __type: 'instagram', post_type: 'story' } })
   })
 
   it('schedules once when two taps arrive at the same time', async () => {

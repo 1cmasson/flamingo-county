@@ -3,7 +3,7 @@ import { getPayload, type Payload } from 'payload'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import config from '@payload-config'
 import { HQ_INTERNAL, cancelDraft, decideDraft, draftFingerprint } from '../../src/lib/hq'
-import { facebookProblem } from '../../src/lib/postiz'
+import { facebookProblem, storyProblem } from '../../src/lib/postiz'
 import { markPublished } from '../../src/lib/socialStats'
 import { FB_LINK, makeHqMedia, withFbLink } from './helpers/facebook'
 
@@ -18,6 +18,20 @@ describe('facebookProblem', () => {
     expect(facebookProblem(['facebook'], 1, 'hola')).toMatch(/flamingocounty\.com link/)
     expect(facebookProblem(['facebook'], 0, 'hola')).toMatch(/photo or video and a flamingocounty\.com link/)
     expect(facebookProblem(['facebook'], 1, 'notflamingocounty.com.evil.io')).toMatch(/link/)
+  })
+})
+
+describe('storyProblem', () => {
+  it('lets a post through, and a story on Instagram alone with one file', () => {
+    expect(storyProblem('post', ['facebook', 'instagram', 'tiktok'], 3)).toBeNull()
+    expect(storyProblem(null, ['facebook'], 0)).toBeNull()
+    expect(storyProblem('story', ['instagram'], 1)).toBeNull()
+  })
+  it('refuses a story with another platform, or not exactly one file', () => {
+    expect(storyProblem('story', ['facebook', 'instagram'], 1)).toMatch(/Instagram only.*facebook, instagram/)
+    expect(storyProblem('story', ['tiktok'], 1)).toMatch(/Instagram only/)
+    expect(storyProblem('story', ['instagram'], 0)).toMatch(/exactly one photo or video.*0 files/)
+    expect(storyProblem('story', ['instagram'], 2)).toMatch(/2 files/)
   })
 })
 
@@ -66,6 +80,30 @@ describe('Facebook rule and cancelling, against the database', () => {
     await expect(make({ caption: 'hola, no link', media: [mediaId] }, false)).rejects.toThrow()
     const ok = await make({ caption: withFbLink('hola'), media: [mediaId], status: 'rejected' }, false)
     expect(ok.id).toBeTruthy()
+  })
+
+  it('refuses to save a story with Facebook in it, or with more than one file', async () => {
+    const second = await makeHqMedia(payload)
+    try {
+      const story = { format: 'story', caption: withFbLink('Noche de son'), status: 'rejected' }
+      await expect(make({ ...story, platforms: ['facebook', 'instagram'], media: [mediaId] }, false)).rejects.toMatchObject({
+        data: { errors: [expect.objectContaining({ path: 'media', message: expect.stringMatching(/Instagram only/) })] },
+      })
+      await expect(make({ ...story, platforms: ['instagram'], media: [mediaId, second] }, false)).rejects.toThrow()
+      const ok = await make({ ...story, platforms: ['instagram'], media: [mediaId] }, false)
+      expect(ok.format).toBe('story')
+    } finally {
+      await payload.delete({ collection: 'hq-media', id: second, overrideAccess: true }).catch(() => undefined)
+    }
+  })
+
+  it('refuses at Approve a story that names Facebook, saved around the check', async () => {
+    const d = await make({ format: 'story', caption: withFbLink('x'), platforms: ['facebook', 'instagram'], media: [mediaId], status: 'pending' })
+    await payload.update({ collection: 'hq-social-drafts', id: d.id, data: { previewedHash: draftFingerprint(d as never) }, overrideAccess: true, context: { [HQ_INTERNAL]: true } })
+    const msg = await decideDraft(payload, d.id, 'approve')
+    expect(msg).toMatch(/not posted.*Instagram only/)
+    expect((await payload.findByID({ collection: 'hq-social-drafts', id: d.id, overrideAccess: true })).status).toBe('pending')
+    expect(calls).toHaveLength(0)
   })
 
   it('refuses at Approve a draft that breaks the rule, and leaves it pending', async () => {

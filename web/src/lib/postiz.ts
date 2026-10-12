@@ -10,7 +10,8 @@
  *
  * The per-platform settings below come from the instance's own
  * `integrationSchema` (read 2026-09-30), not from the hosted docs:
- * - Instagram requires `post_type` and at least one attachment.
+ * - Instagram requires `post_type` and at least one attachment. `post_type`
+ *   is `'post'` for the feed or `'story'` for a story (see `storyProblem`).
  * - TikTok requires every one of its toggles and an attachment. `DIRECT_POST`
  *   publishes; `UPLOAD` only drops the file in the TikTok app's inbox.
  * - Facebook would allow text-only posts, but we never send one: see
@@ -46,6 +47,29 @@ export function facebookProblem(
   return missing.length ? `Facebook posts are never text only: this one is missing ${missing.join(' and ')}.` : null
 }
 
+/**
+ * What a draft is: a feed post, or an Instagram story. Each event gets a
+ * story (lib/eventStory.tsx); everything else is a post.
+ */
+export type DraftFormat = 'post' | 'story'
+
+/**
+ * A story's own rule: it goes to Instagram only, with exactly one photo or
+ * video. Postiz has a story type for Instagram alone, and a story is one
+ * frame, not a carousel. Returns what is wrong, or null when it holds (and
+ * always for a post).
+ */
+export function storyProblem(
+  format: string | null | undefined,
+  platforms: readonly string[] | null | undefined,
+  mediaCount: number,
+): string | null {
+  if (format !== 'story') return null
+  const onlyInstagram = platforms?.length === 1 && platforms[0] === 'instagram'
+  if (onlyInstagram && mediaCount === 1) return null
+  return `An Instagram story goes to Instagram only, with exactly one photo or video (this one has ${platforms?.length ? platforms.join(', ') : 'no platform'} and ${mediaCount} file${mediaCount === 1 ? '' : 's'}).`
+}
+
 /** TikTok caps the title at 90 characters; the caption itself can run to 2000. */
 const TIKTOK_TITLE_LIMIT = 90
 
@@ -55,10 +79,10 @@ export function postizConfigured(): boolean {
   return Boolean(process.env.POSTIZ_API_URL && process.env.POSTIZ_API_KEY)
 }
 
-function settingsFor(platform: Platform, caption: string): Record<string, unknown> {
+function settingsFor(platform: Platform, caption: string, format: DraftFormat): Record<string, unknown> {
   switch (platform) {
     case 'instagram':
-      return { __type: 'instagram', post_type: 'post' }
+      return { __type: 'instagram', post_type: format === 'story' ? 'story' : 'post' }
     case 'tiktok':
       return {
         __type: 'tiktok',
@@ -84,6 +108,9 @@ function settingsFor(platform: Platform, caption: string): Record<string, unknow
  * A time in the past (or the next minute) goes out as `now` — Postiz would
  * otherwise accept a schedule date that has already passed and leave the post
  * sitting in its calendar unpublished.
+ *
+ * A story (`format: 'story'`) only exists on Instagram; any other platform in
+ * it is refused here too, as the last check before Postiz.
  */
 export function buildPostBody(args: {
   caption: string
@@ -91,9 +118,13 @@ export function buildPostBody(args: {
   integrations: Partial<Record<Platform, string>>
   media: UploadedMedia[]
   scheduledFor: Date
+  format?: DraftFormat | null
   now?: Date
 }) {
   const now = args.now ?? new Date()
+  const format = args.format ?? 'post'
+  const other = args.platforms.find((p) => p !== 'instagram')
+  if (format === 'story' && other) throw new Error(`A story goes to Instagram only, not ${other}`)
   const immediate = args.scheduledFor.getTime() <= now.getTime() + 60_000
 
   return {
@@ -107,7 +138,7 @@ export function buildPostBody(args: {
       return {
         integration: { id },
         value: [{ content: args.caption, image: args.media }],
-        settings: settingsFor(platform, args.caption),
+        settings: settingsFor(platform, args.caption, format),
       }
     }),
   }
