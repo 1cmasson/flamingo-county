@@ -932,6 +932,20 @@ const guard = async (fn: () => Promise<ToolResult>): Promise<ToolResult> => {
   try {
     return await fn()
   } catch (err) {
+    // A tool's own refusals ("Larger than 50 MB.") are plain Errors and only
+    // go back to the caller. A runtime error is a bug, and the caller sees just
+    // its message, so its stack goes to the server log. The case in point:
+    // hqAddDraftMediaFromUpload has answered "Maximum call stack size exceeded"
+    // for 3.7–38 MB videos on a server that had been up for a day or more, and
+    // took the same 5 MB file right after a deploy (2026-10-12). It doesn't
+    // happen locally, so the log is how to find where.
+    if (err instanceof RangeError || err instanceof TypeError || err instanceof ReferenceError) {
+      const mem = process.memoryUsage()
+      console.error(
+        `[hq] MCP tool failed (uptime ${Math.round(process.uptime() / 60)} min, heap ${Math.round(mem.heapUsed / 1048576)}/${Math.round(mem.heapTotal / 1048576)} MB, rss ${Math.round(mem.rss / 1048576)} MB):`,
+        err.stack,
+      )
+    }
     return text(`Error: ${err instanceof Error ? err.message : String(err)}`)
   }
 }
