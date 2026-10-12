@@ -42,6 +42,7 @@ const MAX_LIST_SLIDES = 8
 const W = 1080
 const H = 1350
 const LOOP_SECONDS = 10
+const CAPTION_LIMIT = 2200
 
 const WEB = resolve(dirname(fileURLToPath(import.meta.url)), '../..')
 const FONTS = join(WEB, 'src/assets/og/fonts')
@@ -556,7 +557,11 @@ async function main() {
       files.ig.push(save)
       files.fb.push(save)
 
-      writeFileSync(join(dir, 'caption-instagram.txt'), caption(groups, from, to, lang))
+      const ig = caption(groups, from, to, lang)
+      // Instagram's limit. Eight short lines a city sit far below it; a very
+      // busy range could not, and it is the owner who picks what to cut.
+      if (ig.length > CAPTION_LIMIT) console.warn(`${lang} caption is ${ig.length} characters; Instagram takes ${CAPTION_LIMIT}. Shorten it before drafting.`)
+      writeFileSync(join(dir, 'caption-instagram.txt'), ig)
       // The Facebook link is the draft's own /go/fb/<id> link; the skill fills
       // FB_LINK in once the draft exists.
       writeFileSync(join(dir, 'caption-facebook.txt'), caption(groups, from, to, lang, 'FB_LINK'))
