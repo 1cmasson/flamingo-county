@@ -1,5 +1,5 @@
 import type { TaskConfig } from 'payload'
-import { draftWeeklyRoundup, isRoundupTime } from '../lib/weeklyRoundup'
+import { WEEKLY_ROUNDUP_AUTO, draftWeeklyRoundup, isRoundupTime } from '../lib/weeklyRoundup'
 
 /**
  * The Monday roundup: one social draft for the week's events
@@ -10,13 +10,16 @@ import { draftWeeklyRoundup, isRoundupTime } from '../lib/weeklyRoundup'
  * cron in the server's own zone (see src/jobs/morningBrief.ts). The first run
  * that lands drafts the week; every later one finds the week's draft and
  * stops, so a run missed during a deploy is made up the next hour.
+ *
+ * Off while `WEEKLY_ROUNDUP_AUTO` is false: the events carousel is drafted by
+ * the `events-carousel` skill instead.
  */
 export const weeklyRoundup: TaskConfig<'weeklyRoundup'> = {
   slug: 'weeklyRoundup',
   schedule: [{ cron: '0 15 * * * *', queue: 'hq' }],
   retries: 2,
   handler: async ({ req }) => {
-    if (!isRoundupTime()) return { output: { drafted: false } }
+    if (!WEEKLY_ROUNDUP_AUTO || !isRoundupTime()) return { output: { drafted: false } }
     const draft = await draftWeeklyRoundup(req.payload)
     return { output: { drafted: Boolean(draft) } }
   },

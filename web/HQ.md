@@ -13,9 +13,9 @@ only. Phase 1 has three parts:
 - **Evening wrap.** At 8 PM Miami time, Telegram gets the day's counterpart:
   what happened today, open tasks due by the end of tomorrow (overdue ones
   flagged), tomorrow's calendar, and the social and site drafts waiting on you.
-- **Monday roundup.** Every Monday morning, one social draft for the week's
-  events, Monday to Sunday: a cover, the events' cards and a link to the
-  week's page. Events no longer get a post each. See *The Monday roundup*.
+- **Monday roundup (off).** The job that drafted one post a week for the
+  week's events is switched off (`WEEKLY_ROUNDUP_AUTO`, 2026-10-11). The
+  events post is now the `events-carousel` skill's. See *The Monday roundup*.
 - **Social approvals.** A draft in `hq-social-drafts` is previewed in Telegram
   with its cover photo or video and **Approve / Reject** buttons. Approve
   uploads the files to Postiz and schedules the post on Facebook, Instagram or
@@ -706,6 +706,13 @@ Havana is left off the page for now.
 tell which buttons people use. Nothing is stored on the visitor.
 
 ## The Monday roundup
+
+> **Off since 2026-10-11.** `WEEKLY_ROUNDUP_AUTO` in `src/lib/weeklyRoundup.ts`
+> is false, so the hourly job drafts nothing. The owner moved the events post
+> to a carousel per language (Monday for the week, Thursday for the weekend),
+> with a list slide per city on its fountain loop. It has video slides, so the
+> `events-carousel` skill renders it on the owner's machine and drafts it over
+> MCP. What follows describes the job as it works when switched back on.
 
 One post a week for the week's events, instead of one per event
 (`src/lib/weeklyRoundup.ts`, the `weeklyRoundup` job in `src/jobs`).

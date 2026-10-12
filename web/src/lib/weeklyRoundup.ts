@@ -31,6 +31,17 @@ import { isAnnounceable, monthShort, unshout, weekEvents, weekMonday, weekRange,
  * retry, a restart or a second process all end at one.
  */
 
+/**
+ * Whether the hourly job drafts the roundup on its own. Off since 2026-10-11:
+ * the owner moved the events post to a carousel per language, Monday for the
+ * week and Thursday for the weekend, with a list slide per city on its
+ * fountain loop. That post has video slides, so it is rendered on the owner's
+ * machine by the `events-carousel` skill and drafted over MCP; this job would
+ * draft a second, older-format post beside it. The code below still works when
+ * called, and is what the switch turns back on.
+ */
+export const WEEKLY_ROUNDUP_AUTO: boolean = false
+
 export const ROUNDUP_SOURCE = 'weekly-roundup'
 /** Nine event cards after the cover: Instagram takes ten pictures in a carousel. */
 export const ROUNDUP_MAX_EVENTS = 9
