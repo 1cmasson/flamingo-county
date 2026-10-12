@@ -6,7 +6,7 @@ import sharp from 'sharp'
 import { noPrice } from '../fields/shared'
 import type { City, Event, HqSocialDraft, Listing, Media, Story } from '../payload-types'
 import { addDays, dateOnly, eventEndDay, eventRunEnd, miamiInstant, parseISO, todayISO } from './dates'
-import { HQ_INTERNAL, POST_GAP_MS, recordEvent, sendDraftPreview } from './hq'
+import { HQ_INTERNAL, NOT_A_STORY, POST_GAP_MS, recordEvent, sendDraftPreview } from './hq'
 import { photoCredit } from './photoLicense'
 import type { Platform } from './postiz'
 import { routes } from './routes'
@@ -21,9 +21,10 @@ import { unshout } from './week'
  * entry for it. That draft then goes through the normal Approve / Reject
  * preview: nothing is posted or scheduled from here.
  *
- * Events no longer get a post each (`EVENT_AUTO_DRAFTS`): the week's events go
- * out together in the Monday roundup (lib/weeklyRoundup.ts). The event path
- * below still works when called directly, and is what the switch turns back on.
+ * Events no longer get a feed post each (`EVENT_AUTO_DRAFTS`): they go out
+ * together in a carousel. Each event gets an Instagram story instead
+ * (lib/eventStory.tsx), drafted the same way. The event post path below still
+ * works when called directly, and is what the switch turns back on.
  *
  * The caption is a template over the record's own fields, Spanish first, then
  * English. It adds no facts, and a field that names a price is left out.
@@ -33,9 +34,10 @@ export type AutoDraftSource = 'events' | 'stories'
 type Lang = 'es' | 'en'
 
 /**
- * Whether publishing an event drafts a post of its own. Off since the owner
- * asked for one weekly roundup instead of a post per event per day (the
- * Monday roundup, lib/weeklyRoundup.ts). Stories are unaffected.
+ * Whether publishing an event drafts a feed post of its own. Off since the
+ * owner asked for the week's events together instead of a post per event per
+ * day (lib/weeklyRoundup.ts); while it is off, an event gets an Instagram
+ * story instead (lib/eventStory.tsx). Stories (the pages) are unaffected.
  */
 export const EVENT_AUTO_DRAFTS: boolean = false
 
@@ -67,16 +69,19 @@ export function autoDraftHook(collection: AutoDraftSource): CollectionAfterChang
     const was = (previousDoc as { _status?: string } | undefined)?._status
     const now = (doc as { _status?: string })._status
     if (operation !== 'update' || was !== 'draft' || now !== 'published') return doc
-    // An event goes out in its week's Monday roundup, not on its own. One
-    // published after that week's roundup was drafted gets nothing on the
-    // grid: the owner chose an Instagram story for those.
-    // TODO(stories): draft an Instagram story here for an event published
-    // after its week's roundup exists (`roundupExists` in lib/weeklyRoundup.ts).
-    if (collection === 'events' && !EVENT_AUTO_DRAFTS) return doc
     try {
       // `req` is not passed on: the draft writes carry HQ's own context, which
       // would otherwise be merged into this publish request's.
-      await draftForPublished(req.payload, collection, doc.id as number)
+      if (collection === 'events' && !EVENT_AUTO_DRAFTS) {
+        // An event is on the feed only in the carousel of the week's events,
+        // never in a post of its own (the owner's call, 2026-10-11). It gets
+        // an Instagram story instead. Loaded on demand: that module imports
+        // this one, and draws with next/og, which the Payload CLI has no use for.
+        const { draftEventStory } = await import('./eventStory')
+        await draftEventStory(req.payload, doc.id as number)
+      } else {
+        await draftForPublished(req.payload, collection, doc.id as number)
+      }
     } catch (err) {
       console.error('[hq] auto-draft failed:', err instanceof Error ? err.message : err)
     }
@@ -120,7 +125,8 @@ async function create(
 
   // A draft already written for this page means a republish. Only drafts made
   // since the page was created count: SQLite hands a deleted row's id to the
-  // next one, and a page that reuses it is still a new page.
+  // next one, and a page that reuses it is still a new page. An event's
+  // Instagram story is not its post, so it doesn't count either.
   const existing = await payload.find({
     collection: 'hq-social-drafts',
     where: {
@@ -128,6 +134,7 @@ async function create(
         { sourceCollection: { equals: collection } },
         { sourceId: { equals: String(id) } },
         { createdAt: { greater_than_equal: en.createdAt } },
+        NOT_A_STORY,
       ],
     },
     limit: 1,
@@ -348,7 +355,7 @@ function caption(body: (excerpts: boolean) => string, link: string, credit: stri
 /** The two times of day a post goes out, Miami time: late morning and evening. */
 export const POST_SLOTS = ['11:30', '19:00'] as const
 /** A slot this close to now is skipped: the owner needs time to see the draft. */
-const MIN_LEAD_MS = 30 * 60_000
+export const MIN_LEAD_MS = 30 * 60_000
 /** Two posts closer together than this would bury each other. */
 const MIN_GAP_MS = POST_GAP_MS
 /** How far ahead slots are looked for, at least: further when an event's window is later. */
@@ -443,7 +450,11 @@ export function postWindowStart(ev: Pick<Event, 'date' | 'startTime'>, now: Date
   return opens.getTime() > now.getTime() ? opens : null
 }
 
-/** The times of drafts already waiting to go out, near enough to matter. */
+/**
+ * The times of feed posts already waiting to go out, near enough to matter.
+ * Instagram stories are left out: one doesn't touch the grid, so a post may
+ * go out right next to it (see `NOT_A_STORY`).
+ */
 export async function busyTimes(payload: Payload, now: Date): Promise<Date[]> {
   const { docs } = await payload.find({
     collection: 'hq-social-drafts',
@@ -451,6 +462,7 @@ export async function busyTimes(payload: Payload, now: Date): Promise<Date[]> {
       and: [
         { status: { in: ['pending', 'approved', 'scheduled'] } },
         { scheduledFor: { greater_than_equal: new Date(now.getTime() - MIN_GAP_MS).toISOString() } },
+        NOT_A_STORY,
       ],
     },
     select: { scheduledFor: true },
@@ -462,7 +474,7 @@ export async function busyTimes(payload: Payload, now: Date): Promise<Date[]> {
 }
 
 /** An event worth announcing: not over, cancelled or postponed. */
-function eventIsAhead(ev: Event, now: Date): boolean {
+export function eventIsAhead(ev: Event, now: Date): boolean {
   if (ev.eventStatus === 'cancelled' || ev.eventStatus === 'postponed') return false
   return eventEndDay(ev) >= todayISO(now)
 }

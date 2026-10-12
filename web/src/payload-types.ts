@@ -1241,6 +1241,10 @@ export interface HqSocialDraft {
    */
   scheduledFor: string;
   platforms: ('facebook' | 'instagram' | 'tiktok')[];
+  /**
+   * A story goes to Instagram only, with exactly one photo or video. Instagram doesn't show a story's caption.
+   */
+  format?: ('post' | 'story') | null;
   caption: string;
   /**
    * The first file is the cover shown in Telegram.
@@ -2646,6 +2650,7 @@ export interface HqSocialDraftsSelect<T extends boolean = true> {
   status?: T;
   scheduledFor?: T;
   platforms?: T;
+  format?: T;
   caption?: T;
   media?: T;
   pillar?: T;

@@ -16,16 +16,20 @@ only. Phase 1 has three parts:
 - **Monday roundup (off).** The job that drafted one post a week for the
   week's events is switched off (`WEEKLY_ROUNDUP_AUTO`, 2026-10-11). The
   events post is now the `events-carousel` skill's. See *The Monday roundup*.
+- **Event stories.** Publishing an event drafts one Instagram story for it:
+  its Spanish card on a story frame, set for 9 AM on its day. See *Event
+  stories*.
 - **Social approvals.** A draft in `hq-social-drafts` is previewed in Telegram
   with its cover photo or video and **Approve / Reject** buttons. Approve
   uploads the files to Postiz and schedules the post on Facebook, Instagram or
   TikTok. Nothing is posted without that tap. If another draft (pending,
   approved or scheduled) goes out within 3 hours of it, the preview says so
   with a ⚠️ line naming that draft: auto-drafts keep that gap themselves, but
-  a hand-made draft (from any agent) sets its own time.
+  a hand-made draft (from any agent) sets its own time. Instagram stories
+  don't count either way: they never touch the grid.
 
 Everything is in the admin under **HQ**. The code is in `src/lib/{hq,brief,telegram,telegramBot,chat,postiz}.ts`,
-`src/lib/{calendar,wrap,weeklyRoundup}.ts`, `src/collections/Hq*.ts`, `src/jobs/{morningBrief,eveningWrap,weeklyRoundup}.ts`
+`src/lib/{calendar,wrap,weeklyRoundup}.ts`, `src/lib/eventStory.tsx`, `src/collections/Hq*.ts`, `src/jobs/{morningBrief,eveningWrap,weeklyRoundup}.ts`
 and `src/app/api/telegram/route.ts`.
 
 ## Setting it up
@@ -575,18 +579,19 @@ request. The tap is your Telegram account behind the webhook's secret.
 version, which could be an unapproved draft, so the seed skips any document
 with a pending draft and says so.
 
-**A published story gets a social draft. An event does not.** When a story
+**A published story gets a social draft. An event gets an Instagram story.** When a story
 goes from draft to published (your Publish tap, or Publish in the admin),
 `src/lib/autoDraft.ts` writes one pending `hq-social-drafts` entry, and its
 preview arrives in Telegram for Approve / Reject like any other draft.
 
 Events used to get one too, and a busy week meant a post per event every
-day. Now the week's events go out together in *The Monday roundup*, and
-publishing an event drafts nothing. The event path is still in
+day. Now the week's events go out together in a carousel (*The Monday
+roundup*), and publishing an event drafts no feed post. It drafts one
+Instagram story instead, whenever the event is published, before or after its
+week's carousel: see *Event stories*. The event post path is still in
 `autoDraft.ts`, switched off by `EVENT_AUTO_DRAFTS`; setting it to `true`
-brings back the post per event exactly as described below. An event
-published after its week's roundup gets nothing on the grid: the plan is an
-Instagram story for it (a TODO in `autoDraftHook`, not built yet).
+brings back the post per event exactly as described below, in place of the
+story.
 
 What a page's own draft holds:
 - **Caption.** Spanish, then English, made only from the page's own fields:
@@ -769,6 +774,48 @@ Sunday, under each day. Past days drop off as the week goes. The page is
 indexable, in the sitemap, with the same event-list structured data as the
 seasonal guides. It is the weekly "what to do this weekend" page from the
 growth review's lever menu.
+
+## Event stories
+
+Events never get a feed post of their own (the owner's call, 2026-10-11).
+Each one gets an **Instagram story** instead (`src/lib/eventStory.tsx`).
+When an event goes from draft to published (your Publish tap, or Publish in
+the admin), HQ writes one pending draft with **Format: Instagram story**:
+
+- **Picture.** The event's Spanish `social` card (the 1080×1350 one the
+  carousel uses) on a 1080×1920 story frame: the brand's pink-to-yellow
+  ground, the card centred with an ink border, and FLAMINGOCOUNTY.COM in an
+  ink box under it. Spanish, because the audience is Spanish-first. The
+  stack stays clear of the top and bottom of the frame, where Instagram lays
+  its own header and reply bar. One JPEG in HQ media.
+- **Caption.** Instagram doesn't show a story's caption. It's there because
+  every draft has one, and it's what you read in Telegram: the Spanish title,
+  the day as the card writes it, the city, and the event's flamingocounty.com
+  address. No prices and no description.
+- **Time.** 9 AM Miami on the event's first day, however far off. If that
+  has passed, or is less than 30 minutes away (the event is on today, or an
+  exhibit is already running), the next 11:30 or 19:00 slot before the event
+  starts; if none is left, it goes up as soon as you approve.
+- **No spacing.** A story stays out of the 3-hour gap both ways: it doesn't
+  push a feed post to another slot, feed posts don't push it, and neither
+  preview warns about the other. Two events on the same day both go up at 9,
+  as two frames in a row.
+- **When it doesn't draft.** An event that is over, cancelled or postponed,
+  or whose title names a price (in either language), gets no story. Nor does
+  one whose card can't be drawn.
+- **Never twice.** The draft carries `dedupeKey` `event-story:<event id>`, so
+  a republish or a retry finds it and drafts nothing. Rejecting it doesn't
+  bring it back.
+- It is logged as `social.draft_created` and previewed in Telegram like any
+  draft, under a first line that says **📲 Instagram story**. Approve sends
+  it to Postiz as an Instagram story (`post_type: story`). A failure never
+  stops the publish.
+
+**The story rule.** A draft whose format is Instagram story goes to Instagram
+only, with exactly one photo or video (`storyProblem` in
+`src/lib/postiz.ts`). Saving one with Facebook or TikTok in it, or with no
+file or two, is refused (Claude, the admin, the importers), and Approve checks
+again.
 
 ## Things that are deliberate
 

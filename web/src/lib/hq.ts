@@ -1,7 +1,7 @@
 import { createHash } from 'crypto'
 import { readFile } from 'fs/promises'
 import path from 'path'
-import type { Payload, PayloadRequest } from 'payload'
+import type { Payload, PayloadRequest, Where } from 'payload'
 
 import { hqMediaDir } from '../collections/HqMedia'
 import type { HqMedia, HqSocialDraft } from '../payload-types'
@@ -16,6 +16,7 @@ import {
   uploadMedia,
   type Platform,
   facebookProblem,
+  storyProblem,
 } from './postiz'
 import {
   FILE_UPLOAD_LIMIT,
@@ -143,15 +144,26 @@ async function readMedia(doc: HqMedia): Promise<Blob> {
  * Everything Approve would send to Postiz. Stored as `previewedHash` when the
  * preview goes out and compared again at approval, so what gets posted is
  * always exactly what the owner saw.
+ *
+ * A story adds its format, since it changes what Approve sends. A post adds
+ * nothing, so drafts previewed before stories existed keep their hash.
  */
-export function draftFingerprint(draft: Pick<HqSocialDraft, 'caption' | 'media' | 'platforms' | 'scheduledFor'>): string {
+export function draftFingerprint(
+  draft: Pick<HqSocialDraft, 'caption' | 'media' | 'platforms' | 'scheduledFor'> & { format?: HqSocialDraft['format'] | null },
+): string {
   const media = (draft.media ?? []).map((m) => (typeof m === 'object' ? m.id : m))
-  return createHash('sha256')
-    .update(
-      JSON.stringify([draft.caption, media, [...(draft.platforms ?? [])].sort(), new Date(draft.scheduledFor).toISOString()]),
-    )
-    .digest('hex')
+  const parts: unknown[] = [draft.caption, media, [...(draft.platforms ?? [])].sort(), new Date(draft.scheduledFor).toISOString()]
+  if (draft.format === 'story') parts.push('story')
+  return createHash('sha256').update(JSON.stringify(parts)).digest('hex')
 }
+
+/**
+ * Leaves Instagram stories out of a drafts query. A story doesn't land on the
+ * grid, so it neither crowds a feed post nor is crowded by one: the 3-hour
+ * spacing (`busyTimes` in lib/autoDraft.ts) and the clash warning below are
+ * about feed posts only. Rows written before the field existed count as posts.
+ */
+export const NOT_A_STORY: Where = { or: [{ format: { not_equals: 'story' } }, { format: { exists: false } }] }
 
 /**
  * Two posts closer together than this bury each other. Auto-drafts keep this
@@ -165,11 +177,15 @@ export type DraftClash = { id: number; scheduledFor: string; caption: string }
 /**
  * Other drafts waiting to go out (pending, approved or scheduled) within
  * `POST_GAP_MS` of this one. Several agents write drafts; this is how a
- * double-booking shows up before the owner taps Approve.
+ * double-booking shows up before the owner taps Approve. Feed posts only: a
+ * story clashes with nothing (see `NOT_A_STORY`).
  */
-export async function draftClashes(payload: Payload, draft: Pick<HqSocialDraft, 'id' | 'scheduledFor'>): Promise<DraftClash[]> {
+export async function draftClashes(
+  payload: Payload,
+  draft: Pick<HqSocialDraft, 'id' | 'scheduledFor'> & { format?: HqSocialDraft['format'] | null },
+): Promise<DraftClash[]> {
   const at = new Date(draft.scheduledFor).getTime()
-  if (!Number.isFinite(at)) return []
+  if (!Number.isFinite(at) || draft.format === 'story') return []
   const { docs } = await payload.find({
     collection: 'hq-social-drafts',
     where: {
@@ -178,6 +194,7 @@ export async function draftClashes(payload: Payload, draft: Pick<HqSocialDraft, 
         { status: { in: ['pending', 'approved', 'scheduled', 'published'] } },
         { scheduledFor: { greater_than: new Date(at - POST_GAP_MS).toISOString() } },
         { scheduledFor: { less_than: new Date(at + POST_GAP_MS).toISOString() } },
+        NOT_A_STORY,
       ],
     },
     select: { scheduledFor: true, caption: true },
@@ -190,7 +207,13 @@ export async function draftClashes(payload: Payload, draft: Pick<HqSocialDraft, 
 }
 
 export function draftPreviewText(draft: HqSocialDraft, extraFiles: number, clashes: DraftClash[] = []): string {
+  // A story says so first, so the owner knows what the tap makes: one frame
+  // that lasts a day, with no caption on it.
+  const story = draft.format === 'story'
+    ? ['📲 Instagram story', "<i>Instagram doesn't show a story's caption: the text below is for you.</i>"]
+    : []
   const lines = [
+    ...story,
     `<b>📣 Social draft #${draft.id}</b>`,
     `${(draft.platforms ?? []).join(' · ')} — ${esc(miamiTime(draft.scheduledFor))}`,
   ]
@@ -310,7 +333,8 @@ async function decide(payload: Payload, id: number, action: DraftAction): Promis
     return `Draft #${id} changed since that preview, so nothing was posted. The current version is below — approve that one.`
   }
 
-  const rule = facebookProblem(draft.platforms, Array.isArray(draft.media) ? draft.media.length : 0, draft.caption)
+  const files = Array.isArray(draft.media) ? draft.media.length : 0
+  const rule = facebookProblem(draft.platforms, files, draft.caption) ?? storyProblem(draft.format, draft.platforms, files)
   if (rule) return `🚫 Draft #${id} was not posted. ${rule} Edit it in the admin and approve the new preview.`
 
   await setDraft(payload, id, { status: 'approved', error: null })
@@ -327,6 +351,7 @@ async function decide(payload: Payload, id: number, action: DraftAction): Promis
       integrations: channels,
       media: uploaded,
       scheduledFor: new Date(draft.scheduledFor),
+      format: draft.format,
     })
     const response = await createPost(body)
 

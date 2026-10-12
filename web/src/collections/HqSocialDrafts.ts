@@ -1,7 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { humanOnly, staffOnly } from '../fields/shared'
 import { HQ_INTERNAL, draftFingerprint, recordEvent, sendDraftPreview } from '../lib/hq'
-import { NEEDS_MEDIA, PLATFORMS, facebookProblem } from '../lib/postiz'
+import { NEEDS_MEDIA, PLATFORMS, facebookProblem, storyProblem } from '../lib/postiz'
 import type { HqSocialDraft } from '../payload-types'
 
 /**
@@ -66,6 +66,21 @@ export const HqSocialDrafts: CollectionConfig = {
       options: PLATFORMS.map((p) => ({ label: p[0].toUpperCase() + p.slice(1), value: p })),
     },
     {
+      // A story goes to Instagram only, with one file: checked with the media
+      // below, and again at Approve. Each event gets one (lib/eventStory.tsx).
+      name: 'format',
+      type: 'select',
+      defaultValue: 'post',
+      options: [
+        { label: 'Post', value: 'post' },
+        { label: 'Instagram story', value: 'story' },
+      ],
+      admin: {
+        position: 'sidebar',
+        description: "A story goes to Instagram only, with exactly one photo or video. Instagram doesn't show a story's caption.",
+      },
+    },
+    {
       name: 'caption',
       type: 'textarea',
       required: true,
@@ -98,9 +113,8 @@ export const HqSocialDrafts: CollectionConfig = {
         if (req?.context?.[HQ_INTERNAL]) return true
         const needs = (siblingData.platforms ?? []).filter((p) => NEEDS_MEDIA.includes(p))
         const count = Array.isArray(value) ? value.length : 0
-        return needs.length && !count
-          ? `${needs.join(' and ')} need at least one photo or video.`
-          : true
+        if (needs.length && !count) return `${needs.join(' and ')} need at least one photo or video.`
+        return storyProblem(siblingData.format, siblingData.platforms, count) ?? true
       },
     },
     {
@@ -130,9 +144,10 @@ export const HqSocialDrafts: CollectionConfig = {
       ],
     },
     {
-      // The page a draft was written for when it went live (lib/autoDraft.ts),
-      // or `weekly-roundup` and the week's Monday (lib/weeklyRoundup.ts).
-      // Republishing that page finds this and drafts nothing new.
+      // The page a draft was written for when it went live (lib/autoDraft.ts,
+      // and an event's story, lib/eventStory.tsx), or `weekly-roundup` and the
+      // week's Monday (lib/weeklyRoundup.ts). Republishing that page finds this
+      // and drafts nothing new.
       type: 'row',
       fields: [
         {
@@ -147,8 +162,9 @@ export const HqSocialDrafts: CollectionConfig = {
     },
     {
       // At most one draft per key, held by the database: the Monday roundup
-      // writes `weekly-roundup:<monday>`, so a retried run, a restart or a
-      // second process can never draft the same week twice. Empty on every
+      // writes `weekly-roundup:<monday>` and an event's story
+      // `event-story:<event id>`, so a retried run, a restart or a second
+      // process can never draft the same week or event twice. Empty on every
       // other draft (SQLite lets any number of rows leave it empty).
       name: 'dedupeKey',
       type: 'text',
