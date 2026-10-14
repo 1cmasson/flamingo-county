@@ -233,7 +233,16 @@ export const HqSocialDrafts: CollectionConfig = {
     afterChange: [
       async ({ doc, previousDoc, operation, req, context }) => {
         if (context[HQ_INTERNAL]) return doc
-        const draft = doc as HqSocialDraft
+        // A create or update called with `select` (the MCP tools pass one)
+        // hands this hook only the selected fields. Read the whole draft, so
+        // the preview, its fingerprint and the event never see half of it.
+        const draft = (await req.payload.findByID({
+          collection: 'hq-social-drafts',
+          id: doc.id,
+          depth: 0,
+          overrideAccess: true,
+          req,
+        })) as HqSocialDraft
         const becamePending =
           draft.status === 'pending' && (operation === 'create' || previousDoc?.status !== 'pending')
         // A pending draft edited after its preview went out — by Claude or in

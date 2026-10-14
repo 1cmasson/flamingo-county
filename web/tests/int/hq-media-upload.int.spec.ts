@@ -48,6 +48,15 @@ describe('upload checks (no database)', () => {
     expect(() => decodeUpload({ dataBase64: 'this is !!! not base64', mimeType: 'video/mp4' })).toThrow(/not valid base64/)
   })
 
+  // 2026-10-14: every reel over ~2 MB failed with "Maximum call stack size exceeded": the base64 check was one regex
+  // over the whole string, and V8 keeps a backtrack entry per character a `+` consumes.
+  it('checks a multi-megabyte file without running out of stack', () => {
+    const reel = Buffer.concat([mp4(), Buffer.alloc(8 * 1024 * 1024, 7)])
+    expect(decodeUpload({ dataBase64: b64(reel), mimeType: 'video/mp4' }).data.length).toBe(reel.length)
+    expect(() => decodeUpload({ dataBase64: b64(reel).slice(0, -8) + '!!!!!!!!', mimeType: 'video/mp4' })).toThrow(/not valid base64/)
+    expect(() => decodeUpload({ dataBase64: b64(reel) + '===', mimeType: 'video/mp4' })).toThrow(/not valid base64/)
+  })
+
   it('stops a file over the limit before decoding it', () => {
     const big = Buffer.concat([mp4(), Buffer.alloc(2000)])
     expect(() => decodeUpload({ dataBase64: b64(big), mimeType: 'video/mp4' }, 1000)).toThrow(/Larger than/)
@@ -101,6 +110,20 @@ describe('upload into hq-media (database)', () => {
     made.push(m.id as number)
     expect(m.mimeType).toBe('image/jpeg')
     expect(m.filename).toMatch(/\.jpg$/)
+  })
+
+  it('stores a multi-megabyte reel through the tool wrapper', async () => {
+    const t = hqMcpTools.find((x) => x.name === 'hqAddDraftMediaFromUpload')!
+    const reel = Buffer.concat([mp4(), Buffer.alloc(8 * 1024 * 1024, 7)])
+    const res = (await t.handler(
+      { filename: 'big-reel.mp4', mimeType: 'video/mp4', dataBase64: b64(reel), note: 'TEST big reel' },
+      await newReq(),
+      undefined,
+    )) as { content: { text: string }[] }
+    expect(res.content[0].text).not.toMatch(/^Error/)
+    const m = JSON.parse(res.content[0].text) as { id: number; filesize: number }
+    made.push(m.id)
+    expect(m.filesize).toBe(reel.length)
   })
 
   it('runs through the tool wrapper and reports a bad file as text, not a crash', async () => {
