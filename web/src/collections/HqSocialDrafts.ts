@@ -1,7 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { humanOnly, staffOnly } from '../fields/shared'
 import { HQ_INTERNAL, draftFingerprint, recordEvent, sendDraftPreview } from '../lib/hq'
-import { NEEDS_MEDIA, PLATFORMS, facebookProblem, storyProblem } from '../lib/postiz'
+import { NEEDS_MEDIA, PLATFORMS, facebookProblem, singleEventProblem, storyProblem } from '../lib/postiz'
 import type { HqSocialDraft } from '../payload-types'
 
 /**
@@ -93,7 +93,7 @@ export const HqSocialDrafts: CollectionConfig = {
       ) => {
         if (typeof value !== 'string' || !value.trim()) return 'Write the caption.'
         if (req?.context?.[HQ_INTERNAL]) return true
-        return facebookProblem(siblingData.platforms, 1, value) ?? true
+        return facebookProblem(siblingData.platforms, 1, value) ?? singleEventProblem(siblingData.format, value) ?? true
       },
       // TikTok's 2000 is the tightest of the three (Instagram 2200, Facebook 63k).
       maxLength: 2000,

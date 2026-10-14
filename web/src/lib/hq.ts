@@ -16,6 +16,7 @@ import {
   uploadMedia,
   type Platform,
   facebookProblem,
+  singleEventProblem,
   storyProblem,
 } from './postiz'
 import {
@@ -334,7 +335,10 @@ async function decide(payload: Payload, id: number, action: DraftAction): Promis
   }
 
   const files = Array.isArray(draft.media) ? draft.media.length : 0
-  const rule = facebookProblem(draft.platforms, files, draft.caption) ?? storyProblem(draft.format, draft.platforms, files)
+  const rule =
+    facebookProblem(draft.platforms, files, draft.caption) ??
+    storyProblem(draft.format, draft.platforms, files) ??
+    singleEventProblem(draft.format, draft.caption)
   if (rule) return `🚫 Draft #${id} was not posted. ${rule} Edit it in the admin and approve the new preview.`
 
   await setDraft(payload, id, { status: 'approved', error: null })
