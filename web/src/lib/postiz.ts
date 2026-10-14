@@ -83,6 +83,44 @@ export function singleEventProblem(format: string | null | undefined, caption: s
   return "A single event goes out as an Instagram story (format: story), never as a feed post. The week's events go in the Monday carousel."
 }
 
+const LANGUAGE_WORDS = {
+  en: new Set("the and you your with this our for is it of to in at on was were who what that he she they we they're we're it's drops today tell watch more which where should from by".split(' ')),
+  es: new Set('de la el los las que y tu en un una es por con para del su hoy sale se lo nos le cuéntanos dónde qué cómo más mira esta este pero muy'.split(' ')),
+}
+const LANGUAGE_NOTE = { en: /^\s*en espa[ñn]ol\b/i, es: /^\s*in english\b/i }
+
+/**
+ * The owner's rule since 2026-10-14: a story that comes as an ES video and an
+ * EN video gets a Spanish-only caption on the ES post and an English-only one
+ * on the EN post. No second block, and no "In English: …" / "En español: …"
+ * line. That day the EN mural reel went out with both blocks. A paragraph
+ * counts as the other language when at least two of its common words are
+ * that language's and they outnumber the draft's own. Drafts marked `both`
+ * (the Monday carousel, a single bilingual post) and stories (Instagram shows
+ * no story caption) are left alone. The same check runs in the content repo
+ * before a direct Postiz post (scripts/caption_language.mjs).
+ */
+export function languageProblem(
+  language: string | null | undefined,
+  format: string | null | undefined,
+  caption: string | null | undefined,
+): string | null {
+  if ((language !== 'es' && language !== 'en') || format === 'story') return null
+  const other = language === 'en' ? 'es' : 'en'
+  const count = (p: string, l: 'en' | 'es') =>
+    (p.replace(/https?:\/\/\S+/g, ' ').replace(/[#@][\p{L}\p{N}_.]+/gu, ' ').toLowerCase().match(/[\p{L}']+/gu) ?? []).filter((w) =>
+      LANGUAGE_WORDS[l].has(w),
+    ).length
+  const bad = (caption ?? '')
+    .split(/\n/)
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .find((p) => LANGUAGE_NOTE[language].test(p) || (count(p, other) >= 2 && count(p, other) > count(p, language)))
+  if (!bad) return null
+  const name = language === 'es' ? 'Spanish' : 'English'
+  return `This is the ${name} post, so its caption is ${name} only; the other language has its own post. Remove: "${bad.slice(0, 60)}${bad.length > 60 ? '…' : ''}"`
+}
+
 /** TikTok caps the title at 90 characters; the caption itself can run to 2000. */
 const TIKTOK_TITLE_LIMIT = 90
 

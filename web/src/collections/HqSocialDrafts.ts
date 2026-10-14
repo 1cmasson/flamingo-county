@@ -1,7 +1,7 @@
 import type { CollectionConfig } from 'payload'
 import { humanOnly, staffOnly } from '../fields/shared'
 import { HQ_INTERNAL, draftFingerprint, recordEvent, sendDraftPreview } from '../lib/hq'
-import { NEEDS_MEDIA, PLATFORMS, facebookProblem, singleEventProblem, storyProblem } from '../lib/postiz'
+import { NEEDS_MEDIA, PLATFORMS, facebookProblem, languageProblem, singleEventProblem, storyProblem } from '../lib/postiz'
 import type { HqSocialDraft } from '../payload-types'
 
 /**
@@ -84,7 +84,8 @@ export const HqSocialDrafts: CollectionConfig = {
       name: 'caption',
       type: 'textarea',
       required: true,
-      // A Facebook post must carry a flamingocounty.com link. Skipped for HQ's
+      // A Facebook post must carry a flamingocounty.com link, and an es/en post
+      // is in that language only (languageProblem). Skipped for HQ's
       // own writes: an auto-draft is created first and gets its tracking link
       // in a second write. Approve checks again.
       validate: (
@@ -93,7 +94,12 @@ export const HqSocialDrafts: CollectionConfig = {
       ) => {
         if (typeof value !== 'string' || !value.trim()) return 'Write the caption.'
         if (req?.context?.[HQ_INTERNAL]) return true
-        return facebookProblem(siblingData.platforms, 1, value) ?? singleEventProblem(siblingData.format, value) ?? true
+        return (
+          facebookProblem(siblingData.platforms, 1, value) ??
+          singleEventProblem(siblingData.format, value) ??
+          languageProblem(siblingData.language, siblingData.format, value) ??
+          true
+        )
       },
       // TikTok's 2000 is the tightest of the three (Instagram 2200, Facebook 63k).
       maxLength: 2000,
