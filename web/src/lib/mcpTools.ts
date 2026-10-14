@@ -556,6 +556,24 @@ export function sniffMediaType(b: Buffer): string | null {
   return null
 }
 
+/**
+ * Standard base64: the 64-letter alphabet, then at most two `=`. A loop, not a
+ * regex: on a reel's tens of millions of characters a `[...]+` regex keeps a
+ * backtrack entry per character and can run out of stack.
+ */
+export function isBase64(s: string): boolean {
+  let end = s.length
+  if (end && s.charCodeAt(end - 1) === 61) end--
+  if (end && s.charCodeAt(end - 1) === 61) end--
+  if (!end) return false
+  for (let i = 0; i < end; i++) {
+    const c = s.charCodeAt(i)
+    const ok = (c >= 65 && c <= 90) || (c >= 97 && c <= 122) || (c >= 48 && c <= 57) || c === 43 || c === 47
+    if (!ok) return false
+  }
+  return true
+}
+
 /** Base64 in, checked bytes out: size first (before decoding), then the declared type against the real one. */
 export function decodeUpload(
   args: { dataBase64: string; mimeType: string },
@@ -563,7 +581,7 @@ export function decodeUpload(
 ): { data: Buffer; type: string } {
   const b64 = args.dataBase64.replace(/\s+/g, '')
   if (b64.length > Math.ceil((limit * 4) / 3) + 8) throw new Error(`Larger than ${Math.round(limit / 1024 / 1024)} MB.`)
-  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(b64)) throw new Error('dataBase64 is not valid base64.')
+  if (!isBase64(b64)) throw new Error('dataBase64 is not valid base64.')
   const data = Buffer.from(b64, 'base64')
   if (data.length > limit) throw new Error(`Larger than ${Math.round(limit / 1024 / 1024)} MB.`)
   const real = sniffMediaType(data)

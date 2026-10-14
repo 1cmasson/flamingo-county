@@ -4,7 +4,7 @@ import { getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
 
 import { buildBrief, isBriefHour, metricLine, sendBrief } from '@/lib/brief'
-import { decideDraft, draftCallback, draftClashes, draftPreviewText, parseDraftCallback } from '@/lib/hq'
+import { decideDraft, draftCallback, draftClashes, draftFingerprint, draftPreviewText, parseDraftCallback } from '@/lib/hq'
 import { buildPostBody, isRunningCount, postIdsFrom, summarizeMetrics } from '@/lib/postiz'
 import { collectChannelStats, collectPostStats, dueCheckpoints } from '@/lib/socialStats'
 import { isBot, parseTrackedLink, safePath } from '@/lib/tracking'
@@ -420,6 +420,50 @@ describe('HQ against the database', () => {
       draftCallback('approve', draft.id),
       draftCallback('reject', draft.id),
     ])
+  })
+
+  // 2026-10-14: drafts made over MCP with `select: {id, status}` never reached Telegram. With a select, Payload hands
+  // the hooks only those fields, so the preview read `scheduledFor` as undefined and threw "Invalid time value".
+  it('previews a draft created with a narrow select, and re-previews an edit made with one', async () => {
+    const net = fakeNetwork()
+    const draft = await payload.create({
+      collection: 'hq-social-drafts',
+      data: {
+        caption: withFbLink('HQ-TEST narrow select'),
+        media: [mediaId],
+        platforms: ['facebook'],
+        scheduledFor: new Date(Date.now() + 86_400_000).toISOString(),
+      } as HqSocialDraft,
+      select: { status: true },
+      overrideAccess: true,
+    })
+    created.push({ collection: 'hq-social-drafts', id: draft.id })
+    await vi.waitFor(async () => {
+      const fresh = await payload.findByID({ collection: 'hq-social-drafts', id: draft.id, overrideAccess: true })
+      expect(fresh.telegramMessageId).toBe(42)
+      expect(fresh.previewedHash).toBeTruthy()
+    })
+    const events = await payload.find({
+      collection: 'hq-events',
+      where: { and: [{ refCollection: { equals: 'hq-social-drafts' } }, { refId: { equals: String(draft.id) } }] },
+      overrideAccess: true,
+    })
+    expect(events.docs[0].summary).toContain('facebook')
+
+    const before = net.telegram().length
+    const later = new Date(Date.now() + 2 * 86_400_000).toISOString()
+    await payload.update({
+      collection: 'hq-social-drafts',
+      id: draft.id,
+      data: { scheduledFor: later },
+      select: { status: true },
+      overrideAccess: true,
+    })
+    await vi.waitFor(async () => {
+      expect(net.telegram().length).toBeGreaterThan(before)
+      const fresh = await payload.findByID({ collection: 'hq-social-drafts', id: draft.id, overrideAccess: true })
+      expect(fresh.previewedHash).toBe(draftFingerprint(fresh))
+    })
   })
 
   it('reject never touches Postiz', async () => {
