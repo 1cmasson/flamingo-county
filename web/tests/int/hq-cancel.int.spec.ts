@@ -3,7 +3,7 @@ import { getPayload, type Payload } from 'payload'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import config from '@payload-config'
 import { HQ_INTERNAL, cancelDraft, decideDraft, draftFingerprint } from '../../src/lib/hq'
-import { facebookProblem, singleEventProblem, storyProblem } from '../../src/lib/postiz'
+import { facebookProblem, languageProblem, singleEventProblem, storyProblem } from '../../src/lib/postiz'
 import { markPublished } from '../../src/lib/socialStats'
 import { FB_LINK, makeHqMedia, withFbLink } from './helpers/facebook'
 
@@ -47,6 +47,25 @@ describe('singleEventProblem', () => {
     expect(singleEventProblem('post', `Consultas 👉 ${page}`)).toMatch(/Instagram story/)
     expect(singleEventProblem(undefined, `👉 ${page}`)).toMatch(/Instagram story/)
     expect(singleEventProblem('post', 'https://flamingocounty.com/go/fb/9?to=/en/events/noche-de-son')).toMatch(/Instagram story/)
+  })
+})
+
+describe('languageProblem', () => {
+  // The two cross-language lines that were on Andy García Part 1, and the mural's ES block.
+  const es = 'Parte 1 de 2 🎬\n\nEn 1961, un niño de cinco años salió de La Habana con una maleta.\n\nLa parte 2 sale hoy a las 7 PM. Síguenos para que no te la pierdas.'
+  const en = "Part 1 of 2 🎬\n\nIn 1961, a five-year-old left Havana with one bag.\n\nPart 2 drops today at 8 PM. Follow so you don't miss it."
+  it('lets one-language captions, bilingual drafts and stories through', () => {
+    expect(languageProblem('es', 'post', `${es}\n\nLogo de The Godfather Part III (1990), Paramount Pictures, solo para identificarla.\n\n#ExilioCubano #Miami`)).toBeNull()
+    expect(languageProblem('en', 'post', `${en}\n\nLunch at La Mano Hispana in Hialeah, the best of the neighborhood.`)).toBeNull()
+    expect(languageProblem('both', 'post', `${es}\n\n${en}`)).toBeNull()
+    expect(languageProblem(null, 'post', `${es}\n\n${en}`)).toBeNull()
+    expect(languageProblem('es', 'story', `${es}\n\n${en}`)).toBeNull()
+  })
+  it('refuses a block or a note in the other language', () => {
+    expect(languageProblem('es', 'post', `${es}\n\nIn English: Part 2 drops today at 8 PM.`)).toMatch(/Spanish post.*In English: Part 2/)
+    expect(languageProblem('en', 'post', `${en}\n\nEn español: la parte 2 sale hoy a las 7 PM.`)).toMatch(/English post.*En español/)
+    expect(languageProblem('en', null, 'Overnight, they painted over the salsa legends mural on Calle Ocho.\n\nDe la noche a la mañana taparon el mural de las leyendas de la salsa en la Calle Ocho.')).toMatch(/English only.*De la noche/)
+    expect(languageProblem('es', 'post', `${es}\n\n${en}`)).toMatch(/Spanish only/)
   })
 })
 
@@ -128,6 +147,20 @@ describe('Facebook rule and cancelling, against the database', () => {
     })
     const ok = await make({ caption, format: 'story', platforms: ['instagram'], media: [mediaId], status: 'rejected' }, false)
     expect(ok.format).toBe('story')
+  })
+
+  it('refuses to save an English post with a Spanish block, and at Approve one saved around the check', async () => {
+    const caption = withFbLink('Overnight, they painted over the salsa legends mural on Calle Ocho.\n\nDe la noche a la mañana taparon el mural de las leyendas de la salsa en la Calle Ocho.')
+    await expect(make({ caption, language: 'en', media: [mediaId], status: 'rejected' }, false)).rejects.toMatchObject({
+      data: { errors: [expect.objectContaining({ path: 'caption', message: expect.stringMatching(/English only/) })] },
+    })
+    const both = await make({ caption, language: 'both', media: [mediaId], status: 'rejected' }, false)
+    expect(both.language).toBe('both')
+
+    const d = await make({ caption, language: 'en', media: [mediaId], status: 'pending' })
+    await payload.update({ collection: 'hq-social-drafts', id: d.id, data: { previewedHash: draftFingerprint(d as never) }, overrideAccess: true, context: { [HQ_INTERNAL]: true } })
+    expect(await decideDraft(payload, d.id, 'approve')).toMatch(/not posted.*English only/)
+    expect(calls).toHaveLength(0)
   })
 
   it('refuses at Approve a single-event feed post saved around the check', async () => {
