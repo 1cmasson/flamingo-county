@@ -70,6 +70,19 @@ export function storyProblem(
   return `An Instagram story goes to Instagram only, with exactly one photo or video (this one has ${platforms?.length ? platforms.join(', ') : 'no platform'} and ${mediaCount} file${mediaCount === 1 ? '' : 's'}).`
 }
 
+/**
+ * The owner's rule since 2026-10-11: a single event is never a feed post of
+ * its own. It goes out as an Instagram story, and the week's events share the
+ * Monday carousel (lib/weeklyRoundup.ts, which links /this-week). A feed post
+ * that links one event's page, directly or through a /go/ link, breaks it. On
+ * 2026-10-14 a hand-made copy of an event's story went out as a post.
+ */
+export function singleEventProblem(format: string | null | undefined, caption: string | null | undefined): string | null {
+  if (format === 'story') return null
+  if (!/\/(es|en)\/events\/[\w-]+/i.test(caption ?? '')) return null
+  return "A single event goes out as an Instagram story (format: story), never as a feed post. The week's events go in the Monday carousel."
+}
+
 /** TikTok caps the title at 90 characters; the caption itself can run to 2000. */
 const TIKTOK_TITLE_LIMIT = 90
 

@@ -3,7 +3,7 @@ import { getPayload, type Payload } from 'payload'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import config from '@payload-config'
 import { HQ_INTERNAL, cancelDraft, decideDraft, draftFingerprint } from '../../src/lib/hq'
-import { facebookProblem, storyProblem } from '../../src/lib/postiz'
+import { facebookProblem, singleEventProblem, storyProblem } from '../../src/lib/postiz'
 import { markPublished } from '../../src/lib/socialStats'
 import { FB_LINK, makeHqMedia, withFbLink } from './helpers/facebook'
 
@@ -32,6 +32,21 @@ describe('storyProblem', () => {
     expect(storyProblem('story', ['tiktok'], 1)).toMatch(/Instagram only/)
     expect(storyProblem('story', ['instagram'], 0)).toMatch(/exactly one photo or video.*0 files/)
     expect(storyProblem('story', ['instagram'], 2)).toMatch(/2 files/)
+  })
+})
+
+describe('singleEventProblem', () => {
+  const page = 'https://flamingocounty.com/es/events/free-immigration-consultations-2026-10-14'
+  it('lets a story, the weekly carousel and other posts through', () => {
+    expect(singleEventProblem('story', `Consultas 👉 ${page}`)).toBeNull()
+    expect(singleEventProblem('post', 'Lo que hay esta semana: https://flamingocounty.com/go/fb/72?to=/es/this-week')).toBeNull()
+    expect(singleEventProblem(null, 'More Miami stories: https://flamingocounty.com/en/stories')).toBeNull()
+    expect(singleEventProblem('post', 'All events: https://flamingocounty.com/es/events')).toBeNull()
+  })
+  it('refuses a feed post for one event, by its page or a /go/ link to it', () => {
+    expect(singleEventProblem('post', `Consultas 👉 ${page}`)).toMatch(/Instagram story/)
+    expect(singleEventProblem(undefined, `👉 ${page}`)).toMatch(/Instagram story/)
+    expect(singleEventProblem('post', 'https://flamingocounty.com/go/fb/9?to=/en/events/noche-de-son')).toMatch(/Instagram story/)
   })
 })
 
@@ -103,6 +118,22 @@ describe('Facebook rule and cancelling, against the database', () => {
     const msg = await decideDraft(payload, d.id, 'approve')
     expect(msg).toMatch(/not posted.*Instagram only/)
     expect((await payload.findByID({ collection: 'hq-social-drafts', id: d.id, overrideAccess: true })).status).toBe('pending')
+    expect(calls).toHaveLength(0)
+  })
+
+  it('refuses to save a feed post for a single event, and takes it as a story', async () => {
+    const caption = `Consultas de inmigración gratis\n👉 ${FB_LINK}/es/events/free-immigration-consultations-2026-10-14`
+    await expect(make({ caption, platforms: ['instagram'], media: [mediaId], status: 'rejected' }, false)).rejects.toMatchObject({
+      data: { errors: [expect.objectContaining({ path: 'caption', message: expect.stringMatching(/Instagram story/) })] },
+    })
+    const ok = await make({ caption, format: 'story', platforms: ['instagram'], media: [mediaId], status: 'rejected' }, false)
+    expect(ok.format).toBe('story')
+  })
+
+  it('refuses at Approve a single-event feed post saved around the check', async () => {
+    const d = await make({ caption: `x ${FB_LINK}/es/events/noche-de-son`, platforms: ['instagram'], media: [mediaId], status: 'pending' })
+    await payload.update({ collection: 'hq-social-drafts', id: d.id, data: { previewedHash: draftFingerprint(d as never) }, overrideAccess: true, context: { [HQ_INTERNAL]: true } })
+    expect(await decideDraft(payload, d.id, 'approve')).toMatch(/not posted.*Instagram story/)
     expect(calls).toHaveLength(0)
   })
 
