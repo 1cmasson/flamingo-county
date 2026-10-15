@@ -247,12 +247,18 @@ function capDay(r: Row, lang: Lang): string {
 export function caption(groups: CityGroup[], from: string, to: string, lang: Lang, fbLink?: string): string {
   const c = CAPTION[lang]
   const range = rangeText(from, to, lang).toLowerCase().replace(/\b([a-z])/g, (m) => (lang === 'en' ? m.toUpperCase() : m))
-  const blocks = groups.map((g) => {
-    const lines = g.rows.map((r) => [`• ${capDay(r, lang)}`, r.title[lang], r.venue].filter(Boolean).join(' · '))
-    return [g.name ? g.name.toUpperCase() : '', ...lines].filter(Boolean).join('\n')
-  })
   const save = fbLink ? c.saveFb(fbLink) : c.save
-  return [c.head(isWeekend(from, to), range), ...blocks, save].join('\n\n')
+  const write = (venues: boolean) => {
+    const blocks = groups.map((g) => {
+      const lines = g.rows.map((r) => [`• ${capDay(r, lang)}`, r.title[lang], venues ? r.venue : ''].filter(Boolean).join(' · '))
+      return [g.name ? g.name.toUpperCase() : '', ...lines].filter(Boolean).join('\n')
+    })
+    return [c.head(isWeekend(from, to), range), ...blocks, save].join('\n\n')
+  }
+  // A busy range runs past Instagram's limit with a venue on every line; the
+  // slides carry the venues, so the caption drops them before anything else.
+  const full = write(true)
+  return full.length > CAPTION_LIMIT ? write(false) : full
 }
 
 /* ------------------------------------------------------------------------ */

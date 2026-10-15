@@ -71,6 +71,15 @@ describe('events carousel', () => {
     expect(isWeekend('2026-10-19', '2026-10-25')).toBe(false)
   })
 
+  it('drops the venues from a caption that would pass Instagram\'s limit', () => {
+    const many = Array.from({ length: 30 }, (_, i) => ev(i + 1, '2026-10-24', { title: `Un evento con un título bastante largo ${i + 1}`, place: 'Biblioteca de Hialeah Gardens' }))
+    const groups = byCity(toRows(many, [], '2026-10-23', '2026-10-25'))
+    const text = caption(groups, '2026-10-23', '2026-10-25', 'es')
+    expect(text).not.toContain('Biblioteca de Hialeah Gardens')
+    expect(text.length).toBeLessThanOrEqual(2200)
+    expect(caption(byCity(toRows(many.slice(0, 3), [], '2026-10-23', '2026-10-25')), '2026-10-23', '2026-10-25', 'es')).toContain('Biblioteca de Hialeah Gardens')
+  })
+
   it('gives the weekend post its own colours', () => {
     expect(themeFor('2026-10-16', '2026-10-18').ticket).toBe('var(--pink)')
     expect(themeFor('2026-10-19', '2026-10-25').ticket).toBe('var(--yellow)')
