@@ -6,6 +6,11 @@
  *
  *   pnpm social:events -- --from 2026-10-19 --to 2026-10-25
  *   pnpm social:events -- --from 2026-10-23 --to 2026-10-25 --out ~/Desktop/x
+ *   pnpm social:events -- --from 2026-10-16 --to 2026-10-18 --events drafts.json
+ *
+ * `--events` draws from a file instead of the site: `{ es: Event[], en: Event[] }`
+ * (depth 2, as HQ's findEvents returns them with draft: true), so the owner
+ * can see the post before tapping Publish on the events in it.
  *
  * Slides, 1080×1350 (Instagram's 4:5), per language:
  *   1. the cover, a still: EVENTOS / EVENTS and the dates;
@@ -21,7 +26,7 @@
  * as everywhere else.
  */
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -86,7 +91,8 @@ export type Row = {
   started: boolean
   title: Record<Lang, string>
   time: Record<Lang, string>
-  venue: string
+  /** Each language's own venue name: "Biblioteca JFK" / "JFK Library". */
+  venue: Record<Lang, string>
   city: City | null
 }
 
@@ -116,6 +122,7 @@ export function toRows(es: Event[], en: Event[], from: string, to: string): Row[
     if (!days.length) continue
     const other = enById.get(ev.id) ?? ev
     const { name, city } = eventVenue(ev)
+    const enName = eventVenue(other).name || name
     rows.push({
       id: ev.id,
       slug: ev.slug,
@@ -124,7 +131,7 @@ export function toRows(es: Event[], en: Event[], from: string, to: string): Row[
       started: dateOnly(ev.date) < from,
       title: { es: ev.title.trim(), en: (other.title || ev.title).trim() },
       time: { es: ev.timeLabel ?? '', en: other.timeLabel ?? ev.timeLabel ?? '' },
-      venue: name,
+      venue: { es: name, en: enName },
       city,
     })
   }
@@ -250,7 +257,7 @@ export function caption(groups: CityGroup[], from: string, to: string, lang: Lan
   const save = fbLink ? c.saveFb(fbLink) : c.save
   const write = (venues: boolean) => {
     const blocks = groups.map((g) => {
-      const lines = g.rows.map((r) => [`• ${capDay(r, lang)}`, r.title[lang], venues ? r.venue : ''].filter(Boolean).join(' · '))
+      const lines = g.rows.map((r) => [`• ${capDay(r, lang)}`, r.title[lang], venues ? r.venue[lang] : ''].filter(Boolean).join(' · '))
       return [g.name ? g.name.toUpperCase() : '', ...lines].filter(Boolean).join('\n')
     })
     return [c.head(isWeekend(from, to), range), ...blocks, save].join('\n\n')
@@ -377,9 +384,9 @@ function listHtml(theme: Theme, lang: Lang, g: CityGroup, rows: Row[], part: num
   const items = rows
     .map((r) => {
       const day = dayText(r, lang)
-      const where = [r.time[lang], r.venue].filter(Boolean).join(' · ')
+      const where = [r.time[lang], r.venue[lang]].filter(Boolean).join(' · ')
       return `<div class="row"><div class="lucky day${day.length > 9 ? ' run' : ''}">${esc(day)}</div>
-        <div class="txt"><div class="lucky t">${escTitle(r.title[lang])}</div>${where ? `<div class="w">${esc(where)}</div>` : ''}</div></div>`
+        <div class="txt"><div class="lucky t">${escTitle(r.title[lang].toLocaleUpperCase(lang))}</div>${where ? `<div class="w">${esc(where)}</div>` : ''}</div></div>`
     })
     .join('')
   // Pull in the rows the mascot overlaps, then again: a row that wraps to a
@@ -555,14 +562,17 @@ async function main() {
   const from = arg('from')
   const to = arg('to')
   if (!from || !to || !ISO.test(from) || !ISO.test(to) || to < from) {
-    console.error('Usage: pnpm social:events -- --from YYYY-MM-DD --to YYYY-MM-DD [--out DIR] [--site URL]')
+    console.error('Usage: pnpm social:events -- --from YYYY-MM-DD --to YYYY-MM-DD [--out DIR] [--site URL] [--events FILE]')
     process.exit(2)
   }
   const site = (arg('site') ?? 'https://flamingocounty.com').replace(/\/$/, '')
   const out = resolve(arg('out')?.replace(/^~/, homedir()) ?? join(homedir(), 'Movies/Flamingo County Reels', `${from} events carousel`))
   mkdirSync(out, { recursive: true })
 
-  const [es, en] = await Promise.all([fetchEvents(site, from, to, 'es'), fetchEvents(site, from, to, 'en')])
+  const file = arg('events')
+  const [es, en] = file
+    ? (({ es, en }: { es: Event[]; en: Event[] }) => [es, en])(JSON.parse(readFileSync(resolve(file), 'utf8')))
+    : await Promise.all([fetchEvents(site, from, to, 'es'), fetchEvents(site, from, to, 'en')])
   const rows = toRows(es, en, from, to)
   if (!rows.length) {
     console.log(`No published events between ${from} and ${to}: nothing to draw.`)

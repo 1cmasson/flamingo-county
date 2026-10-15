@@ -44,6 +44,7 @@ describe('events carousel', () => {
     expect(rows[0].title).toEqual({ es: 'Evento 1', en: 'Event 1' })
     // No English version: the Spanish title stands in rather than nothing.
     expect(rows[1].title.en).toBe('Evento 6')
+    expect(rows[0].venue).toEqual({ es: 'Lugar 1', en: 'Lugar 1' })
 
     const groups = byCity(rows)
     expect(groups.map((g) => [g.slug, g.name, g.rows.length])).toEqual([
