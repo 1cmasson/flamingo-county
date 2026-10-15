@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { City, Event } from '../../src/payload-types'
-import { byCity, caption, chunk, dayText, isWeekend, rangeText, toRows, type Row } from '../../scripts/social/events-carousel'
+import { byCity, caption, chunk, dayText, isWeekend, rangeText, themeFor, toRows, type Row } from '../../scripts/social/events-carousel'
 
 const hialeah = { id: 1, slug: 'hialeah', name: 'HIALEAH', order: 0 } as City
 const lakes = { id: 2, slug: 'lakes', name: 'MIAMI LAKES', order: 1 } as City
@@ -69,6 +69,12 @@ describe('events carousel', () => {
     expect(rangeText('2026-10-30', '2026-11-01', 'en')).toBe('OCT 30 – NOV 1')
     expect(isWeekend('2026-10-23', '2026-10-25')).toBe(true)
     expect(isWeekend('2026-10-19', '2026-10-25')).toBe(false)
+  })
+
+  it('gives the weekend post its own colours', () => {
+    expect(themeFor('2026-10-16', '2026-10-18').ticket).toBe('var(--pink)')
+    expect(themeFor('2026-10-19', '2026-10-25').ticket).toBe('var(--yellow)')
+    expect(themeFor('2026-10-19', '2026-10-25').grade).toBeNull()
   })
 
   it('writes a caption per city, with "link in bio" on Instagram and the link on Facebook', () => {
