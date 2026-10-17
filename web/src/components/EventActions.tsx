@@ -59,6 +59,8 @@ export function EventActions({
 
   return (
     <div
+      data-use-tool="event"
+      data-use-target={slug}
       style={{
         marginTop: 'auto',
         paddingTop: 11,
@@ -71,6 +73,8 @@ export function EventActions({
     >
       <button
         type="button"
+        // Counted when it turns on (lib/uses.ts), not when it's undone.
+        data-use={on ? undefined : 'going'}
         onClick={() => requireSignIn({ kind: 'going', slug }, () => toggleGoing(slug))}
         aria-pressed={on}
         className={s.chipLift}
@@ -84,6 +88,7 @@ export function EventActions({
       </button>
       <button
         type="button"
+        data-use={inWeek ? undefined : 'save'}
         onClick={() => requireSignIn({ kind: 'save', slug }, () => toggleSaved(slug))}
         aria-pressed={inWeek}
         className={s.chipLift}
@@ -98,6 +103,7 @@ export function EventActions({
       <a
         href={icsHref}
         download={`${slug}.ics`}
+        data-use="calendar"
         className={s.chipLift}
         style={{
           flex: '1 1 100%',

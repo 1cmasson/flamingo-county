@@ -204,7 +204,7 @@ export default buildConfig({
         'hq-uses': {
           enabled: { find: true },
           description:
-            'What people do on the address tool: lookup, not_found, calendar (the .ics downloaded), print, open_chrome / copy_link (ways out of an app\'s built-in browser), map, change, link (with the card in section). area = the municipality, never the address. hqGrowthContext summarizes them as toolUse; query rows only for a detail it lacks.',
+            'What people do on the site, one row per action. tool: address, listing, event, story, route, search, page. action: lookup, not_found, calendar, print, open_chrome / copy_link, map, change, link (address); call, email, directions, website, social (with network); going, save (events); read_end (stories); search, no_match (with term, kept only when it is one of the site\'s words, and results). target = the public slug it was about; area = a municipality, never an address. hqGrowthContext summarizes them as toolUse; query rows only for a detail it lacks, e.g. one partner\'s taps.',
         },
         'hq-experiments': {
           enabled: { find: true, create: true, update: true },

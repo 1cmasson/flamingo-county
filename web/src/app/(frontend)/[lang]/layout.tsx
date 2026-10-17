@@ -12,6 +12,7 @@ import { DEFAULT_OG_IMAGE, SITE_NAME } from '../../../lib/site'
 import { MemberProvider } from '../../../components/MemberProvider'
 import { WebVitals } from '../../../components/WebVitals'
 import { Pageview } from '../../../components/Pageview'
+import { ClickTracker } from '../../../components/UseTracker'
 import { auth } from '../../../lib/auth'
 import { webviewCopy } from '../../../lib/memberCopy'
 import { detectWebview } from '../../../lib/webview'
@@ -152,6 +153,7 @@ export default async function LangLayout({
         />
         <WebVitals />
         <Pageview />
+        <ClickTracker />
         {/* Flex column over nav, content and footer, so a short page's slack
             is absorbed by the content area and the footer stays flush with
             the bottom of the screen instead of leaving a gap below it. `svh`

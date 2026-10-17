@@ -15,6 +15,7 @@ import { faqJsonLd, mediaUrl, storyJsonLd, videoJsonLd } from '../../../../../li
 import { openGraph, twitterCard } from '../../../../../lib/site'
 import { FULL_WIDTH_SIZES } from '../../../../../lib/srcset'
 import chrome from '../../../../../components/chrome.module.css'
+import { UseWhenSeen } from '../../../../../components/UseTracker'
 
 /**
  * Rendered per request, always.
@@ -176,6 +177,8 @@ export default async function StoryPage({
         </div>
 
         <article
+          data-use-tool="story"
+          data-use-target={slug}
           style={{
             maxWidth: 1180,
             margin: '0 auto',
@@ -461,6 +464,9 @@ export default async function StoryPage({
               </div>
             </div>
           </div>
+
+          {/* The end of the story: reaching it counts as read to the end (lib/uses.ts). */}
+          <UseWhenSeen tool="story" action="read_end" target={slug} />
 
           {/* --- Read another --- */}
           {others.length ? (
