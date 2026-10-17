@@ -32,6 +32,7 @@ export function OpenInBrowser({
           <a
             className={s.action}
             href="#"
+            data-use="open_chrome"
             onClick={(e) => {
               e.preventDefault()
               window.location.href = chromeIntent(window.location.href)
@@ -43,6 +44,7 @@ export function OpenInBrowser({
         <button
           type="button"
           className={`${s.action} ${s.actionAlt}`}
+          data-use="copy_link"
           onClick={async () => {
             try {
               await navigator.clipboard.writeText(window.location.href)
