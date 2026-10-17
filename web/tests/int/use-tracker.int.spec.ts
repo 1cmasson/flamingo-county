@@ -2,7 +2,7 @@ import { createElement } from 'react'
 import { cleanup, fireEvent, render } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import { UseClicks, UseOnce } from '@/components/UseTracker'
+import { clickUse, UseClicks, UseOnce } from '@/components/UseTracker'
 
 /**
  * The browser half of the address tool's use counter: what each tap on the
@@ -53,8 +53,8 @@ describe('UseClicks', () => {
     fireEvent.click(getByTestId('flood'), { button: 0 })
     await flush()
     expect(sent).toEqual([
-      { action: 'print', area: 'HIALEAH', lang: 'es' },
-      { action: 'link', section: 'flood', area: 'HIALEAH', lang: 'es' },
+      { tool: 'address', action: 'print', area: 'HIALEAH', lang: 'es', path: '/' },
+      { tool: 'address', action: 'link', section: 'flood', area: 'HIALEAH', lang: 'es', path: '/' },
     ])
   })
 
@@ -74,7 +74,7 @@ describe('UseOnce', () => {
     rerender(el)
     render(createElement(UseOnce, { action: 'lookup', once: '5410-w-6-ln-33012', area: 'HIALEAH', lang: 'es' }))
     await flush()
-    expect(sent).toEqual([{ action: 'lookup', area: 'HIALEAH', lang: 'es' }])
+    expect(sent).toEqual([{ tool: 'address', action: 'lookup', area: 'HIALEAH', lang: 'es', path: '/' }])
     expect(JSON.stringify(sent)).not.toMatch(/5410/)
   })
 
@@ -84,5 +84,43 @@ describe('UseOnce', () => {
     await flush()
     delete (navigator as { webdriver?: boolean }).webdriver
     expect(sent).toEqual([])
+  })
+})
+
+describe('clickUse (the site-wide listener)', () => {
+  const page = () =>
+    render(
+      createElement(
+        'main',
+        { 'data-use-tool': 'listing', 'data-use-target': 'el-gallo' },
+        createElement('a', { href: 'tel:+13055551234', 'data-testid': 'tel' }, createElement('span', null, 'call')),
+        createElement('a', { href: 'https://www.instagram.com/elgallo/', 'data-testid': 'ig' }, 'ig'),
+        createElement('a', { href: '/es/hialeah', 'data-testid': 'inside' }, 'inside'),
+        createElement(
+          'div',
+          { 'data-use-tool': 'event', 'data-use-target': 'son-night' },
+          createElement('button', { 'data-use': 'save', 'data-testid': 'save' }, 'save'),
+        ),
+        createElement('div', { 'data-use-local': '' }, createElement('a', { href: 'tel:1', 'data-testid': 'local' }, 'x')),
+      ),
+    )
+  const own = 'flamingocounty.com'
+
+  it('names the tap in its page\'s context, the nearest one winning', () => {
+    const { getByTestId } = page()
+    expect(clickUse(getByTestId('tel').firstChild, own)).toEqual({ tool: 'listing', target: 'el-gallo', action: 'call' })
+    expect(clickUse(getByTestId('ig'), own)).toEqual({ tool: 'listing', target: 'el-gallo', action: 'social', network: 'instagram' })
+    expect(clickUse(getByTestId('save'), own)).toEqual({ tool: 'event', target: 'son-night', action: 'save' })
+  })
+
+  it('leaves links inside the site, and the address report\'s own counter, alone', () => {
+    const { getByTestId } = page()
+    expect(clickUse(getByTestId('inside'), own)).toBeNull()
+    expect(clickUse(getByTestId('local'), own)).toBeNull()
+  })
+
+  it('is "page" where the page says nothing', () => {
+    const { container } = render(createElement('a', { href: 'https://maps.apple.com/?daddr=x' }, 'go'))
+    expect(clickUse(container.querySelector('a'), own)).toEqual({ tool: 'page', target: undefined, action: 'directions' })
   })
 })
