@@ -1,9 +1,12 @@
 import { notFound } from 'next/navigation'
-import type { NextRequest } from 'next/server'
+import { after, type NextRequest } from 'next/server'
+import { getPayload } from 'payload'
+import config from '../../../../payload.config'
 import { isLang } from '../../../../i18n'
 import { addressReport, prettyAddress, rrule, type Pickup } from '../../../../lib/civic'
 import { addressCopy } from '../../../../lib/addressCopy'
 import { addDays } from '../../../../lib/dates'
+import { recordUse } from '../../../../lib/uses'
 
 /** RFC 5545 escaping for text values. */
 const esc = (s: string) => s.replace(/\\/g, '\\\\').replace(/;/g, '\;').replace(/,/g, '\\,').replace(/\r?\n/g, '\\n')
@@ -84,11 +87,18 @@ export async function GET(req: NextRequest) {
     ...event('bulk', r.trash.bulk, r.trash.bulk?.by === 'hialeah' ? c.bulkShort : ''),
     'END:VCALENDAR',
   ]
+  // The "it worked" moment of the address tool: counted here, where the file
+  // is served, not on the tap. Only the municipality is kept, never the address.
+  const headers = new Headers(req.headers)
+  after(async () => {
+    await recordUse(await getPayload({ config }), { action: 'calendar', area: r.munic, lang }, headers)
+  })
   return new Response(lines.map(fold).join('\r\n') + '\r\n', {
     headers: {
       'Content-Type': 'text/calendar; charset=utf-8',
       'Content-Disposition': `attachment; filename="${slug}.ics"`,
-      'Cache-Control': 'public, max-age=3600',
+      // Private: a shared cache answering a download would skip the count.
+      'Cache-Control': 'private, max-age=3600',
     },
   })
 }

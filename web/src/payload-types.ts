@@ -91,6 +91,7 @@ export interface Config {
     'hq-publish-requests': HqPublishRequest;
     'hq-chat-turns': HqChatTurn;
     'hq-visits': HqVisit;
+    'hq-uses': Hqus;
     'hq-experiments': HqExperiment;
     'hq-artwork-uploads': HqArtworkUpload;
     'payload-mcp-api-keys': PayloadMcpApiKey;
@@ -125,6 +126,7 @@ export interface Config {
     'hq-publish-requests': HqPublishRequestsSelect<false> | HqPublishRequestsSelect<true>;
     'hq-chat-turns': HqChatTurnsSelect<false> | HqChatTurnsSelect<true>;
     'hq-visits': HqVisitsSelect<false> | HqVisitsSelect<true>;
+    'hq-uses': HqUsesSelect<false> | HqUsesSelect<true>;
     'hq-experiments': HqExperimentsSelect<false> | HqExperimentsSelect<true>;
     'hq-artwork-uploads': HqArtworkUploadsSelect<false> | HqArtworkUploadsSelect<true>;
     'payload-mcp-api-keys': PayloadMcpApiKeysSelect<false> | PayloadMcpApiKeysSelect<true>;
@@ -1415,6 +1417,34 @@ export interface HqVisit {
   createdAt: string;
 }
 /**
+ * What people do on the address tool. Never the address, no IPs, cookies or visitor ids. Bots and signed-in staff are not counted.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-uses".
+ */
+export interface Hqus {
+  id: number;
+  tool: 'address';
+  action: 'lookup' | 'not_found' | 'calendar' | 'print' | 'open_chrome' | 'copy_link' | 'map' | 'change' | 'link';
+  /**
+   * For "link": which card of the report.
+   */
+  section?: ('trash' | 'bus' | 'flood' | 'reps' | 'vote' | 'schools' | 'near' | 'sources') | null;
+  /**
+   * The municipality of the address looked up ("HIALEAH"). Never the address.
+   */
+  area?: string | null;
+  lang?: ('es' | 'en') | null;
+  /**
+   * A normal browser, or an app’s built-in one (where the calendar button is hidden).
+   */
+  browser?: ('browser' | 'instagram' | 'facebook' | 'tiktok' | 'other-app') | null;
+  device?: ('mobile' | 'desktop') | null;
+  country?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Growth experiments: what we tried, what we expected, what happened. Kept by the growth review.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1586,6 +1616,12 @@ export interface PayloadMcpApiKey {
      */
     find?: boolean | null;
   };
+  hqUses?: {
+    /**
+     * Allow clients to find hq-uses.
+     */
+    find?: boolean | null;
+  };
   hqExperiments?: {
     /**
      * Allow clients to find hq-experiments.
@@ -1738,7 +1774,7 @@ export interface PayloadMcpApiKey {
      */
     hqWeeklyReviewContext?: boolean | null;
     /**
-     * Everything the growth review needs, in one call, as JSON: the goal; the site’s own traffic for 28 days (visits and views, by day, channel, source, referring site, landing page, language, device and place); what is on the site; what shipped (publishes, scheduled posts); intake counts; the experiment ledger; open tasks; and everything hqWeeklyReviewContext returns (social report, playbook, upcoming events, recent stories, pending drafts). Read-only. Published content only; no contact details. Follow web/hq/growth-review.md.
+     * Everything the growth review needs, in one call, as JSON: the goal; the site’s own traffic for 28 days (visits and views, by day, channel, source, referring site, landing page, language, device and place); how people use the address tool (toolUse: lookups, calendar downloads, in-app-browser escapes, card links); what is on the site; what shipped (publishes, scheduled posts); intake counts; the experiment ledger; open tasks; and everything hqWeeklyReviewContext returns (social report, playbook, upcoming events, recent stories, pending drafts). Read-only. Published content only; no contact details. Follow web/hq/growth-review.md.
      */
     hqGrowthContext?: boolean | null;
     /**
@@ -2013,6 +2049,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'hq-visits';
         value: number | HqVisit;
+      } | null)
+    | ({
+        relationTo: 'hq-uses';
+        value: number | Hqus;
       } | null)
     | ({
         relationTo: 'hq-experiments';
@@ -2747,6 +2787,22 @@ export interface HqVisitsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-uses_select".
+ */
+export interface HqUsesSelect<T extends boolean = true> {
+  tool?: T;
+  action?: T;
+  section?: T;
+  area?: T;
+  lang?: T;
+  browser?: T;
+  device?: T;
+  country?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "hq-experiments_select".
  */
 export interface HqExperimentsSelect<T extends boolean = true> {
@@ -2825,6 +2881,11 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         find?: T;
       };
   hqVisits?:
+    | T
+    | {
+        find?: T;
+      };
+  hqUses?:
     | T
     | {
         find?: T;

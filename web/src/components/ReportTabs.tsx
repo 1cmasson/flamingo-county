@@ -64,7 +64,7 @@ export function ReportTabs({
         <button type="button" role="tab" aria-selected={view === 'list'} className={s.tab} onClick={() => pick('list')}>
           📋 {copy.list}
         </button>
-        <button type="button" role="tab" aria-selected={view === 'map'} className={s.tab} onClick={() => pick('map')}>
+        <button type="button" role="tab" aria-selected={view === 'map'} className={s.tab} data-use="map" onClick={() => pick('map')}>
           🗺️ {copy.map}
         </button>
       </div>
