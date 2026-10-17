@@ -151,7 +151,7 @@ export async function toolUseReport(payload: Payload, days: number, now: Date = 
   const lookups = of('lookup')
   return {
     days,
-    note: 'Address tool use (hq-uses), one row per action, nothing identifying and never the address; bots and staff not counted. lookup = a report was shown; calendar = the .ics was downloaded (the "it worked" moment); open_chrome / copy_link = ways out of an app\'s built-in browser, where the calendar button is hidden. Counted from the day this shipped.',
+    note: 'Address tool use (hq-uses), one row per action, nothing identifying and never the address; bots and staff not counted. lookup = a report was shown; calendar = the .ics was downloaded (the "it worked" moment); open_chrome / copy_link = ways out of an app\'s built-in browser, where the calendar button is hidden. Someone who escapes an app\'s browser loads the same report again in Safari or Chrome, so they count as two lookups (one in the app, one in a browser): read calendarPerLookup for reel traffic with that in mind. Counted from the day this shipped.',
     actions: count(rows.map((r) => r.action)),
     lookupsByBrowser: count(lookups.map((r) => r.browser ?? 'browser')),
     lookupsByArea: count(lookups.map((r) => r.area ?? 'unknown')),
