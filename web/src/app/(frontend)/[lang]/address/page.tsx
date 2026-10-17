@@ -39,6 +39,7 @@ import { AddressSearch } from '../../../../components/AddressSearch'
 import { PrintButton } from '../../../../components/PrintButton'
 import { OpenInBrowser } from '../../../../components/OpenInBrowser'
 import { ExploreMap, ReportTabs } from '../../../../components/ReportTabs'
+import { UseClicks, UseOnce } from '../../../../components/UseTracker'
 import { isMapLens, type LensId } from '../../../../lib/mapLenses'
 import { detectWebview, type Webview } from '../../../../lib/webview'
 import { HoursLines, LineBullet } from '../../../../components/Transit'
@@ -115,7 +116,10 @@ export default async function AddressPage({ params, searchParams }: Props) {
           })}
         />
         {report ? (
-          <Report r={report} lang={lang} c={c} webview={webview} mc={mc} view={view} lens={lens} version={version} />
+          <UseClicks area={report.munic} lang={lang}>
+            <UseOnce action="lookup" once={report.slug} area={report.munic} lang={lang} />
+            <Report r={report} lang={lang} c={c} webview={webview} mc={mc} view={view} lens={lens} version={version} />
+          </UseClicks>
         ) : null}
 
         <header className={`${s.hero} ${report ? s.noPrint : ''}`} id="search">
@@ -131,7 +135,10 @@ export default async function AddressPage({ params, searchParams }: Props) {
           {!ready ? (
             <p className={s.note}>{c.notReady}</p>
           ) : slug && !report ? (
-            <p className={s.note}>{c.notFound}</p>
+            <>
+              <p className={s.note}>{c.notFound}</p>
+              <UseOnce action="not_found" once={slug} lang={lang} />
+            </>
           ) : null}
           <AddressSearch lang={lang} copy={searchCopyText} />
           <p className={s.coverage}>{c.coverage}</p>
@@ -218,7 +225,7 @@ function Report({
               <PrintButton label={c.print} />
             </>
           ) : null}
-          <a className={`${s.action} ${s.actionAlt}`} href="#search">
+          <a className={`${s.action} ${s.actionAlt}`} href="#search" data-use="change">
             {c.change}
           </a>
         </div>

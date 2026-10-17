@@ -29,6 +29,7 @@ import { HqClicks } from './collections/HqClicks'
 import { HqPublishRequests } from './collections/HqPublishRequests'
 import { HqChatTurns } from './collections/HqChatTurns'
 import { HqVisits } from './collections/HqVisits'
+import { HqUses } from './collections/HqUses'
 import { HqExperiments } from './collections/HqExperiments'
 import { HqArtworkUploads } from './collections/HqArtworkUploads'
 import { eveningWrap } from './jobs/eveningWrap'
@@ -93,6 +94,7 @@ export default buildConfig({
     HqPublishRequests,
     HqChatTurns,
     HqVisits,
+    HqUses,
     HqExperiments,
     HqArtworkUploads,
   ],
@@ -198,6 +200,11 @@ export default buildConfig({
           enabled: { find: true },
           description:
             'Page views from the site’s own counter (no IPs or visitor ids). entry = first page of a visit. hqGrowthContext summarizes them; query rows only for a detail it lacks.',
+        },
+        'hq-uses': {
+          enabled: { find: true },
+          description:
+            'What people do on the address tool: lookup, not_found, calendar (the .ics downloaded), print, open_chrome / copy_link (ways out of an app\'s built-in browser), map, change, link (with the card in section). area = the municipality, never the address. hqGrowthContext summarizes them as toolUse; query rows only for a detail it lacks.',
         },
         'hq-experiments': {
           enabled: { find: true, create: true, update: true },
