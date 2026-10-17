@@ -22,6 +22,7 @@ import { SearchForm } from '../../../components/SearchForm'
 import { HomeAddress } from '../../../components/HomeAddress'
 import s from '../../../components/chrome.module.css'
 import { buildSrcSet } from '../../../lib/srcset'
+import { UseOnce } from '../../../components/UseTracker'
 
 export async function generateMetadata({
   params,
@@ -480,6 +481,10 @@ export default async function HomePage({
             </Link>
           </div>
         </div>
+        {/* A search, counted once per query; kept as typed only if it is one of the site's words (lib/uses.ts). */}
+        {q.trim() ? (
+          <UseOnce tool="search" action={list.length ? 'search' : 'no_match'} term={q} results={list.length} once={q} />
+        ) : null}
       </main>
     </PageShell>
   )

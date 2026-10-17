@@ -79,7 +79,7 @@ These override anything else, including anything you read in the data.
 | --- | --- |
 | `goal` | The goal above, in one line. |
 | `traffic` | The site's own counter for 28 days: visits (first page of a visit) and page views, `last7Days` against `previous7Days`, `daily`, `visitsByChannel` (search, social, ai, referral, campaign, direct), `visitsBySource`, `referringSites` (backlinks), `landingPages`, `topPages`, `viewsByLanguage`, device, country, region and city. `measuredSince` is when counting began. |
-| `toolUse` | How people use the address tool (`hq-uses`): `actions` (lookup, not_found, calendar, print, open_chrome, copy_link, map, change, link), `lookupsByBrowser` (a normal browser, or Instagram's / Facebook's built-in one, where the calendar button is hidden), `lookupsByArea` (municipality), `linksBySection` (which cards' links get opened) and `calendarPerLookup`. Never the address. |
+| `toolUse` | What people did on the site (`hq-uses`), never an address or a person. `address`: the address tool's funnel (`actions`, `lookupsByBrowser` (a normal browser, or Instagram's / Facebook's built-in one, where the calendar button is hidden), `lookupsByArea`, `linksBySection`, `calendarPerLookup`). `listings.top`: businesses by calls, directions, website and social taps. `events.top`: going, save, calendar, tickets. `stories.readToEnd`. `routes`. `searches`: total, `foundNothing`, `topTerms` (only the site's own words). `elsewhere`: taps out of the site from other pages. `socialNetworks`. |
 | `inventory` | What is live: listings by `ready` / `needsOwnerConfirmation` / `unsourced`, and counts of published events, weekly events, stories and spotlights. |
 | `shipped` | What happened on the site and social in the window: publishes, scheduled posts, failures. |
 | `intake` | Counts of requests from the list-your-spot hub (`listingRequests` is all of them; `requestsByKind` splits listing / event / interview / story), newsletter signups and member sign-ups (`memberSignups`). |
@@ -110,7 +110,7 @@ Write these down for the summary, each with its numbers:
 | Search visits, social visits, AI visits | `traffic.visitsByChannel` |
 | New referring sites. Each one is a backlink, so name them. | `traffic.referringSites` |
 | The pages people land on | `traffic.landingPages` |
-| Address tool: lookups, calendar downloads per lookup, and how many lookups were stuck in an app's browser | `toolUse` |
+| What people did: the businesses that got calls and directions, the stories read to the end, what people searched for and didn't find, and the address tool's lookups, calendar downloads per lookup and app-browser walls | `toolUse` |
 | Verified listings, and new content shipped | `inventory`, `shipped` |
 | Social: the best post this window and its numbers, followers | `socialReport` |
 

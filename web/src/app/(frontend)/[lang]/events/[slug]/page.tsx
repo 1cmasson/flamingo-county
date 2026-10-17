@@ -165,6 +165,8 @@ export default async function EventPage({
         ]}
       />
       <main
+        data-use-tool="event"
+        data-use-target={slug}
         style={{
           maxWidth: 1180,
           margin: '0 auto',

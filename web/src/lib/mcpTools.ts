@@ -1001,7 +1001,7 @@ export const hqMcpTools: McpTool[] = [
   {
     name: 'hqGrowthContext',
     description:
-      'Everything the growth review needs, in one call, as JSON: the goal; the site\u2019s own traffic for 28 days (visits and views, by day, channel, source, referring site, landing page, language, device and place); how people use the address tool (toolUse: lookups, calendar downloads, in-app-browser escapes, card links); what is on the site; what shipped (publishes, scheduled posts); intake counts; the experiment ledger; open tasks; and everything hqWeeklyReviewContext returns (social report, playbook, upcoming events, recent stories, pending drafts). Read-only. Published content only; no contact details. Follow web/hq/growth-review.md.',
+      'Everything the growth review needs, in one call, as JSON: the goal; the site\u2019s own traffic for 28 days (visits and views, by day, channel, source, referring site, landing page, language, device and place); what people did on the site (toolUse: calls, directions and website taps per business, event saves, stories read to the end, searches, and the address tool\u2019s lookups and calendar downloads); what is on the site; what shipped (publishes, scheduled posts); intake counts; the experiment ledger; open tasks; and everything hqWeeklyReviewContext returns (social report, playbook, upcoming events, recent stories, pending drafts). Read-only. Published content only; no contact details. Follow web/hq/growth-review.md.',
     parameters: {},
     handler: (_args: Record<string, unknown>, req: PayloadRequest) =>
       guard(async () => text(JSON.stringify(await growthContext(req.payload), null, 2))),

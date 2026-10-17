@@ -1417,19 +1417,58 @@ export interface HqVisit {
   createdAt: string;
 }
 /**
- * What people do on the address tool. Never the address, no IPs, cookies or visitor ids. Bots and signed-in staff are not counted.
+ * What people do on the site: calls, directions, website taps, saves, searches, the address tool. Never an address, no IPs, cookies or visitor ids. Bots and signed-in staff are not counted.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "hq-uses".
  */
 export interface Hqus {
   id: number;
-  tool: 'address';
-  action: 'lookup' | 'not_found' | 'calendar' | 'print' | 'open_chrome' | 'copy_link' | 'map' | 'change' | 'link';
+  tool: 'address' | 'listing' | 'event' | 'story' | 'route' | 'search' | 'page';
+  action:
+    | 'lookup'
+    | 'not_found'
+    | 'calendar'
+    | 'print'
+    | 'open_chrome'
+    | 'copy_link'
+    | 'map'
+    | 'change'
+    | 'link'
+    | 'call'
+    | 'email'
+    | 'directions'
+    | 'website'
+    | 'social'
+    | 'going'
+    | 'save'
+    | 'read_end'
+    | 'search'
+    | 'no_match';
   /**
    * For "link": which card of the report.
    */
   section?: ('trash' | 'bus' | 'flood' | 'reps' | 'vote' | 'schools' | 'near' | 'sources') | null;
+  /**
+   * The public page it was about: a business, event or story slug, or a free-ride line.
+   */
+  target?: string | null;
+  /**
+   * For "social": which network.
+   */
+  network?: ('instagram' | 'facebook' | 'tiktok' | 'x' | 'youtube' | 'whatsapp' | 'threads') | null;
+  /**
+   * A search, only when it is one of the site’s own words.
+   */
+  term?: string | null;
+  /**
+   * How many businesses the search found.
+   */
+  results?: number | null;
+  /**
+   * The page, without its query.
+   */
+  path?: string | null;
   /**
    * The municipality of the address looked up ("HIALEAH"). Never the address.
    */
@@ -1774,7 +1813,7 @@ export interface PayloadMcpApiKey {
      */
     hqWeeklyReviewContext?: boolean | null;
     /**
-     * Everything the growth review needs, in one call, as JSON: the goal; the site’s own traffic for 28 days (visits and views, by day, channel, source, referring site, landing page, language, device and place); how people use the address tool (toolUse: lookups, calendar downloads, in-app-browser escapes, card links); what is on the site; what shipped (publishes, scheduled posts); intake counts; the experiment ledger; open tasks; and everything hqWeeklyReviewContext returns (social report, playbook, upcoming events, recent stories, pending drafts). Read-only. Published content only; no contact details. Follow web/hq/growth-review.md.
+     * Everything the growth review needs, in one call, as JSON: the goal; the site’s own traffic for 28 days (visits and views, by day, channel, source, referring site, landing page, language, device and place); what people did on the site (toolUse: calls, directions and website taps per business, event saves, stories read to the end, searches, and the address tool’s lookups and calendar downloads); what is on the site; what shipped (publishes, scheduled posts); intake counts; the experiment ledger; open tasks; and everything hqWeeklyReviewContext returns (social report, playbook, upcoming events, recent stories, pending drafts). Read-only. Published content only; no contact details. Follow web/hq/growth-review.md.
      */
     hqGrowthContext?: boolean | null;
     /**
@@ -2793,6 +2832,11 @@ export interface HqUsesSelect<T extends boolean = true> {
   tool?: T;
   action?: T;
   section?: T;
+  target?: T;
+  network?: T;
+  term?: T;
+  results?: T;
+  path?: T;
   area?: T;
   lang?: T;
   browser?: T;

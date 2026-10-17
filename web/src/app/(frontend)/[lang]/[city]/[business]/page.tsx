@@ -201,6 +201,8 @@ export default async function BusinessPage({
         ]}
       />
       <main
+        data-use-tool="listing"
+        data-use-target={listing.slug}
         style={{
           maxWidth: 1180,
           margin: '0 auto',

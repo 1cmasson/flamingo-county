@@ -24,6 +24,7 @@ import { TRANSIT } from '../../../../lib/transit'
 import { BusinessCard } from '../../../../components/BusinessCard'
 import { SearchForm } from '../../../../components/SearchForm'
 import { buildSrcSet } from '../../../../lib/srcset'
+import { UseOnce } from '../../../../components/UseTracker'
 
 /**
  * Rendered per request, always.
@@ -429,6 +430,10 @@ export default async function CityPage({
             )}
           </>
         )}
+        {/* A search, counted once per query; kept as typed only if it is one of the site's words (lib/uses.ts). */}
+        {q.trim() ? (
+          <UseOnce tool="search" action={list.length ? 'search' : 'no_match'} term={q} results={list.length} once={q} />
+        ) : null}
       </main>
     </PageShell>
   )

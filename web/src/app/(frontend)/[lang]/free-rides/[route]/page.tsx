@@ -86,6 +86,8 @@ export default async function FreeRoutePage({ params }: { params: Promise<{ lang
     <PageShell>
       <StopHighlight />
       <main
+        data-use-tool="route"
+        data-use-target={route.slug}
         style={{
           maxWidth: 1180,
           margin: '0 auto',
