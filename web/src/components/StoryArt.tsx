@@ -25,7 +25,10 @@ export function StoryArt({
   size?: 'sm' | 'md' | 'lg'
 }) {
   if (media && typeof media === 'object' && media.url) {
-    return <MediaSlot media={media} sizes={sizes} priority={priority} />
+    // Crop around the photo's focal point when one is set, as the cover card does.
+    const position =
+      media.focalX != null && media.focalY != null ? `${media.focalX}% ${media.focalY}%` : undefined
+    return <MediaSlot media={media} sizes={sizes} priority={priority} style={{ objectPosition: position }} />
   }
   const fontSize = { sm: 'clamp(30px,8vw,40px)', md: 'clamp(38px,10vw,64px)', lg: 'clamp(44px,11vw,96px)' }[size]
   return (

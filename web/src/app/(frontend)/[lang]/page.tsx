@@ -11,6 +11,7 @@ import {
   getListings,
   getSiteSettings,
   getSpotlights,
+  getStories,
   rel,
 } from '../../../lib/data'
 import type { City, Listing, Media } from '../../../payload-types'
@@ -20,6 +21,7 @@ import { NewsletterForm } from '../../../components/NewsletterForm'
 import { MediaSlot } from '../../../components/MediaSlot'
 import { SearchForm } from '../../../components/SearchForm'
 import { HomeAddress } from '../../../components/HomeAddress'
+import { StoryArt } from '../../../components/StoryArt'
 import s from '../../../components/chrome.module.css'
 import { buildSrcSet } from '../../../lib/srcset'
 import { UseOnce } from '../../../components/UseTracker'
@@ -61,14 +63,18 @@ export default async function HomePage({
   const cityKey = sp.city ?? ''
   const q = sp.q ?? ''
 
-  const [cities, settings, allSpots, all] = await Promise.all([
+  const [cities, settings, allSpots, all, stories] = await Promise.all([
     getCities(lang),
     getSiteSettings(lang),
     getSpotlights(lang),
     // Fetched unfiltered: `?q=` is applied in memory so the grid and the
     // suggestions dropdown come out of the same array.
     getListings(lang, { city: cityKey || undefined }),
+    getStories(lang),
   ])
+  // The three newest stories. Home is the page Google trusts most, and it
+  // linked to no story at all, so new ones waited to be found from the sitemap.
+  const newest = [...stories].sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 3)
   const { list, suggestions } = applySearch(all, lang, q)
 
   const city = cities.find((c) => c.slug === cityKey) ?? null
@@ -208,6 +214,92 @@ export default async function HomePage({
 
           {/* --- Your address: trash days, flood zone, who represents you --- */}
           <HomeAddress lang={lang as Lang} />
+
+          {/* --- The newest stories --- */}
+          {newest.length ? (
+            <section style={{ marginBottom: 20 }}>
+              <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                <h2
+                  style={{
+                    margin: 0,
+                    whiteSpace: 'nowrap',
+                    background: 'var(--ink)',
+                    color: 'var(--yellow)',
+                    fontFamily: 'var(--display)',
+                    fontSize: 22,
+                    fontWeight: 400,
+                    padding: '8px 14px 5px',
+                  }}
+                >
+                  {t('NEW STORIES')}
+                </h2>
+                <div style={{ flex: 1, minWidth: 8, height: 5, background: 'var(--ink)' }} />
+                <Link
+                  href={routes.stories(lang)}
+                  style={{
+                    color: 'var(--ink)',
+                    fontWeight: 800,
+                    fontSize: 11,
+                    letterSpacing: '1px',
+                    whiteSpace: 'nowrap',
+                  }}
+                >
+                  {t('ALL STORIES →')}
+                </Link>
+              </div>
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,265px),1fr))',
+                  gap: 'clamp(14px,2.5vw,20px)',
+                }}
+              >
+                {newest.map((st) => (
+                  <Link
+                    key={st.id}
+                    href={routes.story(lang, st.slug)}
+                    style={{
+                      textDecoration: 'none',
+                      color: 'inherit',
+                      background: 'var(--grad-cream)',
+                      border: '4px solid var(--ink)',
+                      boxShadow: '7px 7px 0 var(--ink)',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      minWidth: 0,
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div style={{ position: 'relative', height: 180, borderBottom: '4px solid var(--ink)' }}>
+                      <StoryArt
+                        media={st.cover}
+                        label={t('DID YOU KNOW?')}
+                        sizes="(max-width: 700px) 100vw, 400px"
+                        size="sm"
+                      />
+                    </div>
+                    <div style={{ padding: '14px 16px 16px', display: 'flex', flexDirection: 'column', gap: 6 }}>
+                      <div
+                        style={{ fontWeight: 800, fontSize: 10, letterSpacing: '1.8px', color: 'var(--magenta)' }}
+                      >
+                        {st.kicker}
+                      </div>
+                      <div
+                        style={{
+                          fontFamily: 'var(--display)',
+                          fontSize: 22,
+                          lineHeight: 1.02,
+                          textWrap: 'balance',
+                        }}
+                      >
+                        {st.title}
+                      </div>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          ) : null}
 
           {/* --- Spotlight --- */}
           {settings.showSpotlight !== false && spots.length ? (

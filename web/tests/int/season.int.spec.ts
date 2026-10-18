@@ -125,6 +125,8 @@ describe('the guide against the database', () => {
     await add('draft', { date: day('2099-10-30'), season: 'halloween' }, 'draft')
     await add('navidad', { date: day('2099-12-05'), season: 'navidad' })
     await add('untagged', { date: day('2099-10-29') })
+    // Long finished: kept off the sitemap.
+    await add('finished', { date: day('2020-10-02') })
 
     user = await payload.create({
       collection: 'users',
@@ -185,6 +187,14 @@ describe('the guide against the database', () => {
     expect(es?.alternates?.languages).toMatchObject({ en: 'https://flamingocounty.com/en/halloween' })
     const trunk = await payload.find({ collection: 'events', where: { slug: { equals: slug('trunk') } }, overrideAccess: true })
     expect(new Date(es?.lastModified as Date).getTime()).toBeGreaterThanOrEqual(Date.parse(trunk.docs[0].updatedAt))
+  })
+
+  it('lists the events that are still on, and leaves the finished ones off', async () => {
+    const urls = (await sitemap()).map((e) => e.url)
+    expect(urls).toContain(`https://flamingocounty.com/es/events/${slug('untagged')}`)
+    expect(urls).toContain(`https://flamingocounty.com/en/events/${slug('haunted')}`)
+    expect(urls).not.toContain(`https://flamingocounty.com/es/events/${slug('finished')}`)
+    expect(urls).not.toContain(`https://flamingocounty.com/en/events/${slug('finished')}`)
   })
 })
 

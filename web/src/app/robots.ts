@@ -10,16 +10,19 @@ import { SITE_URL } from '../lib/site'
  * that engine's answers.
  *
  * Only pages with nothing to index are closed: admin, API, and the signed-in
- * My Week page. The event cards under /api/og/ stay open: they are the
- * og:image of events with no photo, and a crawler that honours robots (X's
- * does) would otherwise show the link with no picture. The longer rule wins.
+ * My Week page. Two parts of /api/ stay open, because the longer rule wins:
+ * /api/og/, the event cards that are the og:image of events with no photo (a
+ * crawler that honours robots, as X's does, would otherwise show the link with
+ * no picture), and /api/media/, where every uploaded photo is served. Closing
+ * that one kept every story and listing picture out of Google Images and
+ * Discover, which needs a large image to show a page at all.
  */
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
         userAgent: '*',
-        allow: ['/', '/api/og/'],
+        allow: ['/', '/api/og/', '/api/media/'],
         disallow: ['/admin', '/api/', '/en/my-week', '/es/my-week'],
       },
     ],

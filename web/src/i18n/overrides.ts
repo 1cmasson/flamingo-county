@@ -369,6 +369,9 @@ export const ES_OVERRIDES: Record<string, string> = {
   'Video language': 'Idioma del video',
   'For now, the video is in English.': 'Por ahora, el video está en inglés.',
   'For now, the video is in Spanish.': 'Por ahora, el video está en español.',
+  // The home page's row of the newest stories.
+  'NEW STORIES': 'HISTORIAS NUEVAS',
+  'ALL STORIES →': 'VER TODAS →',
 
   // --- Metadata ----------------------------------------------------------
   'A directory of the restaurants and bars the locals actually vouch for.':

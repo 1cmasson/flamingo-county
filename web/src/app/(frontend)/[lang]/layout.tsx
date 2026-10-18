@@ -68,6 +68,10 @@ export async function generateMetadata({
       template: '%s · Flamingo County',
     },
     description,
+    // Lets Google show our photos large in Discover and image results; without
+    // it a page only gets a thumbnail there. Pages that set their own `robots`
+    // (the noindex ones) replace this whole object.
+    robots: { 'max-image-preview': 'large' },
     // Pages that set their own title/description inherit these for the rest.
     openGraph: {
       type: 'website',
