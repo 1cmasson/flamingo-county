@@ -1,11 +1,12 @@
 import { createHash } from 'crypto'
 import { readFile } from 'fs/promises'
 import path from 'path'
-import type { Payload, PayloadRequest, Where } from 'payload'
+import type { CollectionAfterChangeHook, CollectionAfterDeleteHook, Payload, PayloadRequest, Where } from 'payload'
 
 import { hqMediaDir } from '../collections/HqMedia'
-import type { HqMedia, HqSocialDraft } from '../payload-types'
+import type { Event, HqMedia, HqSocialDraft } from '../payload-types'
 import { SITE_TZ } from './dates'
+import { eventGone, outdatedProblem, waitingStories } from './outdated'
 import {
   buildPostBody,
   connectedChannels,
@@ -343,6 +344,20 @@ async function decide(payload: Payload, id: number, action: DraftAction): Promis
     languageProblem(draft.language, draft.format, draft.caption)
   if (rule) return `🚫 Draft #${id} was not posted. ${rule} Edit it in the admin and approve the new preview.`
 
+  // Nothing outdated goes out (the owner's rule, 2026-10-19). Rejected, not
+  // left pending: there is no edit that makes a finished event worth posting.
+  const stale = await outdatedProblem(payload, draft)
+  if (stale) {
+    await setDraft(payload, id, { status: 'rejected', error: `Outdated: ${stale}.` })
+    await recordEvent(payload, {
+      type: 'social.rejected',
+      summary: `Draft #${id} was not posted: ${stale}`,
+      refCollection: 'hq-social-drafts',
+      refId: id,
+    })
+    return `🗓 Draft #${id} was not posted: ${esc(stale)}. Nothing was sent to Postiz, and it is marked rejected.`
+  }
+
   await setDraft(payload, id, { status: 'approved', error: null })
   try {
     const platforms = (draft.platforms ?? []) as Platform[]
@@ -433,4 +448,39 @@ export async function cancelDraft(payload: Payload, id: number, now: Date = new 
     refId: id,
   })
   return `Draft #${id} is removed from Postiz and marked rejected.`
+}
+
+/**
+ * When an event is cancelled, postponed or deleted, its stories still waiting
+ * to go out are taken down: a pending one is rejected, a scheduled one is
+ * removed from Postiz (`cancelDraft`). The owner hears about each. Never fails
+ * the save.
+ */
+async function withdrawStories(payload: Payload, ev: Pick<Event, 'id' | 'slug'>, why: string): Promise<void> {
+  for (const d of await waitingStories(payload, ev)) {
+    try {
+      // cancelDraft records the cancellation; this only tells the owner why.
+      await cancelDraft(payload, d.id)
+      void notifyOwner(`🗓 Story #${d.id} taken down: ${esc(why)}.`).catch(() => undefined)
+    } catch (err) {
+      console.error(`[hq] could not withdraw story #${d.id}:`, err instanceof Error ? err.message : err)
+    }
+  }
+}
+
+export const withdrawStoriesOnChange: CollectionAfterChangeHook = async ({ doc, previousDoc, req }) => {
+  // Only a published save that turns the event off. A draft save leaves the
+  // live event, and its stories, as they are.
+  if ((doc as Event)._status !== 'published') return doc
+  const was = (previousDoc as Event | undefined)?.eventStatus
+  const now = (doc as Event).eventStatus
+  if (now === was || (now !== 'cancelled' && now !== 'postponed')) return doc
+  const why = eventGone(doc as Event, new Date()) ?? `its event was ${now}`
+  await withdrawStories(req.payload, doc as Event, why).catch(() => undefined)
+  return doc
+}
+
+export const withdrawStoriesOnDelete: CollectionAfterDeleteHook = async ({ doc, req }) => {
+  await withdrawStories(req.payload, doc as Event, 'its event was deleted').catch(() => undefined)
+  return doc
 }
