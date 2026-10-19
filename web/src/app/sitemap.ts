@@ -3,7 +3,7 @@ import { LOCALES, type Lang } from '../i18n'
 import { routes } from '../lib/routes'
 import { getCities, getEvents, getListings, getStories, rel } from '../lib/data'
 import { absUrl } from '../lib/site'
-import { todayISO } from '../lib/dates'
+import { isStillOn, todayISO } from '../lib/dates'
 import { allSeasons, seasonEvents } from '../lib/seasons'
 import { ROUTE_SLUGS } from '../lib/transit'
 import type { City } from '../payload-types'
@@ -96,7 +96,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       if (!city) return []
       return both((l) => routes.business(l, city.slug, b.slug), b.updatedAt, 0.8)
     }),
-    ...events.flatMap((e) => both((l) => routes.event(l, e.slug), e.updatedAt, 0.6)),
+    // Only events that are still on. A finished one keeps its page, but listing
+    // it asks Google to spend its crawl on a page nobody will search for again.
+    ...events
+      .filter((e) => isStillOn(e, today))
+      .flatMap((e) => both((l) => routes.event(l, e.slug), e.updatedAt, 0.6)),
     ...stories.flatMap((s) => both((l) => routes.story(l, s.slug), s.updatedAt, 0.6)),
   ]
   return entries
