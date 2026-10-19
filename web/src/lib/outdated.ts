@@ -6,12 +6,10 @@ import { eventEndDay, todayISO } from './dates'
 /**
  * The owner's rule (2026-10-19): nothing outdated goes out. An event post is
  * stale when its event is over, cancelled or postponed, or, for a post that
- * names no single event (the week's carousel), when it is approved long after
- * the time it was made for: "this week" read on Thursday is wrong.
+ * names no single event (the week's carousel), when it is approved on a later
+ * day than the one it was made for: "this week" read on Thursday is wrong. The
+ * same day is fine, at any hour: an 11:30 carousel tapped at 7 PM still goes.
  */
-
-/** How late a carousel can still be approved. A time a few minutes back is how a draft says "post it when I tap". */
-export const STALE_AFTER_MS = 6 * 60 * 60 * 1000
 
 const EVENT_PAGE = /\/(?:es|en)\/events\/([\w-]+)/i
 
@@ -53,7 +51,7 @@ export async function outdatedProblem(payload: Payload, draft: HqSocialDraft, no
   if (draft.pillar !== 'event') return null
   const ev = await eventForDraft(payload, draft)
   if (ev) return eventGone(ev, now)
-  if (new Date(draft.scheduledFor).getTime() < now.getTime() - STALE_AFTER_MS) return 'it was made for an earlier time and is out of date'
+  if (todayISO(new Date(draft.scheduledFor)) < todayISO(now)) return 'it was made for an earlier day and is out of date'
   return null
 }
 

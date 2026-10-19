@@ -3,7 +3,7 @@ import { getPayload, type Payload } from 'payload'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import config from '@payload-config'
 import { HQ_INTERNAL, decideDraft, draftFingerprint } from '../../src/lib/hq'
-import { STALE_AFTER_MS, eventGone, outdatedProblem } from '../../src/lib/outdated'
+import { eventGone, outdatedProblem } from '../../src/lib/outdated'
 import type { HqSocialDraft } from '../../src/payload-types'
 import { makeHqMedia } from './helpers/facebook'
 
@@ -113,14 +113,16 @@ describe('outdated event drafts, against the database', () => {
     expect(await outdatedProblem(payload, await story(ev.slug))).toBeNull()
   })
 
-  it('refuses a carousel approved long after its time, not one set a few minutes back', async () => {
-    const now = new Date('2026-10-22T16:00:00Z')
+  it('refuses a carousel approved on a later Miami day, not later the same day', async () => {
     const carousel = (scheduledFor: string) =>
       ({ pillar: 'event', caption: 'Lo que hay esta semana', scheduledFor, sourceCollection: null, sourceId: null, dedupeKey: null }) as HqSocialDraft
-    expect(await outdatedProblem(payload, carousel('2026-10-19T15:30:00Z'), now)).toMatch(/out of date/)
-    expect(await outdatedProblem(payload, carousel(new Date(now.getTime() - 5 * 60_000).toISOString()), now)).toBeNull()
-    expect(await outdatedProblem(payload, carousel(new Date(now.getTime() - STALE_AFTER_MS - 1).toISOString()), now)).toMatch(/out of date/)
-    expect(await outdatedProblem(payload, { ...carousel('2020-01-01T00:00:00Z'), pillar: 'story' }, now)).toBeNull()
+    // Mon Oct 19, 11:30 AM Miami. Tapped at 11:55 PM the same night: goes.
+    expect(await outdatedProblem(payload, carousel('2026-10-19T15:30:00Z'), new Date('2026-10-20T03:55:00Z'))).toBeNull()
+    // Tapped Tuesday morning: refused.
+    expect(await outdatedProblem(payload, carousel('2026-10-19T15:30:00Z'), new Date('2026-10-20T13:00:00Z'))).toMatch(/out of date/)
+    // A time a few minutes back means "post it when I tap".
+    expect(await outdatedProblem(payload, carousel('2026-10-19T22:35:00Z'), new Date('2026-10-19T22:52:00Z'))).toBeNull()
+    expect(await outdatedProblem(payload, { ...carousel('2020-01-01T00:00:00Z'), pillar: 'story' }, new Date())).toBeNull()
   })
 
   it('takes down a waiting story when its event is cancelled', async () => {
