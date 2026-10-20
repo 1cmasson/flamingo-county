@@ -6,6 +6,7 @@ import { requestReview } from './growth'
 import { decideDraft, parseDraftCallback } from './hq'
 import { answerCallback, esc, ownerChatId, resolveButtons, sendMessage } from './telegram'
 import { decidePublish, parsePublishCallback } from './publishRequests'
+import { decideSpend, parseSpendCallback } from './spendApprovals'
 
 /** The slice of a Telegram `Update` the bot reads. */
 export type TelegramUpdate = {
@@ -140,6 +141,14 @@ export async function handleUpdate(payload: Payload, update: TelegramUpdate): Pr
 
   const cb = update.callback_query
   if (cb) {
+    const spend = parseSpendCallback(cb.data)
+    if (spend && cb.message) {
+      await answerCallback(cb.id, spend.action === 'approve' ? 'Approving…' : 'Declining…')
+      const outcome = await decideSpend(payload, spend.id, spend.action)
+      await resolveButtons(cb.message.chat.id, cb.message.message_id, outcome)
+      return
+    }
+
     const publish = parsePublishCallback(cb.data)
     if (publish && cb.message) {
       await answerCallback(cb.id, publish.action === 'publish' ? 'Publishing…' : 'Rejecting…')

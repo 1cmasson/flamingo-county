@@ -36,6 +36,7 @@ import * as migration_20261009_193258_weekly_roundup from './20261009_193258_wee
 import * as migration_20261012_035142_event_story_format from './20261012_035142_event_story_format';
 import * as migration_20261017_203009_address_usage from './20261017_203009_address_usage';
 import * as migration_20261017_204939_site_usage from './20261017_204939_site_usage';
+import * as migration_20261020_184304_spend_approvals from './20261020_184304_spend_approvals';
 
 export const migrations = [
   {
@@ -226,6 +227,11 @@ export const migrations = [
   {
     up: migration_20261017_204939_site_usage.up,
     down: migration_20261017_204939_site_usage.down,
-    name: '20261017_204939_site_usage'
+    name: '20261017_204939_site_usage',
+  },
+  {
+    up: migration_20261020_184304_spend_approvals.up,
+    down: migration_20261020_184304_spend_approvals.down,
+    name: '20261020_184304_spend_approvals'
   },
 ];
