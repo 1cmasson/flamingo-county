@@ -27,6 +27,7 @@ import { HqSocialDrafts } from './collections/HqSocialDrafts'
 import { HqSocialStats } from './collections/HqSocialStats'
 import { HqClicks } from './collections/HqClicks'
 import { HqPublishRequests } from './collections/HqPublishRequests'
+import { HqSpendApprovals } from './collections/HqSpendApprovals'
 import { HqChatTurns } from './collections/HqChatTurns'
 import { HqVisits } from './collections/HqVisits'
 import { HqUses } from './collections/HqUses'
@@ -92,6 +93,7 @@ export default buildConfig({
     HqSocialStats,
     HqClicks,
     HqPublishRequests,
+    HqSpendApprovals,
     HqChatTurns,
     HqVisits,
     HqUses,
@@ -168,7 +170,8 @@ export default buildConfig({
      * The site's content collections take drafts only over MCP — any other
      * write is refused by `mcpDraftsOnly` on the collection itself — and
      * publishing is the owner's tap in Telegram (hqRequestPublish,
-     * lib/publishRequests.ts). `hq-publish-requests` must never be added to
+     * lib/publishRequests.ts). `hq-publish-requests` (and `hq-spend-approvals`,
+     * lib/spendApprovals.ts) must never be added to
      * this list: a generic update tool on it would let a client approve its
      * own request.
      */

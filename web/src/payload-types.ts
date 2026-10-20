@@ -89,6 +89,7 @@ export interface Config {
     'hq-social-stats': HqSocialStat;
     'hq-clicks': HqClick;
     'hq-publish-requests': HqPublishRequest;
+    'hq-spend-approvals': HqSpendApproval;
     'hq-chat-turns': HqChatTurn;
     'hq-visits': HqVisit;
     'hq-uses': Hqus;
@@ -124,6 +125,7 @@ export interface Config {
     'hq-social-stats': HqSocialStatsSelect<false> | HqSocialStatsSelect<true>;
     'hq-clicks': HqClicksSelect<false> | HqClicksSelect<true>;
     'hq-publish-requests': HqPublishRequestsSelect<false> | HqPublishRequestsSelect<true>;
+    'hq-spend-approvals': HqSpendApprovalsSelect<false> | HqSpendApprovalsSelect<true>;
     'hq-chat-turns': HqChatTurnsSelect<false> | HqChatTurnsSelect<true>;
     'hq-visits': HqVisitsSelect<false> | HqVisitsSelect<true>;
     'hq-uses': HqUsesSelect<false> | HqUsesSelect<true>;
@@ -1372,6 +1374,26 @@ export interface HqPublishRequest {
   createdAt: string;
 }
 /**
+ * Paid steps Claude asked to run. Each runs once, only after you tap Yes in Telegram.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-spend-approvals".
+ */
+export interface HqSpendApproval {
+  id: number;
+  status: 'pending' | 'approved' | 'declined' | 'used' | 'expired';
+  reason: string;
+  cost?: string | null;
+  command: string;
+  commandHash: string;
+  expiresAt?: string | null;
+  decidedAt?: string | null;
+  usedAt?: string | null;
+  telegramMessageId?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * The Telegram chat's short memory. Redacted, and pruned after two days.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -1864,6 +1886,18 @@ export interface PayloadMcpApiKey {
      * Where a publish request stands: pending, published, rejected, superseded, stale (the draft changed and was re-sent), expired or failed.
      */
     hqPublishStatus?: boolean | null;
+    /**
+     * Ask the owner, in Telegram, to OK one paid step that his machine's spend gate blocked (a fal call, or more than 15 images for one story). Pass the EXACT command the hook denied, unchanged; a plain-words reason (what it makes and why); and the cost. He sees all three with Yes / No. After Yes, run the same command again and the hook lets it through once. Approves nothing by itself. Check with hqSpendApprovalStatus.
+     */
+    hqRequestSpendApproval?: boolean | null;
+    /**
+     * Where a spend approval stands: pending, approved (rerun the exact command now), declined, used or expired.
+     */
+    hqSpendApprovalStatus?: boolean | null;
+    /**
+     * For the spend gate hook only: uses up the owner's approval for this exact command and says whether it may run. Calling it yourself only wastes his approval.
+     */
+    hqRedeemSpendApproval?: boolean | null;
   };
   updatedAt: string;
   createdAt: string;
@@ -2080,6 +2114,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'hq-publish-requests';
         value: number | HqPublishRequest;
+      } | null)
+    | ({
+        relationTo: 'hq-spend-approvals';
+        value: number | HqSpendApproval;
       } | null)
     | ({
         relationTo: 'hq-chat-turns';
@@ -2799,6 +2837,23 @@ export interface HqPublishRequestsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-spend-approvals_select".
+ */
+export interface HqSpendApprovalsSelect<T extends boolean = true> {
+  status?: T;
+  reason?: T;
+  cost?: T;
+  command?: T;
+  commandHash?: T;
+  expiresAt?: T;
+  decidedAt?: T;
+  usedAt?: T;
+  telegramMessageId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "hq-chat-turns_select".
  */
 export interface HqChatTurnsSelect<T extends boolean = true> {
@@ -3033,6 +3088,9 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         hqCancelDraft?: T;
         hqRequestPublish?: T;
         hqPublishStatus?: T;
+        hqRequestSpendApproval?: T;
+        hqSpendApprovalStatus?: T;
+        hqRedeemSpendApproval?: T;
       };
   updatedAt?: T;
   createdAt?: T;

@@ -18,6 +18,7 @@ import { addDays, dateOnly, eventEndDay, todayISO } from './dates'
 import { cancelDraft, miamiTime } from './hq'
 import { isRunningCount, type MetricSummary } from './postiz'
 import { PUBLISHABLE, PUBLISHABLE_GLOBALS, publishStatus, requestPublish } from './publishRequests'
+import { redeemSpend, requestSpend, spendStatus } from './spendApprovals'
 import { PHOTO_LICENSES, canonicalLicenseUrl, isPhotoLicense, licenseLabel, type PhotoLicense } from './photoLicense'
 import { REQUEST_KINDS, isRequestKind, type RequestKind } from './requestKinds'
 import {
@@ -1232,5 +1233,39 @@ export const hqMcpTools: McpTool[] = [
     parameters: { requestId: z.number().int().positive() },
     handler: (args: Record<string, unknown>, req: PayloadRequest) =>
       guard(async () => text(JSON.stringify(await publishStatus(req.payload, Number(args.requestId))))),
+  },
+  {
+    name: 'hqRequestSpendApproval',
+    description:
+      "Ask the owner, in Telegram, to OK one paid step that his machine's spend gate blocked (a fal call, or more than 15 images for one story). Pass the EXACT command the hook denied, unchanged; a plain-words reason (what it makes and why); and the cost. He sees all three with Yes / No. After Yes, run the same command again and the hook lets it through once. Approves nothing by itself. Check with hqSpendApprovalStatus.",
+    parameters: {
+      command: z.string().min(1).max(4000).describe('The exact command the hook blocked, character for character'),
+      reason: z.string().min(1).max(300).describe('Plain words: what it makes and why it is needed'),
+      cost: z.string().max(80).optional().describe('What it costs, e.g. "about $0.14 (4 images)"'),
+    },
+    handler: (args: Record<string, unknown>, req: PayloadRequest) =>
+      guard(async () =>
+        text(
+          JSON.stringify({
+            ...(await requestSpend(req.payload, args as never)),
+            next: 'Waiting for the owner to tap Yes in Telegram. Check with hqSpendApprovalStatus, then rerun the exact command.',
+          }),
+        ),
+      ),
+  },
+  {
+    name: 'hqSpendApprovalStatus',
+    description: 'Where a spend approval stands: pending, approved (rerun the exact command now), declined, used or expired.',
+    parameters: { requestId: z.number().int().positive() },
+    handler: (args: Record<string, unknown>, req: PayloadRequest) =>
+      guard(async () => text(JSON.stringify(await spendStatus(req.payload, Number(args.requestId))))),
+  },
+  {
+    name: 'hqRedeemSpendApproval',
+    description:
+      "For the spend gate hook only: uses up the owner's approval for this exact command and says whether it may run. Calling it yourself only wastes his approval.",
+    parameters: { command: z.string().min(1).max(4000) },
+    handler: (args: Record<string, unknown>, req: PayloadRequest) =>
+      guard(async () => text(JSON.stringify(await redeemSpend(req.payload, String(args.command))))),
   },
 ]
