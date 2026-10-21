@@ -360,7 +360,7 @@ describe('weekly social review', () => {
     it('runs the context tool and writes the playbook', async () => {
       const ctx = await rpc('tools/call', { name: 'hqWeeklyReviewContext', arguments: {} })
       const body = JSON.parse(ctx.result.content[0].text)
-      expect(Object.keys(body).sort()).toEqual(['generatedMiami', 'pendingDrafts', 'playbook', 'recentStories', 'socialReport', 'upcomingEvents'])
+      expect(Object.keys(body).sort()).toEqual(['generatedMiami', 'pendingDrafts', 'playbook', 'recentStories', 'reelReviews', 'socialReport', 'upcomingEvents'])
 
       const upd = await rpc('tools/call', {
         name: 'updateHqPlaybook',

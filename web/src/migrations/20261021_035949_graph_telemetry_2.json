@@ -13337,6 +13337,376 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "hq_experiments_rels": {
+      "name": "hq_experiments_rels",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "order": {
+          "name": "order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "parent_id": {
+          "name": "parent_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "path": {
+          "name": "path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "hq_social_drafts_id": {
+          "name": "hq_social_drafts_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "hq_experiments_rels_order_idx": {
+          "name": "hq_experiments_rels_order_idx",
+          "columns": [
+            "order"
+          ],
+          "isUnique": false
+        },
+        "hq_experiments_rels_parent_idx": {
+          "name": "hq_experiments_rels_parent_idx",
+          "columns": [
+            "parent_id"
+          ],
+          "isUnique": false
+        },
+        "hq_experiments_rels_path_idx": {
+          "name": "hq_experiments_rels_path_idx",
+          "columns": [
+            "path"
+          ],
+          "isUnique": false
+        },
+        "hq_experiments_rels_hq_social_drafts_id_idx": {
+          "name": "hq_experiments_rels_hq_social_drafts_id_idx",
+          "columns": [
+            "hq_social_drafts_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "hq_experiments_rels_parent_fk": {
+          "name": "hq_experiments_rels_parent_fk",
+          "tableFrom": "hq_experiments_rels",
+          "tableTo": "hq_experiments",
+          "columnsFrom": [
+            "parent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "hq_experiments_rels_hq_social_drafts_fk": {
+          "name": "hq_experiments_rels_hq_social_drafts_fk",
+          "tableFrom": "hq_experiments_rels",
+          "tableTo": "hq_social_drafts",
+          "columnsFrom": [
+            "hq_social_drafts_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "hq_reel_reviews": {
+      "name": "hq_reel_reviews",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "pillar": {
+          "name": "pillar",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "checkpoint": {
+          "name": "checkpoint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'3d'"
+        },
+        "published_at": {
+          "name": "published_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "complete": {
+          "name": "complete",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "permalinks": {
+          "name": "permalinks",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "cuts": {
+          "name": "cuts",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "pair": {
+          "name": "pair",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "retention": {
+          "name": "retention",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "summary": {
+          "name": "summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+        }
+      },
+      "indexes": {
+        "hq_reel_reviews_key_idx": {
+          "name": "hq_reel_reviews_key_idx",
+          "columns": [
+            "key"
+          ],
+          "isUnique": true
+        },
+        "hq_reel_reviews_published_at_idx": {
+          "name": "hq_reel_reviews_published_at_idx",
+          "columns": [
+            "published_at"
+          ],
+          "isUnique": false
+        },
+        "hq_reel_reviews_updated_at_idx": {
+          "name": "hq_reel_reviews_updated_at_idx",
+          "columns": [
+            "updated_at"
+          ],
+          "isUnique": false
+        },
+        "hq_reel_reviews_created_at_idx": {
+          "name": "hq_reel_reviews_created_at_idx",
+          "columns": [
+            "created_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "hq_reel_reviews_rels": {
+      "name": "hq_reel_reviews_rels",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "order": {
+          "name": "order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "parent_id": {
+          "name": "parent_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "path": {
+          "name": "path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "hq_social_drafts_id": {
+          "name": "hq_social_drafts_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "hq_experiments_id": {
+          "name": "hq_experiments_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "hq_reel_reviews_rels_order_idx": {
+          "name": "hq_reel_reviews_rels_order_idx",
+          "columns": [
+            "order"
+          ],
+          "isUnique": false
+        },
+        "hq_reel_reviews_rels_parent_idx": {
+          "name": "hq_reel_reviews_rels_parent_idx",
+          "columns": [
+            "parent_id"
+          ],
+          "isUnique": false
+        },
+        "hq_reel_reviews_rels_path_idx": {
+          "name": "hq_reel_reviews_rels_path_idx",
+          "columns": [
+            "path"
+          ],
+          "isUnique": false
+        },
+        "hq_reel_reviews_rels_hq_social_drafts_id_idx": {
+          "name": "hq_reel_reviews_rels_hq_social_drafts_id_idx",
+          "columns": [
+            "hq_social_drafts_id"
+          ],
+          "isUnique": false
+        },
+        "hq_reel_reviews_rels_hq_experiments_id_idx": {
+          "name": "hq_reel_reviews_rels_hq_experiments_id_idx",
+          "columns": [
+            "hq_experiments_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "hq_reel_reviews_rels_parent_fk": {
+          "name": "hq_reel_reviews_rels_parent_fk",
+          "tableFrom": "hq_reel_reviews_rels",
+          "tableTo": "hq_reel_reviews",
+          "columnsFrom": [
+            "parent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "hq_reel_reviews_rels_hq_social_drafts_fk": {
+          "name": "hq_reel_reviews_rels_hq_social_drafts_fk",
+          "tableFrom": "hq_reel_reviews_rels",
+          "tableTo": "hq_social_drafts",
+          "columnsFrom": [
+            "hq_social_drafts_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "hq_reel_reviews_rels_hq_experiments_fk": {
+          "name": "hq_reel_reviews_rels_hq_experiments_fk",
+          "tableFrom": "hq_reel_reviews_rels",
+          "tableTo": "hq_experiments",
+          "columnsFrom": [
+            "hq_experiments_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "hq_artwork_uploads": {
       "name": "hq_artwork_uploads",
       "columns": {
@@ -13692,6 +14062,14 @@
         },
         "hq_experiments_update": {
           "name": "hq_experiments_update",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "hq_reel_reviews_find": {
+          "name": "hq_reel_reviews_find",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -14752,6 +15130,13 @@
           "notNull": false,
           "autoincrement": false
         },
+        "hq_reel_reviews_id": {
+          "name": "hq_reel_reviews_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "hq_artwork_uploads_id": {
           "name": "hq_artwork_uploads_id",
           "type": "integer",
@@ -14989,6 +15374,13 @@
           "name": "payload_locked_documents_rels_hq_experiments_id_idx",
           "columns": [
             "hq_experiments_id"
+          ],
+          "isUnique": false
+        },
+        "payload_locked_documents_rels_hq_reel_reviews_id_idx": {
+          "name": "payload_locked_documents_rels_hq_reel_reviews_id_idx",
+          "columns": [
+            "hq_reel_reviews_id"
           ],
           "isUnique": false
         },
@@ -15391,6 +15783,19 @@
           "tableTo": "hq_experiments",
           "columnsFrom": [
             "hq_experiments_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "payload_locked_documents_rels_hq_reel_reviews_fk": {
+          "name": "payload_locked_documents_rels_hq_reel_reviews_fk",
+          "tableFrom": "payload_locked_documents_rels",
+          "tableTo": "hq_reel_reviews",
+          "columnsFrom": [
+            "hq_reel_reviews_id"
           ],
           "columnsTo": [
             "id"
@@ -17187,6 +17592,6 @@
   "internal": {
     "indexes": {}
   },
-  "id": "d7d33234-4d8f-4c0c-a796-4b21a5b74baf",
+  "id": "31523efb-0982-41e1-85b3-316714840a9c",
   "prevId": "00000000-0000-0000-0000-000000000000"
 }

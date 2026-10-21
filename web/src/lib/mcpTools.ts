@@ -17,6 +17,7 @@ import { trafficReport } from './growth'
 import { addDays, dateOnly, eventEndDay, todayISO } from './dates'
 import { cancelDraft, miamiTime } from './hq'
 import { isRunningCount, type MetricSummary } from './postiz'
+import { recentReelReviews } from './reelScore'
 import { reelRatios } from './reelStats'
 import { graphSummary } from './graphTelemetry'
 import { marketOutliers } from './market'
@@ -249,7 +250,9 @@ function bothLanguages(v: unknown): { es: string | null; en: string | null } {
 /**
  * The weekly review's whole input: the 28-day social report, the current
  * playbook, the published events coming up in the next 14 days, the newest
- * published stories, and the social drafts already waiting for the owner.
+ * published stories, the social drafts already waiting for the owner, and the
+ * 72-hour reel post-mortems of the window (`reelReviews`, lib/reelScore.ts) —
+ * so the review reads each reel's verdict numbers instead of recomputing them.
  *
  * Built field by field from depth-0 reads, so nothing comes along by accident:
  * no listing phone or hours (an event's `listing` would populate them at a
@@ -261,7 +264,7 @@ export async function weeklyReviewContext(payload: Payload, now: Date = new Date
   const today = todayISO(now)
   const until = addDays(today, AHEAD_DAYS)
 
-  const [report, playbook, events, stories, pending] = await Promise.all([
+  const [report, playbook, events, stories, pending, reelReviews] = await Promise.all([
     socialReport(payload, REVIEW_DAYS, now),
     payload.findGlobal({ slug: 'hq-playbook', depth: 0, overrideAccess: true }),
     payload.find({
@@ -302,6 +305,7 @@ export async function weeklyReviewContext(payload: Payload, now: Date = new Date
       depth: 0,
       overrideAccess: true,
     }),
+    recentReelReviews(payload, REVIEW_DAYS, now),
   ])
 
   const upcomingEvents = (events.docs as Event[])
@@ -351,6 +355,7 @@ export async function weeklyReviewContext(payload: Payload, now: Date = new Date
     // Stories carry no date of their own, so "upcoming" means the newest published ones.
     recentStories,
     pendingDrafts,
+    reelReviews,
   }
 }
 
@@ -487,6 +492,8 @@ export async function growthContext(payload: Payload, now: Date = new Date()) {
       startedOn: dateOnly(x.startedOn) || null,
       checkOn: dateOnly(x.checkOn) || null,
       result: x.result ?? null,
+      // The social drafts it tests: the reel scorer appends their 72-hour numbers to `result`.
+      drafts: (x.drafts ?? []).map((d) => (typeof d === 'object' ? d.id : d)),
     })),
     openTasks: tasks.docs.map((t) => ({
       id: t.id,
@@ -1077,7 +1084,7 @@ export const hqMcpTools: McpTool[] = [
   {
     name: 'hqWeeklyReviewContext',
     description:
-      'Everything the weekly social review needs, in one call, as JSON: the 28-day hqSocialReport, the current playbook (null until the first review writes it), published events in the next 14 days (Spanish and English titles, dates, slugs, site paths, whether they have an image), the 10 newest published stories, and the social drafts already pending approval. Read-only. Published site content only; no contact details of any kind.',
+      'Everything the weekly social review needs, in one call, as JSON: the 28-day hqSocialReport, the current playbook (null until the first review writes it), published events in the next 14 days (Spanish and English titles, dates, slugs, site paths, whether they have an image), the 10 newest published stories, the social drafts already pending approval, and reelReviews (the automatic 72-hour reel post-mortems of the last 28 days: per cut and platform, metrics with ratios to the account median, ES/EN pair ratios, where viewers left, and a text summary). Read-only. Published site content only; no contact details of any kind.',
     parameters: {},
     handler: (_args: Record<string, unknown>, req: PayloadRequest) =>
       guard(async () => text(JSON.stringify(await weeklyReviewContext(req.payload), null, 2))),
@@ -1085,7 +1092,7 @@ export const hqMcpTools: McpTool[] = [
   {
     name: 'hqGrowthContext',
     description:
-      'Everything the growth review needs, in one call, as JSON: the goal; the site\u2019s own traffic for 28 days (visits and views, by day, channel, source, referring site, landing page, language, device and place); what people did on the site (toolUse: calls, directions and website taps per business, event saves, stories read to the end, searches, and the address tool\u2019s lookups and calendar downloads); what is on the site; what shipped (publishes, scheduled posts); intake counts; the experiment ledger; open tasks; market outliers (watchlist posts from the last 14 days that most beat their own account’s median at the same age); and everything hqWeeklyReviewContext returns (social report, playbook, upcoming events, recent stories, pending drafts). Read-only. Published content only; no contact details. Follow web/hq/growth-review.md.',
+      'Everything the growth review needs, in one call, as JSON: the goal; the site\u2019s own traffic for 28 days (visits and views, by day, channel, source, referring site, landing page, language, device and place); what people did on the site (toolUse: calls, directions and website taps per business, event saves, stories read to the end, searches, and the address tool\u2019s lookups and calendar downloads); what is on the site; what shipped (publishes, scheduled posts); intake counts; the experiment ledger; open tasks; market outliers (watchlist posts from the last 14 days that most beat their own account’s median at the same age); and everything hqWeeklyReviewContext returns (social report, playbook, upcoming events, recent stories, pending drafts, 72-hour reel reviews). Read-only. Published content only; no contact details. Follow web/hq/growth-review.md.',
     parameters: {},
     handler: (_args: Record<string, unknown>, req: PayloadRequest) =>
       guard(async () => text(JSON.stringify(await growthContext(req.payload), null, 2))),

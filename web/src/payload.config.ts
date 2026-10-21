@@ -35,10 +35,12 @@ import { HqChatTurns } from './collections/HqChatTurns'
 import { HqVisits } from './collections/HqVisits'
 import { HqUses } from './collections/HqUses'
 import { HqExperiments } from './collections/HqExperiments'
+import { HqReelReviews } from './collections/HqReelReviews'
 import { HqArtworkUploads } from './collections/HqArtworkUploads'
 import { eveningWrap } from './jobs/eveningWrap'
 import { graphTelemetry } from './jobs/graphTelemetry'
 import { morningBrief } from './jobs/morningBrief'
+import { reelScore } from './jobs/reelScore'
 import { reelStats } from './jobs/reelStats'
 import { socialStats } from './jobs/socialStats'
 import { weeklyRoundup } from './jobs/weeklyRoundup'
@@ -106,6 +108,7 @@ export default buildConfig({
     HqVisits,
     HqUses,
     HqExperiments,
+    HqReelReviews,
     HqArtworkUploads,
   ],
   globals: [SiteSettings, AboutPage, ListYourSpotPage, LinkPage, HqPlaybook],
@@ -236,7 +239,13 @@ export default buildConfig({
         'hq-experiments': {
           enabled: { find: true, create: true, update: true },
           description:
-            'Growth experiments: hypothesis, metric, baseline, expected, result, verdict. The growth review (web/hq/growth-review.md) keeps them. Never delete; set status dropped.',
+            'Growth experiments: hypothesis, metric, baseline, expected, result, verdict. The growth review (web/hq/growth-review.md) keeps them. Never delete; set status dropped. Set drafts (both language cuts of a reel) and the reel scorer appends the 72-hour numbers to result; it never sets the verdict.',
+        },
+        // Read-only: the reel scorer (lib/reelScore.ts) is the only writer.
+        'hq-reel-reviews': {
+          enabled: { find: true },
+          description:
+            'Automatic 72-hour post-mortems, one per story (its ES and EN cuts), written by the reel scorer from the 3d Graph readings. cuts: per cut and platform, metrics (views, reach, avgWatchSec, avgWatchPct of length, skipRate, shares/saves/likes per reach) and vsMedian {value, median, n, ratio} against the account\u2019s previous reels of the same pillar at 3d; pair: ES/EN ratios; retention: Facebook % still watching at 3 s/15 s/half and the steepest drop; summary: the same as text. Internal notes; nothing is posted from them.',
         },
         'listing-requests': {
           enabled: { find: true, update: true },
@@ -294,8 +303,9 @@ export default buildConfig({
 
   /**
    * The HQ jobs queue — the morning brief, the evening wrap, the social stats
-   * collector, the Graph reel stats collector, the Graph account/audience/
-   * comments/market collector and the Monday roundup (src/jobs).
+   * collector, the Graph reel stats collector, the 72-hour reel scorer, the
+   * Graph account/audience/comments/market collector and the Monday roundup
+   * (src/jobs).
    *
    * One in-process runner, checking every minute. That is safe here and only
    * here because the service is pinned to a single instance by SQLite on a
@@ -307,7 +317,7 @@ export default buildConfig({
    * admin, and a quiet night would skip the brief.
    */
   jobs: {
-    tasks: [morningBrief, socialStats, reelStats, graphTelemetry, eveningWrap, weeklyRoundup],
+    tasks: [morningBrief, socialStats, reelStats, reelScore, graphTelemetry, eveningWrap, weeklyRoundup],
     autoRun: [{ cron: '* * * * *', queue: 'hq' }],
     jobsCollectionOverrides: ({ defaultJobsCollection }) => ({
       ...defaultJobsCollection,

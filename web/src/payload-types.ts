@@ -97,6 +97,7 @@ export interface Config {
     'hq-visits': HqVisit;
     'hq-uses': Hqus;
     'hq-experiments': HqExperiment;
+    'hq-reel-reviews': HqReelReview;
     'hq-artwork-uploads': HqArtworkUpload;
     'payload-mcp-api-keys': PayloadMcpApiKey;
     'payload-kv': PayloadKv;
@@ -136,6 +137,7 @@ export interface Config {
     'hq-visits': HqVisitsSelect<false> | HqVisitsSelect<true>;
     'hq-uses': HqUsesSelect<false> | HqUsesSelect<true>;
     'hq-experiments': HqExperimentsSelect<false> | HqExperimentsSelect<true>;
+    'hq-reel-reviews': HqReelReviewsSelect<false> | HqReelReviewsSelect<true>;
     'hq-artwork-uploads': HqArtworkUploadsSelect<false> | HqArtworkUploadsSelect<true>;
     'payload-mcp-api-keys': PayloadMcpApiKeysSelect<false> | PayloadMcpApiKeysSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
@@ -174,6 +176,7 @@ export interface Config {
       morningBrief: TaskMorningBrief;
       socialStats: TaskSocialStats;
       reelStats: TaskReelStats;
+      reelScore: TaskReelScore;
       graphTelemetry: TaskGraphTelemetry;
       eveningWrap: TaskEveningWrap;
       weeklyRoundup: TaskWeeklyRoundup;
@@ -1737,9 +1740,93 @@ export interface HqExperiment {
    */
   checkOn?: string | null;
   /**
+   * The social drafts this tests, if any (both language cuts of a reel). Their 72-hour numbers are appended to the result automatically.
+   */
+  drafts?: (number | HqSocialDraft)[] | null;
+  /**
    * What happened, with the numbers and sample size. What we keep doing, or stop.
    */
   result?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Automatic 72-hour post-mortems of each reel (both language cuts), written by the reel scorer. Internal notes only.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-reel-reviews".
+ */
+export interface HqReelReview {
+  id: number;
+  title: string;
+  key: string;
+  pillar?: string | null;
+  /**
+   * The reading scored: 3d (72 hours).
+   */
+  checkpoint?: string | null;
+  /**
+   * When the first cut went out.
+   */
+  publishedAt?: string | null;
+  /**
+   * Every cut had its 3d reading on every platform it was measured on. Unticked: scored after the window closed with what there was.
+   */
+  complete?: boolean | null;
+  drafts: (number | HqSocialDraft)[];
+  /**
+   * [{ draft, language, platform, permalink }]
+   */
+  permalinks?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Per cut and platform: metrics, and vsMedian { value, median, n, ratio }.
+   */
+  cuts:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Spanish over English, per platform and metric. Empty for a single cut.
+   */
+  pair?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Facebook: % still watching at 3 s, 15 s and half, and the steepest drop.
+   */
+  retention?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  summary: string;
+  /**
+   * Experiments whose result this review was appended to. Their verdict is left alone.
+   */
+  experiments?: (number | HqExperiment)[] | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1919,6 +2006,12 @@ export interface PayloadMcpApiKey {
      */
     update?: boolean | null;
   };
+  hqReelReviews?: {
+    /**
+     * Allow clients to find hq-reel-reviews.
+     */
+    find?: boolean | null;
+  };
   listingRequests?: {
     /**
      * Allow clients to find listing-requests.
@@ -2053,11 +2146,11 @@ export interface PayloadMcpApiKey {
      */
     hqSocialReport?: boolean | null;
     /**
-     * Everything the weekly social review needs, in one call, as JSON: the 28-day hqSocialReport, the current playbook (null until the first review writes it), published events in the next 14 days (Spanish and English titles, dates, slugs, site paths, whether they have an image), the 10 newest published stories, and the social drafts already pending approval. Read-only. Published site content only; no contact details of any kind.
+     * Everything the weekly social review needs, in one call, as JSON: the 28-day hqSocialReport, the current playbook (null until the first review writes it), published events in the next 14 days (Spanish and English titles, dates, slugs, site paths, whether they have an image), the 10 newest published stories, the social drafts already pending approval, and reelReviews (the automatic 72-hour reel post-mortems of the last 28 days: per cut and platform, metrics with ratios to the account median, ES/EN pair ratios, where viewers left, and a text summary). Read-only. Published site content only; no contact details of any kind.
      */
     hqWeeklyReviewContext?: boolean | null;
     /**
-     * Everything the growth review needs, in one call, as JSON: the goal; the site’s own traffic for 28 days (visits and views, by day, channel, source, referring site, landing page, language, device and place); what people did on the site (toolUse: calls, directions and website taps per business, event saves, stories read to the end, searches, and the address tool’s lookups and calendar downloads); what is on the site; what shipped (publishes, scheduled posts); intake counts; the experiment ledger; open tasks; market outliers (watchlist posts from the last 14 days that most beat their own account’s median at the same age); and everything hqWeeklyReviewContext returns (social report, playbook, upcoming events, recent stories, pending drafts). Read-only. Published content only; no contact details. Follow web/hq/growth-review.md.
+     * Everything the growth review needs, in one call, as JSON: the goal; the site’s own traffic for 28 days (visits and views, by day, channel, source, referring site, landing page, language, device and place); what people did on the site (toolUse: calls, directions and website taps per business, event saves, stories read to the end, searches, and the address tool’s lookups and calendar downloads); what is on the site; what shipped (publishes, scheduled posts); intake counts; the experiment ledger; open tasks; market outliers (watchlist posts from the last 14 days that most beat their own account’s median at the same age); and everything hqWeeklyReviewContext returns (social report, playbook, upcoming events, recent stories, pending drafts, 72-hour reel reviews). Read-only. Published content only; no contact details. Follow web/hq/growth-review.md.
      */
     hqGrowthContext?: boolean | null;
     /**
@@ -2198,7 +2291,14 @@ export interface PayloadJob {
         executedAt: string;
         completedAt: string;
         taskSlug:
-          'inline' | 'morningBrief' | 'socialStats' | 'reelStats' | 'graphTelemetry' | 'eveningWrap' | 'weeklyRoundup';
+          | 'inline'
+          | 'morningBrief'
+          | 'socialStats'
+          | 'reelStats'
+          | 'reelScore'
+          | 'graphTelemetry'
+          | 'eveningWrap'
+          | 'weeklyRoundup';
         taskID: string;
         input?:
           | {
@@ -2232,7 +2332,16 @@ export interface PayloadJob {
       }[]
     | null;
   taskSlug?:
-    | ('inline' | 'morningBrief' | 'socialStats' | 'reelStats' | 'graphTelemetry' | 'eveningWrap' | 'weeklyRoundup')
+    | (
+        | 'inline'
+        | 'morningBrief'
+        | 'socialStats'
+        | 'reelStats'
+        | 'reelScore'
+        | 'graphTelemetry'
+        | 'eveningWrap'
+        | 'weeklyRoundup'
+      )
     | null;
   queue?: string | null;
   waitUntil?: string | null;
@@ -2371,6 +2480,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'hq-experiments';
         value: number | HqExperiment;
+      } | null)
+    | ({
+        relationTo: 'hq-reel-reviews';
+        value: number | HqReelReview;
       } | null)
     | ({
         relationTo: 'hq-artwork-uploads';
@@ -3224,7 +3337,29 @@ export interface HqExperimentsSelect<T extends boolean = true> {
   expected?: T;
   startedOn?: T;
   checkOn?: T;
+  drafts?: T;
   result?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-reel-reviews_select".
+ */
+export interface HqReelReviewsSelect<T extends boolean = true> {
+  title?: T;
+  key?: T;
+  pillar?: T;
+  checkpoint?: T;
+  publishedAt?: T;
+  complete?: T;
+  drafts?: T;
+  permalinks?: T;
+  cuts?: T;
+  pair?: T;
+  retention?: T;
+  summary?: T;
+  experiments?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -3322,6 +3457,11 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         find?: T;
         create?: T;
         update?: T;
+      };
+  hqReelReviews?:
+    | T
+    | {
+        find?: T;
       };
   listingRequests?:
     | T
@@ -3871,6 +4011,17 @@ export interface TaskReelStats {
   output: {
     reels?: number | null;
     saved?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskReelScore".
+ */
+export interface TaskReelScore {
+  input?: unknown;
+  output: {
+    reviewed?: number | null;
+    experiments?: number | null;
   };
 }
 /**
