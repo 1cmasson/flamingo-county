@@ -479,6 +479,8 @@ export async function growthContext(payload: Payload, now: Date = new Date()) {
       startedOn: dateOnly(x.startedOn) || null,
       checkOn: dateOnly(x.checkOn) || null,
       result: x.result ?? null,
+      // The social drafts it tests: the reel scorer appends their 72-hour numbers to `result`.
+      drafts: (x.drafts ?? []).map((d) => (typeof d === 'object' ? d.id : d)),
     })),
     openTasks: tasks.docs.map((t) => ({
       id: t.id,

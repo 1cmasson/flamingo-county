@@ -188,8 +188,9 @@ one-line reason, and the call still counts toward the daily limit.
 
 ## Measuring the posts
 
-Four sources, all saved in the database so the history outlives Postiz, which
-fetches stats live and keeps none:
+Four sources, and the 72-hour reel review built from them, all saved in the
+database so the history outlives Postiz, which fetches stats live and keeps
+none:
 
 - **Post checkpoints.** The hourly `socialStats` job (at :45) saves each
   published post's Postiz stats 24 hours, 3 days and 7 days after it went out,
