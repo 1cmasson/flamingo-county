@@ -291,6 +291,11 @@ function fakeGraph(opts: Opts = {}) {
           ? { 'x-business-use-case-usage': JSON.stringify({ 'ig-fc': [{ type: 'instagram', call_count: 80, total_cputime: 5, total_time: 5 }] }) }
           : undefined
         if (user === 'hqtest.personal') return error(110, 'Invalid user id', 2207013)
+        // An account that answers, but whose media fields Graph refuses: our query's fault, not theirs.
+        if (user === 'hqtest.badfield') {
+          if (fields.includes('media')) return error(100, '(#100) Tried accessing nonexisting field (media_product_type)')
+          return Response.json({ id: 'ig-fc', business_discovery: { id: 'id-badfield', username: user, followers_count: 10 } })
+        }
         const media =
           user === 'hqtest.peer'
             ? [
@@ -309,7 +314,7 @@ function fakeGraph(opts: Opts = {}) {
               ]
             : [{ id: `bd-${user}-0`, caption: 'HQTEST', timestamp: ago(5), media_type: 'IMAGE', media_product_type: 'FEED', like_count: 1, comments_count: 0 }]
         return Response.json(
-          { id: 'ig-fc', business_discovery: { id: `id-${user}`, username: user, name: `Name ${user}`, followers_count: 2000, media_count: 300, media: { data: media } } },
+          { id: 'ig-fc', business_discovery: { id: `id-${user}`, username: user, followers_count: 2000, media_count: 300, media: { data: media } } },
           { headers },
         )
       }
@@ -367,15 +372,19 @@ function fakeGraph(opts: Opts = {}) {
       }
 
       if (path === '/page-fc/insights') {
-        const values: Record<string, number> = { page_follows: 310, page_daily_follows_unique: 3, page_daily_unfollows_unique: 1, page_media_view: 700 }
+        // Like Graph: one value per Page day (ending 07:00 UTC) inside since–until.
+        // page_follows is 300 + the day of the month the Page day ends on, so the test can see which was kept.
+        const since = Number(p.get('since')) * 1000
+        const until = Number(p.get('until')) * 1000
+        const ends: Date[] = []
+        for (let t = Date.UTC(2026, 9, 1, 7); t <= until; t += DAY) if (t >= since) ends.push(new Date(t))
+        const values = (name: string, end: Date): number =>
+          ({ page_follows: 300 + end.getUTCDate(), page_daily_follows_unique: 3, page_daily_unfollows_unique: 1, page_media_view: 700 })[name] ?? 2
         return Response.json({
           data: (p.get('metric') ?? '').split(',').map((name) => ({
             name,
             period: 'day',
-            values: [
-              { value: 0, end_time: '2026-10-01T07:00:00+0000' },
-              { value: values[name] ?? 2, end_time: '2026-10-02T07:00:00+0000' },
-            ],
+            values: ends.map((end) => ({ value: values(name, end), end_time: end.toISOString().replace('.000Z', '+0000') })),
           })),
         })
       }
@@ -471,12 +480,13 @@ describe('account telemetry against the database', () => {
   it('reads each Miami day once, the audience weekly, and the market — and nothing of Club de la Amistad', async () => {
     process.env.META_GRAPH_TOKEN = TOKEN
     await watch('hqtest.personal')
+    await watch('hqtest.badfield')
     await watch('clubdelaamistad')
     await watch('flamingo.county')
     const calls = fakeGraph({ comments: 'noscope' })
 
     const first = await collectGraphTelemetry(payload, NOW, { pauseMs: 0 })
-    expect(first).toMatchObject({ accountDays: 6, audience: 1, comments: 0, marketAccounts: 2 })
+    expect(first).toMatchObject({ accountDays: 6, audience: 1, comments: 0, marketAccounts: 3 })
 
     // Account days: three days back for each platform, yesterday with the follower total.
     const days = await statRows('account')
@@ -501,8 +511,10 @@ describe('account telemetry against the database', () => {
     expect(ig19.failedMetrics).toEqual(expect.arrayContaining(['reposts', 'profile_links_taps']))
     const ig18 = days.find((r) => r.platform === 'instagram' && r.day === '2026-10-18')!
     expect((ig18.metrics as Record<string, number>).followers_count).toBeUndefined()
-    // Facebook: the last Page day in range, read with the Page token.
-    expect(days.find((r) => r.platform === 'facebook' && r.day === '2026-10-19')!.metrics).toMatchObject({ page_follows: 310, page_daily_follows_unique: 3 })
+    // Facebook: Miami day 10-19 is the Page day that ends 07:00 UTC on 10-20 (21 of its hours
+    // are 10-19's), not the one ending on 10-19 — read with the Page token.
+    expect(days.find((r) => r.platform === 'facebook' && r.day === '2026-10-19')!.metrics).toMatchObject({ page_follows: 320, page_daily_follows_unique: 3 })
+    expect(days.find((r) => r.platform === 'facebook' && r.day === '2026-10-17')!.metrics).toMatchObject({ page_follows: 318 })
     expect(calls.find((c) => c.url.pathname.endsWith('/page-fc/insights'))?.auth).toBe(`Bearer ${PAGE_TOKEN}`)
 
     // Audience: Miami-Dade share over every follower, demographics, best hours.
@@ -524,9 +536,12 @@ describe('account telemetry against the database', () => {
     // Market: a personal account is marked, ours and Club's are refused without a call.
     const accounts = (await payload.find({ collection: 'hq-market-accounts', limit: 20, overrideAccess: true })).docs
     const by = (u: string) => accounts.find((a) => a.username === u)!
-    expect(by('hqtest.peer')).toMatchObject({ status: 'ok', followersCount: 2000, name: 'Name hqtest.peer' })
+    expect(by('hqtest.peer')).toMatchObject({ status: 'ok', followersCount: 2000, mediaCount: 300 })
     expect(by('hqtest.personal')).toMatchObject({ status: 'not_professional' })
     expect(by('hqtest.personal').statusDetail).toContain('110/2207013')
+    // A refused media field is an error on our side (retried daily), never "not a business account".
+    expect(by('hqtest.badfield')).toMatchObject({ status: 'error' })
+    expect(by('hqtest.badfield').statusDetail).toContain('bd_field_refused')
     expect(by('clubdelaamistad')).toMatchObject({ status: 'refused' })
     expect(by('flamingo.county')).toMatchObject({ status: 'refused' })
 
@@ -614,13 +629,24 @@ describe('account telemetry against the database', () => {
       overrideAccess: true,
     })
     expect(unread.totalDocs).toBe(1)
+
+    // An hour later the old reading no longer blocks: the one left is read.
+    fakeGraph()
+    const next = await collectGraphTelemetry(payload, new Date(NOW.getTime() + DAY + HOUR), { pauseMs: 0 })
+    expect(next.marketAccounts).toBe(1)
+    const stillUnread = await payload.count({
+      collection: 'hq-market-accounts',
+      where: { and: [{ username: { in: ['hqtest.peer3', 'hqtest.peer4'] } }, { status: { equals: 'pending' } }] },
+      overrideAccess: true,
+    })
+    expect(stillUnread.totalDocs).toBe(0)
   })
 
   it('shows follows per week, the Miami-Dade share and best hours in hqSocialReport', async () => {
     const later = new Date(NOW.getTime() + DAY)
     const summary = await graphSummary(payload, later)
     expect(summary.instagram).toMatchObject({ daysCounted: 4, followsLast7d: 20, unfollowsLast7d: 8, followersNow: 400 })
-    expect(summary.facebook).toMatchObject({ daysCounted: 4, followsLast7d: 12, followersNow: 310 })
+    expect(summary.facebook).toMatchObject({ daysCounted: 4, followsLast7d: 12, followersNow: 321 })
     expect(summary.audience).toMatchObject({ miamiDadeShare: 0.425, miamiDadeFollowers: 170, bestHoursMiami: ['7 PM', '8 PM', '6 AM'] })
     expect(summary.audience?.topCities[0]).toEqual({ city: 'Miami, Florida', followers: 100 })
     const report = await socialReport(payload, 7, later)

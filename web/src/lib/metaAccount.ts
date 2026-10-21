@@ -328,31 +328,49 @@ export const FB_PAGE_DAY_METRICS = [
 ] as const
 
 /**
- * The Page's numbers for `since`–`until`. Page days are Meta's own (they end
- * at 07:00 UTC, Pacific midnight), so a Miami day is answered by the Page day
- * that ends inside it: the latest value in range is kept.
+ * The Page's numbers for the Miami day `dayStart`–`dayEnd`. Page days are
+ * Meta's own: they end at 07:00 UTC (Pacific midnight), three hours after a
+ * Miami day ends. So the Page day that best matches Miami day D is the one
+ * whose `end_time` falls just after D's end — 21 of its 24 hours are D's.
+ * The request runs a day past `dayEnd` so that value is in range, and only
+ * the value ending within 12 hours after `dayEnd` is kept, by its time, never
+ * by position. A metric with no such value yet is left out (asked next run).
  */
 export async function fbPageDay(
   account: GraphAccount,
   userToken: string,
-  since: Date,
-  until: Date,
+  dayStart: Date,
+  dayEnd: Date,
   rejected: Set<string>,
 ): Promise<Reading | null> {
   const token = account.pageToken ?? userToken
+  const from = dayEnd.getTime()
+  const to = from + 12 * 60 * 60 * 1000
   return readInsights(
     async (metrics) => {
       const rows =
         (
           await graphGet<{ data?: InsightRow[] }>(
             `/${account.pageId}/insights`,
-            { metric: metrics.join(','), period: 'day', since: unix(since), until: unix(until) },
+            {
+              metric: metrics.join(','),
+              period: 'day',
+              since: unix(dayStart),
+              until: unix(new Date(from + 24 * 60 * 60 * 1000)),
+            },
             token,
             [token, userToken],
           )
         ).data ?? []
-      // Keep only the last value per metric, so parseInsightRows reads the right day.
-      return rows.map((r) => ({ ...r, values: r.values?.length ? [r.values[r.values.length - 1]] : r.values }))
+      return rows
+        .map((r) => ({
+          ...r,
+          values: ((r.values ?? []) as { value?: unknown; end_time?: string }[]).filter((v) => {
+            const t = v.end_time ? Date.parse(v.end_time) : NaN
+            return t > from && t <= to
+          }),
+        }))
+        .filter((r) => r.values.length)
     },
     FB_PAGE_DAY_METRICS,
     rejected,
@@ -419,7 +437,6 @@ export type BdMedia = {
 export type BdAccount = {
   id: string
   username?: string
-  name?: string
   followers_count?: number
   media_count?: number
   media: BdMedia[]
@@ -429,11 +446,21 @@ export type BdAccount = {
 
 const BD_MEDIA_FIELDS = 'id,caption,timestamp,media_type,media_product_type,permalink,like_count,comments_count'
 
+/** Thrown when the account answers but one of our media fields is refused: our query, not their account. */
+export const BD_FIELD_REFUSED = 'bd_field_refused'
+
 /**
  * Another professional account's public numbers and its latest `limit` media,
- * in one request. `username` must already pass `IG_USERNAME`: it goes inside
- * the `fields` string, so anything else could rewrite the query. If Graph
- * refuses `view_count` the media are asked for again without it.
+ * in one request. Account fields are the ones the IG User reference marks
+ * Public (`username`, `followers_count`, `media_count`). `username` must
+ * already pass `IG_USERNAME`: it goes inside the `fields` string, so anything
+ * else could rewrite the query.
+ *
+ * If Graph refuses the request with error 100, it is asked again without
+ * `view_count`; if that is refused too, once more with the account's id,
+ * username and followers only. When that last one answers, the account is
+ * fine and a media field is the problem: the error says so
+ * (`BD_FIELD_REFUSED` in its message) rather than blaming the account.
  */
 export async function businessDiscovery(
   account: GraphAccount,
@@ -442,22 +469,24 @@ export async function businessDiscovery(
   limit = 25,
 ): Promise<BdAccount> {
   if (!IG_USERNAME.test(username)) throw new GraphError(`not an Instagram username: ${JSON.stringify(username)}`, 400, 100)
-  const ask = (mediaFields: string) =>
-    graphGet<{ business_discovery?: Omit<BdAccount, 'media' | 'viewsRefused'> & { media?: { data?: BdMedia[] } } }>(
-      `/${account.igUserId}`,
-      {
-        fields: `business_discovery.username(${username}){id,username,name,followers_count,media_count,media.limit(${limit}){${mediaFields}}}`,
-      },
-      token,
-    )
+  type Reply = { business_discovery?: Omit<BdAccount, 'media' | 'viewsRefused'> & { media?: { data?: BdMedia[] } } }
+  const get = (inner: string) =>
+    graphGet<Reply>(`/${account.igUserId}`, { fields: `business_discovery.username(${username}){${inner}}` }, token)
+  const ask = (mediaFields: string) => get(`id,username,followers_count,media_count,media.limit(${limit}){${mediaFields}}`)
   let viewsRefused = false
-  let res
+  let res: Reply
   try {
     res = await ask(`${BD_MEDIA_FIELDS},view_count`)
   } catch (err) {
     if (!isInvalidParam(err)) throw err
-    res = await ask(BD_MEDIA_FIELDS)
     viewsRefused = true
+    try {
+      res = await ask(BD_MEDIA_FIELDS)
+    } catch (again) {
+      if (!isInvalidParam(again)) throw again
+      await get('id,username,followers_count') // throws the account's own error, if it is the account
+      throw new GraphError(`${BD_FIELD_REFUSED}: the account answers, but Graph refused a media field (${(again as Error).message})`, 400, 100)
+    }
   }
   const bd = res.business_discovery
   if (!bd) throw new GraphError(`no business_discovery for ${username}`, 404, 110)
@@ -469,8 +498,9 @@ export async function businessDiscovery(
  * Business Discovery refusing one username because of the account, not us:
  * a personal account, an age-gated one, or none by that name. Meta does not
  * document the error (its Instagram error table has no row for it); in
- * practice it is code 110 "Invalid user id", or 100 when the lookup itself is
- * refused (what is left after the `view_count` retry above). Matched on
- * codes, never on the message, and the code is kept on the watchlist row.
+ * practice it is code 110 "Invalid user id". Only 110 counts: a 100 is also
+ * what a bad field name gets, and blaming every account for our query would
+ * park the whole watchlist for a week. A 100 is kept as an `error`, retried
+ * daily, with its code on the watchlist row.
  */
-export const isNotProfessional = (err: unknown) => err instanceof GraphError && (err.code === 110 || err.code === 100)
+export const isNotProfessional = (err: unknown) => err instanceof GraphError && err.code === 110

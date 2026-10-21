@@ -1472,7 +1472,6 @@ export interface HqMarketAccount {
    * Graph’s error code and message, when the last read failed.
    */
   statusDetail?: string | null;
-  name?: string | null;
   followersCount?: number | null;
   mediaCount?: number | null;
   updatedAt: string;
@@ -3084,7 +3083,6 @@ export interface HqMarketAccountsSelect<T extends boolean = true> {
   status?: T;
   checkedAt?: T;
   statusDetail?: T;
-  name?: T;
   followersCount?: T;
   mediaCount?: T;
   updatedAt?: T;

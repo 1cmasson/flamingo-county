@@ -8,6 +8,7 @@ import {
   graphUsagePct,
   isPermissionError,
   isRateLimited,
+  resetGraphUsage,
   type GraphAccount,
 } from './metaGraph'
 
@@ -286,6 +287,9 @@ export async function collectMarket(
 ): Promise<{ checked: number; posts: number; stopped: string | null }> {
   const result = { checked: 0, posts: 0, stopped: null as string | null }
   if (deps.isRefused?.('business_discovery', now)) return { ...result, stopped: 'permission' }
+  // A reading left from an earlier run is an hour old at least: its window has
+  // moved on. Only replies in this run decide whether to stop.
+  resetGraphUsage()
   const refused = new Set([FLAMINGO_IG_USERNAME, ...managedOthers.map((u) => u.toLowerCase())])
   const pause = deps.pauseMs ?? MARKET_PAUSE_MS
 
@@ -318,7 +322,6 @@ export async function collectMarket(
         status: 'ok',
         checkedAt: now.toISOString(),
         statusDetail: bd.viewsRefused ? 'view_count refused by Graph; read without views.' : '',
-        name: bd.name ?? undefined,
         followersCount: followers ?? undefined,
         mediaCount: num(bd.media_count) ?? undefined,
       })

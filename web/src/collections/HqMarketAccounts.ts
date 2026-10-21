@@ -92,7 +92,6 @@ export const HqMarketAccounts: CollectionConfig = {
     {
       type: 'row',
       fields: [
-        { name: 'name', type: 'text', access: jobOnly, admin: { readOnly: true } },
         { name: 'followersCount', type: 'number', access: jobOnly, admin: { readOnly: true } },
         { name: 'mediaCount', type: 'number', access: jobOnly, admin: { readOnly: true } },
       ],

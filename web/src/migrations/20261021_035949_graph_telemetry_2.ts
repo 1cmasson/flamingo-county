@@ -31,7 +31,6 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	\`status\` text DEFAULT 'pending',
   	\`checked_at\` text,
   	\`status_detail\` text,
-  	\`name\` text,
   	\`followers_count\` numeric,
   	\`media_count\` numeric,
   	\`updated_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,

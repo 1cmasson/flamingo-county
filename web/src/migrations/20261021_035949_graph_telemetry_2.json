@@ -12147,13 +12147,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "followers_count": {
           "name": "followers_count",
           "type": "numeric",
@@ -17194,6 +17187,6 @@
   "internal": {
     "indexes": {}
   },
-  "id": "bf9cf504-6049-4793-a6ac-000a54b5a25f",
+  "id": "d7d33234-4d8f-4c0c-a796-4b21a5b74baf",
   "prevId": "00000000-0000-0000-0000-000000000000"
 }
