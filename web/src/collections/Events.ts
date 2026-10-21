@@ -1,4 +1,5 @@
 import { autoDraftHook } from '../lib/autoDraft'
+import { withdrawStoriesOnChange, withdrawStoriesOnDelete } from '../lib/hq'
 import { indexNowHooks } from '../lib/indexnow'
 import type { CollectionConfig } from 'payload'
 import { draftVersions, hhmm, mcpDraftsOnly, noPrice, publishedRead, slugField } from '../fields/shared'
@@ -34,7 +35,9 @@ export const Events: CollectionConfig = {
   // alone would let one replace the other.
   hooks: {
     ...indexNow,
-    afterChange: [...indexNow.afterChange, autoDraftHook('events')],
+    // A cancelled, postponed or deleted event takes its waiting stories down.
+    afterChange: [...indexNow.afterChange, autoDraftHook('events'), withdrawStoriesOnChange],
+    afterDelete: [...(indexNow.afterDelete ?? []), withdrawStoriesOnDelete],
     beforeOperation: [mcpDraftsOnly],
   },
   admin: {
