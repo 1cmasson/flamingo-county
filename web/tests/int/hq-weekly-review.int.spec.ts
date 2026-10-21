@@ -66,7 +66,17 @@ describe('weekly social review', () => {
   it('has the same shape with nothing to report', async () => {
     // Far enough ahead that no post, stat or event in the test database falls in the window.
     const ctx = await weeklyReviewContext(payload, new Date('2099-06-01T12:00:00Z'))
-    expect(ctx.socialReport).toEqual({ windowDays: 28, posts: [], otherReels: [], accounts: {}, bioClicks: {} })
+    expect(ctx.socialReport).toEqual({
+      windowDays: 28,
+      posts: [],
+      otherReels: [],
+      accounts: {},
+      bioClicks: {},
+      graph: expect.objectContaining({
+        instagram: expect.objectContaining({ daysCounted: 0, followsLast7d: null }),
+        facebook: expect.objectContaining({ daysCounted: 0, followsLast7d: null }),
+      }),
+    })
     expect(ctx.playbook).toBeNull()
     expect(ctx.upcomingEvents).toEqual({ from: '2099-06-01', to: '2099-06-15', events: [] })
     expect(Array.isArray(ctx.recentStories)).toBe(true)
@@ -350,7 +360,7 @@ describe('weekly social review', () => {
     it('runs the context tool and writes the playbook', async () => {
       const ctx = await rpc('tools/call', { name: 'hqWeeklyReviewContext', arguments: {} })
       const body = JSON.parse(ctx.result.content[0].text)
-      expect(Object.keys(body).sort()).toEqual(['generatedMiami', 'pendingDrafts', 'playbook', 'recentStories', 'socialReport', 'upcomingEvents'])
+      expect(Object.keys(body).sort()).toEqual(['generatedMiami', 'pendingDrafts', 'playbook', 'recentStories', 'reelReviews', 'socialReport', 'upcomingEvents'])
 
       const upd = await rpc('tools/call', {
         name: 'updateHqPlaybook',
