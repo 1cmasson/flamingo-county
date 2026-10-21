@@ -223,6 +223,27 @@ describe('knowing who', () => {
     expect(dash?.recent.find((r) => r.code === docs[0].code)).toMatchObject({ customer: 'María · •••1234', redeemedBy: 'Ana' })
   })
 
+  it('counts a coupon whose ref says "test": only PROMO_TEST_PHONES are tests', async () => {
+    await answerWhatsapp(payload, { phone: '+13055550010', name: 'Eve', body: `(ref #${waSlug} test es)` })
+    process.env.PROMO_TEST_PHONES = '(305) 555-0011'
+    await answerWhatsapp(payload, { phone: '+13055550011', name: 'Owner', body: `(ref #${waSlug} instagram es)` })
+    delete process.env.PROMO_TEST_PHONES
+    const find = (phone: string) =>
+      payload.find({ collection: 'promo-coupons', where: { phone: { equals: phone } }, overrideAccess: true }).then((r) => r.docs[0])
+    expect((await find('+13055550010')).test).toBe(false)
+    expect((await find('+13055550011')).test).toBe(true)
+  })
+
+  it('lets website coupons repeat even when an admin save blanks the phone', async () => {
+    const one = await claimCoupon(payload, { slug }, browser())
+    const two = await claimCoupon(payload, { slug }, browser())
+    if (!one.ok || !two.ok) throw new Error('claim failed')
+    for (const code of [one.code, two.code])
+      await payload.update({ collection: 'promo-coupons', where: { code: { equals: code } }, data: { phone: '', pinFails: 0 }, overrideAccess: true })
+    const { docs } = await payload.find({ collection: 'promo-coupons', where: { code: { in: [one.code, two.code] } }, overrideAccess: true })
+    expect(docs.map((d) => d.phone)).toEqual([null, null])
+  })
+
   it('answers anything else with their open coupons and what the number is for', async () => {
     const reply = await answerWhatsapp(payload, { phone: '+13055559999', name: 'Pedro', body: '¿Abren el domingo?' })
     expect(reply).toContain('Tus cupones:')

@@ -24,6 +24,10 @@ export const PromoCoupons: CollectionConfig = {
   defaultSort: '-createdAt',
   // One coupon per WhatsApp number per promotion. Website coupons have no phone, and SQLite lets those repeat.
   indexes: [{ fields: ['promotion', 'phone'], unique: true }],
+  hooks: {
+    // An emptied phone field must stay NULL, or the second website coupon of a promotion would clash with the first.
+    beforeChange: [({ data }) => (data && data.phone === '' ? { ...data, phone: null } : data)],
+  },
   fields: [
     { name: 'code', type: 'text', required: true, unique: true, index: true },
     { name: 'promotion', type: 'relationship', relationTo: 'promotions', required: true, index: true },

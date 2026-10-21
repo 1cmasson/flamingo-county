@@ -108,6 +108,14 @@ export function whatsappNumber(from: string | null): string | null {
   return m ? m[1] : null
 }
 
+/** The owner's and staff's own numbers (PROMO_TEST_PHONES, comma-separated): their coupons work but aren't counted. */
+const testNumbers = () =>
+  (process.env.PROMO_TEST_PHONES ?? '')
+    .split(',')
+    .map((n) => n.replace(/[^\d+]/g, ''))
+    .map((n) => (n.startsWith('+') ? n : `+${n.length === 10 ? `1${n}` : n}`))
+    .filter((n) => n.length > 8)
+
 /** The first word of a WhatsApp profile name, to greet them by. */
 const firstName = (name: string | null) => name?.trim().split(/\s+/)[0]?.slice(0, 30) || null
 
@@ -187,8 +195,8 @@ export async function answerWhatsapp(payload: Payload, msg: IncomingMessage, now
       channel: 'whatsapp',
       phone: msg.phone,
       whatsappName: msg.name?.slice(0, 80) || null,
-      // The promotion page writes "test" for the owner's and staff's own devices.
-      test: ask.source === 'test',
+      // Never from the ref: anyone can edit it, and a test coupon is left out of the limit and the dashboard.
+      test: testNumbers().includes(msg.phone),
     })
   } catch (err) {
     // The same number asking twice at once: the other message got it.

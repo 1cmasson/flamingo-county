@@ -10,7 +10,7 @@ import { dateOnly, todayISO } from '../../../../../lib/dates'
 import { mediaUrl } from '../../../../../lib/jsonld'
 import { claimMode, couponWhatsApp, issuedCount, partnerFor, promoState } from '../../../../../lib/promos'
 import { askRef } from '../../../../../lib/promoWhatsapp'
-import { classifySource, isStaff, normalizeHost } from '../../../../../lib/visits'
+import { classifySource, normalizeHost } from '../../../../../lib/visits'
 import { dayLabel, promoCopy } from '../../../../../lib/promoCopy'
 import { absUrl, openGraph, twitterCard } from '../../../../../lib/site'
 import type { City, Listing, Media } from '../../../../../payload-types'
@@ -82,7 +82,8 @@ export default async function PromoPage({
     const utm = (await searchParams).utm_source
     const ref = normalizeHost(h.get('referer') ? safeHost(h.get('referer')!) : null)
     const own = normalizeHost(h.get('x-forwarded-host') ?? h.get('host'))
-    const source = isStaff(h) ? 'test' : classifySource(ref && ref !== own ? ref : null, typeof utm === 'string' ? utm : null)
+    // Staff devices aren't marked here: the ref is editable text. PROMO_TEST_PHONES marks them on arrival.
+    const source = classifySource(ref && ref !== own ? ref : null, typeof utm === 'string' ? utm : null)
     const text = c.waAsk(promo.title ?? '', name, askRef(slug, source, lang as Lang))
     whatsapp = `https://wa.me/${couponWhatsApp()}?text=${encodeURIComponent(text)}`
   }
