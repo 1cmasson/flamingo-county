@@ -17,6 +17,9 @@ import { Events } from './collections/Events'
 import { WeeklyEvents } from './collections/WeeklyEvents'
 import { Stories } from './collections/Stories'
 import { Spotlights } from './collections/Spotlights'
+import { Promotions } from './collections/Promotions'
+import { Partners } from './collections/Partners'
+import { PromoCoupons } from './collections/PromoCoupons'
 import { Subscribers } from './collections/Subscribers'
 import { ListingRequests } from './collections/ListingRequests'
 import { Members } from './collections/Members'
@@ -91,6 +94,9 @@ export default buildConfig({
     Events,
     WeeklyEvents,
     Spotlights,
+    Promotions,
+    Partners,
+    PromoCoupons,
     Subscribers,
     ListingRequests,
     Members,
@@ -261,6 +267,13 @@ export default buildConfig({
         'weekly-events': { enabled: { find: true, create: true, update: true }, description: 'Recurring weekly events. Save with draft: true — drafts are never live; publish with hqRequestPublish.' },
         stories: { enabled: { find: true, create: true, update: true }, description: 'Stories. Save with draft: true — drafts are never live; publish with hqRequestPublish.' },
         spotlights: { enabled: { find: true, create: true, update: true }, description: 'Home-page spotlights. Save with draft: true — drafts are never live; publish with hqRequestPublish.' },
+        // Partners (the staff PIN, the dashboard key) and promo-coupons stay off
+        // MCP: secrets, and rows only visitors and staff create.
+        promotions: {
+          enabled: { find: true, create: true, update: true },
+          description:
+            'Coupon promotions for a partner business (one-time codes, redeemed with the business’s staff PIN). Never a price or a saving in dollars. Save with draft: true; publish with hqRequestPublish.',
+        },
         cities: { enabled: { find: true } },
         categories: { enabled: { find: true } },
         // Read-only, to reuse a venue photo already imported (credit, licence,

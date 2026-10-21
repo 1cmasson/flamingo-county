@@ -44,7 +44,16 @@ export function normalizePath(raw: unknown): string | null {
     return null
   }
   if (path.length > 1) path = path.replace(/\/+$/, '')
-  return path.length > MAX_PATH ? null : path
+  return path.length > MAX_PATH ? null : withoutSecrets(path)
+}
+
+/**
+ * A coupon's code and a partner's dashboard key are the keys to them, so a
+ * stored path keeps only the page they are on: `/es/promo/x/c/7K3Q9M` is
+ * counted as `/es/promo/x/c`, `/es/partner/<key>` as `/es/partner`.
+ */
+function withoutSecrets(path: string): string {
+  return path.replace(/^(\/[a-z]{2}\/promo\/[^/]+\/c)\/.*$/, '$1').replace(/^(\/[a-z]{2}\/partner)\/.*$/, '$1')
 }
 
 const HOST = /^[a-z0-9.-]{1,253}$/

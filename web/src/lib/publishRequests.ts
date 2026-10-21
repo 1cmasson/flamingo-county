@@ -19,7 +19,7 @@ import { clip, esc, ownerChatId, resolveButtons, sendMessage, telegramConfigured
  * approved (`hq-publish-requests` is not exposed over MCP).
  */
 
-export const PUBLISHABLE = ['events', 'weekly-events', 'stories', 'spotlights', 'listings'] as const
+export const PUBLISHABLE = ['events', 'weekly-events', 'stories', 'spotlights', 'listings', 'promotions'] as const
 export type Publishable = (typeof PUBLISHABLE)[number]
 
 /**

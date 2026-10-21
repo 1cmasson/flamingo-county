@@ -1,3 +1,5 @@
+import { normalizePath } from '../../../lib/visits'
+
 const METRIC_NAMES = new Set(['CLS', 'FCP', 'INP', 'LCP', 'TTFB'])
 
 type VitalsBody = {
@@ -36,7 +38,8 @@ export async function POST(req: Request) {
       rum: name,
       value: Math.round(value * 1000) / 1000,
       rating: typeof rating === 'string' ? rating : undefined,
-      path: typeof path === 'string' ? path : undefined,
+      // Without a coupon code or a partner's dashboard key (lib/visits.ts).
+      path: normalizePath(path) ?? undefined,
       t: new Date().toISOString(),
     }),
   )

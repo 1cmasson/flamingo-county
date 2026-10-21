@@ -2,12 +2,13 @@ import { getPayload } from 'payload'
 import type { Where } from 'payload'
 import config from '../payload.config'
 import { translator, type Lang } from '../i18n'
-import type { City, Listing, Story, Event, WeeklyEvent, Spotlight, Category, EventKind, Video } from '../payload-types'
+import type { City, Listing, Story, Event, WeeklyEvent, Spotlight, Category, EventKind, Video, Promotion } from '../payload-types'
 import { PUBLISHED } from '../fields/shared'
 import { routes } from './routes'
 import { todayISO } from './dates'
 import { seasonEvents, type SeasonKey } from './seasons'
 import { fold, matches, metaLine, prepare, squash, type Suggestion } from './search'
+import { partnerFor, promoOpen } from './promos'
 
 /**
  * Data access through Payload's local API — an in-process call, no HTTP, so
@@ -401,6 +402,39 @@ export async function getSpotlights(lang: Lang): Promise<Spotlight[]> {
     depth: 2,
   })
   return docs
+}
+
+/* --------------------------------------------------------------- promotions */
+
+export async function getPromotion(lang: Lang, slug: string): Promise<Promotion | null> {
+  const payload = await db()
+  const { docs } = await payload.find({
+    collection: 'promotions',
+    where: published({ slug: { equals: slug } }),
+    locale: lang,
+    limit: 1,
+    depth: 2,
+  })
+  return docs[0] ?? null
+}
+
+/**
+ * A business's promotions that are on today (lib/promos.ts `promoOpen`),
+ * newest first: the banner on its page. Full ones still show; their page says
+ * so. None until the business has its staff PIN (`partnerFor`).
+ */
+export async function getOpenPromotions(lang: Lang, listingId: number, today: string = todayISO()): Promise<Promotion[]> {
+  const payload = await db()
+  if (!(await partnerFor(payload, listingId))) return []
+  const { docs } = await payload.find({
+    collection: 'promotions',
+    where: published({ listing: { equals: listingId } }),
+    locale: lang,
+    sort: '-createdAt',
+    limit: 20,
+    depth: 0,
+  })
+  return docs.filter((p) => promoOpen(p, today))
 }
 
 /* ------------------------------------------------------------------ globals */

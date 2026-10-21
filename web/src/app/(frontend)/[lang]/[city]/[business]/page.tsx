@@ -11,6 +11,7 @@ import {
   getListing,
   getListings,
   getListYourSpotPage,
+  getOpenPromotions,
   getSiteSettings,
   getStoryForListing,
   rel,
@@ -33,6 +34,8 @@ import { isGem } from '../../../../../lib/categories'
 import { FreeRidePanel } from '../../../../../components/Transit'
 import { FULL_WIDTH_SIZES } from '../../../../../lib/srcset'
 import s from '../../../../../components/chrome.module.css'
+import promo from '../../../../../components/promo.module.css'
+import { promoCopy } from '../../../../../lib/promoCopy'
 
 /**
  * Rendered per request, always.
@@ -130,11 +133,12 @@ export default async function BusinessPage({
     notFound()
   }
 
-  const [city, settings, lys, story] = await Promise.all([
+  const [city, settings, lys, story, promos] = await Promise.all([
     getCity(lang, citySlug),
     getSiteSettings(lang),
     getListYourSpotPage(lang),
     getStoryForListing(lang, listing.id),
+    getOpenPromotions(lang, listing.id),
   ])
 
   const category = rel<Category>(listing.category)
@@ -369,6 +373,22 @@ export default async function BusinessPage({
           answer={listingAnswer(lang, listing, category, cityName)}
           verified={verifiedText ? { text: verifiedText, iso: dateOnly(listing.lastVerifiedAt) } : null}
         />
+
+        {/* A partner's coupon, while it is on (lib/promos.ts). */}
+        {promos.map((p) => (
+          <a key={p.id} href={`${routes.promo(lang, p.slug)}?utm_source=site`} className={promo.banner}>
+            <span className={promo.bannerIcon} aria-hidden="true">
+              🎟️
+            </span>
+            <span className={promo.bannerText}>
+              <span className={promo.bannerKicker}>{promoCopy(lang).kicker}</span>
+              <span className={promo.bannerTitle}>{p.title}</span>
+            </span>
+            <span className={promo.bannerArrow} aria-hidden="true">
+              →
+            </span>
+          </a>
+        ))}
 
         <div
           data-stack
