@@ -40,7 +40,7 @@ export async function buildWrap(payload: Payload, now: Date = new Date()): Promi
       where: {
         and: [
           { createdAt: { greater_than_equal: dayStart.toISOString() } },
-          { type: { not_in: ['brief.sent', 'wrap.sent'] } },
+          { type: { not_in: ['brief.sent', 'wrap.sent', 'review.reminded'] } },
         ],
       },
       sort: '-createdAt',

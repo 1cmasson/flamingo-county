@@ -180,6 +180,7 @@ export interface Config {
       graphTelemetry: TaskGraphTelemetry;
       eveningWrap: TaskEveningWrap;
       weeklyRoundup: TaskWeeklyRoundup;
+      reviewReminder: TaskReviewReminder;
       inline: {
         input: unknown;
         output: unknown;
@@ -2298,7 +2299,8 @@ export interface PayloadJob {
           | 'reelScore'
           | 'graphTelemetry'
           | 'eveningWrap'
-          | 'weeklyRoundup';
+          | 'weeklyRoundup'
+          | 'reviewReminder';
         taskID: string;
         input?:
           | {
@@ -2341,6 +2343,7 @@ export interface PayloadJob {
         | 'graphTelemetry'
         | 'eveningWrap'
         | 'weeklyRoundup'
+        | 'reviewReminder'
       )
     | null;
   queue?: string | null;
@@ -4056,6 +4059,16 @@ export interface TaskWeeklyRoundup {
   input?: unknown;
   output: {
     drafted?: boolean | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskReviewReminder".
+ */
+export interface TaskReviewReminder {
+  input?: unknown;
+  output: {
+    sent?: boolean | null;
   };
 }
 /**

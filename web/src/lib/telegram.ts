@@ -2,7 +2,7 @@
  * The HQ Telegram bot — the always-on messenger half of the ops layer.
  *
  * Deliberately a thin wrapper over the Bot API rather than a framework: the bot
- * only ever talks to one person (TELEGRAM_OWNER_CHAT_ID), it needs six methods,
+ * only ever talks to one person (TELEGRAM_OWNER_CHAT_ID), it needs seven methods,
  * and a dependency would buy nothing but a larger image.
  *
  * Nothing here throws into a visitor's request. Callers on the public path use
@@ -129,6 +129,28 @@ export async function resolveButtons(
     parse_mode: 'HTML',
     reply_parameters: { message_id: messageId, allow_sending_without_reply: true },
   })
+}
+
+/**
+ * Rewrite a text message in place and drop its buttons. For text messages
+ * only: a media caption needs `resolveButtons`. Editing to the same text
+ * again (a double tap) is not an error; a message Telegram won't let us edit
+ * any more gets the outcome as a reply instead.
+ */
+export async function editMessage(chatId: string | number, messageId: number, text: string): Promise<void> {
+  try {
+    await call('editMessageText', {
+      chat_id: chatId,
+      message_id: messageId,
+      text: clip(text, MESSAGE_LIMIT),
+      parse_mode: 'HTML',
+      link_preview_options: { is_disabled: true },
+      reply_markup: { inline_keyboard: [] },
+    })
+  } catch (err) {
+    if (err instanceof Error && /not modified/i.test(err.message)) return
+    await resolveButtons(chatId, messageId, text)
+  }
 }
 
 export async function answerCallback(id: string, text?: string): Promise<void> {

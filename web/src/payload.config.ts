@@ -42,6 +42,7 @@ import { graphTelemetry } from './jobs/graphTelemetry'
 import { morningBrief } from './jobs/morningBrief'
 import { reelScore } from './jobs/reelScore'
 import { reelStats } from './jobs/reelStats'
+import { reviewReminder } from './jobs/reviewReminder'
 import { socialStats } from './jobs/socialStats'
 import { weeklyRoundup } from './jobs/weeklyRoundup'
 import { hqMcpTools } from './lib/mcpTools'
@@ -304,8 +305,8 @@ export default buildConfig({
   /**
    * The HQ jobs queue — the morning brief, the evening wrap, the social stats
    * collector, the Graph reel stats collector, the 72-hour reel scorer, the
-   * Graph account/audience/comments/market collector and the Monday roundup
-   * (src/jobs).
+   * Graph account/audience/comments/market collector, the Monday roundup and
+   * the Monday growth review reminder (src/jobs).
    *
    * One in-process runner, checking every minute. That is safe here and only
    * here because the service is pinned to a single instance by SQLite on a
@@ -317,7 +318,7 @@ export default buildConfig({
    * admin, and a quiet night would skip the brief.
    */
   jobs: {
-    tasks: [morningBrief, socialStats, reelStats, reelScore, graphTelemetry, eveningWrap, weeklyRoundup],
+    tasks: [morningBrief, socialStats, reelStats, reelScore, graphTelemetry, eveningWrap, weeklyRoundup, reviewReminder],
     autoRun: [{ cron: '* * * * *', queue: 'hq' }],
     jobsCollectionOverrides: ({ defaultJobsCollection }) => ({
       ...defaultJobsCollection,
