@@ -541,7 +541,9 @@ message with one button:
     7 days, counted on Instagram (or Facebook, when Instagram has none). The
     twins aren't added together.
   - *Best reel:* the highest shares per person reached, each reel read at its
-    latest checkpoint. A great first hour on a reach of 4 doesn't count.
+    latest checkpoint. Only reels with a 24-hour reading or later are ranked:
+    one under a day old is counted in the reels posted, but a great first hour
+    on a reach of 20 can't make it the best.
   No model is called and nothing is posted.
 - **The button** files the growth review task, using the same function as
   `/review`. The message then reads "Review requested ✅ — Claude will run it

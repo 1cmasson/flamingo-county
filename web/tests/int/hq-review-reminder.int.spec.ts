@@ -3,6 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
 
+import { reviewReminder } from '@/jobs/reviewReminder'
 import { REVIEW_PREFIX } from '@/lib/growth'
 import { parseDraftCallback } from '@/lib/hq'
 import {
@@ -131,6 +132,24 @@ describe('the weekly review reminder', () => {
     expect(tg.of('sendMessage')).toHaveLength(2)
   })
 
+  it('the hourly job itself sends once, retried or not', async () => {
+    const tg = fakeTelegram()
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      vi.setSystemTime(MON_0805)
+      // A function handler, not a file path: see src/jobs/reviewReminder.ts.
+      const handler = reviewReminder.handler as (args: never) => Promise<{ output: { sent: boolean } }>
+      const run = () => handler({ req: { payload } } as never)
+      expect((await run()).output.sent).toBe(true)
+      expect((await run()).output.sent).toBe(false)
+      vi.setSystemTime(MON_0905)
+      expect((await run()).output.sent).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+    expect(tg.of('sendMessage')).toHaveLength(1)
+  })
+
   it('two runs at once still send one', async () => {
     const tg = fakeTelegram()
     const results = await Promise.all([sendReviewReminder(payload, MON_0805), sendReviewReminder(payload, MON_0805)])
@@ -254,8 +273,10 @@ describe('the weekly review reminder', () => {
     await reel('instagram', 'rr-a', '1h', { reach: 4, shares: 1 })
     await reel('instagram', 'rr-a', '3d', { reach: 1000, shares: 5 })
     await reel('instagram', 'rr-b', '24h', { reach: 500, shares: 10 })
-    // B's Facebook twin: not a third reel.
+    // B's Facebook twin: not another reel.
     await reel('facebook', 'rr-fb-b', '24h', { post_impressions_unique: 300, 'post_video_social_actions.share': 3 })
+    // Posted last night: only a 3h reading so far. Counted, not ranked.
+    await reel('instagram', 'rr-c', '3h', { reach: 20, shares: 5 })
 
     const n = await weekNumbers(payload, now)
     expect(n.followers).toEqual({
@@ -265,13 +286,13 @@ describe('the weekly review reminder', () => {
         { platform: 'facebook', gained: 2 },
       ]),
     })
-    expect(n.reels).toBe(2)
+    expect(n.reels).toBe(3)
     expect(n.best).toMatchObject({ platform: 'instagram', sharesPerReach: 0.02 })
     expect(n.best?.caption).toContain('rr-b')
 
     const text = reminderText(n)
     expect(text).toContain('+14 followers (')
-    expect(text).toContain('2 reels posted')
+    expect(text).toContain('3 reels posted')
     expect(text).toContain('<a href="https://www.instagram.com/reel/rr-b/">“HQ-TEST rr-b”</a> on instagram, 2 shares per 100 reached')
     expect(text).not.toContain('second line')
   })

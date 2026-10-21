@@ -36,6 +36,8 @@ const DAY = 24 * 60 * 60 * 1000
 /** A day's channel snapshot is taken at 6 AM; 7½ days reaches last Monday's. */
 const FOLLOWER_WINDOW_MS = 7.5 * DAY
 const CHECKPOINT_ORDER = ['1h', '3h', '24h', '3d', '7d']
+/** Readings old enough to rank a reel on. */
+const SETTLED = new Set(['24h', '3d', '7d'])
 
 /** The `hq-social-stats` fields read here (the finds below select only these). */
 type StatRow = Pick<HqSocialStat, 'platform' | 'metrics'> &
@@ -88,9 +90,11 @@ function followersGained(rows: StatRow[]): WeekNumbers['followers'] {
 
 /**
  * Graph reel rows are one per checkpoint, so each reel is first collapsed to
- * its furthest reading: a 1h reading with a reach of 4 and one share must not
- * beat a week-old reel. Instagram and Facebook carry the same reels, so the
- * count is one platform's (Instagram's when it has any), not the sum.
+ * its furthest reading. Only reels read at 24h or later are ranked: early
+ * shares per reach run high on a tiny reach, so a reel posted Sunday night
+ * (only a 1h or 3h reading by Monday morning) is counted but can't be "best".
+ * Instagram and Facebook carry the same reels, so the count is one platform's
+ * (Instagram's when it has any), not the sum.
  */
 function reelsOfTheWeek(rows: StatRow[]): Pick<WeekNumbers, 'reels' | 'best'> {
   const furthest = new Map<string, StatRow>()
@@ -111,6 +115,7 @@ function reelsOfTheWeek(rows: StatRow[]): Pick<WeekNumbers, 'reels' | 'best'> {
 
   let best: WeekNumbers['best'] = null
   for (const r of reels) {
+    if (!SETTLED.has(r.checkpoint ?? '')) continue
     const { sharesPerReach } = reelRatios(r.platform, r.metrics as Record<string, number>, r.durationSec)
     if (sharesPerReach === null || (best && sharesPerReach <= best.sharesPerReach)) continue
     best = { platform: r.platform, caption: r.caption ?? '', permalink: r.permalink ?? null, sharesPerReach }
