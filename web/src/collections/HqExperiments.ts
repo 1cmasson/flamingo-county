@@ -13,6 +13,11 @@ const day = { date: { pickerAppearance: 'dayOnly' as const, displayFormat: 'yyyy
  * Notes, not switches: nothing reads this to publish or post anything, so
  * Claude may write every field over MCP. Delete is off there; drop an
  * experiment with status `dropped` instead, so the history stays.
+ *
+ * `drafts` names the social drafts an experiment is about (for a reel, both
+ * language cuts). When the reel scorer (lib/reelScore.ts) reviews one of them
+ * at 72 hours, it appends the numbers to `result` — after whatever is there,
+ * once — and never sets `verdict` or `status`: judging stays with the review.
  */
 export const HqExperiments: CollectionConfig = {
   slug: 'hq-experiments',
@@ -83,6 +88,16 @@ export const HqExperiments: CollectionConfig = {
         { name: 'startedOn', type: 'date', admin: day },
         { name: 'checkOn', type: 'date', admin: { ...day, description: 'When there should be enough data to judge.' } },
       ],
+    },
+    {
+      name: 'drafts',
+      type: 'relationship',
+      relationTo: 'hq-social-drafts',
+      hasMany: true,
+      admin: {
+        description:
+          'The social drafts this tests, if any (both language cuts of a reel). Their 72-hour numbers are appended to the result automatically.',
+      },
     },
     {
       name: 'result',
