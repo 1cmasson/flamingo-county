@@ -212,6 +212,24 @@ fetches stats live and keeps none:
   late. The account is found from the token, and anything that is not that
   Page with that Instagram is refused. See `lib/metaGraph.ts` and
   `lib/reelStats.ts`; `hqSocialReport` adds them as `reels` and `otherReels`.
+- **The 72-hour reel review.** The hourly `reelScore` job (at :55) waits for a
+  reel's 3d reading, then writes one post-mortem per story to
+  `hq-reel-reviews` (`lib/reelScore.ts`). Internal only: it reads saved rows,
+  posts nothing, sends no Telegram and adds nothing to the brief. Each review
+  has, per language cut and platform, views, reach, average watch (seconds and
+  % of length), skip rate, and shares, saves and likes per person reached;
+  each beside the **median** of the account's previous reels of the same
+  pillar at 3d (up to 20, last 90 days) as a ratio, with the baseline's size;
+  the Spanish cut over the English one; and where Facebook viewers left (% at
+  3 s, 15 s, half, and the steepest drop). The two cuts of a story are paired
+  when they were drafted within 5 minutes of each other, go out within 2
+  hours, share a pillar, are one `es` and one `en`, and neither has another
+  candidate; anything else is reviewed alone. A cut is scored once every
+  platform it was measured on has its 3d reading, or once the 3d window has
+  closed (120 h), with what there is (`complete` unticked). No 3d reading, no
+  review. An experiment whose `drafts` names one of the cuts gets the numbers
+  appended to its `result`, once; its verdict is never set. The growth review
+  reads them as `reelReviews`.
 - **Account snapshots.** Once a day, in the 6 AM Miami hour before the brief,
   each account's last seven days are saved. The brief's **Socials** section
   reads the latest one.
