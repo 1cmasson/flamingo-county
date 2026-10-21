@@ -40,6 +40,7 @@ import * as migration_20261020_184304_spend_approvals from './20261020_184304_sp
 import * as migration_20261021_021048_graph_telemetry from './20261021_021048_graph_telemetry';
 import * as migration_20261021_032749_reel_reviews from './20261021_032749_reel_reviews';
 import * as migration_20261021_035949_graph_telemetry_2 from './20261021_035949_graph_telemetry_2';
+import * as migration_20261021_133014_reel_now from './20261021_133014_reel_now';
 
 export const migrations = [
   {
@@ -250,6 +251,11 @@ export const migrations = [
   {
     up: migration_20261021_035949_graph_telemetry_2.up,
     down: migration_20261021_035949_graph_telemetry_2.down,
-    name: '20261021_035949_graph_telemetry_2'
+    name: '20261021_035949_graph_telemetry_2',
+  },
+  {
+    up: migration_20261021_133014_reel_now.up,
+    down: migration_20261021_133014_reel_now.down,
+    name: '20261021_133014_reel_now'
   },
 ];
