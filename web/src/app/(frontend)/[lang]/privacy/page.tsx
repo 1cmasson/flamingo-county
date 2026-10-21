@@ -39,7 +39,8 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
         p: [
           'When you take a coupon for a business’s promotion, we store its code, which promotion it is for, the site that sent you here (Instagram, Google…), and when the business marks it used. Not your name, phone number, email or IP address. The code is also kept in your browser, so you see the same coupon if you come back.',
           'If you tap “Save it to WhatsApp”, WhatsApp opens a message to our number with your coupon’s link, and you choose whether to send it. If you do, we see your number like any WhatsApp message to us; we don’t add it to the coupon.',
-          'The business sees how many coupons were taken and used, and the codes and times of the ones used. Nothing that identifies you.',
+          'Some promotions are one per person, and you ask for those on WhatsApp: you send us a message and we reply with your coupon. For those we keep, with the coupon, the WhatsApp number that asked and the name on your WhatsApp profile, so each number gets one coupon and we know the promotion reached real people. We use them for that coupon only, and we don’t message you about anything else unless you ask us to.',
+          'The business sees how many coupons were taken and used, the codes and times of the ones used, and which of their staff marked each one. For WhatsApp coupons they also see your first name and the last four digits of your number, never the whole number.',
         ],
       },
       {
@@ -147,7 +148,8 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
         p: [
           'Cuando tomas un cupón de la promoción de un negocio, guardamos su código, para qué promoción es, el sitio que te trajo (Instagram, Google…) y cuándo el negocio lo marca como usado. No tu nombre, teléfono, correo ni dirección IP. El código también se queda en tu navegador, para que veas el mismo cupón si vuelves.',
           'Si tocas «Guárdalo en WhatsApp», WhatsApp abre un mensaje a nuestro número con el enlace de tu cupón, y tú decides si lo mandas. Si lo mandas, vemos tu número como en cualquier mensaje de WhatsApp; no lo añadimos al cupón.',
-          'El negocio ve cuántos cupones se tomaron y se usaron, y el código y la hora de los usados. Nada que te identifique.',
+          'Algunas promociones son una por persona, y esas se piden por WhatsApp: nos mandas un mensaje y te contestamos con tu cupón. En esas guardamos, junto al cupón, el número de WhatsApp que lo pidió y el nombre de tu perfil de WhatsApp, para que cada número reciba un solo cupón y sepamos que la promoción llegó a gente de verdad. Solo los usamos para ese cupón, y no te escribimos de otra cosa a menos que nos lo pidas.',
+          'El negocio ve cuántos cupones se tomaron y se usaron, el código y la hora de los usados, y quién de su personal marcó cada uno. En los cupones de WhatsApp también ve tu primer nombre y los últimos cuatro dígitos de tu número, nunca el número completo.',
         ],
       },
       {

@@ -72,6 +72,19 @@ export const Promotions: CollectionConfig = {
       admin: { description: 'At most this many coupons handed out. Empty: no limit.' },
     },
     {
+      name: 'claimBy',
+      type: 'select',
+      defaultValue: 'web',
+      options: [
+        { label: 'On the website (anonymous)', value: 'web' },
+        { label: 'By WhatsApp (one per number; we know who)', value: 'whatsapp' },
+      ],
+      admin: {
+        description:
+          'How people get a coupon. WhatsApp opens a ready message to our coupon number and the reply carries the code. Until the WhatsApp number is connected to the site, this falls back to the website.',
+      },
+    },
+    {
       name: 'image',
       type: 'upload',
       relationTo: 'media',

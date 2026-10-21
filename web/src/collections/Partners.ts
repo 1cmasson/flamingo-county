@@ -1,12 +1,19 @@
 import { randomBytes } from 'node:crypto'
 import type { CollectionConfig } from 'payload'
+import type { Partner } from '../payload-types'
 import { staffOnly } from '../fields/shared'
 
+const fourDigits = (v: unknown) => (typeof v === 'string' && /^\d{4}$/.test(v)) || 'Four digits, e.g. 4821.'
+
 /**
- * A business that runs promotions with us: its staff PIN and the private
+ * A business that runs promotions with us: its staff's PINs and the private
  * link to its coupon dashboard (lib/promos.ts). One row per business, kept for
- * every promotion it runs, so staff learn one PIN and the owner keeps one
- * bookmark.
+ * every promotion it runs, so staff learn their PIN once and the owner keeps
+ * one bookmark.
+ *
+ * Each waiter can have their own PIN (`staff`), so the dashboard shows who
+ * marked each coupon used; `staffPin` is a shared one for the whole business.
+ * Either is enough to start handing out coupons.
  *
  * Its own staff-only collection, not fields on `listings` or `promotions`:
  * those are public-read with drafts, so a PIN there would be one field-access
@@ -21,7 +28,7 @@ export const Partners: CollectionConfig = {
     group: 'Partners',
     defaultColumns: ['name', 'listing', 'updatedAt'],
     description:
-      'Businesses running coupons. The PIN is what their staff type to mark a coupon used; the dashboard link shows them how many came in. Give both to the business in person.',
+      'Businesses running coupons. Staff type a PIN to mark a coupon used: give each waiter their own (Staff) to see who marked each one. The dashboard link shows them how many came in. Hand PINs and the link over in person.',
   },
   hooks: {
     beforeChange: [
@@ -44,11 +51,36 @@ export const Partners: CollectionConfig = {
     },
     { name: 'listing', type: 'relationship', relationTo: 'listings', required: true, unique: true },
     {
+      name: 'staff',
+      type: 'array',
+      labels: { singular: 'Staff member', plural: 'Staff' },
+      admin: {
+        description: 'One PIN per waiter, so the dashboard shows who marked each coupon. Remove someone when they leave; coupons they marked keep their name.',
+        initCollapsed: true,
+      },
+      validate: (rows: unknown, { siblingData }: { siblingData: Partial<Partner> }) => {
+        const pins = (Array.isArray(rows) ? rows : []).map((r: { pin?: string }) => r?.pin).filter(Boolean)
+        if (siblingData?.staffPin) pins.push(siblingData.staffPin)
+        return new Set(pins).size === pins.length || 'Two people have the same PIN: give each one their own.'
+      },
+      fields: [
+        {
+          type: 'row',
+          fields: [
+            { name: 'name', type: 'text', required: true, admin: { description: 'As the business calls them, e.g. "Ana".' } },
+            { name: 'pin', type: 'text', required: true, validate: fourDigits, admin: { description: 'Four digits only they know.' } },
+          ],
+        },
+      ],
+    },
+    {
       name: 'staffPin',
       type: 'text',
-      required: true,
-      validate: (v: unknown) => (typeof v === 'string' && /^\d{4}$/.test(v)) || 'Four digits, e.g. 4821.',
-      admin: { description: 'Four digits staff type on the customer’s phone to redeem. Change it if it leaks; old coupons keep working.' },
+      validate: (v: unknown) => !v || fourDigits(v),
+      admin: {
+        description:
+          'Optional: one PIN for the whole business, for anyone not on the Staff list. Coupons marked with it show no name. Change it if it leaks; old coupons keep working.',
+      },
     },
     {
       name: 'dashboardKey',

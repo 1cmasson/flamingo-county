@@ -139,6 +139,22 @@ export default async function PartnerPage({ params }: { params: Promise<{ lang: 
           </section>
         ) : null}
 
+        {dash.staff.length ? (
+          <section className={`${s.card} ${s.body}`}>
+            <h2 className={s.h2}>{c.byStaff}</h2>
+            <table className={s.table}>
+              <tbody>
+                {dash.staff.map((row) => (
+                  <tr key={row.name}>
+                    <td>{row.name || c.sharedPin}</td>
+                    <td className={s.num}>{row.used}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        ) : null}
+
         <section className={`${s.card} ${s.body}`}>
           <h2 className={s.h2}>{c.recent}</h2>
           {dash.recent.length ? (
@@ -147,9 +163,16 @@ export default async function PartnerPage({ params }: { params: Promise<{ lang: 
                 <tbody>
                   {dash.recent.map((r) => (
                     <tr key={r.code}>
-                      <td className={s.mono}>{displayCode(r.code)}</td>
-                      <td>{r.promotion}</td>
-                      <td className={s.num}>{formatRedeemed(r.redeemedAt, L)}</td>
+                      <td>
+                        <span className={s.mono}>{displayCode(r.code)}</span>
+                        {r.customer ? <div style={{ fontSize: 13 }}>{r.customer}</div> : null}
+                      </td>
+                      {/* With one promotion, its name on every row is only noise on a phone. */}
+                      {dash.promotions.length > 1 ? <td>{r.promotion}</td> : null}
+                      <td className={s.num}>
+                        {formatRedeemed(r.redeemedAt, L)}
+                        <div style={{ fontSize: 13 }}>{r.redeemedBy ?? c.sharedPin}</div>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

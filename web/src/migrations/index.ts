@@ -39,6 +39,7 @@ import * as migration_20261017_204939_site_usage from './20261017_204939_site_us
 import * as migration_20261020_184304_spend_approvals from './20261020_184304_spend_approvals';
 import * as migration_20261021_021048_graph_telemetry from './20261021_021048_graph_telemetry';
 import * as migration_20261021_034507_promo_coupons from './20261021_034507_promo_coupons';
+import * as migration_20261021_041702_promo_who from './20261021_041702_promo_who';
 
 export const migrations = [
   {
@@ -244,6 +245,11 @@ export const migrations = [
   {
     up: migration_20261021_034507_promo_coupons.up,
     down: migration_20261021_034507_promo_coupons.down,
-    name: '20261021_034507_promo_coupons'
+    name: '20261021_034507_promo_coupons',
+  },
+  {
+    up: migration_20261021_041702_promo_who.up,
+    down: migration_20261021_041702_promo_who.down,
+    name: '20261021_041702_promo_who'
   },
 ];

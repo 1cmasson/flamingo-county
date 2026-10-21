@@ -1,3 +1,4 @@
+import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getPayload } from 'payload'
@@ -7,7 +8,9 @@ import { routes } from '../../../../../lib/routes'
 import { getPromotion, rel } from '../../../../../lib/data'
 import { dateOnly, todayISO } from '../../../../../lib/dates'
 import { mediaUrl } from '../../../../../lib/jsonld'
-import { issuedCount, partnerFor, promoState } from '../../../../../lib/promos'
+import { claimMode, couponWhatsApp, issuedCount, partnerFor, promoState } from '../../../../../lib/promos'
+import { askRef } from '../../../../../lib/promoWhatsapp'
+import { classifySource, isStaff, normalizeHost } from '../../../../../lib/visits'
 import { dayLabel, promoCopy } from '../../../../../lib/promoCopy'
 import { absUrl, openGraph, twitterCard } from '../../../../../lib/site'
 import type { City, Listing, Media } from '../../../../../payload-types'
@@ -19,6 +22,10 @@ import s from '../../../../../components/promo.module.css'
  * A partner's promotion: the offer, and "Get my coupon" (lib/promos.ts). The
  * link that goes in posts, the link in bio and on a printed QR
  * (`/go/qr?to=/es/promo/<slug>` keeps where the visitor came from).
+ *
+ * For a WhatsApp promotion the button is a wa.me link with the request
+ * already written, ending in a ref (lib/promoWhatsapp.ts) that says where the
+ * visitor came from, worked out here because WhatsApp won't tell us.
  */
 export const dynamic = 'force-dynamic'
 
@@ -43,7 +50,13 @@ export async function generateMetadata({ params }: { params: Promise<{ lang: str
   }
 }
 
-export default async function PromoPage({ params }: { params: Promise<{ lang: string; slug: string }> }) {
+export default async function PromoPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ lang: string; slug: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
+}) {
   const { lang, slug } = await params
   if (!isLang(lang)) notFound()
   const promo = await getPromotion(lang as Lang, slug)
@@ -63,6 +76,17 @@ export default async function PromoPage({ params }: { params: Promise<{ lang: st
   const end = dateOnly(promo.endsOn)
   const businessHref = listing && city ? routes.business(lang as Lang, city.slug, listing.slug) : null
 
+  let whatsapp: string | null = null
+  if (claimMode(promo) === 'whatsapp') {
+    const h = await headers()
+    const utm = (await searchParams).utm_source
+    const ref = normalizeHost(h.get('referer') ? safeHost(h.get('referer')!) : null)
+    const own = normalizeHost(h.get('x-forwarded-host') ?? h.get('host'))
+    const source = isStaff(h) ? 'test' : classifySource(ref && ref !== own ? ref : null, typeof utm === 'string' ? utm : null)
+    const text = c.waAsk(promo.title ?? '', name, askRef(slug, source, lang as Lang))
+    whatsapp = `https://wa.me/${couponWhatsApp()}?text=${encodeURIComponent(text)}`
+  }
+
   return (
     <PageShell>
       <main className={s.page}>
@@ -78,7 +102,14 @@ export default async function PromoPage({ params }: { params: Promise<{ lang: st
             {promo.details ? <p className={s.details}>{promo.details}</p> : null}
             {end ? <p className={s.meta}>{c.through(dayLabel(end, lang as Lang))}</p> : null}
 
-            {state === 'active' ? (
+            {state === 'active' && whatsapp ? (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                <a className={`${s.btn} ${s.wa}`} href={whatsapp} rel="noopener noreferrer">
+                  💬 {c.getWa}
+                </a>
+                <p className={s.note}>{c.freeWa}</p>
+              </div>
+            ) : state === 'active' ? (
               <PromoClaim slug={slug} lang={lang as Lang} />
             ) : (
               <p className={s.warn}>
@@ -97,7 +128,7 @@ export default async function PromoPage({ params }: { params: Promise<{ lang: st
         <section className={`${s.card} ${s.body}`}>
           <h2 className={s.h2}>{c.stepsTitle}</h2>
           <ol className={s.steps}>
-            {c.steps(name).map((step) => (
+            {(whatsapp ? c.stepsWa(name) : c.steps(name)).map((step) => (
               <li key={step}>{step}</li>
             ))}
           </ol>
@@ -111,4 +142,12 @@ export default async function PromoPage({ params }: { params: Promise<{ lang: st
       </main>
     </PageShell>
   )
+}
+
+function safeHost(url: string): string | null {
+  try {
+    return new URL(url).hostname
+  } catch {
+    return null
+  }
 }

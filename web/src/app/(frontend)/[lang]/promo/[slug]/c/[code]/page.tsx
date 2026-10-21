@@ -81,7 +81,10 @@ export default async function CouponPage({ params }: { params: Promise<{ lang: s
               <>
                 {justUsed(used) ? <p className={s.at}>{c.done}</p> : null}
                 <p className={s.stamp}>✓ {c.used}</p>
-                <p className={s.at}>{c.usedAt(formatRedeemed(used, lang as Lang))}</p>
+                <p className={s.at}>
+                  {c.usedAt(formatRedeemed(used, lang as Lang))}
+                  {coupon.redeemedBy ? ` · ${coupon.redeemedBy}` : ''}
+                </p>
               </>
             ) : !open ? (
               <p className={s.warn}>{c.expired}</p>
@@ -93,13 +96,16 @@ export default async function CouponPage({ params }: { params: Promise<{ lang: s
 
         {!used && open ? (
           <>
-            <section className={`${s.card} ${s.body}`}>
-              {webview ? <p className={s.warn}>{c.webviewNote}</p> : null}
-              <a className={`${s.btn} ${s.wa}`} href={wa} rel="noopener noreferrer">
-                💬 {c.saveWa}
-              </a>
-              <p className={s.note}>{c.saveWaNote}</p>
-            </section>
+            {/* A WhatsApp coupon is already in their chat with us. */}
+            {coupon.channel !== 'whatsapp' ? (
+              <section className={`${s.card} ${s.body}`}>
+                {webview ? <p className={s.warn}>{c.webviewNote}</p> : null}
+                <a className={`${s.btn} ${s.wa}`} href={wa} rel="noopener noreferrer">
+                  💬 {c.saveWa}
+                </a>
+                <p className={s.note}>{c.saveWaNote}</p>
+              </section>
+            ) : null}
             {locked ? <p className={s.warn}>{c.locked}</p> : <CouponRedeem code={coupon.code} lang={lang as Lang} />}
           </>
         ) : null}

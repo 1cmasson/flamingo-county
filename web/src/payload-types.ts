@@ -1108,6 +1108,10 @@ export interface Promotion {
    */
   limit?: number | null;
   /**
+   * How people get a coupon. WhatsApp opens a ready message to our coupon number and the reply carries the code. Until the WhatsApp number is connected to the site, this falls back to the website.
+   */
+  claimBy?: ('web' | 'whatsapp') | null;
+  /**
    * Optional. Without one, the business’s own photo is used.
    */
   image?: (number | null) | Media;
@@ -1116,7 +1120,7 @@ export interface Promotion {
   _status?: ('draft' | 'published') | null;
 }
 /**
- * Businesses running coupons. The PIN is what their staff type to mark a coupon used; the dashboard link shows them how many came in. Give both to the business in person.
+ * Businesses running coupons. Staff type a PIN to mark a coupon used: give each waiter their own (Staff) to see who marked each one. The dashboard link shows them how many came in. Hand PINs and the link over in person.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "partners".
@@ -1129,9 +1133,25 @@ export interface Partner {
   name: string;
   listing: number | Listing;
   /**
-   * Four digits staff type on the customer’s phone to redeem. Change it if it leaks; old coupons keep working.
+   * One PIN per waiter, so the dashboard shows who marked each coupon. Remove someone when they leave; coupons they marked keep their name.
    */
-  staffPin: string;
+  staff?:
+    | {
+        /**
+         * As the business calls them, e.g. "Ana".
+         */
+        name: string;
+        /**
+         * Four digits only they know.
+         */
+        pin: string;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * Optional: one PIN for the whole business, for anyone not on the Staff list. Coupons marked with it show no name. Change it if it leaks; old coupons keep working.
+   */
+  staffPin?: string | null;
   /**
    * The private part of their dashboard link: flamingocounty.com/es/partner/<this>. Clear it and save to issue a new link.
    */
@@ -1144,7 +1164,7 @@ export interface Partner {
   createdAt: string;
 }
 /**
- * Coupons people took, and which were used. No names, phones or IPs. "Test" = taken on a staff or owner device; left out of the counts.
+ * Coupons people took, and which were used. Website coupons have no name or phone; WhatsApp coupons keep the number and WhatsApp name. "Test" = taken on a staff or owner device; left out of the counts.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "promo-coupons".
@@ -1162,7 +1182,23 @@ export interface PromoCoupon {
    */
   source?: string | null;
   lang?: ('es' | 'en') | null;
+  /**
+   * Where it was taken.
+   */
+  channel?: ('web' | 'whatsapp') | null;
+  /**
+   * WhatsApp coupons: the number that asked for it (+13055551234).
+   */
+  phone?: string | null;
+  /**
+   * WhatsApp coupons: the name on their WhatsApp profile, as they set it.
+   */
+  whatsappName?: string | null;
   redeemedAt?: string | null;
+  /**
+   * The staff member whose PIN marked it used, as named then. Empty = the shared business PIN.
+   */
+  redeemedBy?: string | null;
   /**
    * Wrong PINs typed on this coupon. At 5 it locks.
    */
@@ -2856,6 +2892,7 @@ export interface PromotionsSelect<T extends boolean = true> {
   startsOn?: T;
   endsOn?: T;
   limit?: T;
+  claimBy?: T;
   image?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -2868,6 +2905,13 @@ export interface PromotionsSelect<T extends boolean = true> {
 export interface PartnersSelect<T extends boolean = true> {
   name?: T;
   listing?: T;
+  staff?:
+    | T
+    | {
+        name?: T;
+        pin?: T;
+        id?: T;
+      };
   staffPin?: T;
   dashboardKey?: T;
   notes?: T;
@@ -2884,7 +2928,11 @@ export interface PromoCouponsSelect<T extends boolean = true> {
   listing?: T;
   source?: T;
   lang?: T;
+  channel?: T;
+  phone?: T;
+  whatsappName?: T;
   redeemedAt?: T;
+  redeemedBy?: T;
   pinFails?: T;
   test?: T;
   updatedAt?: T;

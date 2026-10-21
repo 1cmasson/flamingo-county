@@ -17,13 +17,18 @@ import { classifySource, isStaff, normalizeHost } from './visits'
  *      coupon". They get their own one-time code and a page for it
  *      (/es/promo/<slug>/c/<code>), which they can save to WhatsApp.
  *   2. At the business they show it. Staff tap "Staff: mark as used" on the
- *      visitor's phone and type the business's 4-digit PIN (`partners`). The
- *      coupon turns green with the time, and can never be used again.
+ *      visitor's phone and type their 4-digit PIN (`partners`). The coupon
+ *      turns green with the time and who marked it, and can never be used
+ *      again.
  *   3. The business sees what came in on its private dashboard
- *      (/es/partner/<key>): taken, used, from where.
+ *      (/es/partner/<key>): taken, used, from where, by whom.
  *
- * A coupon stores its code, its promotion, where the visitor came from and
- * when it was used: no name, phone, email, IP or cookie (see `promo-coupons`).
+ * A promotion can instead hand coupons out by WhatsApp (lib/promoWhatsapp.ts):
+ * the button opens a ready message to our number and the reply carries the
+ * code, so one number gets one coupon and we know who came.
+ *
+ * A website coupon stores its code, its promotion, where the visitor came from
+ * and when it was used: no name, phone, email, IP or cookie (`promo-coupons`).
  * The PIN only has to stop a visitor marking their own coupon used, and a
  * used coupon gives nothing away, so four digits are enough with a lock after
  * five wrong tries per coupon and a Telegram warning when one business sees
@@ -92,6 +97,21 @@ export async function getPublishedPromotion(payload: Payload, slug: string, lang
   return docs[0] ?? null
 }
 
+/**
+ * The WhatsApp number coupons are asked for on (digits only), or null until
+ * Twilio sends that number's messages to the site: without the auth token we
+ * couldn't tell Twilio's requests from anyone's, and nobody would get a reply.
+ */
+export function couponWhatsApp(): string | null {
+  const number = process.env.PROMO_WHATSAPP_NUMBER?.replace(/\D/g, '')
+  return number && process.env.TWILIO_AUTH_TOKEN ? number : null
+}
+
+/** How this promotion hands out coupons right now: by WhatsApp only once that number is connected. */
+export function claimMode(p: Pick<Promotion, 'claimBy'>): 'web' | 'whatsapp' {
+  return p.claimBy === 'whatsapp' && couponWhatsApp() ? 'whatsapp' : 'web'
+}
+
 /** Coupons handed out for a promotion, staff tests left out. */
 export async function issuedCount(payload: Payload, promotionId: number): Promise<number> {
   const { totalDocs } = await payload.count({
@@ -102,7 +122,10 @@ export async function issuedCount(payload: Payload, promotionId: number): Promis
   return totalDocs
 }
 
-/** The business's PIN row, or null: without one nobody can mark its coupons used. */
+/** Whether a business has any PIN its staff can type. */
+const hasPin = (p: Partner) => Boolean(p.staffPin || p.staff?.some((s) => s.pin))
+
+/** The business's PIN row, or null: without a PIN nobody can mark its coupons used. */
 export async function partnerFor(payload: Payload, listingId: number | null): Promise<Partner | null> {
   if (!listingId) return null
   const { docs } = await payload.find({
@@ -112,7 +135,7 @@ export async function partnerFor(payload: Payload, listingId: number | null): Pr
     depth: 0,
     overrideAccess: true,
   })
-  return docs[0]?.staffPin ? docs[0] : null
+  return docs[0] && hasPin(docs[0]) ? docs[0] : null
 }
 
 /* -------------------------------------------------------------- claiming */
@@ -177,6 +200,8 @@ export async function claimCoupon(
 
   const promo = await getPublishedPromotion(payload, slug)
   if (!promo) return { ok: false, reason: 'not-found' }
+  // A WhatsApp promotion is one per number; an anonymous coupon would go around that.
+  if (claimMode(promo) === 'whatsapp') return { ok: false, reason: 'refused' }
   const state = promoState(promo, await issuedCount(payload, promo.id), todayISO(new Date(now)))
   if (state !== 'active') return { ok: false, reason: state }
 
@@ -191,21 +216,25 @@ export async function claimCoupon(
   const lang = input.lang === 'en' ? 'en' : 'es'
   const test = isStaff(headers)
 
+  const code = await issueCoupon(payload, { promotion: promo.id, listing, source, lang, test })
+  return { ok: true, code, slug }
+}
+
+type NewCoupon = Omit<PromoCoupon, 'id' | 'code' | 'createdAt' | 'updatedAt'>
+
+/** Store a coupon under a fresh code, and return the code. */
+export async function issueCoupon(payload: Payload, data: NewCoupon): Promise<string> {
   // A clash is one in 600 million per pair; try again rather than fail.
-  for (let attempt = 0; attempt < 4; attempt++) {
+  for (let attempt = 0; ; attempt++) {
     const code = newCode()
     try {
-      await payload.create({
-        collection: 'promo-coupons',
-        data: { code, promotion: promo.id, listing, source, lang, test },
-        overrideAccess: true,
-      })
-      return { ok: true, code, slug }
+      await payload.create({ collection: 'promo-coupons', data: { ...data, code }, overrideAccess: true })
+      return code
     } catch (err) {
+      // Also the same number asking twice at once (one per number): the caller looks for that one.
       if (attempt === 3) throw err
     }
   }
-  return { ok: false, reason: 'busy' }
 }
 
 /* ------------------------------------------------------------- redeeming */
@@ -254,7 +283,20 @@ function samePin(a: string, b: string): boolean {
 }
 
 /**
- * Mark a coupon used, if the PIN is the business's. Used once only: the
+ * Whose PIN this is: a staff member's name, '' for the shared business PIN,
+ * or null for none. Every PIN is compared, so the time doesn't tell which
+ * one matched.
+ */
+export function pinOwner(partner: Partner, pin: string): string | null {
+  let who: string | null = null
+  for (const s of partner.staff ?? []) if (s.pin && samePin(pin, s.pin) && who === null) who = s.name
+  if (partner.staffPin && samePin(pin, partner.staffPin) && who === null) who = ''
+  return who
+}
+
+/**
+ * Mark a coupon used, if the PIN is one of the business's, and keep whose it
+ * was (`redeemedBy`, the name as it is today). Used once only: the
  * update is conditional on it not being used yet, so two taps at the same
  * moment can't both succeed.
  */
@@ -271,10 +313,11 @@ export async function redeemCoupon(
   if (!promoOpen(promotion, todayISO(now))) return { status: 'ended' }
 
   const partner = await partnerFor(payload, idOf(coupon.listing))
-  if (!partner?.staffPin) return { status: 'not-ready' }
+  if (!partner) return { status: 'not-ready' }
 
   const pin = typeof input.pin === 'string' ? input.pin.trim() : ''
-  if (!samePin(pin, partner.staffPin)) {
+  const by = pinOwner(partner, pin)
+  if (by === null) {
     const fails = (coupon.pinFails ?? 0) + 1
     await payload.update({ collection: 'promo-coupons', id: coupon.id, data: { pinFails: fails }, overrideAccess: true })
     await warnOnPinFails(partner, now.getTime())
@@ -285,7 +328,7 @@ export async function redeemCoupon(
   const { docs: updated } = await payload.update({
     collection: 'promo-coupons',
     where: { and: [{ id: { equals: coupon.id } }, { redeemedAt: { exists: false } }] },
-    data: { redeemedAt: at },
+    data: { redeemedAt: at, redeemedBy: by || null },
     overrideAccess: true,
   })
   if (!updated.length) {
@@ -323,7 +366,25 @@ export type PartnerDashboard = {
   totals: PartnerStats
   promotions: { promotion: Promotion; state: PromoState; stats: PartnerStats }[]
   sources: { source: string; taken: number; used: number }[]
-  recent: { code: string; promotion: string; redeemedAt: string; source: string }[]
+  /** Coupons each staff member marked used; '' is the shared business PIN. */
+  staff: { name: string; used: number }[]
+  recent: {
+    code: string
+    promotion: string
+    redeemedAt: string
+    source: string
+    redeemedBy: string | null
+    /** WhatsApp coupons: "María · •••1234". The business never sees the whole number. */
+    customer: string | null
+  }[]
+}
+
+/** "María Pérez", "+13055551234" → "María · •••1234". */
+export function maskedCustomer(name: string | null | undefined, phone: string | null | undefined): string | null {
+  if (!phone) return null
+  const first = name?.trim().split(/\s+/)[0]
+  const tail = `•••${phone.slice(-4)}`
+  return first ? `${first} · ${tail}` : tail
 }
 
 /** Miami's calendar day for an instant. */
@@ -399,6 +460,8 @@ export async function partnerDashboard(
     bySource.set(c.source ?? 'direct', s)
   }
   const titles = new Map(promos.map((p) => [p.id, p.title ?? '']))
+  const byStaff = new Map<string, number>()
+  for (const c of coupons) if (c.redeemedAt) byStaff.set(c.redeemedBy ?? '', (byStaff.get(c.redeemedBy ?? '') ?? 0) + 1)
 
   return {
     partner,
@@ -409,6 +472,7 @@ export async function partnerDashboard(
       return { promotion: p, state: promoState(p, mine.length, today), stats: stats(mine, today) }
     }),
     sources: [...bySource].map(([source, s]) => ({ source, ...s })).sort((a, b) => b.taken - a.taken),
+    staff: [...byStaff].map(([name, used]) => ({ name, used })).sort((a, b) => b.used - a.used),
     recent: coupons
       .filter((c) => c.redeemedAt)
       .sort((a, b) => b.redeemedAt!.localeCompare(a.redeemedAt!))
@@ -418,6 +482,8 @@ export async function partnerDashboard(
         promotion: titles.get(idOf(c.promotion)!) ?? '',
         redeemedAt: c.redeemedAt!,
         source: c.source ?? 'direct',
+        redeemedBy: c.redeemedBy ?? null,
+        customer: maskedCustomer(c.whatsappName, c.phone),
       })),
   }
 }
