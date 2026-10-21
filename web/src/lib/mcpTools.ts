@@ -18,6 +18,7 @@ import { addDays, dateOnly, eventEndDay, todayISO } from './dates'
 import { cancelDraft, miamiTime } from './hq'
 import { isRunningCount, type MetricSummary } from './postiz'
 import { recentReelReviews } from './reelScore'
+import { reelsNow } from './reelNow'
 import { reelRatios } from './reelStats'
 import { graphSummary } from './graphTelemetry'
 import { marketOutliers } from './market'
@@ -1080,6 +1081,18 @@ export const hqMcpTools: McpTool[] = [
     parameters: { days: z.number().int().min(1).max(90).default(28).describe('Window in days (default 28)') },
     handler: (args: Record<string, unknown>, req: PayloadRequest) =>
       guard(async () => text(JSON.stringify(await socialReport(req.payload, Number(args.days ?? 28)), null, 2))),
+  },
+  {
+    name: 'hqReelNow',
+    description:
+      'A reel\u2019s numbers RIGHT NOW, read live from Meta (Instagram and the Facebook Page), at any age: views, reach, average watch time in seconds and as a share of the length, skip rate, shares, shares per reach, saves, likes, comments, and on Facebook follows and the share still watching at 3 s / 15 s / 30 s / half / end. Use it whenever the owner asks how a reel is doing; hqSocialReport only has the saved 1h/3h/24h/3d/7d readings. Newest first, up to 12 reels; narrow with `query` (caption words, accents ignored) and `platform`. Saves nothing and never moves a checkpoint. Read-only: Flamingo County only; the token never leaves the server.',
+    parameters: {
+      days: z.number().int().min(1).max(30).default(3).describe('Reels published in the last N days (default 3)'),
+      query: z.string().max(100).optional().describe('Words in the caption, e.g. "Corte Suprema"'),
+      platform: z.enum(['instagram', 'facebook', 'both']).default('both'),
+    },
+    handler: (args: Record<string, unknown>, _req: PayloadRequest) =>
+      guard(async () => text(JSON.stringify(await reelsNow(args as never), null, 2))),
   },
   {
     name: 'hqWeeklyReviewContext',
