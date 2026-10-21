@@ -9,7 +9,7 @@ import sharp from 'sharp'
 import { z } from 'zod'
 
 import { PUBLISHED } from '../fields/shared'
-import type { Event, HqSocialDraft, Story } from '../payload-types'
+import type { Event, HqSocialDraft, HqSocialStat, Story } from '../payload-types'
 import { hqMediaDir } from '../collections/HqMedia'
 import { CHUNK_MAX_CHARS, MAX_CHUNKS, addArtworkChunk, finishArtworkUpload, startArtworkUpload } from './artworkUpload'
 import { buildBrief } from './brief'
@@ -17,6 +17,7 @@ import { trafficReport } from './growth'
 import { addDays, dateOnly, eventEndDay, todayISO } from './dates'
 import { cancelDraft, miamiTime } from './hq'
 import { isRunningCount, type MetricSummary } from './postiz'
+import { reelRatios } from './reelStats'
 import { PUBLISHABLE, PUBLISHABLE_GLOBALS, publishStatus, requestPublish } from './publishRequests'
 import { redeemSpend, requestSpend, spendStatus } from './spendApprovals'
 import { PHOTO_LICENSES, canonicalLicenseUrl, isPhotoLicense, licenseLabel, type PhotoLicense } from './photoLicense'
@@ -62,7 +63,42 @@ export function htmlToText(html: string): string {
 /* Social report — the input to the weekly review                           */
 /* ------------------------------------------------------------------------ */
 
-const CHECKPOINT_ORDER = ['24h', '3d', '7d']
+const CHECKPOINT_ORDER = ['1h', '3h', '24h', '3d', '7d']
+
+type ReelResult = {
+  checkpoint: string
+  ageMinutes: number | null
+  metrics: Record<string, number>
+  avgWatchPctOfLength: number | null
+  sharesPerReach: number | null
+}
+
+/** The furthest Graph reading per platform among `rows`, with its ratios. */
+function reelResults(rows: HqSocialStat[]): Record<string, ReelResult> {
+  const furthest: Record<string, HqSocialStat> = {}
+  for (const s of rows) {
+    const prev = furthest[s.platform]
+    if (!prev || CHECKPOINT_ORDER.indexOf(s.checkpoint ?? '') > CHECKPOINT_ORDER.indexOf(prev.checkpoint ?? '')) {
+      furthest[s.platform] = s
+    }
+  }
+  // Instagram gives no length; a draft that also went to Facebook lends its reel's.
+  const length = rows.find((s) => s.durationSec)?.durationSec ?? null
+  return Object.fromEntries(
+    Object.entries(furthest).map(([platform, s]) => {
+      const metrics = s.metrics as Record<string, number>
+      return [
+        platform,
+        {
+          checkpoint: s.checkpoint ?? '?',
+          ageMinutes: s.ageMinutes ?? null,
+          metrics,
+          ...reelRatios(platform, metrics, s.durationSec ?? length),
+        },
+      ]
+    }),
+  )
+}
 
 function readings(metrics: Record<string, MetricSummary>): Record<string, number> {
   return Object.fromEntries(
@@ -75,10 +111,16 @@ function readings(metrics: Record<string, MetricSummary>): Record<string, number
  * language, time, its furthest checkpoint per platform, and link clicks — plus
  * each account's first and last snapshot in the window. Plain data: comparing
  * posts and drawing lessons is the reader's job, not this tool's.
+ *
+ * With Graph telemetry on (lib/reelStats.ts), each post also has `reels`: the
+ * furthest Graph reading per platform with average watch as a % of length
+ * (when the length is known) and shares per reach; and `otherReels` lists the
+ * reels no draft matched, so a reel scheduled straight in Postiz still counts.
+ * Both are empty without META_GRAPH_TOKEN.
  */
 export async function socialReport(payload: Payload, days: number, now: Date = new Date()) {
   const from = new Date(now.getTime() - days * 86_400_000).toISOString()
-  const [drafts, stats, clicks, channels] = await Promise.all([
+  const [drafts, stats, clicks, channels, reels] = await Promise.all([
     payload.find({
       collection: 'hq-social-drafts',
       where: { and: [{ status: { in: ['scheduled', 'published'] } }, { publishAt: { greater_than: from } }] },
@@ -109,6 +151,15 @@ export async function socialReport(payload: Payload, days: number, now: Date = n
       depth: 0,
       overrideAccess: true,
     }),
+    payload.find({
+      collection: 'hq-social-stats',
+      where: { and: [{ kind: { equals: 'reel' } }, { mediaPublishedAt: { greater_than: from } }] },
+      sort: 'mediaPublishedAt',
+      limit: 2000,
+      depth: 0,
+      overrideAccess: true,
+      select: { raw: false, retention: false },
+    }),
   ])
 
   const idOf = (v: unknown) => (v && typeof v === 'object' ? (v as { id: number }).id : (v as number | null))
@@ -133,7 +184,26 @@ export async function socialReport(payload: Payload, days: number, now: Date = n
       media: (d.media ?? []).length,
       publishedMiami: d.publishAt ? miamiTime(d.publishAt) : null,
       results,
+      reels: reelResults(reels.docs.filter((s) => idOf(s.draft) === d.id)),
       linkClicks: clicks.docs.filter((c) => idOf(c.draft) === d.id).length,
+    }
+  })
+
+  // Reels no draft claimed — scheduled straight in Postiz, or posted by hand —
+  // one entry per reel, so they are compared with the rest instead of lost.
+  const byMedia = new Map<string, HqSocialStat[]>()
+  for (const s of reels.docs.filter((s) => !s.draft && s.mediaId)) {
+    const key = `${s.platform}:${s.mediaId}`
+    byMedia.set(key, [...(byMedia.get(key) ?? []), s])
+  }
+  const otherReels = [...byMedia.values()].map((rows) => {
+    const s = rows[0]
+    return {
+      platform: s.platform,
+      permalink: s.permalink ?? null,
+      caption: s.caption ?? '',
+      publishedMiami: s.mediaPublishedAt ? miamiTime(s.mediaPublishedAt) : null,
+      ...reelResults(rows)[s.platform],
     }
   })
 
@@ -147,7 +217,7 @@ export async function socialReport(payload: Payload, days: number, now: Date = n
   const bioClicks: Record<string, number> = {}
   for (const c of clicks.docs.filter((c) => !c.draft)) bioClicks[c.source] = (bioClicks[c.source] ?? 0) + 1
 
-  return { windowDays: days, posts, accounts, bioClicks }
+  return { windowDays: days, posts, otherReels, accounts, bioClicks }
 }
 
 /* ------------------------------------------------------------------------ */
@@ -986,7 +1056,7 @@ export const hqMcpTools: McpTool[] = [
   {
     name: 'hqSocialReport',
     description:
-      'Results of every social post published in the last N days: caption, pillar, language, platforms, Miami publish time, the furthest stats checkpoint (24h/3d/7d) per platform, and link clicks; plus each account’s first and last snapshot in the window and bio-link clicks. JSON. Use it for the weekly review. Small samples: compare over weeks, not single posts.',
+      'Results of every social post published in the last N days: caption, pillar, language, platforms, Miami publish time, the furthest stats checkpoint (24h/3d/7d) per platform, and link clicks; plus each account’s first and last snapshot in the window and bio-link clicks. Reels also carry Meta Graph readings (`reels`: furthest of 1h/3h/24h/3d/7d per platform, ageMinutes, watch time, skip rate, avgWatchPctOfLength when the length is known, sharesPerReach), and `otherReels` lists reels no draft matched (scheduled straight in Postiz). JSON. Use it for the weekly review. Small samples: compare over weeks, not single posts.',
     parameters: { days: z.number().int().min(1).max(90).default(28).describe('Window in days (default 28)') },
     handler: (args: Record<string, unknown>, req: PayloadRequest) =>
       guard(async () => text(JSON.stringify(await socialReport(req.payload, Number(args.days ?? 28)), null, 2))),
