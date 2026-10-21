@@ -188,7 +188,7 @@ one-line reason, and the call still counts toward the daily limit.
 
 ## Measuring the posts
 
-Four sources, and the 72-hour reel review built from them, all saved in the
+Five sources, and the 72-hour reel review built from them, all saved in the
 database so the history outlives Postiz, which fetches stats live and keeps
 none:
 
@@ -213,6 +213,30 @@ none:
   late. The account is found from the token, and anything that is not that
   Page with that Instagram is refused. See `lib/metaGraph.ts` and
   `lib/reelStats.ts`; `hqSocialReport` adds them as `reels` and `otherReels`.
+- **Account telemetry (Meta Graph API).** Same token. The hourly
+  `graphTelemetry` job (at :20, `lib/graphTelemetry.ts`) saves:
+  - each Miami day for Instagram and the Facebook Page (`kind: 'account'`,
+    one row per platform and `day`): reach, views, interactions,
+    `follows_and_unfollows` (KPI #1 is its FOLLOWER count summed over a week),
+    and the follower total. A day is read at 6 AM the next morning and once
+    more after 48 hours, since Meta's numbers lag;
+  - who follows, weekly (`kind: 'audience'`): demographics by city, age,
+    gender and country, the **Miami-Dade share** (followers in the county's
+    34 cities and its unincorporated places ÷ all followers, a floor since
+    Meta lists only its top 45 cities; `lib/miamiDade.ts`), and the hours
+    followers are online, in Miami time;
+  - comments on our reels of the last week (`hq-social-comments`, no
+    usernames). This needs `instagram_manage_comments` on the token; without it
+    one `graph.scope_missing` event says so and the rest goes on;
+  - the market watchlist (`hq-market-accounts`, editable in the admin or over
+    MCP): each account's last 25 public posts once a day through Business
+    Discovery into `hq-market-posts`, with counts at first sight, ~24h and ~7d
+    and an `outlierScore` against the account's own median at the same age.
+    Captions and counts only, never pictures. Accounts the token manages
+    besides ours (Club de la Amistad) are refused.
+
+  `hqSocialReport` adds them as `graph` (follows per week, Miami-Dade share,
+  best hours); `hqGrowthContext` adds the top market outliers.
 - **The 72-hour reel review.** The hourly `reelScore` job (at :55) waits for a
   reel's 3d reading, then writes one post-mortem per story to
   `hq-reel-reviews` (`lib/reelScore.ts`). Internal only: it reads saved rows,
