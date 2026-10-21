@@ -35,6 +35,7 @@ import { HqExperiments } from './collections/HqExperiments'
 import { HqArtworkUploads } from './collections/HqArtworkUploads'
 import { eveningWrap } from './jobs/eveningWrap'
 import { morningBrief } from './jobs/morningBrief'
+import { reelStats } from './jobs/reelStats'
 import { socialStats } from './jobs/socialStats'
 import { weeklyRoundup } from './jobs/weeklyRoundup'
 import { hqMcpTools } from './lib/mcpTools'
@@ -196,7 +197,8 @@ export default buildConfig({
         },
         'hq-social-stats': {
           enabled: { find: true },
-          description: 'Saved Postiz numbers: kind "post" at 24h/3d/7d checkpoints, kind "channel" daily 7-day snapshots.',
+          description:
+            'Saved social numbers. source "postiz": kind "post" at 24h/3d/7d checkpoints, kind "channel" daily 7-day snapshots. source "graph": kind "reel", every Instagram/Facebook reel from Meta’s Graph API at 1h/3h/24h/3d/7d (ageMinutes = real age at the reading; metrics in Meta’s names, watch times in ms; retention = Facebook’s curve; draft set only when matched by time). hqSocialReport summarizes both.',
         },
         'hq-clicks': { enabled: { find: true }, description: 'Clicks on /go/ tracking links.' },
         'hq-visits': {
@@ -270,7 +272,7 @@ export default buildConfig({
 
   /**
    * The HQ jobs queue — the morning brief, the evening wrap, the social stats
-   * collector and the Monday roundup (src/jobs).
+   * collector, the Graph reel stats collector and the Monday roundup (src/jobs).
    *
    * One in-process runner, checking every minute. That is safe here and only
    * here because the service is pinned to a single instance by SQLite on a
@@ -282,7 +284,7 @@ export default buildConfig({
    * admin, and a quiet night would skip the brief.
    */
   jobs: {
-    tasks: [morningBrief, socialStats, eveningWrap, weeklyRoundup],
+    tasks: [morningBrief, socialStats, reelStats, eveningWrap, weeklyRoundup],
     autoRun: [{ cron: '* * * * *', queue: 'hq' }],
     jobsCollectionOverrides: ({ defaultJobsCollection }) => ({
       ...defaultJobsCollection,

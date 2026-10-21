@@ -167,6 +167,7 @@ export interface Config {
     tasks: {
       morningBrief: TaskMorningBrief;
       socialStats: TaskSocialStats;
+      reelStats: TaskReelStats;
       eveningWrap: TaskEveningWrap;
       weeklyRoundup: TaskWeeklyRoundup;
       inline: {
@@ -1304,19 +1305,62 @@ export interface HqSocialDraft {
   createdAt: string;
 }
 /**
- * Post and account numbers from Postiz, saved by the hourly stats job.
+ * Post and account numbers from Postiz, and reel numbers from Meta’s Graph API, saved by the stats jobs.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "hq-social-stats".
  */
 export interface HqSocialStat {
   id: number;
-  kind: 'post' | 'channel';
+  kind: 'post' | 'channel' | 'reel';
+  source?: ('postiz' | 'graph') | null;
   platform: 'facebook' | 'instagram' | 'tiktok';
-  checkpoint?: ('24h' | '3d' | '7d') | null;
+  checkpoint?: ('1h' | '3h' | '24h' | '3d' | '7d') | null;
   draft?: (number | null) | HqSocialDraft;
   postizPostId?: string | null;
+  /**
+   * Graph rows: how old the reel really was when this was read.
+   */
+  ageMinutes?: number | null;
+  /**
+   * Graph rows: the Instagram media id or Facebook video id.
+   */
+  mediaId?: string | null;
+  mediaPublishedAt?: string | null;
+  permalink?: string | null;
+  /**
+   * Graph rows: the reel’s caption, clipped.
+   */
+  caption?: string | null;
+  /**
+   * Graph rows: the reel’s length in seconds, when Meta gives it (Facebook only).
+   */
+  durationSec?: number | null;
   metrics:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Graph rows (Facebook): the retention curve as received — share of plays still watching at each segment.
+   */
+  retention?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * Graph rows: metric names Meta refused for this reading.
+   */
+  failedMetrics?:
     | {
         [k: string]: unknown;
       }
@@ -1827,7 +1871,7 @@ export interface PayloadMcpApiKey {
      */
     hqBrief?: boolean | null;
     /**
-     * Results of every social post published in the last N days: caption, pillar, language, platforms, Miami publish time, the furthest stats checkpoint (24h/3d/7d) per platform, and link clicks; plus each account’s first and last snapshot in the window and bio-link clicks. JSON. Use it for the weekly review. Small samples: compare over weeks, not single posts.
+     * Results of every social post published in the last N days: caption, pillar, language, platforms, Miami publish time, the furthest stats checkpoint (24h/3d/7d) per platform, and link clicks; plus each account’s first and last snapshot in the window and bio-link clicks. Reels also carry Meta Graph readings (`reels`: furthest of 1h/3h/24h/3d/7d per platform, ageMinutes, watch time, skip rate, avgWatchPctOfLength when the length is known, sharesPerReach), and `otherReels` lists reels no draft matched (scheduled straight in Postiz). JSON. Use it for the weekly review. Small samples: compare over weeks, not single posts.
      */
     hqSocialReport?: boolean | null;
     /**
@@ -1975,7 +2019,7 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'morningBrief' | 'socialStats' | 'eveningWrap' | 'weeklyRoundup';
+        taskSlug: 'inline' | 'morningBrief' | 'socialStats' | 'reelStats' | 'eveningWrap' | 'weeklyRoundup';
         taskID: string;
         input?:
           | {
@@ -2008,7 +2052,7 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'morningBrief' | 'socialStats' | 'eveningWrap' | 'weeklyRoundup') | null;
+  taskSlug?: ('inline' | 'morningBrief' | 'socialStats' | 'reelStats' | 'eveningWrap' | 'weeklyRoundup') | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -2796,11 +2840,20 @@ export interface HqSocialDraftsSelect<T extends boolean = true> {
  */
 export interface HqSocialStatsSelect<T extends boolean = true> {
   kind?: T;
+  source?: T;
   platform?: T;
   checkpoint?: T;
   draft?: T;
   postizPostId?: T;
+  ageMinutes?: T;
+  mediaId?: T;
+  mediaPublishedAt?: T;
+  permalink?: T;
+  caption?: T;
+  durationSec?: T;
   metrics?: T;
+  retention?: T;
+  failedMetrics?: T;
   raw?: T;
   updatedAt?: T;
   createdAt?: T;
@@ -3533,6 +3586,17 @@ export interface TaskSocialStats {
   output: {
     posts?: number | null;
     channels?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskReelStats".
+ */
+export interface TaskReelStats {
+  input?: unknown;
+  output: {
+    reels?: number | null;
+    saved?: number | null;
   };
 }
 /**

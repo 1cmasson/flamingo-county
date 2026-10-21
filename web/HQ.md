@@ -188,7 +188,7 @@ one-line reason, and the call still counts toward the daily limit.
 
 ## Measuring the posts
 
-Three sources, all saved in the database so the history outlives Postiz, which
+Four sources, all saved in the database so the history outlives Postiz, which
 fetches stats live and keeps none:
 
 - **Post checkpoints.** The hourly `socialStats` job (at :45) saves each
@@ -201,6 +201,17 @@ fetches stats live and keeps none:
   (`publishAt` and `scheduledFor` move with it), so it is measured from when it
   really went out and the brief lists it on the right day. Postiz's public API
   cannot move a post, so moving one is done in Postiz, not here.
+- **Reel telemetry (Meta Graph API).** Off until `META_GRAPH_TOKEN` is set in
+  Railway (a never-expiring System User token, assigned only to the Flamingo
+  County Page and @flamingo.county). The `reelStats` job runs every 15 minutes
+  and saves every reel on the account — including ones scheduled straight in
+  Postiz — at 1h, 3h, 24h, 3d and 7d, as `kind: 'reel'`, `source: 'graph'`
+  rows with the reel's real age (`ageMinutes`), watch time, skip rate and, for
+  Facebook, the retention curve. The 1h and 3h readings have windows of their
+  own (60–120 and 180–300 minutes); after that they are skipped, never taken
+  late. The account is found from the token, and anything that is not that
+  Page with that Instagram is refused. See `lib/metaGraph.ts` and
+  `lib/reelStats.ts`; `hqSocialReport` adds them as `reels` and `otherReels`.
 - **Account snapshots.** Once a day, in the 6 AM Miami hour before the brief,
   each account's last seven days are saved. The brief's **Socials** section
   reads the latest one.
