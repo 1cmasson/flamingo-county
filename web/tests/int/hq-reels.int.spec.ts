@@ -96,6 +96,14 @@ describe('the account filter', () => {
     expect(pickFlamingoAccount([ours, { ...ours, id: 'page-fc-2' }])).toBeNull()
     expect(pickFlamingoAccount([])).toBeNull()
   })
+
+  it('reads the Page name loosely and the Instagram username exactly', () => {
+    expect(pickFlamingoAccount([{ ...ours, name: 'FlamingoCounty' }])?.pageId).toBe('page-fc')
+    expect(pickFlamingoAccount([{ ...ours, name: 'Flamingo County · Miami' }])?.pageId).toBe('page-fc')
+    expect(
+      pickFlamingoAccount([{ ...ours, instagram_business_account: { id: 'ig-x', username: 'flamingo.county.mia' } }]),
+    ).toBeNull()
+  })
 })
 
 describe('insight readings', () => {

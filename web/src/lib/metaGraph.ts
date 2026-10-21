@@ -48,7 +48,8 @@ export const GRAPH_VERSION = 'v26.0'
 const BASE = `https://graph.facebook.com/${GRAPH_VERSION}`
 
 /** The only Page and Instagram account this code will read. */
-export const FLAMINGO_PAGE_NAME = 'flamingo county'
+/** Compared with case, spaces and punctuation stripped: "Flamingo County", "FlamingoCounty" and "Flamingo County · Miami" all pass. */
+export const FLAMINGO_PAGE_NAME = 'flamingocounty'
 export const FLAMINGO_IG_USERNAME = 'flamingo.county'
 
 export const IG_REEL_METRICS = [
@@ -142,16 +143,17 @@ export type GraphAccount = {
 /**
  * The Flamingo County Page with @flamingo.county attached, or null. Both have
  * to hold: the Instagram username exactly (the dotless `flamingocounty` is
- * someone else's), and a Page name containing "Flamingo County". Zero matches
+ * someone else's — that is the real guard), and a Page name containing
+ * "Flamingo County", however it is spaced or punctuated. Zero matches
  * or more than one is null — reading the wrong account's numbers into HQ is
  * worse than reading none.
  */
 export function pickFlamingoAccount(pages: MeAccount[]): GraphAccount | null {
-  const norm = (s: string | undefined) => (s ?? '').trim().toLowerCase().replace(/\s+/g, ' ')
+  const squash = (s: string | undefined) => (s ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')
   const ours = pages.filter(
     (p) =>
-      norm(p.instagram_business_account?.username) === FLAMINGO_IG_USERNAME &&
-      norm(p.name).includes(FLAMINGO_PAGE_NAME),
+      (p.instagram_business_account?.username ?? '').trim().toLowerCase() === FLAMINGO_IG_USERNAME &&
+      squash(p.name).includes(FLAMINGO_PAGE_NAME),
   )
   if (ours.length !== 1) return null
   const p = ours[0]
