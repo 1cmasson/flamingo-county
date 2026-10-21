@@ -1,139 +1,103 @@
 import { MigrateUpArgs, MigrateDownArgs, sql } from '@payloadcms/db-sqlite'
 
 export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
-  await db.run(sql`CREATE TABLE \`promotions\` (
+  await db.run(sql`CREATE TABLE \`hq_social_comments\` (
   	\`id\` integer PRIMARY KEY NOT NULL,
-  	\`slug\` text,
-  	\`listing_id\` integer,
-  	\`starts_on\` text,
-  	\`ends_on\` text,
-  	\`limit\` numeric,
-  	\`image_id\` integer,
+  	\`comment_id\` text NOT NULL,
+  	\`platform\` text DEFAULT 'instagram',
+  	\`media_id\` text NOT NULL,
+  	\`commented_at\` text,
+  	\`permalink\` text,
+  	\`media_caption\` text,
+  	\`text\` text,
+  	\`like_count\` numeric,
+  	\`from_us\` integer DEFAULT false,
+  	\`tags\` text,
   	\`updated_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
-  	\`created_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
-  	\`_status\` text DEFAULT 'draft',
-  	FOREIGN KEY (\`listing_id\`) REFERENCES \`listings\`(\`id\`) ON UPDATE no action ON DELETE set null,
-  	FOREIGN KEY (\`image_id\`) REFERENCES \`media\`(\`id\`) ON UPDATE no action ON DELETE set null
+  	\`created_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL
   );
   `)
-  await db.run(sql`CREATE UNIQUE INDEX \`promotions_slug_idx\` ON \`promotions\` (\`slug\`);`)
-  await db.run(sql`CREATE INDEX \`promotions_listing_idx\` ON \`promotions\` (\`listing_id\`);`)
-  await db.run(sql`CREATE INDEX \`promotions_image_idx\` ON \`promotions\` (\`image_id\`);`)
-  await db.run(sql`CREATE INDEX \`promotions_updated_at_idx\` ON \`promotions\` (\`updated_at\`);`)
-  await db.run(sql`CREATE INDEX \`promotions_created_at_idx\` ON \`promotions\` (\`created_at\`);`)
-  await db.run(sql`CREATE INDEX \`promotions__status_idx\` ON \`promotions\` (\`_status\`);`)
-  await db.run(sql`CREATE TABLE \`promotions_locales\` (
-  	\`title\` text,
-  	\`details\` text,
+  await db.run(sql`CREATE UNIQUE INDEX \`hq_social_comments_comment_id_idx\` ON \`hq_social_comments\` (\`comment_id\`);`)
+  await db.run(sql`CREATE INDEX \`hq_social_comments_media_id_idx\` ON \`hq_social_comments\` (\`media_id\`);`)
+  await db.run(sql`CREATE INDEX \`hq_social_comments_commented_at_idx\` ON \`hq_social_comments\` (\`commented_at\`);`)
+  await db.run(sql`CREATE INDEX \`hq_social_comments_updated_at_idx\` ON \`hq_social_comments\` (\`updated_at\`);`)
+  await db.run(sql`CREATE INDEX \`hq_social_comments_created_at_idx\` ON \`hq_social_comments\` (\`created_at\`);`)
+  await db.run(sql`CREATE TABLE \`hq_market_accounts\` (
   	\`id\` integer PRIMARY KEY NOT NULL,
-  	\`_locale\` text NOT NULL,
-  	\`_parent_id\` integer NOT NULL,
-  	FOREIGN KEY (\`_parent_id\`) REFERENCES \`promotions\`(\`id\`) ON UPDATE no action ON DELETE cascade
-  );
-  `)
-  await db.run(sql`CREATE UNIQUE INDEX \`promotions_locales_locale_parent_id_unique\` ON \`promotions_locales\` (\`_locale\`,\`_parent_id\`);`)
-  await db.run(sql`CREATE TABLE \`_promotions_v\` (
-  	\`id\` integer PRIMARY KEY NOT NULL,
-  	\`parent_id\` integer,
-  	\`version_slug\` text,
-  	\`version_listing_id\` integer,
-  	\`version_starts_on\` text,
-  	\`version_ends_on\` text,
-  	\`version_limit\` numeric,
-  	\`version_image_id\` integer,
-  	\`version_updated_at\` text,
-  	\`version_created_at\` text,
-  	\`version__status\` text DEFAULT 'draft',
-  	\`created_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
-  	\`updated_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
-  	\`snapshot\` integer,
-  	\`published_locale\` text,
-  	\`latest\` integer,
-  	FOREIGN KEY (\`parent_id\`) REFERENCES \`promotions\`(\`id\`) ON UPDATE no action ON DELETE set null,
-  	FOREIGN KEY (\`version_listing_id\`) REFERENCES \`listings\`(\`id\`) ON UPDATE no action ON DELETE set null,
-  	FOREIGN KEY (\`version_image_id\`) REFERENCES \`media\`(\`id\`) ON UPDATE no action ON DELETE set null
-  );
-  `)
-  await db.run(sql`CREATE INDEX \`_promotions_v_parent_idx\` ON \`_promotions_v\` (\`parent_id\`);`)
-  await db.run(sql`CREATE INDEX \`_promotions_v_version_version_slug_idx\` ON \`_promotions_v\` (\`version_slug\`);`)
-  await db.run(sql`CREATE INDEX \`_promotions_v_version_version_listing_idx\` ON \`_promotions_v\` (\`version_listing_id\`);`)
-  await db.run(sql`CREATE INDEX \`_promotions_v_version_version_image_idx\` ON \`_promotions_v\` (\`version_image_id\`);`)
-  await db.run(sql`CREATE INDEX \`_promotions_v_version_version_updated_at_idx\` ON \`_promotions_v\` (\`version_updated_at\`);`)
-  await db.run(sql`CREATE INDEX \`_promotions_v_version_version_created_at_idx\` ON \`_promotions_v\` (\`version_created_at\`);`)
-  await db.run(sql`CREATE INDEX \`_promotions_v_version_version__status_idx\` ON \`_promotions_v\` (\`version__status\`);`)
-  await db.run(sql`CREATE INDEX \`_promotions_v_created_at_idx\` ON \`_promotions_v\` (\`created_at\`);`)
-  await db.run(sql`CREATE INDEX \`_promotions_v_updated_at_idx\` ON \`_promotions_v\` (\`updated_at\`);`)
-  await db.run(sql`CREATE INDEX \`_promotions_v_snapshot_idx\` ON \`_promotions_v\` (\`snapshot\`);`)
-  await db.run(sql`CREATE INDEX \`_promotions_v_published_locale_idx\` ON \`_promotions_v\` (\`published_locale\`);`)
-  await db.run(sql`CREATE INDEX \`_promotions_v_latest_idx\` ON \`_promotions_v\` (\`latest\`);`)
-  await db.run(sql`CREATE TABLE \`_promotions_v_locales\` (
-  	\`version_title\` text,
-  	\`version_details\` text,
-  	\`id\` integer PRIMARY KEY NOT NULL,
-  	\`_locale\` text NOT NULL,
-  	\`_parent_id\` integer NOT NULL,
-  	FOREIGN KEY (\`_parent_id\`) REFERENCES \`_promotions_v\`(\`id\`) ON UPDATE no action ON DELETE cascade
-  );
-  `)
-  await db.run(sql`CREATE UNIQUE INDEX \`_promotions_v_locales_locale_parent_id_unique\` ON \`_promotions_v_locales\` (\`_locale\`,\`_parent_id\`);`)
-  await db.run(sql`CREATE TABLE \`partners\` (
-  	\`id\` integer PRIMARY KEY NOT NULL,
-  	\`name\` text NOT NULL,
-  	\`listing_id\` integer NOT NULL,
-  	\`staff_pin\` text NOT NULL,
-  	\`dashboard_key\` text,
+  	\`username\` text NOT NULL,
+  	\`category\` text,
+  	\`active\` integer DEFAULT true,
   	\`notes\` text,
+  	\`status\` text DEFAULT 'pending',
+  	\`checked_at\` text,
+  	\`status_detail\` text,
+  	\`followers_count\` numeric,
+  	\`media_count\` numeric,
   	\`updated_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
-  	\`created_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
-  	FOREIGN KEY (\`listing_id\`) REFERENCES \`listings\`(\`id\`) ON UPDATE no action ON DELETE set null
+  	\`created_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL
   );
   `)
-  await db.run(sql`CREATE UNIQUE INDEX \`partners_listing_idx\` ON \`partners\` (\`listing_id\`);`)
-  await db.run(sql`CREATE UNIQUE INDEX \`partners_dashboard_key_idx\` ON \`partners\` (\`dashboard_key\`);`)
-  await db.run(sql`CREATE INDEX \`partners_updated_at_idx\` ON \`partners\` (\`updated_at\`);`)
-  await db.run(sql`CREATE INDEX \`partners_created_at_idx\` ON \`partners\` (\`created_at\`);`)
-  await db.run(sql`CREATE TABLE \`promo_coupons\` (
+  await db.run(sql`CREATE UNIQUE INDEX \`hq_market_accounts_username_idx\` ON \`hq_market_accounts\` (\`username\`);`)
+  await db.run(sql`CREATE INDEX \`hq_market_accounts_category_idx\` ON \`hq_market_accounts\` (\`category\`);`)
+  await db.run(sql`CREATE INDEX \`hq_market_accounts_active_idx\` ON \`hq_market_accounts\` (\`active\`);`)
+  await db.run(sql`CREATE INDEX \`hq_market_accounts_checked_at_idx\` ON \`hq_market_accounts\` (\`checked_at\`);`)
+  await db.run(sql`CREATE INDEX \`hq_market_accounts_updated_at_idx\` ON \`hq_market_accounts\` (\`updated_at\`);`)
+  await db.run(sql`CREATE INDEX \`hq_market_accounts_created_at_idx\` ON \`hq_market_accounts\` (\`created_at\`);`)
+  await db.run(sql`CREATE TABLE \`hq_market_posts\` (
   	\`id\` integer PRIMARY KEY NOT NULL,
-  	\`code\` text NOT NULL,
-  	\`promotion_id\` integer NOT NULL,
-  	\`listing_id\` integer NOT NULL,
-  	\`source\` text,
-  	\`lang\` text,
-  	\`redeemed_at\` text,
-  	\`pin_fails\` numeric DEFAULT 0,
-  	\`test\` integer DEFAULT false,
+  	\`account_id\` integer,
+  	\`username\` text,
+  	\`media_id\` text NOT NULL,
+  	\`permalink\` text,
+  	\`posted_at\` text,
+  	\`media_type\` text,
+  	\`product_type\` text,
+  	\`caption\` text,
+  	\`likes\` numeric,
+  	\`comments\` numeric,
+  	\`views\` numeric,
+  	\`followers_at_fetch\` numeric,
+  	\`first_seen_at\` text,
+  	\`last_seen_at\` text,
+  	\`snapshots\` text,
+  	\`outlier_score\` numeric,
+  	\`outlier_bucket\` text,
+  	\`outlier_basis\` text,
+  	\`engagement_per_follower\` numeric,
   	\`updated_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
   	\`created_at\` text DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) NOT NULL,
-  	FOREIGN KEY (\`promotion_id\`) REFERENCES \`promotions\`(\`id\`) ON UPDATE no action ON DELETE set null,
-  	FOREIGN KEY (\`listing_id\`) REFERENCES \`listings\`(\`id\`) ON UPDATE no action ON DELETE set null
+  	FOREIGN KEY (\`account_id\`) REFERENCES \`hq_market_accounts\`(\`id\`) ON UPDATE no action ON DELETE set null
   );
   `)
-  await db.run(sql`CREATE UNIQUE INDEX \`promo_coupons_code_idx\` ON \`promo_coupons\` (\`code\`);`)
-  await db.run(sql`CREATE INDEX \`promo_coupons_promotion_idx\` ON \`promo_coupons\` (\`promotion_id\`);`)
-  await db.run(sql`CREATE INDEX \`promo_coupons_listing_idx\` ON \`promo_coupons\` (\`listing_id\`);`)
-  await db.run(sql`CREATE INDEX \`promo_coupons_source_idx\` ON \`promo_coupons\` (\`source\`);`)
-  await db.run(sql`CREATE INDEX \`promo_coupons_redeemed_at_idx\` ON \`promo_coupons\` (\`redeemed_at\`);`)
-  await db.run(sql`CREATE INDEX \`promo_coupons_test_idx\` ON \`promo_coupons\` (\`test\`);`)
-  await db.run(sql`CREATE INDEX \`promo_coupons_updated_at_idx\` ON \`promo_coupons\` (\`updated_at\`);`)
-  await db.run(sql`CREATE INDEX \`promo_coupons_created_at_idx\` ON \`promo_coupons\` (\`created_at\`);`)
-  await db.run(sql`ALTER TABLE \`payload_mcp_api_keys\` ADD \`promotions_find\` integer DEFAULT false;`)
-  await db.run(sql`ALTER TABLE \`payload_mcp_api_keys\` ADD \`promotions_create\` integer DEFAULT false;`)
-  await db.run(sql`ALTER TABLE \`payload_mcp_api_keys\` ADD \`promotions_update\` integer DEFAULT false;`)
-  await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`promotions_id\` integer REFERENCES promotions(id);`)
-  await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`partners_id\` integer REFERENCES partners(id);`)
-  await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`promo_coupons_id\` integer REFERENCES promo_coupons(id);`)
-  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_promotions_id_idx\` ON \`payload_locked_documents_rels\` (\`promotions_id\`);`)
-  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_partners_id_idx\` ON \`payload_locked_documents_rels\` (\`partners_id\`);`)
-  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_promo_coupons_id_idx\` ON \`payload_locked_documents_rels\` (\`promo_coupons_id\`);`)
+  await db.run(sql`CREATE INDEX \`hq_market_posts_account_idx\` ON \`hq_market_posts\` (\`account_id\`);`)
+  await db.run(sql`CREATE INDEX \`hq_market_posts_username_idx\` ON \`hq_market_posts\` (\`username\`);`)
+  await db.run(sql`CREATE UNIQUE INDEX \`hq_market_posts_media_id_idx\` ON \`hq_market_posts\` (\`media_id\`);`)
+  await db.run(sql`CREATE INDEX \`hq_market_posts_posted_at_idx\` ON \`hq_market_posts\` (\`posted_at\`);`)
+  await db.run(sql`CREATE INDEX \`hq_market_posts_product_type_idx\` ON \`hq_market_posts\` (\`product_type\`);`)
+  await db.run(sql`CREATE INDEX \`hq_market_posts_outlier_score_idx\` ON \`hq_market_posts\` (\`outlier_score\`);`)
+  await db.run(sql`CREATE INDEX \`hq_market_posts_updated_at_idx\` ON \`hq_market_posts\` (\`updated_at\`);`)
+  await db.run(sql`CREATE INDEX \`hq_market_posts_created_at_idx\` ON \`hq_market_posts\` (\`created_at\`);`)
+  await db.run(sql`ALTER TABLE \`hq_social_stats\` ADD \`day\` text;`)
+  await db.run(sql`ALTER TABLE \`hq_social_stats\` ADD \`audience\` text;`)
+  await db.run(sql`CREATE INDEX \`hq_social_stats_day_idx\` ON \`hq_social_stats\` (\`day\`);`)
+  await db.run(sql`ALTER TABLE \`payload_mcp_api_keys\` ADD \`hq_social_comments_find\` integer DEFAULT false;`)
+  await db.run(sql`ALTER TABLE \`payload_mcp_api_keys\` ADD \`hq_market_accounts_find\` integer DEFAULT false;`)
+  await db.run(sql`ALTER TABLE \`payload_mcp_api_keys\` ADD \`hq_market_accounts_create\` integer DEFAULT false;`)
+  await db.run(sql`ALTER TABLE \`payload_mcp_api_keys\` ADD \`hq_market_accounts_update\` integer DEFAULT false;`)
+  await db.run(sql`ALTER TABLE \`payload_mcp_api_keys\` ADD \`hq_market_posts_find\` integer DEFAULT false;`)
+  await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`hq_social_comments_id\` integer REFERENCES hq_social_comments(id);`)
+  await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`hq_market_accounts_id\` integer REFERENCES hq_market_accounts(id);`)
+  await db.run(sql`ALTER TABLE \`payload_locked_documents_rels\` ADD \`hq_market_posts_id\` integer REFERENCES hq_market_posts(id);`)
+  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_hq_social_comments_id_idx\` ON \`payload_locked_documents_rels\` (\`hq_social_comments_id\`);`)
+  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_hq_market_accounts_id_idx\` ON \`payload_locked_documents_rels\` (\`hq_market_accounts_id\`);`)
+  await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_hq_market_posts_id_idx\` ON \`payload_locked_documents_rels\` (\`hq_market_posts_id\`);`)
 }
 
 export async function down({ db, payload, req }: MigrateDownArgs): Promise<void> {
-  await db.run(sql`DROP TABLE \`promotions\`;`)
-  await db.run(sql`DROP TABLE \`promotions_locales\`;`)
-  await db.run(sql`DROP TABLE \`_promotions_v\`;`)
-  await db.run(sql`DROP TABLE \`_promotions_v_locales\`;`)
-  await db.run(sql`DROP TABLE \`partners\`;`)
-  await db.run(sql`DROP TABLE \`promo_coupons\`;`)
+  await db.run(sql`DROP TABLE \`hq_social_comments\`;`)
+  // Posts before the accounts they point at.
+  await db.run(sql`DROP TABLE \`hq_market_posts\`;`)
+  await db.run(sql`DROP TABLE \`hq_market_accounts\`;`)
   await db.run(sql`PRAGMA foreign_keys=OFF;`)
   await db.run(sql`CREATE TABLE \`__new_payload_locked_documents_rels\` (
   	\`id\` integer PRIMARY KEY NOT NULL,
@@ -234,7 +198,12 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_hq_experiments_id_idx\` ON \`payload_locked_documents_rels\` (\`hq_experiments_id\`);`)
   await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_hq_artwork_uploads_id_idx\` ON \`payload_locked_documents_rels\` (\`hq_artwork_uploads_id\`);`)
   await db.run(sql`CREATE INDEX \`payload_locked_documents_rels_payload_mcp_api_keys_id_idx\` ON \`payload_locked_documents_rels\` (\`payload_mcp_api_keys_id\`);`)
-  await db.run(sql`ALTER TABLE \`payload_mcp_api_keys\` DROP COLUMN \`promotions_find\`;`)
-  await db.run(sql`ALTER TABLE \`payload_mcp_api_keys\` DROP COLUMN \`promotions_create\`;`)
-  await db.run(sql`ALTER TABLE \`payload_mcp_api_keys\` DROP COLUMN \`promotions_update\`;`)
+  await db.run(sql`DROP INDEX \`hq_social_stats_day_idx\`;`)
+  await db.run(sql`ALTER TABLE \`hq_social_stats\` DROP COLUMN \`day\`;`)
+  await db.run(sql`ALTER TABLE \`hq_social_stats\` DROP COLUMN \`audience\`;`)
+  await db.run(sql`ALTER TABLE \`payload_mcp_api_keys\` DROP COLUMN \`hq_social_comments_find\`;`)
+  await db.run(sql`ALTER TABLE \`payload_mcp_api_keys\` DROP COLUMN \`hq_market_accounts_find\`;`)
+  await db.run(sql`ALTER TABLE \`payload_mcp_api_keys\` DROP COLUMN \`hq_market_accounts_create\`;`)
+  await db.run(sql`ALTER TABLE \`payload_mcp_api_keys\` DROP COLUMN \`hq_market_accounts_update\`;`)
+  await db.run(sql`ALTER TABLE \`payload_mcp_api_keys\` DROP COLUMN \`hq_market_posts_find\`;`)
 }

@@ -1,6 +1,6 @@
 import type { Payload } from 'payload'
 
-import type { HqVisit } from '../payload-types'
+import type { HqTask, HqVisit } from '../payload-types'
 import { addDays, todayISO } from './dates'
 import { esc } from './telegram'
 import { channelOf, isDatacenterCity, type Channel } from './visits'
@@ -10,7 +10,9 @@ import { channelOf, isDatacenterCity, type Channel } from './visits'
  * brief's one-line version of it, and `/review` in Telegram, which asks Claude
  * for a growth review (web/hq/growth-review.md).
  *
- * There is no schedule. The owner asks; the next Claude session runs it.
+ * The review has no schedule. The owner asks, with `/review` or the button on
+ * the Monday reminder (lib/reviewReminder.ts), and the next Claude session
+ * runs it.
  */
 
 const DAY = 24 * 60 * 60 * 1000
@@ -161,11 +163,16 @@ export function siteSection(t: TrafficReport): string[] {
 export const REVIEW_PREFIX = 'Growth review (asked '
 
 /**
- * `/review` in Telegram: file one task asking Claude for a growth review, and
- * answer at once with this week's numbers so the tap is never empty-handed.
- * A second `/review` while one is still open points at it instead of piling up.
+ * The one way a review gets asked for: find the open review task, or file one.
+ * `/review` and the reminder's button both call this, so a second ask from
+ * either, while one is still open, points at it instead of piling up.
+ * `via` only changes the task's detail line, never its title.
  */
-export async function requestReview(payload: Payload, now: Date = new Date()): Promise<string> {
+export async function fileReview(
+  payload: Payload,
+  now: Date = new Date(),
+  via = 'Telegram with /review',
+): Promise<{ task: HqTask; created: boolean }> {
   const open = await payload.find({
     collection: 'hq-tasks',
     where: {
@@ -181,24 +188,30 @@ export async function requestReview(payload: Payload, now: Date = new Date()): P
   })
   // `contains` ignores case and position; the prefix must be the start.
   const pending = open.docs.find((t) => t.title.startsWith(REVIEW_PREFIX))
+  if (pending) return { task: pending, created: false }
 
-  let head: string
-  if (pending) {
-    head = `🤖 Already asked: task #${pending.id} is waiting for Claude.`
-  } else {
-    const task = await payload.create({
-      collection: 'hq-tasks',
-      data: {
-        title: `${REVIEW_PREFIX}${todayISO(now)})`,
-        detail:
-          'Asked for in Telegram with /review. Run web/hq/growth-review.md: hqGrowthContext, close or open experiments, rewrite the playbook, up to 3 next moves, one Telegram summary.',
-        assignee: 'claude',
-        status: 'open',
-      },
-      overrideAccess: true,
-    })
-    head = `🤖 Growth review filed as task #${task.id}. Next time you open Claude Code on Flamingo County, it runs first and sends you the summary here.`
-  }
+  const task = await payload.create({
+    collection: 'hq-tasks',
+    data: {
+      title: `${REVIEW_PREFIX}${todayISO(now)})`,
+      detail: `Asked for in ${via}. Run web/hq/growth-review.md: hqGrowthContext, close or open experiments, rewrite the playbook, up to 3 next moves, one Telegram summary.`,
+      assignee: 'claude',
+      status: 'open',
+    },
+    overrideAccess: true,
+  })
+  return { task, created: true }
+}
+
+/**
+ * `/review` in Telegram: file one task asking Claude for a growth review, and
+ * answer at once with this week's numbers so the tap is never empty-handed.
+ */
+export async function requestReview(payload: Payload, now: Date = new Date()): Promise<string> {
+  const { task, created } = await fileReview(payload, now)
+  const head = created
+    ? `🤖 Growth review filed as task #${task.id}. Next time you open Claude Code on Flamingo County, it runs first and sends you the summary here.`
+    : `🤖 Already asked: task #${task.id} is waiting for Claude.`
 
   const t = await trafficReport(payload, 28, now)
   const site = siteSection(t)

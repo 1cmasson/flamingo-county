@@ -38,8 +38,9 @@ import * as migration_20261017_203009_address_usage from './20261017_203009_addr
 import * as migration_20261017_204939_site_usage from './20261017_204939_site_usage';
 import * as migration_20261020_184304_spend_approvals from './20261020_184304_spend_approvals';
 import * as migration_20261021_021048_graph_telemetry from './20261021_021048_graph_telemetry';
-import * as migration_20261021_034507_promo_coupons from './20261021_034507_promo_coupons';
-import * as migration_20261021_041702_promo_who from './20261021_041702_promo_who';
+import * as migration_20261021_032749_reel_reviews from './20261021_032749_reel_reviews';
+import * as migration_20261021_035949_graph_telemetry_2 from './20261021_035949_graph_telemetry_2';
+import * as migration_20261021_140751_promo_coupons from './20261021_140751_promo_coupons';
 
 export const migrations = [
   {
@@ -243,13 +244,18 @@ export const migrations = [
     name: '20261021_021048_graph_telemetry',
   },
   {
-    up: migration_20261021_034507_promo_coupons.up,
-    down: migration_20261021_034507_promo_coupons.down,
-    name: '20261021_034507_promo_coupons',
+    up: migration_20261021_032749_reel_reviews.up,
+    down: migration_20261021_032749_reel_reviews.down,
+    name: '20261021_032749_reel_reviews',
   },
   {
-    up: migration_20261021_041702_promo_who.up,
-    down: migration_20261021_041702_promo_who.down,
-    name: '20261021_041702_promo_who'
+    up: migration_20261021_035949_graph_telemetry_2.up,
+    down: migration_20261021_035949_graph_telemetry_2.down,
+    name: '20261021_035949_graph_telemetry_2',
+  },
+  {
+    up: migration_20261021_140751_promo_coupons.up,
+    down: migration_20261021_140751_promo_coupons.down,
+    name: '20261021_140751_promo_coupons'
   },
 ];

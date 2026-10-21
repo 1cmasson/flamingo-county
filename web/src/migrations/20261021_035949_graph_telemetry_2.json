@@ -10603,831 +10603,6 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
-    "promotions": {
-      "name": "promotions",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "slug": {
-          "name": "slug",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "listing_id": {
-          "name": "listing_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "starts_on": {
-          "name": "starts_on",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "ends_on": {
-          "name": "ends_on",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "limit": {
-          "name": "limit",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "image_id": {
-          "name": "image_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
-        },
-        "_status": {
-          "name": "_status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": "'draft'"
-        }
-      },
-      "indexes": {
-        "promotions_slug_idx": {
-          "name": "promotions_slug_idx",
-          "columns": [
-            "slug"
-          ],
-          "isUnique": true
-        },
-        "promotions_listing_idx": {
-          "name": "promotions_listing_idx",
-          "columns": [
-            "listing_id"
-          ],
-          "isUnique": false
-        },
-        "promotions_image_idx": {
-          "name": "promotions_image_idx",
-          "columns": [
-            "image_id"
-          ],
-          "isUnique": false
-        },
-        "promotions_updated_at_idx": {
-          "name": "promotions_updated_at_idx",
-          "columns": [
-            "updated_at"
-          ],
-          "isUnique": false
-        },
-        "promotions_created_at_idx": {
-          "name": "promotions_created_at_idx",
-          "columns": [
-            "created_at"
-          ],
-          "isUnique": false
-        },
-        "promotions__status_idx": {
-          "name": "promotions__status_idx",
-          "columns": [
-            "_status"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "promotions_listing_id_listings_id_fk": {
-          "name": "promotions_listing_id_listings_id_fk",
-          "tableFrom": "promotions",
-          "tableTo": "listings",
-          "columnsFrom": [
-            "listing_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "promotions_image_id_media_id_fk": {
-          "name": "promotions_image_id_media_id_fk",
-          "tableFrom": "promotions",
-          "tableTo": "media",
-          "columnsFrom": [
-            "image_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "promotions_locales": {
-      "name": "promotions_locales",
-      "columns": {
-        "title": {
-          "name": "title",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "details": {
-          "name": "details",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "_locale": {
-          "name": "_locale",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "_parent_id": {
-          "name": "_parent_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "promotions_locales_locale_parent_id_unique": {
-          "name": "promotions_locales_locale_parent_id_unique",
-          "columns": [
-            "_locale",
-            "_parent_id"
-          ],
-          "isUnique": true
-        }
-      },
-      "foreignKeys": {
-        "promotions_locales_parent_id_fk": {
-          "name": "promotions_locales_parent_id_fk",
-          "tableFrom": "promotions_locales",
-          "tableTo": "promotions",
-          "columnsFrom": [
-            "_parent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "_promotions_v": {
-      "name": "_promotions_v",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "parent_id": {
-          "name": "parent_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "version_slug": {
-          "name": "version_slug",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "version_listing_id": {
-          "name": "version_listing_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "version_starts_on": {
-          "name": "version_starts_on",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "version_ends_on": {
-          "name": "version_ends_on",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "version_limit": {
-          "name": "version_limit",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "version_image_id": {
-          "name": "version_image_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "version_updated_at": {
-          "name": "version_updated_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "version_created_at": {
-          "name": "version_created_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "version__status": {
-          "name": "version__status",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": "'draft'"
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
-        },
-        "snapshot": {
-          "name": "snapshot",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "published_locale": {
-          "name": "published_locale",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "latest": {
-          "name": "latest",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "_promotions_v_parent_idx": {
-          "name": "_promotions_v_parent_idx",
-          "columns": [
-            "parent_id"
-          ],
-          "isUnique": false
-        },
-        "_promotions_v_version_version_slug_idx": {
-          "name": "_promotions_v_version_version_slug_idx",
-          "columns": [
-            "version_slug"
-          ],
-          "isUnique": false
-        },
-        "_promotions_v_version_version_listing_idx": {
-          "name": "_promotions_v_version_version_listing_idx",
-          "columns": [
-            "version_listing_id"
-          ],
-          "isUnique": false
-        },
-        "_promotions_v_version_version_image_idx": {
-          "name": "_promotions_v_version_version_image_idx",
-          "columns": [
-            "version_image_id"
-          ],
-          "isUnique": false
-        },
-        "_promotions_v_version_version_updated_at_idx": {
-          "name": "_promotions_v_version_version_updated_at_idx",
-          "columns": [
-            "version_updated_at"
-          ],
-          "isUnique": false
-        },
-        "_promotions_v_version_version_created_at_idx": {
-          "name": "_promotions_v_version_version_created_at_idx",
-          "columns": [
-            "version_created_at"
-          ],
-          "isUnique": false
-        },
-        "_promotions_v_version_version__status_idx": {
-          "name": "_promotions_v_version_version__status_idx",
-          "columns": [
-            "version__status"
-          ],
-          "isUnique": false
-        },
-        "_promotions_v_created_at_idx": {
-          "name": "_promotions_v_created_at_idx",
-          "columns": [
-            "created_at"
-          ],
-          "isUnique": false
-        },
-        "_promotions_v_updated_at_idx": {
-          "name": "_promotions_v_updated_at_idx",
-          "columns": [
-            "updated_at"
-          ],
-          "isUnique": false
-        },
-        "_promotions_v_snapshot_idx": {
-          "name": "_promotions_v_snapshot_idx",
-          "columns": [
-            "snapshot"
-          ],
-          "isUnique": false
-        },
-        "_promotions_v_published_locale_idx": {
-          "name": "_promotions_v_published_locale_idx",
-          "columns": [
-            "published_locale"
-          ],
-          "isUnique": false
-        },
-        "_promotions_v_latest_idx": {
-          "name": "_promotions_v_latest_idx",
-          "columns": [
-            "latest"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "_promotions_v_parent_id_promotions_id_fk": {
-          "name": "_promotions_v_parent_id_promotions_id_fk",
-          "tableFrom": "_promotions_v",
-          "tableTo": "promotions",
-          "columnsFrom": [
-            "parent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "_promotions_v_version_listing_id_listings_id_fk": {
-          "name": "_promotions_v_version_listing_id_listings_id_fk",
-          "tableFrom": "_promotions_v",
-          "tableTo": "listings",
-          "columnsFrom": [
-            "version_listing_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "_promotions_v_version_image_id_media_id_fk": {
-          "name": "_promotions_v_version_image_id_media_id_fk",
-          "tableFrom": "_promotions_v",
-          "tableTo": "media",
-          "columnsFrom": [
-            "version_image_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "_promotions_v_locales": {
-      "name": "_promotions_v_locales",
-      "columns": {
-        "version_title": {
-          "name": "version_title",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "version_details": {
-          "name": "version_details",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "_locale": {
-          "name": "_locale",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "_parent_id": {
-          "name": "_parent_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        }
-      },
-      "indexes": {
-        "_promotions_v_locales_locale_parent_id_unique": {
-          "name": "_promotions_v_locales_locale_parent_id_unique",
-          "columns": [
-            "_locale",
-            "_parent_id"
-          ],
-          "isUnique": true
-        }
-      },
-      "foreignKeys": {
-        "_promotions_v_locales_parent_id_fk": {
-          "name": "_promotions_v_locales_parent_id_fk",
-          "tableFrom": "_promotions_v_locales",
-          "tableTo": "_promotions_v",
-          "columnsFrom": [
-            "_parent_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "partners": {
-      "name": "partners",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "name": {
-          "name": "name",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "listing_id": {
-          "name": "listing_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "staff_pin": {
-          "name": "staff_pin",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "dashboard_key": {
-          "name": "dashboard_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "notes": {
-          "name": "notes",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
-        }
-      },
-      "indexes": {
-        "partners_listing_idx": {
-          "name": "partners_listing_idx",
-          "columns": [
-            "listing_id"
-          ],
-          "isUnique": true
-        },
-        "partners_dashboard_key_idx": {
-          "name": "partners_dashboard_key_idx",
-          "columns": [
-            "dashboard_key"
-          ],
-          "isUnique": true
-        },
-        "partners_updated_at_idx": {
-          "name": "partners_updated_at_idx",
-          "columns": [
-            "updated_at"
-          ],
-          "isUnique": false
-        },
-        "partners_created_at_idx": {
-          "name": "partners_created_at_idx",
-          "columns": [
-            "created_at"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "partners_listing_id_listings_id_fk": {
-          "name": "partners_listing_id_listings_id_fk",
-          "tableFrom": "partners",
-          "tableTo": "listings",
-          "columnsFrom": [
-            "listing_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
-    "promo_coupons": {
-      "name": "promo_coupons",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "integer",
-          "primaryKey": true,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "code": {
-          "name": "code",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "promotion_id": {
-          "name": "promotion_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "listing_id": {
-          "name": "listing_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false
-        },
-        "source": {
-          "name": "source",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "lang": {
-          "name": "lang",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "redeemed_at": {
-          "name": "redeemed_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "pin_fails": {
-          "name": "pin_fails",
-          "type": "numeric",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": 0
-        },
-        "test": {
-          "name": "test",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": false
-        },
-        "updated_at": {
-          "name": "updated_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "autoincrement": false,
-          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
-        }
-      },
-      "indexes": {
-        "promo_coupons_code_idx": {
-          "name": "promo_coupons_code_idx",
-          "columns": [
-            "code"
-          ],
-          "isUnique": true
-        },
-        "promo_coupons_promotion_idx": {
-          "name": "promo_coupons_promotion_idx",
-          "columns": [
-            "promotion_id"
-          ],
-          "isUnique": false
-        },
-        "promo_coupons_listing_idx": {
-          "name": "promo_coupons_listing_idx",
-          "columns": [
-            "listing_id"
-          ],
-          "isUnique": false
-        },
-        "promo_coupons_source_idx": {
-          "name": "promo_coupons_source_idx",
-          "columns": [
-            "source"
-          ],
-          "isUnique": false
-        },
-        "promo_coupons_redeemed_at_idx": {
-          "name": "promo_coupons_redeemed_at_idx",
-          "columns": [
-            "redeemed_at"
-          ],
-          "isUnique": false
-        },
-        "promo_coupons_test_idx": {
-          "name": "promo_coupons_test_idx",
-          "columns": [
-            "test"
-          ],
-          "isUnique": false
-        },
-        "promo_coupons_updated_at_idx": {
-          "name": "promo_coupons_updated_at_idx",
-          "columns": [
-            "updated_at"
-          ],
-          "isUnique": false
-        },
-        "promo_coupons_created_at_idx": {
-          "name": "promo_coupons_created_at_idx",
-          "columns": [
-            "created_at"
-          ],
-          "isUnique": false
-        }
-      },
-      "foreignKeys": {
-        "promo_coupons_promotion_id_promotions_id_fk": {
-          "name": "promo_coupons_promotion_id_promotions_id_fk",
-          "tableFrom": "promo_coupons",
-          "tableTo": "promotions",
-          "columnsFrom": [
-            "promotion_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "promo_coupons_listing_id_listings_id_fk": {
-          "name": "promo_coupons_listing_id_listings_id_fk",
-          "tableFrom": "promo_coupons",
-          "tableTo": "listings",
-          "columnsFrom": [
-            "listing_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "checkConstraints": {}
-    },
     "subscribers": {
       "name": "subscribers",
       "columns": {
@@ -12620,6 +11795,13 @@
           "notNull": false,
           "autoincrement": false
         },
+        "day": {
+          "name": "day",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "permalink": {
           "name": "permalink",
           "type": "text",
@@ -12657,6 +11839,13 @@
         },
         "failed_metrics": {
           "name": "failed_metrics",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "audience": {
+          "name": "audience",
           "type": "text",
           "primaryKey": false,
           "notNull": false,
@@ -12715,6 +11904,13 @@
           ],
           "isUnique": false
         },
+        "hq_social_stats_day_idx": {
+          "name": "hq_social_stats_day_idx",
+          "columns": [
+            "day"
+          ],
+          "isUnique": false
+        },
         "hq_social_stats_updated_at_idx": {
           "name": "hq_social_stats_updated_at_idx",
           "columns": [
@@ -12737,6 +11933,525 @@
           "tableTo": "hq_social_drafts",
           "columnsFrom": [
             "draft_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "hq_social_comments": {
+      "name": "hq_social_comments",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "comment_id": {
+          "name": "comment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "platform": {
+          "name": "platform",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'instagram'"
+        },
+        "media_id": {
+          "name": "media_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "commented_at": {
+          "name": "commented_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "permalink": {
+          "name": "permalink",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "media_caption": {
+          "name": "media_caption",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "text": {
+          "name": "text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "like_count": {
+          "name": "like_count",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "from_us": {
+          "name": "from_us",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "tags": {
+          "name": "tags",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+        }
+      },
+      "indexes": {
+        "hq_social_comments_comment_id_idx": {
+          "name": "hq_social_comments_comment_id_idx",
+          "columns": [
+            "comment_id"
+          ],
+          "isUnique": true
+        },
+        "hq_social_comments_media_id_idx": {
+          "name": "hq_social_comments_media_id_idx",
+          "columns": [
+            "media_id"
+          ],
+          "isUnique": false
+        },
+        "hq_social_comments_commented_at_idx": {
+          "name": "hq_social_comments_commented_at_idx",
+          "columns": [
+            "commented_at"
+          ],
+          "isUnique": false
+        },
+        "hq_social_comments_updated_at_idx": {
+          "name": "hq_social_comments_updated_at_idx",
+          "columns": [
+            "updated_at"
+          ],
+          "isUnique": false
+        },
+        "hq_social_comments_created_at_idx": {
+          "name": "hq_social_comments_created_at_idx",
+          "columns": [
+            "created_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "hq_market_accounts": {
+      "name": "hq_market_accounts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "username": {
+          "name": "username",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "category": {
+          "name": "category",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "active": {
+          "name": "active",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": true
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status": {
+          "name": "status",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'pending'"
+        },
+        "checked_at": {
+          "name": "checked_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "status_detail": {
+          "name": "status_detail",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "followers_count": {
+          "name": "followers_count",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "media_count": {
+          "name": "media_count",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+        }
+      },
+      "indexes": {
+        "hq_market_accounts_username_idx": {
+          "name": "hq_market_accounts_username_idx",
+          "columns": [
+            "username"
+          ],
+          "isUnique": true
+        },
+        "hq_market_accounts_category_idx": {
+          "name": "hq_market_accounts_category_idx",
+          "columns": [
+            "category"
+          ],
+          "isUnique": false
+        },
+        "hq_market_accounts_active_idx": {
+          "name": "hq_market_accounts_active_idx",
+          "columns": [
+            "active"
+          ],
+          "isUnique": false
+        },
+        "hq_market_accounts_checked_at_idx": {
+          "name": "hq_market_accounts_checked_at_idx",
+          "columns": [
+            "checked_at"
+          ],
+          "isUnique": false
+        },
+        "hq_market_accounts_updated_at_idx": {
+          "name": "hq_market_accounts_updated_at_idx",
+          "columns": [
+            "updated_at"
+          ],
+          "isUnique": false
+        },
+        "hq_market_accounts_created_at_idx": {
+          "name": "hq_market_accounts_created_at_idx",
+          "columns": [
+            "created_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "hq_market_posts": {
+      "name": "hq_market_posts",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "account_id": {
+          "name": "account_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "username": {
+          "name": "username",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "media_id": {
+          "name": "media_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "permalink": {
+          "name": "permalink",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "posted_at": {
+          "name": "posted_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "media_type": {
+          "name": "media_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "product_type": {
+          "name": "product_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "caption": {
+          "name": "caption",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "likes": {
+          "name": "likes",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "comments": {
+          "name": "comments",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "views": {
+          "name": "views",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "followers_at_fetch": {
+          "name": "followers_at_fetch",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "first_seen_at": {
+          "name": "first_seen_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "last_seen_at": {
+          "name": "last_seen_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "snapshots": {
+          "name": "snapshots",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "outlier_score": {
+          "name": "outlier_score",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "outlier_bucket": {
+          "name": "outlier_bucket",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "outlier_basis": {
+          "name": "outlier_basis",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "engagement_per_follower": {
+          "name": "engagement_per_follower",
+          "type": "numeric",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+        }
+      },
+      "indexes": {
+        "hq_market_posts_account_idx": {
+          "name": "hq_market_posts_account_idx",
+          "columns": [
+            "account_id"
+          ],
+          "isUnique": false
+        },
+        "hq_market_posts_username_idx": {
+          "name": "hq_market_posts_username_idx",
+          "columns": [
+            "username"
+          ],
+          "isUnique": false
+        },
+        "hq_market_posts_media_id_idx": {
+          "name": "hq_market_posts_media_id_idx",
+          "columns": [
+            "media_id"
+          ],
+          "isUnique": true
+        },
+        "hq_market_posts_posted_at_idx": {
+          "name": "hq_market_posts_posted_at_idx",
+          "columns": [
+            "posted_at"
+          ],
+          "isUnique": false
+        },
+        "hq_market_posts_product_type_idx": {
+          "name": "hq_market_posts_product_type_idx",
+          "columns": [
+            "product_type"
+          ],
+          "isUnique": false
+        },
+        "hq_market_posts_outlier_score_idx": {
+          "name": "hq_market_posts_outlier_score_idx",
+          "columns": [
+            "outlier_score"
+          ],
+          "isUnique": false
+        },
+        "hq_market_posts_updated_at_idx": {
+          "name": "hq_market_posts_updated_at_idx",
+          "columns": [
+            "updated_at"
+          ],
+          "isUnique": false
+        },
+        "hq_market_posts_created_at_idx": {
+          "name": "hq_market_posts_created_at_idx",
+          "columns": [
+            "created_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "hq_market_posts_account_id_hq_market_accounts_id_fk": {
+          "name": "hq_market_posts_account_id_hq_market_accounts_id_fk",
+          "tableFrom": "hq_market_posts",
+          "tableTo": "hq_market_accounts",
+          "columnsFrom": [
+            "account_id"
           ],
           "columnsTo": [
             "id"
@@ -13622,6 +13337,376 @@
       "uniqueConstraints": {},
       "checkConstraints": {}
     },
+    "hq_experiments_rels": {
+      "name": "hq_experiments_rels",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "order": {
+          "name": "order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "parent_id": {
+          "name": "parent_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "path": {
+          "name": "path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "hq_social_drafts_id": {
+          "name": "hq_social_drafts_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "hq_experiments_rels_order_idx": {
+          "name": "hq_experiments_rels_order_idx",
+          "columns": [
+            "order"
+          ],
+          "isUnique": false
+        },
+        "hq_experiments_rels_parent_idx": {
+          "name": "hq_experiments_rels_parent_idx",
+          "columns": [
+            "parent_id"
+          ],
+          "isUnique": false
+        },
+        "hq_experiments_rels_path_idx": {
+          "name": "hq_experiments_rels_path_idx",
+          "columns": [
+            "path"
+          ],
+          "isUnique": false
+        },
+        "hq_experiments_rels_hq_social_drafts_id_idx": {
+          "name": "hq_experiments_rels_hq_social_drafts_id_idx",
+          "columns": [
+            "hq_social_drafts_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "hq_experiments_rels_parent_fk": {
+          "name": "hq_experiments_rels_parent_fk",
+          "tableFrom": "hq_experiments_rels",
+          "tableTo": "hq_experiments",
+          "columnsFrom": [
+            "parent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "hq_experiments_rels_hq_social_drafts_fk": {
+          "name": "hq_experiments_rels_hq_social_drafts_fk",
+          "tableFrom": "hq_experiments_rels",
+          "tableTo": "hq_social_drafts",
+          "columnsFrom": [
+            "hq_social_drafts_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "hq_reel_reviews": {
+      "name": "hq_reel_reviews",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "key": {
+          "name": "key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "pillar": {
+          "name": "pillar",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "checkpoint": {
+          "name": "checkpoint",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": "'3d'"
+        },
+        "published_at": {
+          "name": "published_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "complete": {
+          "name": "complete",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "permalinks": {
+          "name": "permalinks",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "cuts": {
+          "name": "cuts",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "pair": {
+          "name": "pair",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "retention": {
+          "name": "retention",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "summary": {
+          "name": "summary",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false,
+          "default": "(strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))"
+        }
+      },
+      "indexes": {
+        "hq_reel_reviews_key_idx": {
+          "name": "hq_reel_reviews_key_idx",
+          "columns": [
+            "key"
+          ],
+          "isUnique": true
+        },
+        "hq_reel_reviews_published_at_idx": {
+          "name": "hq_reel_reviews_published_at_idx",
+          "columns": [
+            "published_at"
+          ],
+          "isUnique": false
+        },
+        "hq_reel_reviews_updated_at_idx": {
+          "name": "hq_reel_reviews_updated_at_idx",
+          "columns": [
+            "updated_at"
+          ],
+          "isUnique": false
+        },
+        "hq_reel_reviews_created_at_idx": {
+          "name": "hq_reel_reviews_created_at_idx",
+          "columns": [
+            "created_at"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
+    "hq_reel_reviews_rels": {
+      "name": "hq_reel_reviews_rels",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "order": {
+          "name": "order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "parent_id": {
+          "name": "parent_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "path": {
+          "name": "path",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "hq_social_drafts_id": {
+          "name": "hq_social_drafts_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "hq_experiments_id": {
+          "name": "hq_experiments_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        }
+      },
+      "indexes": {
+        "hq_reel_reviews_rels_order_idx": {
+          "name": "hq_reel_reviews_rels_order_idx",
+          "columns": [
+            "order"
+          ],
+          "isUnique": false
+        },
+        "hq_reel_reviews_rels_parent_idx": {
+          "name": "hq_reel_reviews_rels_parent_idx",
+          "columns": [
+            "parent_id"
+          ],
+          "isUnique": false
+        },
+        "hq_reel_reviews_rels_path_idx": {
+          "name": "hq_reel_reviews_rels_path_idx",
+          "columns": [
+            "path"
+          ],
+          "isUnique": false
+        },
+        "hq_reel_reviews_rels_hq_social_drafts_id_idx": {
+          "name": "hq_reel_reviews_rels_hq_social_drafts_id_idx",
+          "columns": [
+            "hq_social_drafts_id"
+          ],
+          "isUnique": false
+        },
+        "hq_reel_reviews_rels_hq_experiments_id_idx": {
+          "name": "hq_reel_reviews_rels_hq_experiments_id_idx",
+          "columns": [
+            "hq_experiments_id"
+          ],
+          "isUnique": false
+        }
+      },
+      "foreignKeys": {
+        "hq_reel_reviews_rels_parent_fk": {
+          "name": "hq_reel_reviews_rels_parent_fk",
+          "tableFrom": "hq_reel_reviews_rels",
+          "tableTo": "hq_reel_reviews",
+          "columnsFrom": [
+            "parent_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "hq_reel_reviews_rels_hq_social_drafts_fk": {
+          "name": "hq_reel_reviews_rels_hq_social_drafts_fk",
+          "tableFrom": "hq_reel_reviews_rels",
+          "tableTo": "hq_social_drafts",
+          "columnsFrom": [
+            "hq_social_drafts_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "hq_reel_reviews_rels_hq_experiments_fk": {
+          "name": "hq_reel_reviews_rels_hq_experiments_fk",
+          "tableFrom": "hq_reel_reviews_rels",
+          "tableTo": "hq_experiments",
+          "columnsFrom": [
+            "hq_experiments_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "checkConstraints": {}
+    },
     "hq_artwork_uploads": {
       "name": "hq_artwork_uploads",
       "columns": {
@@ -13895,6 +13980,46 @@
           "autoincrement": false,
           "default": false
         },
+        "hq_social_comments_find": {
+          "name": "hq_social_comments_find",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "hq_market_accounts_find": {
+          "name": "hq_market_accounts_find",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "hq_market_accounts_create": {
+          "name": "hq_market_accounts_create",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "hq_market_accounts_update": {
+          "name": "hq_market_accounts_update",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "hq_market_posts_find": {
+          "name": "hq_market_posts_find",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
         "hq_clicks_find": {
           "name": "hq_clicks_find",
           "type": "integer",
@@ -13937,6 +14062,14 @@
         },
         "hq_experiments_update": {
           "name": "hq_experiments_update",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": false
+        },
+        "hq_reel_reviews_find": {
+          "name": "hq_reel_reviews_find",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -14073,30 +14206,6 @@
         },
         "spotlights_update": {
           "name": "spotlights_update",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": false
-        },
-        "promotions_find": {
-          "name": "promotions_find",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": false
-        },
-        "promotions_create": {
-          "name": "promotions_create",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false,
-          "default": false
-        },
-        "promotions_update": {
-          "name": "promotions_update",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -14895,27 +15004,6 @@
           "notNull": false,
           "autoincrement": false
         },
-        "promotions_id": {
-          "name": "promotions_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "partners_id": {
-          "name": "partners_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
-        "promo_coupons_id": {
-          "name": "promo_coupons_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false,
-          "autoincrement": false
-        },
         "subscribers_id": {
           "name": "subscribers_id",
           "type": "integer",
@@ -14972,6 +15060,27 @@
           "notNull": false,
           "autoincrement": false
         },
+        "hq_social_comments_id": {
+          "name": "hq_social_comments_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "hq_market_accounts_id": {
+          "name": "hq_market_accounts_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "hq_market_posts_id": {
+          "name": "hq_market_posts_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
         "hq_clicks_id": {
           "name": "hq_clicks_id",
           "type": "integer",
@@ -15016,6 +15125,13 @@
         },
         "hq_experiments_id": {
           "name": "hq_experiments_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false
+        },
+        "hq_reel_reviews_id": {
+          "name": "hq_reel_reviews_id",
           "type": "integer",
           "primaryKey": false,
           "notNull": false,
@@ -15135,27 +15251,6 @@
           ],
           "isUnique": false
         },
-        "payload_locked_documents_rels_promotions_id_idx": {
-          "name": "payload_locked_documents_rels_promotions_id_idx",
-          "columns": [
-            "promotions_id"
-          ],
-          "isUnique": false
-        },
-        "payload_locked_documents_rels_partners_id_idx": {
-          "name": "payload_locked_documents_rels_partners_id_idx",
-          "columns": [
-            "partners_id"
-          ],
-          "isUnique": false
-        },
-        "payload_locked_documents_rels_promo_coupons_id_idx": {
-          "name": "payload_locked_documents_rels_promo_coupons_id_idx",
-          "columns": [
-            "promo_coupons_id"
-          ],
-          "isUnique": false
-        },
         "payload_locked_documents_rels_subscribers_id_idx": {
           "name": "payload_locked_documents_rels_subscribers_id_idx",
           "columns": [
@@ -15212,6 +15307,27 @@
           ],
           "isUnique": false
         },
+        "payload_locked_documents_rels_hq_social_comments_id_idx": {
+          "name": "payload_locked_documents_rels_hq_social_comments_id_idx",
+          "columns": [
+            "hq_social_comments_id"
+          ],
+          "isUnique": false
+        },
+        "payload_locked_documents_rels_hq_market_accounts_id_idx": {
+          "name": "payload_locked_documents_rels_hq_market_accounts_id_idx",
+          "columns": [
+            "hq_market_accounts_id"
+          ],
+          "isUnique": false
+        },
+        "payload_locked_documents_rels_hq_market_posts_id_idx": {
+          "name": "payload_locked_documents_rels_hq_market_posts_id_idx",
+          "columns": [
+            "hq_market_posts_id"
+          ],
+          "isUnique": false
+        },
         "payload_locked_documents_rels_hq_clicks_id_idx": {
           "name": "payload_locked_documents_rels_hq_clicks_id_idx",
           "columns": [
@@ -15258,6 +15374,13 @@
           "name": "payload_locked_documents_rels_hq_experiments_id_idx",
           "columns": [
             "hq_experiments_id"
+          ],
+          "isUnique": false
+        },
+        "payload_locked_documents_rels_hq_reel_reviews_id_idx": {
+          "name": "payload_locked_documents_rels_hq_reel_reviews_id_idx",
+          "columns": [
+            "hq_reel_reviews_id"
           ],
           "isUnique": false
         },
@@ -15433,45 +15556,6 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "payload_locked_documents_rels_promotions_fk": {
-          "name": "payload_locked_documents_rels_promotions_fk",
-          "tableFrom": "payload_locked_documents_rels",
-          "tableTo": "promotions",
-          "columnsFrom": [
-            "promotions_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "payload_locked_documents_rels_partners_fk": {
-          "name": "payload_locked_documents_rels_partners_fk",
-          "tableFrom": "payload_locked_documents_rels",
-          "tableTo": "partners",
-          "columnsFrom": [
-            "partners_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "payload_locked_documents_rels_promo_coupons_fk": {
-          "name": "payload_locked_documents_rels_promo_coupons_fk",
-          "tableFrom": "payload_locked_documents_rels",
-          "tableTo": "promo_coupons",
-          "columnsFrom": [
-            "promo_coupons_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
         "payload_locked_documents_rels_subscribers_fk": {
           "name": "payload_locked_documents_rels_subscribers_fk",
           "tableFrom": "payload_locked_documents_rels",
@@ -15576,6 +15660,45 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
+        "payload_locked_documents_rels_hq_social_comments_fk": {
+          "name": "payload_locked_documents_rels_hq_social_comments_fk",
+          "tableFrom": "payload_locked_documents_rels",
+          "tableTo": "hq_social_comments",
+          "columnsFrom": [
+            "hq_social_comments_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "payload_locked_documents_rels_hq_market_accounts_fk": {
+          "name": "payload_locked_documents_rels_hq_market_accounts_fk",
+          "tableFrom": "payload_locked_documents_rels",
+          "tableTo": "hq_market_accounts",
+          "columnsFrom": [
+            "hq_market_accounts_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "payload_locked_documents_rels_hq_market_posts_fk": {
+          "name": "payload_locked_documents_rels_hq_market_posts_fk",
+          "tableFrom": "payload_locked_documents_rels",
+          "tableTo": "hq_market_posts",
+          "columnsFrom": [
+            "hq_market_posts_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
         "payload_locked_documents_rels_hq_clicks_fk": {
           "name": "payload_locked_documents_rels_hq_clicks_fk",
           "tableFrom": "payload_locked_documents_rels",
@@ -15660,6 +15783,19 @@
           "tableTo": "hq_experiments",
           "columnsFrom": [
             "hq_experiments_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "payload_locked_documents_rels_hq_reel_reviews_fk": {
+          "name": "payload_locked_documents_rels_hq_reel_reviews_fk",
+          "tableFrom": "payload_locked_documents_rels",
+          "tableTo": "hq_reel_reviews",
+          "columnsFrom": [
+            "hq_reel_reviews_id"
           ],
           "columnsTo": [
             "id"
@@ -17456,6 +17592,6 @@
   "internal": {
     "indexes": {}
   },
-  "id": "79f5203a-7975-4524-9a16-f07ae9592e04",
+  "id": "31523efb-0982-41e1-85b3-316714840a9c",
   "prevId": "00000000-0000-0000-0000-000000000000"
 }

@@ -17,7 +17,10 @@ import { trafficReport } from './growth'
 import { addDays, dateOnly, eventEndDay, todayISO } from './dates'
 import { cancelDraft, miamiTime } from './hq'
 import { isRunningCount, type MetricSummary } from './postiz'
+import { recentReelReviews } from './reelScore'
 import { reelRatios } from './reelStats'
+import { graphSummary } from './graphTelemetry'
+import { marketOutliers } from './market'
 import { PUBLISHABLE, PUBLISHABLE_GLOBALS, publishStatus, requestPublish } from './publishRequests'
 import { redeemSpend, requestSpend, spendStatus } from './spendApprovals'
 import { PHOTO_LICENSES, canonicalLicenseUrl, isPhotoLicense, licenseLabel, type PhotoLicense } from './photoLicense'
@@ -117,10 +120,16 @@ function readings(metrics: Record<string, MetricSummary>): Record<string, number
  * (when the length is known) and shares per reach; and `otherReels` lists the
  * reels no draft matched, so a reel scheduled straight in Postiz still counts.
  * Both are empty without META_GRAPH_TOKEN.
+ *
+ * `graph` is the account level (lib/graphTelemetry.ts `graphSummary`): follows
+ * gained and lost in the last seven full Miami days (KPI #1), the follower
+ * total and its change, and the latest audience reading — Miami-Dade share,
+ * top cities, best hours to post in Miami time. Its counts are null until the
+ * graphTelemetry job has rows.
  */
 export async function socialReport(payload: Payload, days: number, now: Date = new Date()) {
   const from = new Date(now.getTime() - days * 86_400_000).toISOString()
-  const [drafts, stats, clicks, channels, reels] = await Promise.all([
+  const [drafts, stats, clicks, channels, reels, graph] = await Promise.all([
     payload.find({
       collection: 'hq-social-drafts',
       where: { and: [{ status: { in: ['scheduled', 'published'] } }, { publishAt: { greater_than: from } }] },
@@ -160,6 +169,7 @@ export async function socialReport(payload: Payload, days: number, now: Date = n
       overrideAccess: true,
       select: { raw: false, retention: false },
     }),
+    graphSummary(payload, now),
   ])
 
   const idOf = (v: unknown) => (v && typeof v === 'object' ? (v as { id: number }).id : (v as number | null))
@@ -217,7 +227,7 @@ export async function socialReport(payload: Payload, days: number, now: Date = n
   const bioClicks: Record<string, number> = {}
   for (const c of clicks.docs.filter((c) => !c.draft)) bioClicks[c.source] = (bioClicks[c.source] ?? 0) + 1
 
-  return { windowDays: days, posts, otherReels, accounts, bioClicks }
+  return { windowDays: days, posts, otherReels, accounts, bioClicks, graph }
 }
 
 /* ------------------------------------------------------------------------ */
@@ -240,7 +250,9 @@ function bothLanguages(v: unknown): { es: string | null; en: string | null } {
 /**
  * The weekly review's whole input: the 28-day social report, the current
  * playbook, the published events coming up in the next 14 days, the newest
- * published stories, and the social drafts already waiting for the owner.
+ * published stories, the social drafts already waiting for the owner, and the
+ * 72-hour reel post-mortems of the window (`reelReviews`, lib/reelScore.ts) —
+ * so the review reads each reel's verdict numbers instead of recomputing them.
  *
  * Built field by field from depth-0 reads, so nothing comes along by accident:
  * no listing phone or hours (an event's `listing` would populate them at a
@@ -252,7 +264,7 @@ export async function weeklyReviewContext(payload: Payload, now: Date = new Date
   const today = todayISO(now)
   const until = addDays(today, AHEAD_DAYS)
 
-  const [report, playbook, events, stories, pending] = await Promise.all([
+  const [report, playbook, events, stories, pending, reelReviews] = await Promise.all([
     socialReport(payload, REVIEW_DAYS, now),
     payload.findGlobal({ slug: 'hq-playbook', depth: 0, overrideAccess: true }),
     payload.find({
@@ -293,6 +305,7 @@ export async function weeklyReviewContext(payload: Payload, now: Date = new Date
       depth: 0,
       overrideAccess: true,
     }),
+    recentReelReviews(payload, REVIEW_DAYS, now),
   ])
 
   const upcomingEvents = (events.docs as Event[])
@@ -342,6 +355,7 @@ export async function weeklyReviewContext(payload: Payload, now: Date = new Date
     // Stories carry no date of their own, so "upcoming" means the newest published ones.
     recentStories,
     pendingDrafts,
+    reelReviews,
   }
 }
 
@@ -381,7 +395,7 @@ export async function growthContext(payload: Payload, now: Date = new Date()) {
       })
       .then((r) => r.totalDocs)
 
-  const [review, traffic, toolUse, events, stories, spotlights, weekly, ready, needsOwner, unsourced, shipped, experiments, tasks] =
+  const [review, traffic, toolUse, events, stories, spotlights, weekly, ready, needsOwner, unsourced, shipped, experiments, tasks, outliers] =
     await Promise.all([
       weeklyReviewContext(payload, now),
       trafficReport(payload, REVIEW_DAYS, now),
@@ -424,6 +438,7 @@ export async function growthContext(payload: Payload, now: Date = new Date()) {
         overrideAccess: true,
         select: { title: true, assignee: true, status: true, dueAt: true },
       }),
+      marketOutliers(payload, 14, now),
     ])
 
   // Intake is counted, never listed: its summaries name the people who wrote in.
@@ -461,6 +476,9 @@ export async function growthContext(payload: Payload, now: Date = new Date()) {
       spotlights,
     },
     shipped: { days: REVIEW_DAYS, items: shippedRows },
+    // Watchlist posts (Business Discovery) that beat their own account's usual
+    // at the same age the most, last 14 days: ideas, not ours to copy.
+    market: { days: 14, outliers },
     intake: { days: REVIEW_DAYS, ...intake },
     experiments: experiments.docs.map((x) => ({
       id: x.id,
@@ -474,6 +492,8 @@ export async function growthContext(payload: Payload, now: Date = new Date()) {
       startedOn: dateOnly(x.startedOn) || null,
       checkOn: dateOnly(x.checkOn) || null,
       result: x.result ?? null,
+      // The social drafts it tests: the reel scorer appends their 72-hour numbers to `result`.
+      drafts: (x.drafts ?? []).map((d) => (typeof d === 'object' ? d.id : d)),
     })),
     openTasks: tasks.docs.map((t) => ({
       id: t.id,
@@ -1056,7 +1076,7 @@ export const hqMcpTools: McpTool[] = [
   {
     name: 'hqSocialReport',
     description:
-      'Results of every social post published in the last N days: caption, pillar, language, platforms, Miami publish time, the furthest stats checkpoint (24h/3d/7d) per platform, and link clicks; plus each account’s first and last snapshot in the window and bio-link clicks. Reels also carry Meta Graph readings (`reels`: furthest of 1h/3h/24h/3d/7d per platform, ageMinutes, watch time, skip rate, avgWatchPctOfLength when the length is known, sharesPerReach), and `otherReels` lists reels no draft matched (scheduled straight in Postiz). JSON. Use it for the weekly review. Small samples: compare over weeks, not single posts.',
+      'Results of every social post published in the last N days: caption, pillar, language, platforms, Miami publish time, the furthest stats checkpoint (24h/3d/7d) per platform, and link clicks; plus each account’s first and last snapshot in the window and bio-link clicks. Reels also carry Meta Graph readings (`reels`: furthest of 1h/3h/24h/3d/7d per platform, ageMinutes, watch time, skip rate, avgWatchPctOfLength when the length is known, sharesPerReach), and `otherReels` lists reels no draft matched (scheduled straight in Postiz). `graph` is the account level from Meta: followsLast7d / unfollowsLast7d (last 7 full Miami days; KPI #1), followersNow and followersChange, reach/views, and the latest weekly audience (miamiDadeShare = Miami-Dade followers ÷ all followers, a floor since Meta lists only its top 45 cities; miamiDadeShareOfListed; topCities; bestHoursMiami). JSON. Use it for the weekly review. Small samples: compare over weeks, not single posts.',
     parameters: { days: z.number().int().min(1).max(90).default(28).describe('Window in days (default 28)') },
     handler: (args: Record<string, unknown>, req: PayloadRequest) =>
       guard(async () => text(JSON.stringify(await socialReport(req.payload, Number(args.days ?? 28)), null, 2))),
@@ -1064,7 +1084,7 @@ export const hqMcpTools: McpTool[] = [
   {
     name: 'hqWeeklyReviewContext',
     description:
-      'Everything the weekly social review needs, in one call, as JSON: the 28-day hqSocialReport, the current playbook (null until the first review writes it), published events in the next 14 days (Spanish and English titles, dates, slugs, site paths, whether they have an image), the 10 newest published stories, and the social drafts already pending approval. Read-only. Published site content only; no contact details of any kind.',
+      'Everything the weekly social review needs, in one call, as JSON: the 28-day hqSocialReport, the current playbook (null until the first review writes it), published events in the next 14 days (Spanish and English titles, dates, slugs, site paths, whether they have an image), the 10 newest published stories, the social drafts already pending approval, and reelReviews (the automatic 72-hour reel post-mortems of the last 28 days: per cut and platform, metrics with ratios to the account median, ES/EN pair ratios, where viewers left, and a text summary). Read-only. Published site content only; no contact details of any kind.',
     parameters: {},
     handler: (_args: Record<string, unknown>, req: PayloadRequest) =>
       guard(async () => text(JSON.stringify(await weeklyReviewContext(req.payload), null, 2))),
@@ -1072,7 +1092,7 @@ export const hqMcpTools: McpTool[] = [
   {
     name: 'hqGrowthContext',
     description:
-      'Everything the growth review needs, in one call, as JSON: the goal; the site\u2019s own traffic for 28 days (visits and views, by day, channel, source, referring site, landing page, language, device and place); what people did on the site (toolUse: calls, directions and website taps per business, event saves, stories read to the end, searches, and the address tool\u2019s lookups and calendar downloads); what is on the site; what shipped (publishes, scheduled posts); intake counts; the experiment ledger; open tasks; and everything hqWeeklyReviewContext returns (social report, playbook, upcoming events, recent stories, pending drafts). Read-only. Published content only; no contact details. Follow web/hq/growth-review.md.',
+      'Everything the growth review needs, in one call, as JSON: the goal; the site\u2019s own traffic for 28 days (visits and views, by day, channel, source, referring site, landing page, language, device and place); what people did on the site (toolUse: calls, directions and website taps per business, event saves, stories read to the end, searches, and the address tool\u2019s lookups and calendar downloads); what is on the site; what shipped (publishes, scheduled posts); intake counts; the experiment ledger; open tasks; market outliers (watchlist posts from the last 14 days that most beat their own account’s median at the same age); and everything hqWeeklyReviewContext returns (social report, playbook, upcoming events, recent stories, pending drafts, 72-hour reel reviews). Read-only. Published content only; no contact details. Follow web/hq/growth-review.md.',
     parameters: {},
     handler: (_args: Record<string, unknown>, req: PayloadRequest) =>
       guard(async () => text(JSON.stringify(await growthContext(req.payload), null, 2))),

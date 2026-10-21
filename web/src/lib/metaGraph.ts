@@ -41,6 +41,11 @@
  *
  * A metric Graph rejects for this account (error 100) is dropped and named on
  * the saved row, not allowed to sink the whole reading: see `readInsights`.
+ *
+ * Account-level reads — the account and Page per day, demographics, online
+ * followers, comments, Business Discovery — are in lib/metaAccount.ts, built
+ * on `graphGet` here. `graphGet` also notes Graph's usage headers
+ * (`graphUsagePct`) so a collector making many calls can stop in time.
  */
 
 /** Pinned so a Meta default-version bump cannot change metric names under us. */
@@ -88,6 +93,7 @@ export class GraphError extends Error {
     message: string,
     readonly status: number,
     readonly code?: number,
+    readonly subcode?: number,
   ) {
     super(message)
     this.name = 'GraphError'
@@ -95,7 +101,61 @@ export class GraphError extends Error {
 }
 
 /** Error 100 is "invalid parameter": for insights, a metric this media or account does not have. */
-const isInvalidParam = (err: unknown) => err instanceof GraphError && err.code === 100
+export const isInvalidParam = (err: unknown) => err instanceof GraphError && err.code === 100
+
+/**
+ * The token lacks a permission (code 10, or 200–299). Not 190, which is a bad
+ * or expired token: that is a setup problem for every call, not a missing
+ * scope for one feature.
+ * https://developers.facebook.com/docs/graph-api/guides/error-handling
+ */
+export const isPermissionError = (err: unknown) =>
+  err instanceof GraphError && (err.code === 10 || (err.code !== undefined && err.code >= 200 && err.code < 300))
+
+/**
+ * Throttled: 4 (app), 17 (user), 32 (Pages), 613 (custom) and 80002 (the
+ * Instagram Business Use Case limit). Meta's advice is to stop calling until
+ * the window resets, since calls made while throttled extend it.
+ * https://developers.facebook.com/docs/graph-api/overview/rate-limiting
+ */
+export const RATE_LIMIT_CODES = [4, 17, 32, 613, 80002]
+export const isRateLimited = (err: unknown) =>
+  err instanceof GraphError && err.code !== undefined && RATE_LIMIT_CODES.includes(err.code)
+
+/**
+ * How much of a Graph budget the latest reply said is used, 0–100: the
+ * highest `call_count`, `total_cputime` or `total_time` in its
+ * `X-Business-Use-Case-Usage` or `X-App-Usage` header. Collectors that make
+ * many calls (lib/market.ts) stop well before it reaches 100.
+ */
+let usagePct = 0
+export const graphUsagePct = () => usagePct
+export const resetGraphUsage = () => {
+  usagePct = 0
+}
+
+function noteUsage(res: Response) {
+  let seen: number | null = null
+  const walk = (v: unknown) => {
+    if (Array.isArray(v)) v.forEach(walk)
+    else if (v && typeof v === 'object') {
+      for (const [k, n] of Object.entries(v as Record<string, unknown>)) {
+        if (['call_count', 'total_cputime', 'total_time'].includes(k) && typeof n === 'number') seen = Math.max(seen ?? 0, n)
+        else walk(n)
+      }
+    }
+  }
+  for (const h of ['x-business-use-case-usage', 'x-app-usage']) {
+    const v = res.headers?.get?.(h)
+    if (!v) continue
+    try {
+      walk(JSON.parse(v))
+    } catch {
+      // a header we cannot read says nothing either way
+    }
+  }
+  if (seen !== null) usagePct = seen
+}
 
 function scrub(message: string, tokens: string[]): string {
   let out = message
@@ -107,18 +167,26 @@ function scrub(message: string, tokens: string[]): string {
  * One GET. `secrets` are every token in play, scrubbed from anything Graph
  * echoes back before it becomes an error message.
  */
-async function graphGet<T>(path: string, params: Record<string, string>, token: string, secrets: string[] = [token]): Promise<T> {
+export async function graphGet<T>(path: string, params: Record<string, string>, token: string, secrets: string[] = [token]): Promise<T> {
   const url = `${BASE}${path}?${new URLSearchParams(params)}`
   const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-  const body = (await res.json().catch(() => null)) as { error?: { message?: string; code?: number } } | null
+  noteUsage(res)
+  const body = (await res.json().catch(() => null)) as {
+    error?: { message?: string; code?: number; error_subcode?: number }
+  } | null
   if (!res.ok || !body || body.error) {
     const message = scrub(body?.error?.message ?? `HTTP ${res.status}`, secrets)
-    throw new GraphError(`Graph ${path.split('/').slice(0, 3).join('/')}: ${message}`, res.status, body?.error?.code)
+    throw new GraphError(
+      `Graph ${path.split('/').slice(0, 3).join('/')}: ${message}`,
+      res.status,
+      body?.error?.code,
+      body?.error?.error_subcode,
+    )
   }
   return body as T
 }
 
-type Paged<T> = { data?: T[]; paging?: { cursors?: { after?: string } } }
+export type Paged<T> = { data?: T[]; paging?: { cursors?: { after?: string } } }
 
 /* ------------------------------------------------------------------------ */
 /* The account                                                              */
@@ -166,10 +234,26 @@ export function pickFlamingoAccount(pages: MeAccount[]): GraphAccount | null {
   }
 }
 
-const MAX_PAGES = 5
+export const MAX_PAGES = 5
 
 /** Find the account from the token itself (/me/accounts). */
 export async function discoverAccount(token: string): Promise<GraphAccount | null> {
+  return pickFlamingoAccount(await listMeAccounts(token))
+}
+
+/**
+ * Every Instagram username the token reaches other than @flamingo.county
+ * (Club de la Amistad's, today). The market collector (lib/market.ts) refuses
+ * to look any of them up, even through Business Discovery's public fields.
+ */
+export function otherManagedUsernames(pages: MeAccount[]): string[] {
+  return pages
+    .map((p) => (p.instagram_business_account?.username ?? '').trim().toLowerCase())
+    .filter((u) => u && u !== FLAMINGO_IG_USERNAME)
+}
+
+/** The Pages /me/accounts lists for the token, each with its Instagram account if any. */
+export async function listMeAccounts(token: string): Promise<MeAccount[]> {
   const pages: MeAccount[] = []
   let after: string | undefined
   for (let i = 0; i < MAX_PAGES; i++) {
@@ -183,7 +267,7 @@ export async function discoverAccount(token: string): Promise<GraphAccount | nul
     after = res.paging?.cursors?.after
     if (!after || !res.data?.length) break
   }
-  return pickFlamingoAccount(pages)
+  return pages
 }
 
 /* ------------------------------------------------------------------------ */

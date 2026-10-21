@@ -13,6 +13,10 @@ only. Phase 1 has three parts:
 - **Evening wrap.** At 8 PM Miami time, Telegram gets the day's counterpart:
   what happened today, open tasks due by the end of tomorrow (overdue ones
   flagged), tomorrow's calendar, and the social and site drafts waiting on you.
+- **Monday review reminder.** At 8 AM Miami time on Mondays, Telegram gets
+  one short message with last week's follows, reels and best reel, and a
+  **▶️ Run the review** button. The tap files the growth review task, the same
+  as `/review`. Off with `HQ_REVIEW_REMINDER=off`. See *Growth review*.
 - **Monday roundup (off).** The job that drafted one post a week for the
   week's events is switched off (`WEEKLY_ROUNDUP_AUTO`, 2026-10-11). The
   events post is now the `events-carousel` skill's. See *The Monday roundup*.
@@ -29,7 +33,7 @@ only. Phase 1 has three parts:
   don't count either way: they never touch the grid.
 
 Everything is in the admin under **HQ**. The code is in `src/lib/{hq,brief,telegram,telegramBot,chat,postiz}.ts`,
-`src/lib/{calendar,wrap,weeklyRoundup}.ts`, `src/lib/eventStory.tsx`, `src/collections/Hq*.ts`, `src/jobs/{morningBrief,eveningWrap,weeklyRoundup}.ts`
+`src/lib/{calendar,wrap,weeklyRoundup,reviewReminder}.ts`, `src/lib/eventStory.tsx`, `src/collections/Hq*.ts`, `src/jobs/{morningBrief,eveningWrap,weeklyRoundup,reviewReminder}.ts`
 and `src/app/api/telegram/route.ts`.
 
 ## Setting it up
@@ -139,7 +143,8 @@ Anything that isn't a command gets the help, unless the chat model is set up
 (next section).
 
 Social drafts and site publish requests arrive as messages with buttons:
-Approve / Reject and Publish / Reject.
+Approve / Reject and Publish / Reject. The Monday review reminder has one,
+**▶️ Run the review**, which does what `/review` does.
 
 Only `TELEGRAM_OWNER_CHAT_ID` gets answers. Anyone else is ignored without a
 reply.
@@ -188,8 +193,9 @@ one-line reason, and the call still counts toward the daily limit.
 
 ## Measuring the posts
 
-Four sources, all saved in the database so the history outlives Postiz, which
-fetches stats live and keeps none:
+Five sources, and the 72-hour reel review built from them, all saved in the
+database so the history outlives Postiz, which fetches stats live and keeps
+none:
 
 - **Post checkpoints.** The hourly `socialStats` job (at :45) saves each
   published post's Postiz stats 24 hours, 3 days and 7 days after it went out,
@@ -212,6 +218,48 @@ fetches stats live and keeps none:
   late. The account is found from the token, and anything that is not that
   Page with that Instagram is refused. See `lib/metaGraph.ts` and
   `lib/reelStats.ts`; `hqSocialReport` adds them as `reels` and `otherReels`.
+- **Account telemetry (Meta Graph API).** Same token. The hourly
+  `graphTelemetry` job (at :20, `lib/graphTelemetry.ts`) saves:
+  - each Miami day for Instagram and the Facebook Page (`kind: 'account'`,
+    one row per platform and `day`): reach, views, interactions,
+    `follows_and_unfollows` (KPI #1 is its FOLLOWER count summed over a week),
+    and the follower total. A day is read at 6 AM the next morning and once
+    more after 48 hours, since Meta's numbers lag;
+  - who follows, weekly (`kind: 'audience'`): demographics by city, age,
+    gender and country, the **Miami-Dade share** (followers in the county's
+    34 cities and its unincorporated places ÷ all followers, a floor since
+    Meta lists only its top 45 cities; `lib/miamiDade.ts`), and the hours
+    followers are online, in Miami time;
+  - comments on our reels of the last week (`hq-social-comments`, no
+    usernames). This needs `instagram_manage_comments` on the token; without it
+    one `graph.scope_missing` event says so and the rest goes on;
+  - the market watchlist (`hq-market-accounts`, editable in the admin or over
+    MCP): each account's last 25 public posts once a day through Business
+    Discovery into `hq-market-posts`, with counts at first sight, ~24h and ~7d
+    and an `outlierScore` against the account's own median at the same age.
+    Captions and counts only, never pictures. Accounts the token manages
+    besides ours (Club de la Amistad) are refused.
+
+  `hqSocialReport` adds them as `graph` (follows per week, Miami-Dade share,
+  best hours); `hqGrowthContext` adds the top market outliers.
+- **The 72-hour reel review.** The hourly `reelScore` job (at :55) waits for a
+  reel's 3d reading, then writes one post-mortem per story to
+  `hq-reel-reviews` (`lib/reelScore.ts`). Internal only: it reads saved rows,
+  posts nothing, sends no Telegram and adds nothing to the brief. Each review
+  has, per language cut and platform, views, reach, average watch (seconds and
+  % of length), skip rate, and shares, saves and likes per person reached;
+  each beside the **median** of the account's previous reels of the same
+  pillar at 3d (up to 20, last 90 days) as a ratio, with the baseline's size;
+  the Spanish cut over the English one; and where Facebook viewers left (% at
+  3 s, 15 s, half, and the steepest drop). The two cuts of a story are paired
+  when they were drafted within 5 minutes of each other, go out within 2
+  hours, share a pillar, are one `es` and one `en`, and neither has another
+  candidate; anything else is reviewed alone. A cut is scored once every
+  platform it was measured on has its 3d reading, or once the 3d window has
+  closed (120 h), with what there is (`complete` unticked). No 3d reading, no
+  review. An experiment whose `drafts` names one of the cuts gets the numbers
+  appended to its `result`, once; its verdict is never set. The growth review
+  reads them as `reelReviews`.
 - **Account snapshots.** Once a day, in the 6 AM Miami hour before the brief,
   each account's last seven days are saved. The brief's **Socials** section
   reads the latest one.
@@ -475,12 +523,14 @@ line. The media record keeps `origin` and the localized `basedOn`.
 ## Growth review
 
 The goal is traffic: more people from Miami-Dade reading the site. The growth
-review is how HQ learns what brings them. It runs **only when you ask**. Nothing
-schedules it.
+review is how HQ learns what brings them. It runs **only when you ask**. A
+Monday message reminds you to ask, but nothing runs the review on a schedule.
 
-1. **You ask.** Send `/review` to the bot. It files one `hq-tasks` row,
-   "Growth review (asked <date>)", for Claude, and answers at once with the
-   last 7 days of visits. A second `/review` points at the open one.
+1. **You ask.** Send `/review` to the bot, or tap **▶️ Run the review** on the
+   Monday reminder (below). Either one files one `hq-tasks` row,
+   "Growth review (asked <date>)", for Claude. `/review` also answers at once
+   with the last 7 days of visits. Asking again while that task is open
+   points at it instead of filing a second one.
 2. **Claude runs it** in the next Claude session on Flamingo County. The MCP
    server's instructions and `HQ-HANDOFF.md` both say to do that task first.
    It follows [`hq/growth-review.md`](hq/growth-review.md):
@@ -512,6 +562,49 @@ It never approves, publishes or schedules anything. Drafts still need your tap.
 owner chose to ask with `/review` instead of a schedule. `hqWeeklyReviewContext`
 and the playbook stayed; the routine, and the dedicated key it needed, were
 never created.
+
+### The Monday reminder
+
+Every Monday at 8 AM Miami time (after the 7:30 brief), the `reviewReminder`
+job (`src/jobs/reviewReminder.ts`, `src/lib/reviewReminder.ts`) sends you one
+message with one button:
+
+> 📈 **Weekly growth review is ready to run.**
+> Last 7 days: +14 followers (instagram +12, facebook +2) · 5 reels posted ·
+> best reel: "Nine to nothing…" on instagram, 2.1 shares per 100 reached.
+>
+> [▶️ Run the review]
+
+- **The numbers** come from what HQ already saved, and each one is left out
+  when there is nothing behind it. With no data, it is just the first line.
+  - *Followers:* each account's follower count in its newest daily snapshot,
+    minus the oldest in the last 7½ days (Postiz channel rows). It needs two
+    snapshots.
+  - *Reels posted:* Graph reel rows (`META_GRAPH_TOKEN`) published in the last
+    7 days, counted on Instagram (or Facebook, when Instagram has none). The
+    twins aren't added together.
+  - *Best reel:* the highest shares per person reached, each reel read at its
+    latest checkpoint. Only reels with a 24-hour reading or later are ranked:
+    one under a day old is counted in the reels posted, but a great first hour
+    on a reach of 20 can't make it the best.
+  No model is called and nothing is posted.
+- **The button** files the growth review task, using the same function as
+  `/review`. The message then reads "Review requested ✅ — Claude will run it
+  at the next session." If a review task is already open, the message says so
+  and names it, and no second task is filed. A double tap files one task.
+  Only your own chat's tap counts, as with every HQ button.
+- **Once a week.** The job runs hourly and sends from 8 AM on Monday. A run
+  missed during a deploy is made up the next hour. Before sending, it logs an
+  `hq-events` row, `review.reminded`, with that Monday's date as `refId`. Any
+  later run, retry or restart that week finds the row and stops. A failed send
+  removes the row, so the next hour tries again. The row is bookkeeping, so it
+  is marked seen and kept out of the brief and the wrap.
+- **To turn it off**, set `HQ_REVIEW_REMINDER=off` in Railway and redeploy.
+  Unset, or anything else, means on. `/review` works either way.
+
+| Variable | Value |
+| --- | --- |
+| `HQ_REVIEW_REMINDER` | optional. `off` stops the Monday reminder. Default on. |
 
 ### The site's visit counter
 

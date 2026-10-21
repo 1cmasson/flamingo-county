@@ -28,6 +28,9 @@ import { HqTasks } from './collections/HqTasks'
 import { HqMedia } from './collections/HqMedia'
 import { HqSocialDrafts } from './collections/HqSocialDrafts'
 import { HqSocialStats } from './collections/HqSocialStats'
+import { HqSocialComments } from './collections/HqSocialComments'
+import { HqMarketAccounts } from './collections/HqMarketAccounts'
+import { HqMarketPosts } from './collections/HqMarketPosts'
 import { HqClicks } from './collections/HqClicks'
 import { HqPublishRequests } from './collections/HqPublishRequests'
 import { HqSpendApprovals } from './collections/HqSpendApprovals'
@@ -35,10 +38,14 @@ import { HqChatTurns } from './collections/HqChatTurns'
 import { HqVisits } from './collections/HqVisits'
 import { HqUses } from './collections/HqUses'
 import { HqExperiments } from './collections/HqExperiments'
+import { HqReelReviews } from './collections/HqReelReviews'
 import { HqArtworkUploads } from './collections/HqArtworkUploads'
 import { eveningWrap } from './jobs/eveningWrap'
+import { graphTelemetry } from './jobs/graphTelemetry'
 import { morningBrief } from './jobs/morningBrief'
+import { reelScore } from './jobs/reelScore'
 import { reelStats } from './jobs/reelStats'
+import { reviewReminder } from './jobs/reviewReminder'
 import { socialStats } from './jobs/socialStats'
 import { weeklyRoundup } from './jobs/weeklyRoundup'
 import { hqMcpTools } from './lib/mcpTools'
@@ -98,6 +105,9 @@ export default buildConfig({
     HqMedia,
     HqSocialDrafts,
     HqSocialStats,
+    HqSocialComments,
+    HqMarketAccounts,
+    HqMarketPosts,
     HqClicks,
     HqPublishRequests,
     HqSpendApprovals,
@@ -105,6 +115,7 @@ export default buildConfig({
     HqVisits,
     HqUses,
     HqExperiments,
+    HqReelReviews,
     HqArtworkUploads,
   ],
   globals: [SiteSettings, AboutPage, ListYourSpotPage, LinkPage, HqPlaybook],
@@ -204,7 +215,22 @@ export default buildConfig({
         'hq-social-stats': {
           enabled: { find: true },
           description:
-            'Saved social numbers. source "postiz": kind "post" at 24h/3d/7d checkpoints, kind "channel" daily 7-day snapshots. source "graph": kind "reel", every Instagram/Facebook reel from Meta’s Graph API at 1h/3h/24h/3d/7d (ageMinutes = real age at the reading; metrics in Meta’s names, watch times in ms; retention = Facebook’s curve; draft set only when matched by time). hqSocialReport summarizes both.',
+            'Saved social numbers. source "postiz": kind "post" at 24h/3d/7d checkpoints, kind "channel" daily 7-day snapshots. source "graph": kind "reel", every Instagram/Facebook reel from Meta’s Graph API at 1h/3h/24h/3d/7d (ageMinutes = real age at the reading; metrics in Meta’s names, watch times in ms; retention = Facebook’s curve; draft set only when matched by time); kind "account", one row per platform and Miami `day` (reach, views, follows_and_unfollows.FOLLOWER/NON_FOLLOWER, profile_links_taps.*, followers_count; Facebook page_* metrics), re-read once 48h after the day; kind "audience", weekly, with `audience` = follower/engaged demographics by city/age/gender/country, miamiDade share and followers online by Miami hour. hqSocialReport summarizes them (graph: follows/week, Miami-Dade share, best hours).',
+        },
+        'hq-social-comments': {
+          enabled: { find: true },
+          description:
+            'Comments on our own Instagram reels (last 7 days, hourly), from Meta’s Graph API: commentId, mediaId, permalink, commentedAt, text, likeCount, fromUs. No usernames are kept; reply by commentId. `tags` is for tagging answers (e.g. which story to tell next).',
+        },
+        'hq-market-accounts': {
+          enabled: { find: true, create: true, update: true },
+          description:
+            'The market watchlist: Instagram business/creator accounts to compare against. Set username (no @), category (a short tag: news, history, food, culture, city, peer), notes, active. status/checkedAt/followersCount are filled by the daily Business Discovery job and cannot be set over MCP; "not_professional" = not a business or creator account. Never delete; untick active.',
+        },
+        'hq-market-posts': {
+          enabled: { find: true },
+          description:
+            'Public posts of the watchlist accounts (Business Discovery, daily): caption, likes (null if hidden), comments, views (reels only), followersAtFetch, snapshots at first/24h/7d ages, outlierScore = this post ÷ its account’s median at the same age bucket and basis (views for reels, likes+comments otherwise) over its last 30 posts, engagementPerFollower. No media files. hqGrowthContext lists the top outliers.',
         },
         'hq-clicks': { enabled: { find: true }, description: 'Clicks on /go/ tracking links.' },
         'hq-visits': {
@@ -220,7 +246,13 @@ export default buildConfig({
         'hq-experiments': {
           enabled: { find: true, create: true, update: true },
           description:
-            'Growth experiments: hypothesis, metric, baseline, expected, result, verdict. The growth review (web/hq/growth-review.md) keeps them. Never delete; set status dropped.',
+            'Growth experiments: hypothesis, metric, baseline, expected, result, verdict. The growth review (web/hq/growth-review.md) keeps them. Never delete; set status dropped. Set drafts (both language cuts of a reel) and the reel scorer appends the 72-hour numbers to result; it never sets the verdict.',
+        },
+        // Read-only: the reel scorer (lib/reelScore.ts) is the only writer.
+        'hq-reel-reviews': {
+          enabled: { find: true },
+          description:
+            'Automatic 72-hour post-mortems, one per story (its ES and EN cuts), written by the reel scorer from the 3d Graph readings. cuts: per cut and platform, metrics (views, reach, avgWatchSec, avgWatchPct of length, skipRate, shares/saves/likes per reach) and vsMedian {value, median, n, ratio} against the account\u2019s previous reels of the same pillar at 3d; pair: ES/EN ratios; retention: Facebook % still watching at 3 s/15 s/half and the steepest drop; summary: the same as text. Internal notes; nothing is posted from them.',
         },
         'listing-requests': {
           enabled: { find: true, update: true },
@@ -285,7 +317,9 @@ export default buildConfig({
 
   /**
    * The HQ jobs queue — the morning brief, the evening wrap, the social stats
-   * collector, the Graph reel stats collector and the Monday roundup (src/jobs).
+   * collector, the Graph reel stats collector, the 72-hour reel scorer, the
+   * Graph account/audience/comments/market collector, the Monday roundup and
+   * the Monday growth review reminder (src/jobs).
    *
    * One in-process runner, checking every minute. That is safe here and only
    * here because the service is pinned to a single instance by SQLite on a
@@ -297,7 +331,7 @@ export default buildConfig({
    * admin, and a quiet night would skip the brief.
    */
   jobs: {
-    tasks: [morningBrief, socialStats, reelStats, eveningWrap, weeklyRoundup],
+    tasks: [morningBrief, socialStats, reelStats, reelScore, graphTelemetry, eveningWrap, weeklyRoundup, reviewReminder],
     autoRun: [{ cron: '* * * * *', queue: 'hq' }],
     jobsCollectionOverrides: ({ defaultJobsCollection }) => ({
       ...defaultJobsCollection,
