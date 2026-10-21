@@ -2303,6 +2303,10 @@ export interface PayloadMcpApiKey {
      */
     hqSocialReport?: boolean | null;
     /**
+     * A reel’s numbers RIGHT NOW, read live from Meta (Instagram and the Facebook Page), at any age: views, reach, average watch time in seconds and as a share of the length, skip rate, shares, shares per reach, saves, likes, comments, and on Facebook follows and the share still watching at 3 s / 15 s / 30 s / half / end. Use it whenever the owner asks how a reel is doing; hqSocialReport only has the saved 1h/3h/24h/3d/7d readings. Newest first, up to 12 reels; narrow with `query` (caption words, accents ignored) and `platform`. Saves nothing and never moves a checkpoint. Read-only: Flamingo County only; the token never leaves the server.
+     */
+    hqReelNow?: boolean | null;
+    /**
      * Everything the weekly social review needs, in one call, as JSON: the 28-day hqSocialReport, the current playbook (null until the first review writes it), published events in the next 14 days (Spanish and English titles, dates, slugs, site paths, whether they have an image), the 10 newest published stories, the social drafts already pending approval, and reelReviews (the automatic 72-hour reel post-mortems of the last 28 days: per cut and platform, metrics with ratios to the account median, ES/EN pair ratios, where viewers left, and a text summary). Read-only. Published site content only; no contact details of any kind.
      */
     hqWeeklyReviewContext?: boolean | null;
@@ -3777,6 +3781,7 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
     | {
         hqBrief?: T;
         hqSocialReport?: T;
+        hqReelNow?: T;
         hqWeeklyReviewContext?: T;
         hqGrowthContext?: T;
         hqSendTelegram?: T;

@@ -15275,6 +15275,14 @@
           "autoincrement": false,
           "default": true
         },
+        "payload_mcp_tool_hq_reel_now": {
+          "name": "payload_mcp_tool_hq_reel_now",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false,
+          "autoincrement": false,
+          "default": true
+        },
         "payload_mcp_tool_hq_weekly_review_context": {
           "name": "payload_mcp_tool_hq_weekly_review_context",
           "type": "integer",
@@ -18656,6 +18664,6 @@
   "internal": {
     "indexes": {}
   },
-  "id": "fbeb2839-aa23-483a-9a4f-10b52bbcc7fa",
+  "id": "adc9539b-b504-4b3d-951b-023aeccb8cd7",
   "prevId": "00000000-0000-0000-0000-000000000000"
 }
