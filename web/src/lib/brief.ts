@@ -156,8 +156,8 @@ export async function buildBrief(
       where: {
         and: [
           { createdAt: { greater_than: from.toISOString() } },
-          // The bookkeeping rows of the brief and the evening wrap are not news.
-          { type: { not_in: ['brief.sent', 'wrap.sent'] } },
+          // The bookkeeping rows of the brief, the evening wrap and the review reminder are not news.
+          { type: { not_in: ['brief.sent', 'wrap.sent', 'review.reminded'] } },
         ],
       },
       sort: '-createdAt',

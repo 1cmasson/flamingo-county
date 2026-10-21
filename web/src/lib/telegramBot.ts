@@ -4,8 +4,9 @@ import { buildBrief } from './brief'
 import { chatConfigured, chatReply } from './chat'
 import { requestReview } from './growth'
 import { decideDraft, parseDraftCallback } from './hq'
-import { answerCallback, esc, ownerChatId, resolveButtons, sendMessage } from './telegram'
+import { answerCallback, editMessage, esc, ownerChatId, resolveButtons, sendMessage } from './telegram'
 import { decidePublish, parsePublishCallback } from './publishRequests'
+import { parseReviewCallback, runReviewFromButton } from './reviewReminder'
 import { decideSpend, parseSpendCallback } from './spendApprovals'
 
 /** The slice of a Telegram `Update` the bot reads. */
@@ -146,6 +147,15 @@ export async function handleUpdate(payload: Payload, update: TelegramUpdate): Pr
       await answerCallback(cb.id, spend.action === 'approve' ? 'Approving…' : 'Declining…')
       const outcome = await decideSpend(payload, spend.id, spend.action)
       await resolveButtons(cb.message.chat.id, cb.message.message_id, outcome)
+      return
+    }
+
+    // The Monday reminder's ▶️ Run the review: the same task as /review.
+    if (parseReviewCallback(cb.data) && cb.message) {
+      await answerCallback(cb.id, 'Asking Claude…')
+      const outcome = await runReviewFromButton(payload)
+      // null: an earlier tap is still filing it, and will edit the message itself.
+      if (outcome) await editMessage(cb.message.chat.id, cb.message.message_id, outcome)
       return
     }
 

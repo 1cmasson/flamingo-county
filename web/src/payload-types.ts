@@ -170,6 +170,7 @@ export interface Config {
       reelStats: TaskReelStats;
       eveningWrap: TaskEveningWrap;
       weeklyRoundup: TaskWeeklyRoundup;
+      reviewReminder: TaskReviewReminder;
       inline: {
         input: unknown;
         output: unknown;
@@ -2019,7 +2020,8 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'morningBrief' | 'socialStats' | 'reelStats' | 'eveningWrap' | 'weeklyRoundup';
+        taskSlug:
+          'inline' | 'morningBrief' | 'socialStats' | 'reelStats' | 'eveningWrap' | 'weeklyRoundup' | 'reviewReminder';
         taskID: string;
         input?:
           | {
@@ -2052,7 +2054,9 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'morningBrief' | 'socialStats' | 'reelStats' | 'eveningWrap' | 'weeklyRoundup') | null;
+  taskSlug?:
+    | ('inline' | 'morningBrief' | 'socialStats' | 'reelStats' | 'eveningWrap' | 'weeklyRoundup' | 'reviewReminder')
+    | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -3617,6 +3621,16 @@ export interface TaskWeeklyRoundup {
   input?: unknown;
   output: {
     drafted?: boolean | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskReviewReminder".
+ */
+export interface TaskReviewReminder {
+  input?: unknown;
+  output: {
+    sent?: boolean | null;
   };
 }
 /**
