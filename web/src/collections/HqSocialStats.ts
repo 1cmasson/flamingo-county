@@ -18,6 +18,16 @@ import { PLATFORMS } from '../lib/postiz'
  *   Instagram or Facebook reel at 1h, 3h, 24h, 3d or 7d, read from Meta's
  *   Graph API — every reel on the account, with `draft` set only when a draft
  *   matched it by time. `ageMinutes` is the reel's real age at the reading.
+ * - `account` (`source: 'graph'`, the `graphTelemetry` job,
+ *   lib/graphTelemetry.ts): the whole @flamingo.county account or Facebook
+ *   Page for one Miami `day` — reach, views, follows and unfollows, link taps.
+ *   One row per platform and day, read about six hours after the day ends and
+ *   read again once it is 48 hours old (Meta's numbers lag up to 48 hours);
+ *   `ageMinutes` is then minutes since the day ended at the last reading.
+ * - `audience` (`source: 'graph'`, same job, weekly): who follows — Meta's
+ *   follower and engaged-audience demographics by city, age, gender and
+ *   country, the Miami-Dade share, and the hours followers are online — in
+ *   `audience`, with the headline numbers in `metrics`.
  *
  * For `post` and `channel`, `metrics` is `{ label: { latest, sum, change } }`
  * — see `summarizeMetrics`. For `reel` it is `{ metricName: number }` in
@@ -30,7 +40,8 @@ export const HqSocialStats: CollectionConfig = {
   admin: {
     group: 'HQ',
     defaultColumns: ['kind', 'platform', 'draft', 'checkpoint', 'ageMinutes', 'createdAt'],
-    description: 'Post and account numbers from Postiz, and reel numbers from Meta’s Graph API, saved by the stats jobs.',
+    description:
+      'Post and account numbers from Postiz, and reel, account-day and audience numbers from Meta’s Graph API, saved by the stats jobs.',
   },
   defaultSort: '-createdAt',
   fields: [
@@ -46,6 +57,8 @@ export const HqSocialStats: CollectionConfig = {
             { label: 'Post', value: 'post' },
             { label: 'Channel', value: 'channel' },
             { label: 'Reel (Graph)', value: 'reel' },
+            { label: 'Account day (Graph)', value: 'account' },
+            { label: 'Audience (Graph)', value: 'audience' },
           ],
         },
         {
@@ -96,6 +109,12 @@ export const HqSocialStats: CollectionConfig = {
         { name: 'mediaPublishedAt', type: 'date', admin: { date: { pickerAppearance: 'dayAndTime' } } },
       ],
     },
+    {
+      name: 'day',
+      type: 'text',
+      index: true,
+      admin: { description: 'Account and audience rows: the Miami day (YYYY-MM-DD) the numbers are for.' },
+    },
     { name: 'permalink', type: 'text' },
     { name: 'caption', type: 'text', admin: { description: 'Graph rows: the reel’s caption, clipped.' } },
     {
@@ -113,6 +132,14 @@ export const HqSocialStats: CollectionConfig = {
       name: 'failedMetrics',
       type: 'json',
       admin: { description: 'Graph rows: metric names Meta refused for this reading.' },
+    },
+    {
+      name: 'audience',
+      type: 'json',
+      admin: {
+        description:
+          'Audience rows: demographics by breakdown, the Miami-Dade cities and share, and followers online by Miami hour (lib/graphTelemetry.ts).',
+      },
     },
     { name: 'raw', type: 'json' },
   ],

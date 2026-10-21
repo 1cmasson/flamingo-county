@@ -87,6 +87,9 @@ export interface Config {
     'hq-media': HqMedia;
     'hq-social-drafts': HqSocialDraft;
     'hq-social-stats': HqSocialStat;
+    'hq-social-comments': HqSocialComment;
+    'hq-market-accounts': HqMarketAccount;
+    'hq-market-posts': HqMarketPost;
     'hq-clicks': HqClick;
     'hq-publish-requests': HqPublishRequest;
     'hq-spend-approvals': HqSpendApproval;
@@ -123,6 +126,9 @@ export interface Config {
     'hq-media': HqMediaSelect<false> | HqMediaSelect<true>;
     'hq-social-drafts': HqSocialDraftsSelect<false> | HqSocialDraftsSelect<true>;
     'hq-social-stats': HqSocialStatsSelect<false> | HqSocialStatsSelect<true>;
+    'hq-social-comments': HqSocialCommentsSelect<false> | HqSocialCommentsSelect<true>;
+    'hq-market-accounts': HqMarketAccountsSelect<false> | HqMarketAccountsSelect<true>;
+    'hq-market-posts': HqMarketPostsSelect<false> | HqMarketPostsSelect<true>;
     'hq-clicks': HqClicksSelect<false> | HqClicksSelect<true>;
     'hq-publish-requests': HqPublishRequestsSelect<false> | HqPublishRequestsSelect<true>;
     'hq-spend-approvals': HqSpendApprovalsSelect<false> | HqSpendApprovalsSelect<true>;
@@ -168,6 +174,7 @@ export interface Config {
       morningBrief: TaskMorningBrief;
       socialStats: TaskSocialStats;
       reelStats: TaskReelStats;
+      graphTelemetry: TaskGraphTelemetry;
       eveningWrap: TaskEveningWrap;
       weeklyRoundup: TaskWeeklyRoundup;
       inline: {
@@ -1305,14 +1312,14 @@ export interface HqSocialDraft {
   createdAt: string;
 }
 /**
- * Post and account numbers from Postiz, and reel numbers from Meta’s Graph API, saved by the stats jobs.
+ * Post and account numbers from Postiz, and reel, account-day and audience numbers from Meta’s Graph API, saved by the stats jobs.
  *
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "hq-social-stats".
  */
 export interface HqSocialStat {
   id: number;
-  kind: 'post' | 'channel' | 'reel';
+  kind: 'post' | 'channel' | 'reel' | 'account' | 'audience';
   source?: ('postiz' | 'graph') | null;
   platform: 'facebook' | 'instagram' | 'tiktok';
   checkpoint?: ('1h' | '3h' | '24h' | '3d' | '7d') | null;
@@ -1327,6 +1334,10 @@ export interface HqSocialStat {
    */
   mediaId?: string | null;
   mediaPublishedAt?: string | null;
+  /**
+   * Account and audience rows: the Miami day (YYYY-MM-DD) the numbers are for.
+   */
+  day?: string | null;
   permalink?: string | null;
   /**
    * Graph rows: the reel’s caption, clipped.
@@ -1369,6 +1380,18 @@ export interface HqSocialStat {
     | number
     | boolean
     | null;
+  /**
+   * Audience rows: demographics by breakdown, the Miami-Dade cities and share, and followers online by Miami hour (lib/graphTelemetry.ts).
+   */
+  audience?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
   raw?:
     | {
         [k: string]: unknown;
@@ -1378,6 +1401,136 @@ export interface HqSocialStat {
     | number
     | boolean
     | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Comments on our own Instagram reels, from Meta’s Graph API. No usernames are kept.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-social-comments".
+ */
+export interface HqSocialComment {
+  id: number;
+  commentId: string;
+  platform?: 'instagram' | null;
+  mediaId: string;
+  commentedAt?: string | null;
+  /**
+   * The reel’s link.
+   */
+  permalink?: string | null;
+  /**
+   * The reel’s caption, clipped.
+   */
+  mediaCaption?: string | null;
+  text?: string | null;
+  likeCount?: number | null;
+  /**
+   * Written by @flamingo.county itself.
+   */
+  fromUs?: boolean | null;
+  /**
+   * For a later job: e.g. the story a "which story next" answer asks for.
+   */
+  tags?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Instagram accounts to compare against (public posts via Business Discovery). Captions and public counts only.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-market-accounts".
+ */
+export interface HqMarketAccount {
+  id: number;
+  /**
+   * Without the @, e.g. onlyindade.
+   */
+  username: string;
+  /**
+   * A short tag to compare like with like: news, history, food, culture, city, peer…
+   */
+  category?: string | null;
+  /**
+   * Read daily while ticked.
+   */
+  active?: boolean | null;
+  notes?: string | null;
+  status?: ('pending' | 'ok' | 'not_professional' | 'refused' | 'error') | null;
+  checkedAt?: string | null;
+  /**
+   * Graph’s error code and message, when the last read failed.
+   */
+  statusDetail?: string | null;
+  name?: string | null;
+  followersCount?: number | null;
+  mediaCount?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Public posts of the watchlist accounts, with counts at equal ages and an outlier score. No media files.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-market-posts".
+ */
+export interface HqMarketPost {
+  id: number;
+  account?: (number | null) | HqMarketAccount;
+  username?: string | null;
+  mediaId: string;
+  permalink?: string | null;
+  postedAt?: string | null;
+  /**
+   * IMAGE, VIDEO or CAROUSEL_ALBUM.
+   */
+  mediaType?: string | null;
+  /**
+   * FEED, REELS…
+   */
+  productType?: string | null;
+  caption?: string | null;
+  /**
+   * Latest reading; empty when likes are hidden.
+   */
+  likes?: number | null;
+  comments?: number | null;
+  /**
+   * Reels only (Business Discovery’s view_count).
+   */
+  views?: number | null;
+  /**
+   * The account’s followers at the latest reading.
+   */
+  followersAtFetch?: number | null;
+  firstSeenAt?: string | null;
+  lastSeenAt?: string | null;
+  snapshots?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  outlierScore?: number | null;
+  outlierBucket?: ('24h' | '7d') | null;
+  outlierBasis?: ('views' | 'interactions') | null;
+  /**
+   * (likes + comments) ÷ followers, at the outlier bucket (or the latest reading).
+   */
+  engagementPerFollower?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -1709,6 +1862,32 @@ export interface PayloadMcpApiKey {
      */
     find?: boolean | null;
   };
+  hqSocialComments?: {
+    /**
+     * Allow clients to find hq-social-comments.
+     */
+    find?: boolean | null;
+  };
+  hqMarketAccounts?: {
+    /**
+     * Allow clients to find hq-market-accounts.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to create hq-market-accounts.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update hq-market-accounts.
+     */
+    update?: boolean | null;
+  };
+  hqMarketPosts?: {
+    /**
+     * Allow clients to find hq-market-posts.
+     */
+    find?: boolean | null;
+  };
   hqClicks?: {
     /**
      * Allow clients to find hq-clicks.
@@ -1871,7 +2050,7 @@ export interface PayloadMcpApiKey {
      */
     hqBrief?: boolean | null;
     /**
-     * Results of every social post published in the last N days: caption, pillar, language, platforms, Miami publish time, the furthest stats checkpoint (24h/3d/7d) per platform, and link clicks; plus each account’s first and last snapshot in the window and bio-link clicks. Reels also carry Meta Graph readings (`reels`: furthest of 1h/3h/24h/3d/7d per platform, ageMinutes, watch time, skip rate, avgWatchPctOfLength when the length is known, sharesPerReach), and `otherReels` lists reels no draft matched (scheduled straight in Postiz). JSON. Use it for the weekly review. Small samples: compare over weeks, not single posts.
+     * Results of every social post published in the last N days: caption, pillar, language, platforms, Miami publish time, the furthest stats checkpoint (24h/3d/7d) per platform, and link clicks; plus each account’s first and last snapshot in the window and bio-link clicks. Reels also carry Meta Graph readings (`reels`: furthest of 1h/3h/24h/3d/7d per platform, ageMinutes, watch time, skip rate, avgWatchPctOfLength when the length is known, sharesPerReach), and `otherReels` lists reels no draft matched (scheduled straight in Postiz). `graph` is the account level from Meta: followsLast7d / unfollowsLast7d (last 7 full Miami days; KPI #1), followersNow and followersChange, reach/views, and the latest weekly audience (miamiDadeShare = Miami-Dade followers ÷ all followers, a floor since Meta lists only its top 45 cities; miamiDadeShareOfListed; topCities; bestHoursMiami). JSON. Use it for the weekly review. Small samples: compare over weeks, not single posts.
      */
     hqSocialReport?: boolean | null;
     /**
@@ -1879,7 +2058,7 @@ export interface PayloadMcpApiKey {
      */
     hqWeeklyReviewContext?: boolean | null;
     /**
-     * Everything the growth review needs, in one call, as JSON: the goal; the site’s own traffic for 28 days (visits and views, by day, channel, source, referring site, landing page, language, device and place); what people did on the site (toolUse: calls, directions and website taps per business, event saves, stories read to the end, searches, and the address tool’s lookups and calendar downloads); what is on the site; what shipped (publishes, scheduled posts); intake counts; the experiment ledger; open tasks; and everything hqWeeklyReviewContext returns (social report, playbook, upcoming events, recent stories, pending drafts). Read-only. Published content only; no contact details. Follow web/hq/growth-review.md.
+     * Everything the growth review needs, in one call, as JSON: the goal; the site’s own traffic for 28 days (visits and views, by day, channel, source, referring site, landing page, language, device and place); what people did on the site (toolUse: calls, directions and website taps per business, event saves, stories read to the end, searches, and the address tool’s lookups and calendar downloads); what is on the site; what shipped (publishes, scheduled posts); intake counts; the experiment ledger; open tasks; market outliers (watchlist posts from the last 14 days that most beat their own account’s median at the same age); and everything hqWeeklyReviewContext returns (social report, playbook, upcoming events, recent stories, pending drafts). Read-only. Published content only; no contact details. Follow web/hq/growth-review.md.
      */
     hqGrowthContext?: boolean | null;
     /**
@@ -2019,7 +2198,8 @@ export interface PayloadJob {
     | {
         executedAt: string;
         completedAt: string;
-        taskSlug: 'inline' | 'morningBrief' | 'socialStats' | 'reelStats' | 'eveningWrap' | 'weeklyRoundup';
+        taskSlug:
+          'inline' | 'morningBrief' | 'socialStats' | 'reelStats' | 'graphTelemetry' | 'eveningWrap' | 'weeklyRoundup';
         taskID: string;
         input?:
           | {
@@ -2052,7 +2232,9 @@ export interface PayloadJob {
         id?: string | null;
       }[]
     | null;
-  taskSlug?: ('inline' | 'morningBrief' | 'socialStats' | 'reelStats' | 'eveningWrap' | 'weeklyRoundup') | null;
+  taskSlug?:
+    | ('inline' | 'morningBrief' | 'socialStats' | 'reelStats' | 'graphTelemetry' | 'eveningWrap' | 'weeklyRoundup')
+    | null;
   queue?: string | null;
   waitUntil?: string | null;
   processing?: boolean | null;
@@ -2150,6 +2332,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'hq-social-stats';
         value: number | HqSocialStat;
+      } | null)
+    | ({
+        relationTo: 'hq-social-comments';
+        value: number | HqSocialComment;
+      } | null)
+    | ({
+        relationTo: 'hq-market-accounts';
+        value: number | HqMarketAccount;
+      } | null)
+    | ({
+        relationTo: 'hq-market-posts';
+        value: number | HqMarketPost;
       } | null)
     | ({
         relationTo: 'hq-clicks';
@@ -2848,13 +3042,78 @@ export interface HqSocialStatsSelect<T extends boolean = true> {
   ageMinutes?: T;
   mediaId?: T;
   mediaPublishedAt?: T;
+  day?: T;
   permalink?: T;
   caption?: T;
   durationSec?: T;
   metrics?: T;
   retention?: T;
   failedMetrics?: T;
+  audience?: T;
   raw?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-social-comments_select".
+ */
+export interface HqSocialCommentsSelect<T extends boolean = true> {
+  commentId?: T;
+  platform?: T;
+  mediaId?: T;
+  commentedAt?: T;
+  permalink?: T;
+  mediaCaption?: T;
+  text?: T;
+  likeCount?: T;
+  fromUs?: T;
+  tags?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-market-accounts_select".
+ */
+export interface HqMarketAccountsSelect<T extends boolean = true> {
+  username?: T;
+  category?: T;
+  active?: T;
+  notes?: T;
+  status?: T;
+  checkedAt?: T;
+  statusDetail?: T;
+  name?: T;
+  followersCount?: T;
+  mediaCount?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-market-posts_select".
+ */
+export interface HqMarketPostsSelect<T extends boolean = true> {
+  account?: T;
+  username?: T;
+  mediaId?: T;
+  permalink?: T;
+  postedAt?: T;
+  mediaType?: T;
+  productType?: T;
+  caption?: T;
+  likes?: T;
+  comments?: T;
+  views?: T;
+  followersAtFetch?: T;
+  firstSeenAt?: T;
+  lastSeenAt?: T;
+  snapshots?: T;
+  outlierScore?: T;
+  outlierBucket?: T;
+  outlierBasis?: T;
+  engagementPerFollower?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -3023,6 +3282,23 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         find?: T;
       };
   hqSocialStats?:
+    | T
+    | {
+        find?: T;
+      };
+  hqSocialComments?:
+    | T
+    | {
+        find?: T;
+      };
+  hqMarketAccounts?:
+    | T
+    | {
+        find?: T;
+        create?: T;
+        update?: T;
+      };
+  hqMarketPosts?:
     | T
     | {
         find?: T;
@@ -3597,6 +3873,20 @@ export interface TaskReelStats {
   output: {
     reels?: number | null;
     saved?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskGraphTelemetry".
+ */
+export interface TaskGraphTelemetry {
+  input?: unknown;
+  output: {
+    accountDays?: number | null;
+    audience?: number | null;
+    comments?: number | null;
+    marketAccounts?: number | null;
+    marketPosts?: number | null;
   };
 }
 /**
