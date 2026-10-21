@@ -52,6 +52,12 @@ export const routes = {
   places: (lang: Lang) => `/${lang}/miami-dade`,
   place: (lang: Lang, slug: string) => `/${lang}/miami-dade/${slug}`,
   district: (lang: Lang, n: number) => `/${lang}/miami-dade/commission-district-${n}`,
+  /** A partner's promotion, where a visitor takes a coupon (lib/promos.ts). */
+  promo: (lang: Lang, slug: string) => `/${lang}/promo/${slug}`,
+  /** One visitor's coupon: the code is the only key to it. Never indexed or counted by code. */
+  coupon: (lang: Lang, slug: string, code: string) => `/${lang}/promo/${slug}/c/${code}`,
+  /** A partner business's private coupon dashboard. */
+  partner: (lang: Lang, key: string) => `/${lang}/partner/${key}`,
   /** How AI assistants connect to the civic tools (the MCP server at /mcp and the OpenAPI JSON API). */
   ai: (lang: Lang) => `/${lang}/ai`,
 } as const

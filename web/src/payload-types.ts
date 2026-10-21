@@ -79,6 +79,9 @@ export interface Config {
     events: Event;
     'weekly-events': WeeklyEvent;
     spotlights: Spotlight;
+    promotions: Promotion;
+    partners: Partner;
+    'promo-coupons': PromoCoupon;
     subscribers: Subscriber;
     'listing-requests': ListingRequest;
     members: Member;
@@ -115,6 +118,9 @@ export interface Config {
     events: EventsSelect<false> | EventsSelect<true>;
     'weekly-events': WeeklyEventsSelect<false> | WeeklyEventsSelect<true>;
     spotlights: SpotlightsSelect<false> | SpotlightsSelect<true>;
+    promotions: PromotionsSelect<false> | PromotionsSelect<true>;
+    partners: PartnersSelect<false> | PartnersSelect<true>;
+    'promo-coupons': PromoCouponsSelect<false> | PromoCouponsSelect<true>;
     subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
     'listing-requests': ListingRequestsSelect<false> | ListingRequestsSelect<true>;
     members: MembersSelect<false> | MembersSelect<true>;
@@ -1066,6 +1072,106 @@ export interface Spotlight {
   _status?: ('draft' | 'published') | null;
 }
 /**
+ * Coupons for a partner business. Each visitor gets a one-time code; the business marks it used with its staff PIN (Partners). The page is /es/promo/<slug>.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "promotions".
+ */
+export interface Promotion {
+  id: number;
+  /**
+   * URL identifier. Changing it breaks existing links.
+   */
+  slug: string;
+  /**
+   * The business. It needs a Partners row (its PIN) before coupons can be redeemed.
+   */
+  listing: number | Listing;
+  /**
+   * The offer, e.g. "Free dessert with any entrée". What you get, never a price or a saving in dollars.
+   */
+  title: string;
+  /**
+   * The fine print, e.g. "Dine-in only. One coupon per table."
+   */
+  details?: string | null;
+  /**
+   * Empty: from when it is published.
+   */
+  startsOn?: string | null;
+  /**
+   * The last day a coupon can be used. Empty: until it is unpublished.
+   */
+  endsOn?: string | null;
+  /**
+   * At most this many coupons handed out. Empty: no limit.
+   */
+  limit?: number | null;
+  /**
+   * Optional. Without one, the business’s own photo is used.
+   */
+  image?: (number | null) | Media;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * Businesses running coupons. The PIN is what their staff type to mark a coupon used; the dashboard link shows them how many came in. Give both to the business in person.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "partners".
+ */
+export interface Partner {
+  id: number;
+  /**
+   * How we call them, e.g. "1910 Restaurant & Bar".
+   */
+  name: string;
+  listing: number | Listing;
+  /**
+   * Four digits staff type on the customer’s phone to redeem. Change it if it leaks; old coupons keep working.
+   */
+  staffPin: string;
+  /**
+   * The private part of their dashboard link: flamingocounty.com/es/partner/<this>. Clear it and save to issue a new link.
+   */
+  dashboardKey?: string | null;
+  /**
+   * Who to talk to, what was agreed. Never shown to anyone.
+   */
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Coupons people took, and which were used. No names, phones or IPs. "Test" = taken on a staff or owner device; left out of the counts.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "promo-coupons".
+ */
+export interface PromoCoupon {
+  id: number;
+  code: string;
+  promotion: number | Promotion;
+  /**
+   * The promotion’s business, kept here so a business’s dashboard is one query.
+   */
+  listing: number | Listing;
+  /**
+   * Where the visitor came from: instagram, facebook, google, direct, qr…
+   */
+  source?: string | null;
+  lang?: ('es' | 'en') | null;
+  redeemedAt?: string | null;
+  /**
+   * Wrong PINs typed on this coupon. At 5 it locks.
+   */
+  pinFails?: number | null;
+  test?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "subscribers".
  */
@@ -1821,6 +1927,20 @@ export interface PayloadMcpApiKey {
      */
     update?: boolean | null;
   };
+  promotions?: {
+    /**
+     * Allow clients to find promotions.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to create promotions.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update promotions.
+     */
+    update?: boolean | null;
+  };
   cities?: {
     /**
      * Allow clients to find cities.
@@ -1923,7 +2043,7 @@ export interface PayloadMcpApiKey {
      */
     hqCancelDraft?: boolean | null;
     /**
-     * Ask the owner to publish the current draft of a site document (events, weekly-events, stories, spotlights, listings) or of the link page (link-page, no id). Save the draft first with the create/update tool and draft: true — drafts are never visible on the site. The owner sees exactly what changes against the live page in Telegram and taps Publish or Reject. If you edit the draft again before they tap, they are shown the new version instead. Publishes nothing by itself.
+     * Ask the owner to publish the current draft of a site document (events, weekly-events, stories, spotlights, listings, promotions) or of the link page (link-page, no id). Save the draft first with the create/update tool and draft: true — drafts are never visible on the site. The owner sees exactly what changes against the live page in Telegram and taps Publish or Reject. If you edit the draft again before they tap, they are shown the new version instead. Publishes nothing by itself.
      */
     hqRequestPublish?: boolean | null;
     /**
@@ -2118,6 +2238,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'spotlights';
         value: number | Spotlight;
+      } | null)
+    | ({
+        relationTo: 'promotions';
+        value: number | Promotion;
+      } | null)
+    | ({
+        relationTo: 'partners';
+        value: number | Partner;
+      } | null)
+    | ({
+        relationTo: 'promo-coupons';
+        value: number | PromoCoupon;
       } | null)
     | ({
         relationTo: 'subscribers';
@@ -2714,6 +2846,52 @@ export interface SpotlightsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "promotions_select".
+ */
+export interface PromotionsSelect<T extends boolean = true> {
+  slug?: T;
+  listing?: T;
+  title?: T;
+  details?: T;
+  startsOn?: T;
+  endsOn?: T;
+  limit?: T;
+  image?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "partners_select".
+ */
+export interface PartnersSelect<T extends boolean = true> {
+  name?: T;
+  listing?: T;
+  staffPin?: T;
+  dashboardKey?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "promo-coupons_select".
+ */
+export interface PromoCouponsSelect<T extends boolean = true> {
+  code?: T;
+  promotion?: T;
+  listing?: T;
+  source?: T;
+  lang?: T;
+  redeemedAt?: T;
+  pinFails?: T;
+  test?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "subscribers_select".
  */
 export interface SubscribersSelect<T extends boolean = true> {
@@ -3084,6 +3262,13 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         update?: T;
       };
   spotlights?:
+    | T
+    | {
+        find?: T;
+        create?: T;
+        update?: T;
+      };
+  promotions?:
     | T
     | {
         find?: T;
