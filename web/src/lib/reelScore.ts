@@ -2,7 +2,7 @@ import type { Payload } from 'payload'
 
 import type { HqExperiment, HqSocialDraft, HqSocialStat } from '../payload-types'
 import { miamiTime } from './hq'
-import { REEL_CHECKPOINTS, reelRatios } from './reelStats'
+import { REEL_CHECKPOINTS, fbReach, reelRatios } from './reelStats'
 
 /**
  * The 72-hour reel scorer: station 4 of the learning loop
@@ -98,7 +98,8 @@ const per = (part: number | null, reach: number | null) => (part !== null && rea
 /**
  * One reel's numbers at one reading, in the same units on both platforms.
  * Meta's names differ by platform: Facebook's reach is
- * `post_impressions_unique`, its shares `post_video_social_actions.share`, its
+ * `post_total_media_view_unique` (`post_impressions_unique` before Meta retired
+ * it), its shares `post_video_social_actions.SHARE`, its
  * likes the sum of `post_video_likes_by_reaction_type.*`, and it has no saves
  * or skip rate — those stay null, never 0. Watch times are milliseconds (see
  * lib/metaGraph.ts); `avgWatchPct` needs the length, which only Facebook gives,
@@ -106,7 +107,7 @@ const per = (part: number | null, reach: number | null) => (part !== null && rea
  */
 export function cutMetrics(platform: string, metrics: Record<string, number>, durationSec: number | null): CutMetrics {
   const fb = platform === 'facebook'
-  const reach = num(fb ? metrics.post_impressions_unique : metrics.reach)
+  const reach = num(fb ? fbReach(metrics) : metrics.reach)
   const avgMs = num(fb ? metrics.post_video_avg_time_watched : metrics.ig_reels_avg_watch_time)
   let likes: number | null = null
   if (fb) {

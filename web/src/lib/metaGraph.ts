@@ -74,7 +74,10 @@ export const FB_REEL_METRICS = [
   'blue_reels_play_count',
   'fb_reels_total_plays',
   'fb_reels_replay_count',
-  'post_impressions_unique',
+  // Reach. `post_impressions_unique` is refused since Meta retired it
+  // (https://developers.facebook.com/documentation/pages-api/platforminsights/page/deprecated-metrics
+  // names this as its replacement); readers fall back to the old name for rows saved before.
+  'post_total_media_view_unique',
   'post_video_avg_time_watched',
   'post_video_view_time',
   'post_video_retention_graph',
@@ -281,7 +284,7 @@ export type InsightRow = {
 }
 
 export type Reading = {
-  /** Plain numbers, by Meta's metric name. An object of numbers is flattened: `post_video_social_actions.share`. */
+  /** Plain numbers, by Meta's metric name. An object of numbers is flattened, keys as Meta sends them: `post_video_social_actions.SHARE`. */
   metrics: Record<string, number>
   /** The retention curve as received: `{ "0": 1, "1": 0.93, … }`, share of plays still watching at each segment. */
   retention: unknown

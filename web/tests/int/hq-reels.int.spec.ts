@@ -175,6 +175,10 @@ describe('reel ratios', () => {
     expect(
       reelRatios('facebook', { post_video_avg_time_watched: 4500, 'post_video_social_actions.share': 1, post_impressions_unique: 50 }, 15),
     ).toEqual({ avgWatchPctOfLength: 30, sharesPerReach: 0.02 })
+    // what Meta actually sends since Oct 2026: SHARE in capitals, reach under its new name
+    expect(
+      reelRatios('facebook', { 'post_video_social_actions.SHARE': 3, post_total_media_view_unique: 100 }, null).sharesPerReach,
+    ).toBe(0.03)
     expect(reelRatios('instagram', { shares: 1, reach: 0 }, 10).sharesPerReach).toBeNull()
   })
 })
