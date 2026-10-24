@@ -2406,7 +2406,7 @@ export interface PayloadMcpApiKey {
      */
     hqSendTelegram?: boolean | null;
     /**
-     * Suggest a WhatsApp reply to someone on the reservations line (an hq-leads row). It is saved on the lead and sent to the owner's Telegram with Send / Don't: nothing reaches the person until he taps Send. Write as Flamingo County, in the lead's language (lang), plain and short: one or two sentences, no sign-off. Only facts from lib/reservas.ts or the owner; never a price, perk, deposit or table availability the promoter hasn't confirmed, and never alcohol. WhatsApp only takes it within 24 hours of their last message (lastInboundAt); the result says if that has passed. A new draft replaces the lead's previous one.
+     * Suggest a WhatsApp reply to someone on the reservations line (an hq-leads row). It is saved on the lead and sent to the owner's Telegram with Send / Don't: nothing reaches the person until he taps Send. Write as Flamingo County, in the lead's language (lang), plain and short: one or two sentences, no sign-off. Only facts from lib/reservas.ts or the owner; never a price, perk, deposit or table availability the promoter hasn't confirmed, and never alcohol. WhatsApp only takes it within 24 hours of their last message (lastInboundAt); the result says if that has passed. A new draft replaces the lead's previous one. Shares hqSendTelegram's limit (10 per 10 minutes).
      */
     hqLeadDraftReply?: boolean | null;
     /**

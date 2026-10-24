@@ -1,10 +1,11 @@
 // @vitest-environment node
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { getPayload, type Payload } from 'payload'
+import { createLocalReq, getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
 
 import { fromTwilio, twilioSignature, webhookUrl as couponWebhookUrl } from '@/lib/promoWhatsapp'
 import {
+  REPLY_HINT,
   RESERVAS_EVENTS,
   answerReservas,
   choice,
@@ -92,10 +93,12 @@ describe('the menu', () => {
     expect(back.set.status).toBe('asked')
   })
 
-  it('switches language on EN / ES', () => {
+  it('switches language on EN / ES, and never drops a booked or waiting lead', () => {
     const t = nextTurn(ev, start, 'EN', false, NOW)
     expect(t.set.lang).toBe('en')
     expect(t.reply).toContain('1 · Book a VIP table')
+    expect(nextTurn(ev, { ...start, status: 'booked' }, 'EN', false, NOW).set.status).toBe('booked')
+    expect(nextTurn(ev, { ...start, status: 'handoff' }, 'es', false, NOW).set.status).toBe('handoff')
   })
 
   it('never mentions alcohol, in either language', () => {
@@ -130,9 +133,17 @@ describe('links and callbacks', () => {
     expect(decodeURIComponent(link.split('text=')[1])).toBe('Hola, quiero reservar para Chacal · Fin de Año 2027 (ref #chacal-nye instagram es)')
   })
 
-  it('finds the lead in an alert and reads the Send button', () => {
-    expect(leadFromText('🦩 Pidió mesa\n#L12 · María')).toBe(12)
-    expect(leadFromText('no tag')).toBeNull()
+  it('sends a Telegram reply on WhatsApp only when it answers one lead’s alert', () => {
+    expect(leadFromText(`🦩 Pidió mesa\n#L12 · María\n\n“hola”\n\n${REPLY_HINT}`)).toBe(12)
+    expect(leadFromText(`#L12 · María, again #L12\n${REPLY_HINT}`)).toBe(12)
+    // /leads lists several; a drafted reply and a "Sent" line carry no hint.
+    expect(leadFromText(`Leads\n#L12 María\n#L13 Pedro\n${REPLY_HINT}`)).toBeNull()
+    expect(leadFromText('✍️ Claude suggests a reply\n#L12 · María\nReply: Hola')).toBeNull()
+    expect(leadFromText('✅ Sent to María #L12 on WhatsApp.')).toBeNull()
+    expect(leadFromText(undefined)).toBeNull()
+  })
+
+  it('reads the Send button', () => {
     expect(parseLeadCallback('ld:s:12:0a1b2c3d')).toEqual({ action: 'send', id: 12, hash: '0a1b2c3d' })
     expect(parseLeadCallback('ld:x:12:0a1b2c3d')).toBeNull()
   })
@@ -227,6 +238,28 @@ describe('leads in the database', () => {
     await payload.update({ collection: 'hq-leads', id: row.id, data: { draftReply: 'Texto nuevo' }, overrideAccess: true })
     expect(await decideLeadDraft(payload, row.id, 'send', '00000000', NOW)).toMatch(/gone or was replaced/)
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('hides the number over MCP and won’t let MCP write the bot’s fields', async () => {
+    await answerReservas(payload, { phone: PHONE, name: 'María', body: 'hola' }, NOW)
+    const user = await payload.create({
+      collection: 'users',
+      data: { email: `leads-mcp-${Date.now()}@example.com`, password: 'not-a-real-password-1' },
+      overrideAccess: true,
+    })
+    try {
+      const req = await createLocalReq({ user: { ...user, collection: 'users' } }, payload)
+      req.payloadAPI = 'MCP'
+      const { docs } = await payload.find({ collection: 'hq-leads', req, overrideAccess: false })
+      expect(docs[0].whatsappName).toBe('María')
+      expect(docs[0]).not.toHaveProperty('phone')
+      const updated = await payload.update({ collection: 'hq-leads', id: docs[0].id, data: { status: 'booked', optIn: true, phone: '+19999999999' }, req, overrideAccess: false })
+      expect(updated.status).toBe('booked')
+      const row = await lead()
+      expect(row).toMatchObject({ phone: PHONE, optIn: false, status: 'booked' })
+    } finally {
+      await payload.delete({ collection: 'users', id: user.id, overrideAccess: true })
+    }
   })
 
   it('answers Twilio only, at its own URL', async () => {

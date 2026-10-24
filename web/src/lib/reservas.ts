@@ -211,13 +211,13 @@ const copy = {
   },
   toMenu: { es: 'Responde 1 para reservar, o 0 para el menú.', en: 'Reply 1 to book, or 0 for the menu.' },
   person: {
-    es: 'Perfecto. Una persona de Flamingo County te escribe por aquí lo antes posible. Mientras tanto, cuéntanos lo que necesites.',
-    en: 'Perfect. A person from Flamingo County will message you here as soon as possible. Meanwhile, tell us what you need.',
+    es: 'Perfecto. Una persona de Flamingo County te escribe por aquí lo antes posible. Mientras tanto, cuéntanos lo que necesites. (0 · menú)',
+    en: 'Perfect. A person from Flamingo County will message you here as soon as possible. Meanwhile, tell us what you need. (0 · menu)',
   },
   missed: { es: 'No te entendí 🙈. Responde con un número del 1 al 5, o 0 para ver el menú.', en: 'Sorry, I didn’t get that 🙈. Reply with a number from 1 to 5, or 0 for the menu.' },
   missedTwice: {
-    es: 'Te paso con una persona de Flamingo County, que te escribe por aquí en breve.',
-    en: 'I’m passing you to a person from Flamingo County, who’ll message you here shortly.',
+    es: 'Te paso con una persona de Flamingo County, que te escribe por aquí en breve. (0 · menú)',
+    en: 'I’m passing you to a person from Flamingo County, who’ll message you here shortly. (0 · menu)',
   },
   over: {
     es: 'Las reservas de este evento ya cerraron. ¡Gracias por escribirnos! Síguenos en @flamingo.county para el próximo.',
@@ -284,7 +284,8 @@ export function nextTurn(ev: ReservasEvent, lead: Pick<HqLead, 'status' | 'step'
 
   if (TO_EN.test(text) || TO_ES.test(text)) {
     lang = TO_EN.test(text) ? 'en' : 'es'
-    return { reply: welcome(ev, lang, lead.whatsappName), set: { ...atMenu, lang, status: lead.status === 'new' ? 'new' : 'asked' }, alert: null }
+    const keep = lead.status === 'new' || lead.status === 'handoff' || lead.status === 'booked'
+    return { reply: welcome(ev, lang, lead.whatsappName), set: { ...atMenu, lang, status: keep ? lead.status : 'asked' }, alert: null }
   }
 
   // With a person (or already booked): the bot is quiet, the owner sees it, and 0 brings the menu back.
@@ -465,9 +466,19 @@ export async function answerReservas(payload: Payload, msg: Incoming, now: Date 
 
 /** "#L12" in an alert: replying to that Telegram message answers lead 12. */
 export const leadTag = (id: number | string) => `#L${id}`
+
+/** The last line of every lead alert, and the only thing that makes a reply to a message go out on WhatsApp. */
+export const REPLY_HINT = '↩️ Responde a este mensaje y le llega por WhatsApp.'
+
+/**
+ * The lead a Telegram reply answers: only a reply to a lead alert, which names
+ * exactly one lead. A reply to /leads (many leads), to a drafted reply or to a
+ * "Sent" line is just a message to the bot, never a WhatsApp to a customer.
+ */
 export function leadFromText(text: string | undefined): number | null {
-  const m = /#L(\d+)\b/.exec(text ?? '')
-  return m ? Number(m[1]) : null
+  if (!text?.includes(REPLY_HINT)) return null
+  const ids = new Set([...text.matchAll(/#L(\d+)\b/g)].map((m) => m[1]))
+  return ids.size === 1 ? Number([...ids][0]) : null
 }
 
 const masked = (phone: string) => phone.replace(/^(\+\d)(\d{3})\d+(\d{4})$/, '$1 ($2) •••-$3')
@@ -489,9 +500,8 @@ export function leadSummary(ev: ReservasEvent, lead: HqLead): string {
 }
 
 async function alertOwner(ev: ReservasEvent, lead: HqLead, why: NonNullable<Turn['alert']>): Promise<void> {
-  const head = why === 'table' ? '🦩🍾 <b>Pidió mesa</b>' : why === 'person' ? '🦩🙋 <b>Quiere hablar con una persona</b>' : '🦩💬 <b>Mensaje</b>'
-  const reply = why === 'message' ? '' : '\n\n<i>Responde a este mensaje y le llega por WhatsApp.</i>'
-  await notifyOwner(`${head}\n${leadSummary(ev, lead)}\n\n${lastFromThem(lead, why === 'message' ? 1 : 3)}${reply}`)
+  const head = why === 'table' ? '🦩🎟️ <b>Pidió mesa</b>' : why === 'person' ? '🦩🙋 <b>Quiere hablar con una persona</b>' : '🦩💬 <b>Mensaje</b>'
+  await notifyOwner(`${head}\n${leadSummary(ev, lead)}\n\n${lastFromThem(lead, why === 'message' ? 1 : 3)}\n\n<i>${REPLY_HINT}</i>`)
 }
 
 /** Twilio's REST API, for replies that aren't an answer to a webhook: the owner's, and drafts he approved. */
@@ -525,7 +535,7 @@ export async function sendToLead(payload: Payload, leadId: number, body: string,
   const lead = await payload.findByID({ collection: 'hq-leads', id: leadId, depth: 0, overrideAccess: true }).catch(() => null)
   if (!lead) return `No lead ${leadTag(leadId)}.`
   if (!inWindow(lead, now))
-    return `⏳ ${leadTag(leadId)} wrote over 24 hours ago, and WhatsApp only allows a free reply within 24 hours of their last message. Call them, or wait until they write again.`
+    return `⏳ ${leadTag(leadId)} wrote over 24 hours ago, and WhatsApp only allows a free reply within 24 hours of their last message. Call them at ${esc(lead.phone)}, or wait until they write again.`
   try {
     await sendWhatsApp(lead.phone, body)
   } catch (err) {
@@ -565,7 +575,7 @@ export async function draftLeadReply(payload: Payload, leadId: number, text: str
   const hash = draftHash(text)
   const window = inWindow(lead, now) ? '' : '\n⏳ <i>Over 24 hours since their last message: WhatsApp won’t take it until they write again.</i>'
   const sent = await sendMessage(
-    `✍️ <b>Claude suggests a reply</b>\n${ev ? leadSummary(ev, lead) : leadTag(lead.id)}\n\n${lastFromThem(lead, 2)}\n\n<b>Reply:</b>\n${esc(text)}${window}`,
+    `✍️ <b>Claude suggests a reply</b>\n${ev ? leadSummary(ev, lead) : leadTag(lead.id)}\n\n${lastFromThem(lead, 2)}\n\n<b>Reply:</b>\n${esc(text)}${window}\n\n<i>To write your own, tap Don’t and reply to the lead’s alert, or /wa ${lead.id} …</i>`,
     {
       keyboard: {
         inline_keyboard: [

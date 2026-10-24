@@ -1015,6 +1015,14 @@ export function resetTelegramSendLimit() {
   sentAt = []
 }
 
+/** Throws when Claude has sent the owner too much lately. hqLeadDraftReply's cards count too. */
+function checkSendLimit(now: number) {
+  sentAt = sentAt.filter((t) => now - t < 86_400_000)
+  if (sentAt.length >= SEND_PER_DAY) throw new Error('Daily limit of 60 messages reached.')
+  if (sentAt.filter((t) => now - t < SEND_WINDOW_MS).length >= SEND_PER_WINDOW)
+    throw new Error('Too many messages in the last 10 minutes. Put it in one message, or wait.')
+}
+
 /**
  * Send one message to the owner's Telegram chat, as HQ's bot. The chat is not a parameter: there
  * is no way to point this anywhere else. The text is escaped (it is plain text, never markup),
@@ -1023,10 +1031,7 @@ export function resetTelegramSendLimit() {
  */
 export async function sendToOwnerTelegram(args: { text: string; title?: string }, now: number = Date.now()) {
   if (!telegramConfigured()) throw new Error("Telegram isn't set up on this server.")
-  sentAt = sentAt.filter((t) => now - t < 86_400_000)
-  if (sentAt.length >= SEND_PER_DAY) throw new Error('Daily limit of 60 messages reached.')
-  if (sentAt.filter((t) => now - t < SEND_WINDOW_MS).length >= SEND_PER_WINDOW)
-    throw new Error('Too many messages in the last 10 minutes. Put it in one message, or wait.')
+  checkSendLimit(now)
 
   const head = `🤖 <b>Claude</b>${args.title ? ` · ${esc(args.title)}` : ''}`
   const body = `${head}\n\n${esc(args.text)}`
@@ -1128,7 +1133,7 @@ export const hqMcpTools: McpTool[] = [
   {
     name: 'hqLeadDraftReply',
     description:
-      "Suggest a WhatsApp reply to someone on the reservations line (an hq-leads row). It is saved on the lead and sent to the owner's Telegram with Send / Don't: nothing reaches the person until he taps Send. Write as Flamingo County, in the lead's language (lang), plain and short: one or two sentences, no sign-off. Only facts from lib/reservas.ts or the owner; never a price, perk, deposit or table availability the promoter hasn't confirmed, and never alcohol. WhatsApp only takes it within 24 hours of their last message (lastInboundAt); the result says if that has passed. A new draft replaces the lead's previous one.",
+      "Suggest a WhatsApp reply to someone on the reservations line (an hq-leads row). It is saved on the lead and sent to the owner's Telegram with Send / Don't: nothing reaches the person until he taps Send. Write as Flamingo County, in the lead's language (lang), plain and short: one or two sentences, no sign-off. Only facts from lib/reservas.ts or the owner; never a price, perk, deposit or table availability the promoter hasn't confirmed, and never alcohol. WhatsApp only takes it within 24 hours of their last message (lastInboundAt); the result says if that has passed. A new draft replaces the lead's previous one. Shares hqSendTelegram's limit (10 per 10 minutes).",
     parameters: {
       lead: z.number().int().positive().describe('The hq-leads id'),
       text: z.string().min(1).max(1000).describe('The reply, as it will appear on WhatsApp'),
@@ -1136,7 +1141,10 @@ export const hqMcpTools: McpTool[] = [
     handler: (args: Record<string, unknown>, req: PayloadRequest) =>
       guard(async () => {
         if (!telegramConfigured()) throw new Error('Telegram is not configured, so the owner could not approve it.')
+        const now = Date.now()
+        checkSendLimit(now)
         const r = await draftLeadReply(req.payload, Number(args.lead), String(args.text))
+        sentAt.push(now)
         return text(
           `Sent to the owner for approval (Telegram message ${r.telegramMessageId}).${r.inWindow ? '' : ' Over 24 hours since their last message: WhatsApp will refuse it until they write again.'}`,
         )
