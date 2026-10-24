@@ -24,6 +24,7 @@ import { graphSummary } from './graphTelemetry'
 import { marketOutliers } from './market'
 import { PUBLISHABLE, PUBLISHABLE_GLOBALS, publishStatus, requestPublish } from './publishRequests'
 import { redeemSpend, requestSpend, spendStatus } from './spendApprovals'
+import { emailStatus, requestEmail } from './emailApprovals'
 import { PHOTO_LICENSES, canonicalLicenseUrl, isPhotoLicense, licenseLabel, type PhotoLicense } from './photoLicense'
 import { REQUEST_KINDS, isRequestKind, type RequestKind } from './requestKinds'
 import {
@@ -1370,5 +1371,37 @@ export const hqMcpTools: McpTool[] = [
     parameters: { command: z.string().min(1).max(4000) },
     handler: (args: Record<string, unknown>, req: PayloadRequest) =>
       guard(async () => text(JSON.stringify(await redeemSpend(req.payload, String(args.command))))),
+  },
+  {
+    name: 'hqRequestEmail',
+    description:
+      "The only way an email goes out from hola@flamingocounty.com. Files the whole email; the owner reads every word of it in Telegram (recipients, subject, body, the quote, attachments) and taps Send or Don't send. On Send, HQ sends exactly this, once, through Resend, with a blind copy to hola@. Write the body as plain text (blank line between paragraphs); the logo footer is added. For a reply, pass the original's Message-ID as inReplyTo (Zoho: More → Show original) so it threads, and the earlier message as quote. Nothing can be changed after filing: to fix a word, file a new one. Refused if it can't fit in one Telegram message. Check with hqEmailStatus.",
+    parameters: {
+      to: z.array(z.string().email()).min(1).max(5).describe('Plain addresses, e.g. ["name@example.com"]'),
+      cc: z.array(z.string().email()).max(4).optional(),
+      subject: z.string().min(1).max(200).describe('For a reply, "Re: " plus the original subject'),
+      body: z.string().min(1).max(3500).describe('The email, plain text. No signature block: the footer is added.'),
+      quote: z.string().max(3000).optional().describe('The earlier message a reply quotes underneath, plain text'),
+      inReplyTo: z.string().max(300).optional().describe("The original message's Message-ID header, with the <>"),
+      references: z.string().max(1000).optional().describe('The References header for a longer thread; defaults to inReplyTo'),
+      attachmentIds: z.array(z.number().int().positive()).max(5).optional().describe('hq-media ids to attach'),
+      why: z.string().max(200).optional().describe('One line for the owner: what this email is for'),
+    },
+    handler: (args: Record<string, unknown>, req: PayloadRequest) =>
+      guard(async () =>
+        text(
+          JSON.stringify({
+            ...(await requestEmail(req.payload, args as never)),
+            next: "Waiting for the owner to tap Send in Telegram. HQ sends it on the tap; don't send it any other way. Check with hqEmailStatus.",
+          }),
+        ),
+      ),
+  },
+  {
+    name: 'hqEmailStatus',
+    description: "Where an email request stands: pending, sending, sent, declined (he said don't send), failed (with the error) or expired.",
+    parameters: { requestId: z.number().int().positive() },
+    handler: (args: Record<string, unknown>, req: PayloadRequest) =>
+      guard(async () => text(JSON.stringify(await emailStatus(req.payload, Number(args.requestId))))),
   },
 ]

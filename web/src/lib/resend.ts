@@ -12,20 +12,42 @@ export function emailConfigured(): boolean {
   return Boolean(process.env.RESEND_API_KEY)
 }
 
-/** Throws when Resend refuses or the key is missing; callers decide whether that matters. */
+export type EmailAttachment = { filename: string; content: Buffer }
+
+/**
+ * Throws when Resend refuses or the key is missing; callers decide whether that
+ * matters. Returns Resend's id for the message.
+ */
 export async function sendEmail(msg: {
-  to: string
+  to: string | string[]
   subject: string
   text: string
   html: string
-}): Promise<void> {
+  cc?: string[]
+  bcc?: string[]
+  /** e.g. In-Reply-To / References, so a reply threads under the original. */
+  headers?: Record<string, string>
+  attachments?: EmailAttachment[]
+}): Promise<string | undefined> {
   const key = process.env.RESEND_API_KEY
   if (!key) throw new Error('RESEND_API_KEY is not set')
+  const { attachments, ...rest } = msg
   const res = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from: EMAIL_FROM, reply_to: EMAIL_REPLY_TO, ...msg, to: [msg.to] }),
-    signal: AbortSignal.timeout(10_000),
+    body: JSON.stringify({
+      from: EMAIL_FROM,
+      reply_to: EMAIL_REPLY_TO,
+      ...rest,
+      to: Array.isArray(msg.to) ? msg.to : [msg.to],
+      ...(attachments?.length
+        ? { attachments: attachments.map((a) => ({ filename: a.filename, content: a.content.toString('base64') })) }
+        : {}),
+    }),
+    // A reel or two attached is a few MB of base64 to upload.
+    signal: AbortSignal.timeout(attachments?.length ? 60_000 : 10_000),
   })
   if (!res.ok) throw new Error(`Resend ${res.status}: ${await res.text()}`)
+  const json = (await res.json().catch(() => null)) as { id?: string } | null
+  return json?.id
 }

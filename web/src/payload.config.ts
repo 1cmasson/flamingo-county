@@ -34,6 +34,7 @@ import { HqMarketPosts } from './collections/HqMarketPosts'
 import { HqClicks } from './collections/HqClicks'
 import { HqPublishRequests } from './collections/HqPublishRequests'
 import { HqSpendApprovals } from './collections/HqSpendApprovals'
+import { HqEmailApprovals } from './collections/HqEmailApprovals'
 import { HqChatTurns } from './collections/HqChatTurns'
 import { HqVisits } from './collections/HqVisits'
 import { HqUses } from './collections/HqUses'
@@ -111,6 +112,7 @@ export default buildConfig({
     HqClicks,
     HqPublishRequests,
     HqSpendApprovals,
+    HqEmailApprovals,
     HqChatTurns,
     HqVisits,
     HqUses,
@@ -189,7 +191,8 @@ export default buildConfig({
      * write is refused by `mcpDraftsOnly` on the collection itself — and
      * publishing is the owner's tap in Telegram (hqRequestPublish,
      * lib/publishRequests.ts). `hq-publish-requests` (and `hq-spend-approvals`,
-     * lib/spendApprovals.ts) must never be added to
+     * lib/spendApprovals.ts, and `hq-email-approvals`, lib/emailApprovals.ts)
+     * must never be added to
      * this list: a generic update tool on it would let a client approve its
      * own request.
      */

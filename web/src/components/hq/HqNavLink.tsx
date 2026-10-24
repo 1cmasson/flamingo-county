@@ -38,6 +38,8 @@ export function HqNavLink() {
   useEffect(() => {
     const list = document.querySelector(`#nav-group-${HQ_GROUP} .nav-group__content`)
     if (!list) {
+      // Syncing with DOM Payload rendered outside React, once on mount: the case the rule allows for.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSlot(null)
       return
     }

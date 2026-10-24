@@ -96,6 +96,7 @@ export interface Config {
     'hq-clicks': HqClick;
     'hq-publish-requests': HqPublishRequest;
     'hq-spend-approvals': HqSpendApproval;
+    'hq-email-approvals': HqEmailApproval;
     'hq-chat-turns': HqChatTurn;
     'hq-visits': HqVisit;
     'hq-uses': Hqus;
@@ -139,6 +140,7 @@ export interface Config {
     'hq-clicks': HqClicksSelect<false> | HqClicksSelect<true>;
     'hq-publish-requests': HqPublishRequestsSelect<false> | HqPublishRequestsSelect<true>;
     'hq-spend-approvals': HqSpendApprovalsSelect<false> | HqSpendApprovalsSelect<true>;
+    'hq-email-approvals': HqEmailApprovalsSelect<false> | HqEmailApprovalsSelect<true>;
     'hq-chat-turns': HqChatTurnsSelect<false> | HqChatTurnsSelect<true>;
     'hq-visits': HqVisitsSelect<false> | HqVisitsSelect<true>;
     'hq-uses': HqUsesSelect<false> | HqUsesSelect<true>;
@@ -1736,6 +1738,33 @@ export interface HqSpendApproval {
   createdAt: string;
 }
 /**
+ * Emails Claude asked to send from hola@. Each goes out only after you tap Send in Telegram.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-email-approvals".
+ */
+export interface HqEmailApproval {
+  id: number;
+  status: 'pending' | 'sending' | 'sent' | 'declined' | 'failed' | 'expired';
+  to: string;
+  cc?: string | null;
+  subject: string;
+  body: string;
+  quote?: string | null;
+  inReplyTo?: string | null;
+  references?: string | null;
+  attachments?: (number | HqMedia)[] | null;
+  why?: string | null;
+  expiresAt?: string | null;
+  decidedAt?: string | null;
+  sentAt?: string | null;
+  resendId?: string | null;
+  error?: string | null;
+  telegramMessageId?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * The Telegram chat's short memory. Redacted, and pruned after two days.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2374,6 +2403,14 @@ export interface PayloadMcpApiKey {
      * For the spend gate hook only: uses up the owner's approval for this exact command and says whether it may run. Calling it yourself only wastes his approval.
      */
     hqRedeemSpendApproval?: boolean | null;
+    /**
+     * The only way an email goes out from hola@flamingocounty.com. Files the whole email; the owner reads every word of it in Telegram (recipients, subject, body, the quote, attachments) and taps Send or Don't send. On Send, HQ sends exactly this, once, through Resend, with a blind copy to hola@. Write the body as plain text (blank line between paragraphs); the logo footer is added. For a reply, pass the original's Message-ID as inReplyTo (Zoho: More → Show original) so it threads, and the earlier message as quote. Nothing can be changed after filing: to fix a word, file a new one. Refused if it can't fit in one Telegram message. Check with hqEmailStatus.
+     */
+    hqRequestEmail?: boolean | null;
+    /**
+     * Where an email request stands: pending, sending, sent, declined (he said don't send), failed (with the error) or expired.
+     */
+    hqEmailStatus?: boolean | null;
   };
   updatedAt: string;
   createdAt: string;
@@ -2639,6 +2676,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'hq-spend-approvals';
         value: number | HqSpendApproval;
+      } | null)
+    | ({
+        relationTo: 'hq-email-approvals';
+        value: number | HqEmailApproval;
       } | null)
     | ({
         relationTo: 'hq-chat-turns';
@@ -3510,6 +3551,30 @@ export interface HqSpendApprovalsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-email-approvals_select".
+ */
+export interface HqEmailApprovalsSelect<T extends boolean = true> {
+  status?: T;
+  to?: T;
+  cc?: T;
+  subject?: T;
+  body?: T;
+  quote?: T;
+  inReplyTo?: T;
+  references?: T;
+  attachments?: T;
+  why?: T;
+  expiresAt?: T;
+  decidedAt?: T;
+  sentAt?: T;
+  resendId?: T;
+  error?: T;
+  telegramMessageId?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "hq-chat-turns_select".
  */
 export interface HqChatTurnsSelect<T extends boolean = true> {
@@ -3799,6 +3864,8 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         hqRequestSpendApproval?: T;
         hqSpendApprovalStatus?: T;
         hqRedeemSpendApproval?: T;
+        hqRequestEmail?: T;
+        hqEmailStatus?: T;
       };
   updatedAt?: T;
   createdAt?: T;
