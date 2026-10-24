@@ -6,12 +6,19 @@ import { requestReview } from './growth'
 import { decideDraft, parseDraftCallback } from './hq'
 import { answerCallback, editMessage, esc, ownerChatId, resolveButtons, sendMessage } from './telegram'
 import { decidePublish, parsePublishCallback } from './publishRequests'
+import { decideLeadDraft, leadFromText, leadsReport, parseLeadCallback, sendToLead } from './reservas'
 import { parseReviewCallback, runReviewFromButton } from './reviewReminder'
 import { decideSpend, parseSpendCallback } from './spendApprovals'
 
 /** The slice of a Telegram `Update` the bot reads. */
 export type TelegramUpdate = {
-  message?: { chat: { id: number; type?: string }; from?: { id: number }; text?: string }
+  message?: {
+    chat: { id: number; type?: string }
+    from?: { id: number }
+    text?: string
+    /** The message it answers: a lead alert's `#L12` makes the text a WhatsApp reply. */
+    reply_to_message?: { text?: string; caption?: string }
+  }
   callback_query?: {
     id: string
     from: { id: number }
@@ -29,6 +36,8 @@ export const HELP = [
   '/tasks — open tasks',
   '/task &lt;text&gt; — file a task for Claude',
   '/review — ask Claude for a growth review (traffic, what worked, next moves)',
+  '/leads — the reservations WhatsApp: who is waiting for a person',
+  '/wa &lt;id&gt; &lt;text&gt; — answer lead #L&lt;id&gt; on WhatsApp (or just reply to its alert)',
 ].join('\n')
 
 /**
@@ -127,6 +136,13 @@ async function command(payload: Payload, text: string): Promise<string> {
     }
     case '/review':
       return requestReview(payload)
+    case '/leads':
+      return leadsReport(payload)
+    case '/wa': {
+      const m = /^#?L?(\d+)\s+([\s\S]+)$/i.exec(text.trim().replace(/^\S+\s*/, ''))
+      if (!m) return 'Usage: /wa &lt;lead id&gt; &lt;text&gt;'
+      return sendToLead(payload, Number(m[1]), m[2].trim())
+    }
     default:
       return HELP
   }
@@ -159,6 +175,14 @@ export async function handleUpdate(payload: Payload, update: TelegramUpdate): Pr
       return
     }
 
+    const lead = parseLeadCallback(cb.data)
+    if (lead && cb.message) {
+      await answerCallback(cb.id, lead.action === 'send' ? 'Sending…' : 'Dropping…')
+      const outcome = await decideLeadDraft(payload, lead.id, lead.action, lead.hash)
+      await resolveButtons(cb.message.chat.id, cb.message.message_id, outcome)
+      return
+    }
+
     const publish = parsePublishCallback(cb.data)
     if (publish && cb.message) {
       await answerCallback(cb.id, publish.action === 'publish' ? 'Publishing…' : 'Rejecting…')
@@ -182,6 +206,14 @@ export async function handleUpdate(payload: Payload, update: TelegramUpdate): Pr
 
   const text = update.message?.text
   if (!text || !update.message) return
+  // A reply to a lead alert (or a drafted reply) is the owner answering that
+  // person: it goes to them on WhatsApp as written.
+  const replyTo = update.message.reply_to_message
+  const leadId = !text.startsWith('/') ? leadFromText(replyTo?.text ?? replyTo?.caption) : null
+  if (leadId) {
+    await sendMessage(await sendToLead(payload, leadId, text))
+    return
+  }
   // Plain text goes to the chat model when one is configured (lib/chat.ts),
   // and gets the help otherwise. Only ever reached by the owner: see isOwner.
   const reply = text.startsWith('/')

@@ -40,6 +40,7 @@ import { HqUses } from './collections/HqUses'
 import { HqExperiments } from './collections/HqExperiments'
 import { HqReelReviews } from './collections/HqReelReviews'
 import { HqArtworkUploads } from './collections/HqArtworkUploads'
+import { HqLeads } from './collections/HqLeads'
 import { eveningWrap } from './jobs/eveningWrap'
 import { graphTelemetry } from './jobs/graphTelemetry'
 import { morningBrief } from './jobs/morningBrief'
@@ -117,6 +118,7 @@ export default buildConfig({
     HqExperiments,
     HqReelReviews,
     HqArtworkUploads,
+    HqLeads,
   ],
   globals: [SiteSettings, AboutPage, ListYourSpotPage, LinkPage, HqPlaybook],
 
@@ -267,6 +269,14 @@ export default buildConfig({
         'weekly-events': { enabled: { find: true, create: true, update: true }, description: 'Recurring weekly events. Save with draft: true — drafts are never live; publish with hqRequestPublish.' },
         stories: { enabled: { find: true, create: true, update: true }, description: 'Stories. Save with draft: true — drafts are never live; publish with hqRequestPublish.' },
         spotlights: { enabled: { find: true, create: true, update: true }, description: 'Home-page spotlights. Save with draft: true — drafts are never live; publish with hqRequestPublish.' },
+        // Over MCP the phone number is hidden and the bot's own fields can't be
+        // written (collections/HqLeads.ts); replies go out only by the owner's
+        // tap (hqLeadDraftReply).
+        'hq-leads': {
+          enabled: { find: true, update: true },
+          description:
+            'People who wrote to the reservations WhatsApp line (lib/reservas.ts), one per number per event: whatsappName, source (where they tapped the link), status (new, asked, handoff = waiting for a person, booked, lost), partySize, tier, optIn (said yes to news; needed for anything after 24 hours), lastInboundAt, messages (the conversation: them/bot/us). No phone numbers over MCP. Set status booked/lost and notes as you learn them. To answer someone, draft it with hqLeadDraftReply: the owner taps Send in Telegram. Never promise prices, perks or availability the promoter has not confirmed.',
+        },
         // Partners (the staff PIN, the dashboard key) and promo-coupons stay off
         // MCP: secrets, and rows only visitors and staff create.
         promotions: {

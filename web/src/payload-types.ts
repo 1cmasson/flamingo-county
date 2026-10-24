@@ -102,6 +102,7 @@ export interface Config {
     'hq-experiments': HqExperiment;
     'hq-reel-reviews': HqReelReview;
     'hq-artwork-uploads': HqArtworkUpload;
+    'hq-leads': HqLead;
     'payload-mcp-api-keys': PayloadMcpApiKey;
     'payload-kv': PayloadKv;
     'payload-jobs': PayloadJob;
@@ -145,6 +146,7 @@ export interface Config {
     'hq-experiments': HqExperimentsSelect<false> | HqExperimentsSelect<true>;
     'hq-reel-reviews': HqReelReviewsSelect<false> | HqReelReviewsSelect<true>;
     'hq-artwork-uploads': HqArtworkUploadsSelect<false> | HqArtworkUploadsSelect<true>;
+    'hq-leads': HqLeadsSelect<false> | HqLeadsSelect<true>;
     'payload-mcp-api-keys': PayloadMcpApiKeysSelect<false> | PayloadMcpApiKeysSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-jobs': PayloadJobsSelect<false> | PayloadJobsSelect<true>;
@@ -2018,6 +2020,81 @@ export interface HqArtworkUpload {
   createdAt: string;
 }
 /**
+ * People who wrote to the reservations WhatsApp. The bot answers the menu; "handoff" = waiting for a person (reply from Telegram). Set booked or lost by hand once you know.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-leads".
+ */
+export interface HqLead {
+  id: number;
+  /**
+   * The event’s slug in lib/reservas.ts, e.g. chacal-nye.
+   */
+  event: string;
+  /**
+   * Their WhatsApp number (+13055551234). Never shown over MCP.
+   */
+  phone: string;
+  /**
+   * The name on their WhatsApp profile, as they set it.
+   */
+  whatsappName?: string | null;
+  lang?: ('es' | 'en') | null;
+  /**
+   * Where the link was tapped (instagram, facebook, story, bio…), from the ref in their first message.
+   */
+  source?: string | null;
+  status: 'new' | 'asked' | 'handoff' | 'booked' | 'lost';
+  /**
+   * Where the bot is in the conversation (menu, party, tier, optin).
+   */
+  step?: string | null;
+  partySize?: number | null;
+  /**
+   * The table they picked, by name.
+   */
+  tier?: string | null;
+  /**
+   * They said yes to news about the show by WhatsApp. Without it, nothing is sent to them after 24 hours.
+   */
+  optIn?: boolean | null;
+  optInAt?: string | null;
+  /**
+   * Replies in a row the bot didn’t understand. At 2 it hands over to a person.
+   */
+  misses?: number | null;
+  /**
+   * Their last message. Free-form replies are allowed for 24 hours after it.
+   */
+  lastInboundAt?: string | null;
+  /**
+   * The conversation, newest last: { at, from: them | bot | us, body }. The last 60 are kept.
+   */
+  messages?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * A reply Claude suggested, waiting for the owner’s tap in Telegram.
+   */
+  draftReply?: string | null;
+  /**
+   * What was agreed, deposit, who confirmed with the promoter.
+   */
+  notes?: string | null;
+  /**
+   * Written from the owner’s or staff’s own number; left out of the counts.
+   */
+  test?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * API keys control which collections, resources, tools, and prompts MCP clients can access
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2235,6 +2312,16 @@ export interface PayloadMcpApiKey {
      */
     update?: boolean | null;
   };
+  hqLeads?: {
+    /**
+     * Allow clients to find hq-leads.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to update hq-leads.
+     */
+    update?: boolean | null;
+  };
   promotions?: {
     /**
      * Allow clients to find promotions.
@@ -2318,6 +2405,10 @@ export interface PayloadMcpApiKey {
      * Send a message to the owner's Telegram chat, from HQ's bot (the same chat as the morning brief). Use it to hand over results when the owner asks you to: a summary, what you found, a link. Plain text, up to about 3,500 characters; put any link in the text. It goes only to the owner and cannot be pointed anywhere else. Rate limited (10 per 10 minutes). Do not send secrets or keys, and do not send unprompted.
      */
     hqSendTelegram?: boolean | null;
+    /**
+     * Suggest a WhatsApp reply to someone on the reservations line (an hq-leads row). It is saved on the lead and sent to the owner's Telegram with Send / Don't: nothing reaches the person until he taps Send. Write as Flamingo County, in the lead's language (lang), plain and short: one or two sentences, no sign-off. Only facts from lib/reservas.ts or the owner; never a price, perk, deposit or table availability the promoter hasn't confirmed, and never alcohol. WhatsApp only takes it within 24 hours of their last message (lastInboundAt); the result says if that has passed. A new draft replaces the lead's previous one.
+     */
+    hqLeadDraftReply?: boolean | null;
     /**
      * Download a public https JPEG, PNG or MP4 (up to 50 MB) into HQ media (a PNG is stored as JPEG, which Instagram requires) and return its id, for the `media` field of an hq-social-drafts document. The first media id on a draft is the cover shown in Telegram. Instagram and TikTok drafts need at least one.
      */
@@ -2663,6 +2754,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'hq-artwork-uploads';
         value: number | HqArtworkUpload;
+      } | null)
+    | ({
+        relationTo: 'hq-leads';
+        value: number | HqLead;
       } | null)
     | ({
         relationTo: 'payload-mcp-api-keys';
@@ -3615,6 +3710,31 @@ export interface HqArtworkUploadsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-leads_select".
+ */
+export interface HqLeadsSelect<T extends boolean = true> {
+  event?: T;
+  phone?: T;
+  whatsappName?: T;
+  lang?: T;
+  source?: T;
+  status?: T;
+  step?: T;
+  partySize?: T;
+  tier?: T;
+  optIn?: T;
+  optInAt?: T;
+  misses?: T;
+  lastInboundAt?: T;
+  messages?: T;
+  draftReply?: T;
+  notes?: T;
+  test?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-mcp-api-keys_select".
  */
 export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
@@ -3737,6 +3857,12 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         create?: T;
         update?: T;
       };
+  hqLeads?:
+    | T
+    | {
+        find?: T;
+        update?: T;
+      };
   promotions?:
     | T
     | {
@@ -3785,6 +3911,7 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         hqWeeklyReviewContext?: T;
         hqGrowthContext?: T;
         hqSendTelegram?: T;
+        hqLeadDraftReply?: T;
         hqAddDraftMediaFromUrl?: T;
         hqAddSiteMediaFromUrl?: T;
         hqAddSiteVideo?: T;
