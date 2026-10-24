@@ -44,6 +44,13 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
         ],
       },
       {
+        h: 'Event reservations on WhatsApp',
+        p: [
+          'For some events we take table reservations on our WhatsApp reservations line. When you write to it, we keep your WhatsApp number, the name on your WhatsApp profile, the link that sent you (an Instagram post, a story…), what you told us (how many people, which table, whether you want news about the event) and the conversation, so a person can pick it up where the menu left off.',
+          'When you ask for a table, we pass your name, phone number, party size and table to the event’s organizer so they can hold it for you. We write to you about that event only, and after it, only if you said yes to news about it.',
+        ],
+      },
+      {
         h: 'Signing in with Google',
         p: [
           'Saving events to My Week and saying you’re going need you to sign in — with Google, or with an emailed code (below). That’s what lets your week follow you between devices. When you sign in with Google, Google shares with us only the basics you approve on its screen:',
@@ -150,6 +157,13 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
           'Si tocas «Guárdalo en WhatsApp», WhatsApp abre un mensaje a nuestro número con el enlace de tu cupón, y tú decides si lo mandas. Si lo mandas, vemos tu número como en cualquier mensaje de WhatsApp; no lo añadimos al cupón.',
           'Algunas promociones son una por persona, y esas se piden por WhatsApp: nos mandas un mensaje y te contestamos con tu cupón. En esas guardamos, junto al cupón, el número de WhatsApp que lo pidió y el nombre de tu perfil de WhatsApp, para que cada número reciba un solo cupón y sepamos que la promoción llegó a gente de verdad. Solo los usamos para ese cupón, y no te escribimos de otra cosa a menos que nos lo pidas.',
           'El negocio ve cuántos cupones se tomaron y se usaron, el código y la hora de los usados, y quién de su personal marcó cada uno. En los cupones de WhatsApp también ve tu primer nombre y los últimos cuatro dígitos de tu número, nunca el número completo.',
+        ],
+      },
+      {
+        h: 'Reservas de eventos por WhatsApp',
+        p: [
+          'Para algunos eventos tomamos reservas de mesas en nuestra línea de reservas de WhatsApp. Cuando nos escribes, guardamos tu número de WhatsApp, el nombre de tu perfil, el enlace que te trajo (un post de Instagram, una historia…), lo que nos dices (cuántas personas, qué mesa, si quieres novedades del evento) y la conversación, para que una persona la siga donde la dejó el menú.',
+          'Cuando pides una mesa, le pasamos tu nombre, tu teléfono, cuántas personas son y la mesa al organizador del evento, para que te la guarde. Solo te escribimos sobre ese evento, y después de él, solo si dijiste que sí a recibir novedades.',
         ],
       },
       {

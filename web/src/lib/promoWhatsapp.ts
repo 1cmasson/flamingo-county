@@ -56,10 +56,19 @@ export function twilioSignature(authToken: string, url: string, params: URLSearc
   return createHmac('sha1', authToken).update(data, 'utf8').digest('base64')
 }
 
-/** Whether a request really is Twilio's. No auth token set: nothing is. */
-export function fromTwilio(params: URLSearchParams, signature: string | null, authToken = process.env.TWILIO_AUTH_TOKEN): boolean {
+/**
+ * Whether a request really is Twilio's. No auth token set: nothing is. `url`
+ * is the webhook it was sent to, which the signature covers: the coupon
+ * number's unless another webhook (the reservations line) says so.
+ */
+export function fromTwilio(
+  params: URLSearchParams,
+  signature: string | null,
+  authToken = process.env.TWILIO_AUTH_TOKEN,
+  url = webhookUrl(),
+): boolean {
   if (!authToken || !signature) return false
-  const expected = Buffer.from(twilioSignature(authToken, webhookUrl(), params))
+  const expected = Buffer.from(twilioSignature(authToken, url, params))
   const given = Buffer.from(signature)
   return expected.length === given.length && timingSafeEqual(expected, given)
 }
