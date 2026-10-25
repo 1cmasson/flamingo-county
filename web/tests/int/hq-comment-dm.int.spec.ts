@@ -156,24 +156,29 @@ describe('what a DM may say', () => {
 })
 
 describe('draft to Instagram media', () => {
+  const ES_CAPTION = 'Comenta CHACAL y te mandamos por DM el link pa’ reservar tu mesa'
+  const EN_CAPTION = 'Comment CHACAL and we’ll DM you the link to book your table'
   const media = [
-    { id: 'm-en', timestamp: '2026-10-25T15:50:40+0000', caption: 'Comment CHACAL and we’ll DM you…' },
-    { id: 'm-es', timestamp: '2026-10-25T15:45:30+0000', caption: 'Comenta CHACAL y te mandamos por DM…' },
+    { id: 'm-en', timestamp: '2026-10-25T15:50:40+0000', caption: EN_CAPTION + ' #miami' },
+    { id: 'm-es', timestamp: '2026-10-25T15:45:30+0000', caption: ES_CAPTION + ' #hialeah' },
     { id: 'm-old', timestamp: '2026-10-24T20:00:00+0000', caption: 'other' },
   ]
-  it('finds each of two posts five minutes apart', () => {
-    expect(matchDraftMedia({ publishAt: '2026-10-25T15:45:00.000Z', caption: 'x' }, media, new Set())?.id).toBe('m-es')
-    expect(matchDraftMedia({ publishAt: '2026-10-25T15:50:00.000Z', caption: 'x' }, media, new Set())?.id).toBe('m-en')
+  it('finds each of two posts five minutes apart, by caption', () => {
+    expect(matchDraftMedia({ publishAt: '2026-10-25T15:45:00.000Z', caption: ES_CAPTION }, media, new Set())?.id).toBe('m-es')
+    expect(matchDraftMedia({ publishAt: '2026-10-25T15:50:00.000Z', caption: EN_CAPTION }, media, new Set())?.id).toBe('m-en')
   })
-  it('tells two in the window apart by caption, and gives up when it cannot', () => {
-    const close = [
-      { id: 'a', timestamp: '2026-10-25T15:45:10+0000', caption: 'Comenta CHACAL y te mandamos' },
-      { id: 'b', timestamp: '2026-10-25T15:46:00+0000', caption: 'Comment CHACAL and we' },
-    ]
-    expect(matchDraftMedia({ publishAt: '2026-10-25T15:45:00.000Z', caption: 'Comment CHACAL and we’ll DM you' }, close, new Set())?.id).toBe('b')
-    expect(matchDraftMedia({ publishAt: '2026-10-25T15:45:00.000Z', caption: 'something else' }, close, new Set())).toBeNull()
-    expect(matchDraftMedia({ publishAt: '2026-10-25T15:45:00.000Z', caption: 'x' }, close, new Set(['a']))?.id).toBe('b')
-    expect(matchDraftMedia({ publishAt: null, caption: 'x' }, media, new Set())).toBeNull()
+  it('does not hand the Spanish reel to the English draft when Instagram ran late', () => {
+    // ES went live 3.5 minutes after its slot, 1.5 minutes before the EN slot; EN is not up yet.
+    const late = [{ id: 'm-es', timestamp: '2026-10-25T15:48:30+0000', caption: ES_CAPTION }]
+    expect(matchDraftMedia({ publishAt: '2026-10-25T15:50:00.000Z', caption: EN_CAPTION }, late, new Set())).toBeNull()
+    expect(matchDraftMedia({ publishAt: '2026-10-25T15:45:00.000Z', caption: ES_CAPTION }, late, new Set())?.id).toBe('m-es')
+  })
+  it('gives up rather than guess', () => {
+    expect(matchDraftMedia({ publishAt: '2026-10-25T15:45:00.000Z', caption: 'something else entirely' }, media, new Set())).toBeNull()
+    expect(matchDraftMedia({ publishAt: '2026-10-25T15:45:00.000Z', caption: ES_CAPTION }, media, new Set(['m-es']))).toBeNull()
+    expect(matchDraftMedia({ publishAt: '2026-10-25T15:45:00.000Z', caption: '' }, media, new Set())).toBeNull() // two in the window, nothing to tell them by
+    expect(matchDraftMedia({ publishAt: '2026-10-24T20:01:00.000Z', caption: '' }, media, new Set())?.id).toBe('m-old')
+    expect(matchDraftMedia({ publishAt: null, caption: ES_CAPTION }, media, new Set())).toBeNull()
   })
 })
 
@@ -436,11 +441,13 @@ describe('comment DMs against the database', () => {
         return Response.json({ error: { code: 10, message: `(#10) Application does not have permission for this action ${PAGE_TOKEN}` } }, { status: 403 })
       },
     }
-    const { telegram } = fake(world)
+    const { graph, telegram } = fake(world)
     await runCommentDm(payload, NOW, { rng: () => 0 })
     await runCommentDm(payload, at(5), { rng: () => 0 })
     await runCommentDm(payload, at(7), { rng: () => 0 })
-    expect(tries).toBe(1)
+    // Once with the Page token, once with the system user token (a refusal sent nothing), never again.
+    expect(tries).toBe(2)
+    expect(graph.filter((g) => g.method === 'POST').map((g) => g.auth)).toEqual([`Bearer ${PAGE_TOKEN}`, `Bearer ${TOKEN}`])
     const row = (await replies())[0]
     expect(row).toMatchObject({ status: 'manual', errorCode: '10' })
     expect(row.error).toContain('does not have permission')

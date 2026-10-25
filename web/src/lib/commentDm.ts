@@ -66,7 +66,7 @@ export const PRIVATE_REPLY_WINDOW_MS = 7 * DAY
 /** Not right at the edge: a request in flight at 6d 23h 59m could land late. */
 const WINDOW_MARGIN_MS = 15 * MIN
 /** How far a draft's publishAt and the Instagram media's timestamp may differ to be the same post. */
-export const DRAFT_MATCH_MS = 3 * MIN
+export const DRAFT_MATCH_MS = 15 * MIN
 /** Graph budget used (0–100) above which a run reads nothing more. */
 const USAGE_STOP_PCT = 80
 /** At most this many matches per Telegram alert, so its buttons stay usable. */
@@ -168,9 +168,12 @@ export function planComments(
 export const capRoom = (handledLastHour: number, cap: number | null | undefined) => Math.max(0, (cap ?? 30) - handledLastHour)
 
 /**
- * The draft's Instagram media: the account's media nearest its publishAt,
- * within three minutes. Two in that window are told apart by the caption's
- * opening; still two is no answer (the owner sets the media id by hand).
+ * The draft's Instagram media. Time alone cannot tell two cuts posted five
+ * minutes apart (Instagram's timestamp is when publishing finished, minutes
+ * after publishAt), so when the draft has a caption the media's caption must
+ * open the same way, and the nearest such media within 15 minutes wins. A
+ * draft without a caption takes the only media in the window, if there is
+ * one. No answer is safe: the owner is asked to set the media id by hand.
  */
 export function matchDraftMedia(
   draft: Pick<HqSocialDraft, 'publishAt' | 'caption'>,
@@ -179,16 +182,18 @@ export function matchDraftMedia(
 ): IgMediaLite | null {
   if (!draft.publishAt) return null
   const at = new Date(draft.publishAt).getTime()
-  const near = media.filter((m) => !taken.has(m.id) && Math.abs(new Date(m.timestamp).getTime() - at) <= DRAFT_MATCH_MS)
-  if (near.length <= 1) return near[0] ?? null
+  const gap = (m: IgMediaLite) => Math.abs(new Date(m.timestamp).getTime() - at)
+  const near = media.filter((m) => !taken.has(m.id) && gap(m) <= DRAFT_MATCH_MS).sort((a, b) => gap(a) - gap(b))
   const opening = (s: string | null | undefined) => normalize(s ?? '').replace(/\s+/g, ' ').trim().slice(0, 40)
   const mine = opening(draft.caption)
-  const same = near.filter((m) => {
-    const theirs = opening(m.caption)
-    const n = Math.min(theirs.length, mine.length)
-    return n >= 12 && theirs.slice(0, n) === mine.slice(0, n)
-  })
-  return same.length === 1 ? same[0] : null
+  if (mine.length < 12) return near.length === 1 ? near[0] : null
+  return (
+    near.find((m) => {
+      const theirs = opening(m.caption)
+      const n = Math.min(theirs.length, mine.length)
+      return n >= 12 && theirs.slice(0, n) === mine.slice(0, n)
+    }) ?? null
+  )
 }
 
 /* ------------------------------------------------------------------------ */
@@ -246,8 +251,22 @@ export async function sendPrivateReply(
   userToken: string,
 ): Promise<{ recipient_id?: string; message_id?: string }> {
   const token = account.pageToken ?? userToken
-  return graphPost(`/${account.igUserId}/messages`, { recipient: { comment_id: commentId }, message: { text } }, token, [token, userToken])
+  const secrets = [token, userToken]
+  const body = { recipient: { comment_id: commentId }, message: { text } }
+  try {
+    return await graphPost(`/${account.igUserId}/messages`, body, token, secrets)
+  } catch (err) {
+    // Meta's reference names the system user token for this setup and the Page
+    // token for Facebook Login. A refusal sent nothing, so asking once more
+    // with the other token cannot DM anyone twice.
+    if (token === userToken || !isTokenRefusal(err)) throw err
+    return graphPost(`/${account.igUserId}/messages`, body, userToken, secrets)
+  }
 }
+
+/** The token, not the message, was refused: a bad token (190) or a permission (10, 200–299), but not "outside the allowed window". */
+export const isTokenRefusal = (err: unknown) =>
+  err instanceof GraphError && (err.code === 190 || (isPermissionError(err) && err.subcode !== 2534022))
 
 /* ------------------------------------------------------------------------ */
 /* Telegram, said once                                                       */
@@ -376,6 +395,9 @@ async function resolvePosts(payload: Payload, c: HqCommentCampaign, account: Gra
           taken.add(m.id)
           verifiedMedia.set(m.id, m)
           changed = true
+          await tell(
+            `🔗 <b>Comment DMs</b> (${esc(c.name)}): draft #${draftId}${language ? ` (${language.toUpperCase()})` : ''} is ${m.permalink ? esc(m.permalink) : `media ${esc(m.id)}`}. If that's the wrong post, set its media id in the admin.`,
+          )
         } else {
           await tellThrottled(
             `unmatched:${c.id}:${draftId}`,
