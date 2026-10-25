@@ -91,6 +91,8 @@ export interface Config {
     'hq-social-drafts': HqSocialDraft;
     'hq-social-stats': HqSocialStat;
     'hq-social-comments': HqSocialComment;
+    'hq-comment-campaigns': HqCommentCampaign;
+    'hq-comment-replies': HqCommentReply;
     'hq-market-accounts': HqMarketAccount;
     'hq-market-posts': HqMarketPost;
     'hq-clicks': HqClick;
@@ -135,6 +137,8 @@ export interface Config {
     'hq-social-drafts': HqSocialDraftsSelect<false> | HqSocialDraftsSelect<true>;
     'hq-social-stats': HqSocialStatsSelect<false> | HqSocialStatsSelect<true>;
     'hq-social-comments': HqSocialCommentsSelect<false> | HqSocialCommentsSelect<true>;
+    'hq-comment-campaigns': HqCommentCampaignsSelect<false> | HqCommentCampaignsSelect<true>;
+    'hq-comment-replies': HqCommentRepliesSelect<false> | HqCommentRepliesSelect<true>;
     'hq-market-accounts': HqMarketAccountsSelect<false> | HqMarketAccountsSelect<true>;
     'hq-market-posts': HqMarketPostsSelect<false> | HqMarketPostsSelect<true>;
     'hq-clicks': HqClicksSelect<false> | HqClicksSelect<true>;
@@ -186,6 +190,7 @@ export interface Config {
       reelStats: TaskReelStats;
       reelScore: TaskReelScore;
       graphTelemetry: TaskGraphTelemetry;
+      commentDm: TaskCommentDm;
       eveningWrap: TaskEveningWrap;
       weeklyRoundup: TaskWeeklyRoundup;
       reviewReminder: TaskReviewReminder;
@@ -1594,6 +1599,128 @@ export interface HqSocialComment {
   createdAt: string;
 }
 /**
+ * Comment a keyword → we DM you. Off until you switch a campaign on here.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-comment-campaigns".
+ */
+export interface HqCommentCampaign {
+  id: number;
+  name: string;
+  /**
+   * Only you can switch this on. While it is on, HQ reads the posts’ comments every 2 minutes and DMs each matching commenter once.
+   */
+  active?: boolean | null;
+  /**
+   * Stops by itself after this.
+   */
+  endsAt?: string | null;
+  /**
+   * One word, e.g. CHACAL. Case, accents and punctuation do not matter; it must be its own word.
+   */
+  keyword: string;
+  /**
+   * The Instagram posts the keyword works on, each with the language its DM is in.
+   */
+  posts?:
+    | {
+        /**
+         * The HQ draft it was published from (finds the media id by itself).
+         */
+        draft?: (number | null) | HqSocialDraft;
+        /**
+         * Instagram media id. Filled by HQ from the draft when empty.
+         */
+        mediaId?: string | null;
+        /**
+         * Empty: the draft’s language.
+         */
+        language?: ('es' | 'en') | null;
+        /**
+         * Filled by HQ.
+         */
+        permalink?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * The DM for the Spanish post. No links, no prices, no offers.
+   */
+  dmTextEs: string;
+  /**
+   * The DM for the English post.
+   */
+  dmTextEn: string;
+  /**
+   * DM goes a random time after the comment: at least…
+   */
+  delayMinMinutes?: number | null;
+  /**
+   * …and at most this many minutes.
+   */
+  delayMaxMinutes?: number | null;
+  /**
+   * DMs per hour at most; the rest wait (and you are told).
+   */
+  hourlyCap?: number | null;
+  notes?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Keyword comments and the DM each got (or why not). Written by HQ.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-comment-replies".
+ */
+export interface HqCommentReply {
+  id: number;
+  status: 'pending' | 'sending' | 'sent' | 'manual' | 'failed' | 'skipped';
+  campaign: number | HqCommentCampaign;
+  commentId: string;
+  dedupeKey?: string | null;
+  /**
+   * Instagram handle, without @.
+   */
+  username?: string | null;
+  /**
+   * Instagram-scoped id of the commenter.
+   */
+  igUserId?: string | null;
+  language?: ('es' | 'en') | null;
+  mediaId?: string | null;
+  permalink?: string | null;
+  commentText?: string | null;
+  /**
+   * Exactly what is (or was) sent.
+   */
+  dmText?: string | null;
+  commentedAt?: string | null;
+  scheduledAt?: string | null;
+  /**
+   * When it was sent, or handed to you.
+   */
+  handledAt?: string | null;
+  /**
+   * Meta’s id for the DM.
+   */
+  messageId?: string | null;
+  recipientId?: string | null;
+  skipReason?: string | null;
+  error?: string | null;
+  /**
+   * Graph code/subcode.
+   */
+  errorCode?: string | null;
+  alertMessageId?: number | null;
+  /**
+   * A manual DM reached your Telegram.
+   */
+  ownerNotified?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Instagram accounts to compare against (public posts via Business Discovery). Captions and public counts only.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2126,6 +2253,26 @@ export interface PayloadMcpApiKey {
      */
     find?: boolean | null;
   };
+  hqCommentCampaigns?: {
+    /**
+     * Allow clients to find hq-comment-campaigns.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to create hq-comment-campaigns.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update hq-comment-campaigns.
+     */
+    update?: boolean | null;
+  };
+  hqCommentReplies?: {
+    /**
+     * Allow clients to find hq-comment-replies.
+     */
+    find?: boolean | null;
+  };
   hqMarketAccounts?: {
     /**
      * Allow clients to find hq-market-accounts.
@@ -2495,6 +2642,7 @@ export interface PayloadJob {
           | 'reelStats'
           | 'reelScore'
           | 'graphTelemetry'
+          | 'commentDm'
           | 'eveningWrap'
           | 'weeklyRoundup'
           | 'reviewReminder';
@@ -2538,6 +2686,7 @@ export interface PayloadJob {
         | 'reelStats'
         | 'reelScore'
         | 'graphTelemetry'
+        | 'commentDm'
         | 'eveningWrap'
         | 'weeklyRoundup'
         | 'reviewReminder'
@@ -2656,6 +2805,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'hq-social-comments';
         value: number | HqSocialComment;
+      } | null)
+    | ({
+        relationTo: 'hq-comment-campaigns';
+        value: number | HqCommentCampaign;
+      } | null)
+    | ({
+        relationTo: 'hq-comment-replies';
+        value: number | HqCommentReply;
       } | null)
     | ({
         relationTo: 'hq-market-accounts';
@@ -3460,6 +3617,62 @@ export interface HqSocialCommentsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-comment-campaigns_select".
+ */
+export interface HqCommentCampaignsSelect<T extends boolean = true> {
+  name?: T;
+  active?: T;
+  endsAt?: T;
+  keyword?: T;
+  posts?:
+    | T
+    | {
+        draft?: T;
+        mediaId?: T;
+        language?: T;
+        permalink?: T;
+        id?: T;
+      };
+  dmTextEs?: T;
+  dmTextEn?: T;
+  delayMinMinutes?: T;
+  delayMaxMinutes?: T;
+  hourlyCap?: T;
+  notes?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-comment-replies_select".
+ */
+export interface HqCommentRepliesSelect<T extends boolean = true> {
+  status?: T;
+  campaign?: T;
+  commentId?: T;
+  dedupeKey?: T;
+  username?: T;
+  igUserId?: T;
+  language?: T;
+  mediaId?: T;
+  permalink?: T;
+  commentText?: T;
+  dmText?: T;
+  commentedAt?: T;
+  scheduledAt?: T;
+  handledAt?: T;
+  messageId?: T;
+  recipientId?: T;
+  skipReason?: T;
+  error?: T;
+  errorCode?: T;
+  alertMessageId?: T;
+  ownerNotified?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "hq-market-accounts_select".
  */
 export interface HqMarketAccountsSelect<T extends boolean = true> {
@@ -3718,6 +3931,18 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         find?: T;
       };
   hqSocialComments?:
+    | T
+    | {
+        find?: T;
+      };
+  hqCommentCampaigns?:
+    | T
+    | {
+        find?: T;
+        create?: T;
+        update?: T;
+      };
+  hqCommentReplies?:
     | T
     | {
         find?: T;
@@ -4344,6 +4569,21 @@ export interface TaskGraphTelemetry {
     comments?: number | null;
     marketAccounts?: number | null;
     marketPosts?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskCommentDm".
+ */
+export interface TaskCommentDm {
+  input?: unknown;
+  output: {
+    campaigns?: number | null;
+    posts?: number | null;
+    matched?: number | null;
+    sent?: number | null;
+    manual?: number | null;
+    skipped?: number | null;
   };
 }
 /**

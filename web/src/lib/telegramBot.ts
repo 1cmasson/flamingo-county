@@ -3,6 +3,7 @@ import type { Payload } from 'payload'
 import { buildBrief } from './brief'
 import { chatConfigured, chatReply } from './chat'
 import { requestReview } from './growth'
+import { parseNoDmCallback, skipCommentDm } from './commentDm'
 import { decideEmail, parseEmailCallback } from './emailApprovals'
 import { decideDraft, parseDraftCallback } from './hq'
 import { answerCallback, editMessage, esc, ownerChatId, resolveButtons, sendMessage } from './telegram'
@@ -148,6 +149,15 @@ export async function handleUpdate(payload: Payload, update: TelegramUpdate): Pr
       await answerCallback(cb.id, spend.action === 'approve' ? 'Approving…' : 'Declining…')
       const outcome = await decideSpend(payload, spend.id, spend.action)
       await resolveButtons(cb.message.chat.id, cb.message.message_id, outcome)
+      return
+    }
+
+    // "No DM" on a keyword-comment alert: that commenter gets nothing.
+    const noDm = parseNoDmCallback(cb.data)
+    if (noDm !== null && cb.message) {
+      await answerCallback(cb.id, 'OK, no DM…')
+      const { outcome, keep } = await skipCommentDm(payload, noDm, cb.message.message_id)
+      await resolveButtons(cb.message.chat.id, cb.message.message_id, outcome, keep)
       return
     }
 

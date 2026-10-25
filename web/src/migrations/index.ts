@@ -43,6 +43,7 @@ import * as migration_20261021_035949_graph_telemetry_2 from './20261021_035949_
 import * as migration_20261021_133014_reel_now from './20261021_133014_reel_now';
 import * as migration_20261021_162843_promo_coupons from './20261021_162843_promo_coupons';
 import * as migration_20261024_154336_email_approvals from './20261024_154336_email_approvals';
+import * as migration_20261025_154356_comment_dm from './20261025_154356_comment_dm';
 
 export const migrations = [
   {
@@ -268,6 +269,11 @@ export const migrations = [
   {
     up: migration_20261024_154336_email_approvals.up,
     down: migration_20261024_154336_email_approvals.down,
-    name: '20261024_154336_email_approvals'
+    name: '20261024_154336_email_approvals',
+  },
+  {
+    up: migration_20261025_154356_comment_dm.up,
+    down: migration_20261025_154356_comment_dm.down,
+    name: '20261025_154356_comment_dm'
   },
 ];
