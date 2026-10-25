@@ -186,6 +186,35 @@ export async function graphGet<T>(path: string, params: Record<string, string>, 
   return body as T
 }
 
+/**
+ * One POST with a JSON body, the same way `graphGet` reads: the token only in
+ * the Authorization header, every secret scrubbed from what Graph echoes back.
+ * The only writer today is the comment DM (lib/commentDm.ts), which calls it
+ * once per comment and never retries.
+ */
+export async function graphPost<T>(path: string, body: Record<string, unknown>, token: string, secrets: string[] = [token]): Promise<T> {
+  const res = await fetch(`${BASE}${path}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(20_000),
+  })
+  noteUsage(res)
+  const json = (await res.json().catch(() => null)) as {
+    error?: { message?: string; code?: number; error_subcode?: number }
+  } | null
+  if (!res.ok || !json || json.error) {
+    const message = scrub(json?.error?.message ?? `HTTP ${res.status}`, secrets)
+    throw new GraphError(
+      `Graph POST ${path.split('/').slice(0, 3).join('/')}: ${message}`,
+      res.status,
+      json?.error?.code,
+      json?.error?.error_subcode,
+    )
+  }
+  return json as T
+}
+
 export type Paged<T> = { data?: T[]; paging?: { cursors?: { after?: string } } }
 
 /* ------------------------------------------------------------------------ */

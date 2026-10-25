@@ -117,11 +117,13 @@ export async function resolveButtons(
   chatId: string | number,
   messageId: number,
   outcome: string,
+  keep: InlineKeyboard = { inline_keyboard: [] },
 ): Promise<void> {
+  // `keep`: the buttons still standing, when one message carries several choices.
   await call('editMessageReplyMarkup', {
     chat_id: chatId,
     message_id: messageId,
-    reply_markup: { inline_keyboard: [] },
+    reply_markup: keep,
   }).catch(() => undefined) // already edited — a double tap, not an error
   await call('sendMessage', {
     chat_id: chatId,

@@ -29,6 +29,8 @@ import { HqMedia } from './collections/HqMedia'
 import { HqSocialDrafts } from './collections/HqSocialDrafts'
 import { HqSocialStats } from './collections/HqSocialStats'
 import { HqSocialComments } from './collections/HqSocialComments'
+import { HqCommentCampaigns } from './collections/HqCommentCampaigns'
+import { HqCommentReplies } from './collections/HqCommentReplies'
 import { HqMarketAccounts } from './collections/HqMarketAccounts'
 import { HqMarketPosts } from './collections/HqMarketPosts'
 import { HqClicks } from './collections/HqClicks'
@@ -41,6 +43,7 @@ import { HqUses } from './collections/HqUses'
 import { HqExperiments } from './collections/HqExperiments'
 import { HqReelReviews } from './collections/HqReelReviews'
 import { HqArtworkUploads } from './collections/HqArtworkUploads'
+import { commentDm } from './jobs/commentDm'
 import { eveningWrap } from './jobs/eveningWrap'
 import { graphTelemetry } from './jobs/graphTelemetry'
 import { morningBrief } from './jobs/morningBrief'
@@ -107,6 +110,8 @@ export default buildConfig({
     HqSocialDrafts,
     HqSocialStats,
     HqSocialComments,
+    HqCommentCampaigns,
+    HqCommentReplies,
     HqMarketAccounts,
     HqMarketPosts,
     HqClicks,
@@ -225,6 +230,18 @@ export default buildConfig({
           description:
             'Comments on our own Instagram reels (last 7 days, hourly), from Meta’s Graph API: commentId, mediaId, permalink, commentedAt, text, likeCount, fromUs. No usernames are kept; reply by commentId. `tags` is for tagging answers (e.g. which story to tell next).',
         },
+        // Claude may set a campaign up but never start it: `active` is
+        // humanOnly, and a wording change over MCP switches it off.
+        'hq-comment-campaigns': {
+          enabled: { find: true, create: true, update: true },
+          description:
+            'Comment-keyword DM campaigns ("Comment CHACAL and we\u2019ll DM you"): name, keyword (one word; case/accents ignored), posts (each a draft id from hq-social-drafts and/or an Instagram mediaId, plus language es/en; HQ fills mediaId from the draft after it publishes), dmTextEs / dmTextEn (no links, prices or offers), delayMinMinutes/delayMaxMinutes (5/12), hourlyCap (30), endsAt. `active` cannot be set over MCP: only the owner switches a campaign on, in the admin. Editing keyword, posts or DM text of an active campaign switches it off. Never delete.',
+        },
+        'hq-comment-replies': {
+          enabled: { find: true },
+          description:
+            'One row per keyword comment a campaign caught: username (handle), igUserId, language, commentText, dmText, scheduledAt, handledAt, status (pending = DM due; sent = Meta accepted it; manual = handed to the owner to paste, `error` says why; failed; skipped = same person again, owner tapped No DM, or past 7 days). Written by the commentDm job only.',
+        },
         'hq-market-accounts': {
           enabled: { find: true, create: true, update: true },
           description:
@@ -321,7 +338,8 @@ export default buildConfig({
   /**
    * The HQ jobs queue — the morning brief, the evening wrap, the social stats
    * collector, the Graph reel stats collector, the 72-hour reel scorer, the
-   * Graph account/audience/comments/market collector, the Monday roundup and
+   * Graph account/audience/comments/market collector, the comment-keyword DMs
+   * (every 2 minutes, lib/commentDm.ts), the Monday roundup and
    * the Monday growth review reminder (src/jobs).
    *
    * One in-process runner, checking every minute. That is safe here and only
@@ -334,7 +352,7 @@ export default buildConfig({
    * admin, and a quiet night would skip the brief.
    */
   jobs: {
-    tasks: [morningBrief, socialStats, reelStats, reelScore, graphTelemetry, eveningWrap, weeklyRoundup, reviewReminder],
+    tasks: [morningBrief, socialStats, reelStats, reelScore, graphTelemetry, commentDm, eveningWrap, weeklyRoundup, reviewReminder],
     autoRun: [{ cron: '* * * * *', queue: 'hq' }],
     jobsCollectionOverrides: ({ defaultJobsCollection }) => ({
       ...defaultJobsCollection,
