@@ -75,7 +75,13 @@ const pick = (m: Record<string, number>, ...keys: string[]) => {
   return null
 }
 
-/** Share of plays still watching at a few moments, from Facebook's retention curve (segment keys are seconds for short reels). */
+/**
+ * Share of plays still watching at a few moments, from Facebook's retention
+ * curve. Its keys are evenly spaced points across the reel (0…40 for a 70 s
+ * and a 106 s reel alike, with the end-card drop at 38–40), not seconds, so a
+ * moment in seconds needs the length; without it only the end is given. The
+ * same reading as `retentionSummary` in lib/reelScore.ts.
+ */
 export function retentionAt(curve: unknown, lengthSec: number | null): Record<string, number> | null {
   if (!curve || typeof curve !== 'object') return null
   const pts = Object.entries(curve as Record<string, unknown>)
@@ -85,15 +91,19 @@ export function retentionAt(curve: unknown, lengthSec: number | null): Record<st
   if (!pts.length) return null
   const last = pts[pts.length - 1][0]
   const at = (s: number) => {
-    const p = pts.filter(([k]) => k <= s).at(-1)
+    const key = lengthSec && last ? (s / lengthSec) * last : null
+    if (key === null) return null
+    const p = pts.filter(([k]) => k <= key).at(-1)
     return p ? round(p[1] * 100, 1) : null
   }
   const out: Record<string, number> = {}
   const put = (key: string, v: number | null) => {
     if (v !== null) out[key] = v
   }
-  for (const s of [3, 15, 30]) if (s <= last) put(`${s}s`, at(s))
-  if (lengthSec && lengthSec / 2 <= last) put('half', at(lengthSec / 2))
+  if (lengthSec) {
+    for (const s of [3, 15, 20, 30]) if (s <= lengthSec) put(`${s}s`, at(s))
+    put('half', at(lengthSec / 2))
+  }
   out.last = round(pts[pts.length - 1][1] * 100, 1)
   return out
 }
@@ -103,7 +113,7 @@ export function summarize(platform: 'instagram' | 'facebook', r: Reading, length
   const m = r.metrics
   const ig = platform === 'instagram'
   const avgMs = ig ? pick(m, 'ig_reels_avg_watch_time') : pick(m, 'post_video_avg_time_watched')
-  const reach = ig ? pick(m, 'reach') : pick(m, 'post_impressions_unique')
+  const reach = ig ? pick(m, 'reach') : pick(m, 'post_total_media_view_unique', 'post_impressions_unique')
   const shares = ig ? pick(m, 'shares') : pick(m, 'post_video_social_actions.SHARE', 'post_video_social_actions.share')
   const avgWatchSec = avgMs === null ? null : round(avgMs / 1000, 1)
   return {
