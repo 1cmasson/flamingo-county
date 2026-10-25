@@ -28,8 +28,8 @@ const MIN = 60_000
 const HOUR = 60 * MIN
 const DAY = 24 * HOUR
 
-const ES = '¡Hola! Gracias por comentar 🦩 ¿Para cuántas personas quieres la mesa el 31?'
-const EN = 'Hi! Thanks for commenting 🦩 How many people is the table for on the 31st?'
+const ES = '¡Hola! Gracias por comentar 🦩 ¿Quieres reservar una mesa para Chacal en Fin de Año?'
+const EN = "Hi! Thanks for commenting 🦩 Would you like to reserve a table for Chacal on New Year's Eve?"
 
 /* ------------------------------------------------------------------------ */
 /* Pure rules                                                                */
