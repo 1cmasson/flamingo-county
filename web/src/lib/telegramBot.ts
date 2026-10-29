@@ -3,7 +3,7 @@ import type { Payload } from 'payload'
 import { buildBrief } from './brief'
 import { chatConfigured, chatReply } from './chat'
 import { requestReview } from './growth'
-import { decideEmail, parseEmailCallback } from './emailApprovals'
+import { cancelEmail, decideEmail, emailOutcomeKeyboard, parseEmailCallback } from './emailApprovals'
 import { decideDraft, parseDraftCallback } from './hq'
 import { answerCallback, editMessage, esc, ownerChatId, resolveButtons, sendMessage } from './telegram'
 import { decidePublish, parsePublishCallback } from './publishRequests'
@@ -153,9 +153,11 @@ export async function handleUpdate(payload: Payload, update: TelegramUpdate): Pr
 
     const email = parseEmailCallback(cb.data)
     if (email && cb.message) {
-      await answerCallback(cb.id, email.action === 'send' ? 'Sending…' : 'OK, not sending…')
-      const outcome = await decideEmail(payload, email.id, email.action)
-      await resolveButtons(cb.message.chat.id, cb.message.message_id, outcome)
+      await answerCallback(cb.id, { send: 'On it…', decline: 'OK, not sending…', cancel: 'Cancelling…' }[email.action])
+      const outcome =
+        email.action === 'cancel' ? await cancelEmail(payload, email.id) : await decideEmail(payload, email.id, email.action)
+      // A scheduled email keeps a Cancel button until it goes out.
+      await resolveButtons(cb.message.chat.id, cb.message.message_id, outcome, await emailOutcomeKeyboard(payload, email.id))
       return
     }
 

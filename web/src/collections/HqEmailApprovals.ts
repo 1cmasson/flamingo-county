@@ -8,7 +8,8 @@ import { humanOnly, staffOnly } from '../fields/shared'
  * send. Claude files the whole email here (`hqRequestEmail`); the owner gets
  * every word of it in Telegram — recipients, subject, body, attachments — and
  * taps Send or Don't send. On Send, HQ itself sends exactly what is stored
- * here, through Resend. Claude never sends; a local hook
+ * here, through Resend. An email filed with a send time is scheduled by the
+ * tap instead, and can be cancelled from Telegram until it goes out. Claude never sends; a local hook
  * (~/.claude/hooks/email-gate.py) blocks the other ways it could.
  * See lib/emailApprovals.ts.
  *
@@ -36,7 +37,9 @@ export const HqEmailApprovals: CollectionConfig = {
       options: [
         { label: 'Waiting for you', value: 'pending' },
         { label: 'Sending', value: 'sending' },
+        { label: 'Scheduled (goes out at the send time)', value: 'scheduled' },
         { label: 'Sent', value: 'sent' },
+        { label: 'Cancelled before it went out', value: 'cancelled' },
         { label: "Don't send", value: 'declined' },
         { label: 'Failed (nothing went out)', value: 'failed' },
         { label: 'Expired', value: 'expired' },
@@ -61,6 +64,8 @@ export const HqEmailApprovals: CollectionConfig = {
       admin: { readOnly: true },
     },
     { name: 'why', type: 'text', access: humanOnly, admin: { readOnly: true } },
+    // When it goes out. Empty means on the tap; set, the tap schedules it and Resend holds it until then.
+    { name: 'sendAt', type: 'date', access: humanOnly, admin: { readOnly: true, position: 'sidebar' } },
     { name: 'expiresAt', type: 'date', access: humanOnly, admin: { readOnly: true, position: 'sidebar' } },
     { name: 'decidedAt', type: 'date', access: humanOnly, admin: { readOnly: true, position: 'sidebar' } },
     { name: 'sentAt', type: 'date', access: humanOnly, admin: { readOnly: true, position: 'sidebar' } },

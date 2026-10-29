@@ -117,6 +117,8 @@ export async function resolveButtons(
   chatId: string | number,
   messageId: number,
   outcome: string,
+  /** Buttons under the outcome itself, e.g. Cancel under a scheduled email. */
+  keyboard?: InlineKeyboard,
 ): Promise<void> {
   await call('editMessageReplyMarkup', {
     chat_id: chatId,
@@ -128,6 +130,7 @@ export async function resolveButtons(
     text: clip(outcome, MESSAGE_LIMIT),
     parse_mode: 'HTML',
     reply_parameters: { message_id: messageId, allow_sending_without_reply: true },
+    ...(keyboard ? { reply_markup: keyboard } : {}),
   })
 }
 

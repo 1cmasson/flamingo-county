@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { createLocalReq, getPayload, type Payload, type PayloadRequest } from 'payload'
 import config from '@/payload.config'
 
-import { decideEmail, emailStatus, parseEmailCallback, renderEmail, requestEmail } from '@/lib/emailApprovals'
+import { cancelEmail, decideEmail, emailStatus, parseEmailCallback, renderEmail, requestEmail } from '@/lib/emailApprovals'
 import { handleUpdate } from '@/lib/telegramBot'
 import type { User } from '@/payload-types'
 
@@ -11,6 +11,7 @@ describe('email approval helpers', () => {
   it('parses only its own buttons', () => {
     expect(parseEmailCallback('em:a:7')).toEqual({ action: 'send', id: 7 })
     expect(parseEmailCallback('em:d:7')).toEqual({ action: 'decline', id: 7 })
+    expect(parseEmailCallback('em:c:7')).toEqual({ action: 'cancel', id: 7 })
     expect(parseEmailCallback('sp:a:7')).toBeNull()
     expect(parseEmailCallback('em:x:7')).toBeNull()
   })
@@ -100,7 +101,7 @@ describe('emails go out only after the owner taps Send', () => {
     if (user) await payload.delete({ collection: 'users', id: user.id, overrideAccess: true })
   })
 
-  const tap = (id: number, action: 'a' | 'd' = 'a', from = OWNER) =>
+  const tap = (id: number, action: 'a' | 'd' | 'c' = 'a', from = OWNER) =>
     handleUpdate(payload, {
       callback_query: { id: 'cb', from: { id: from }, data: `em:${action}:${id}`, message: { chat: { id: from }, message_id: 1 } },
     })
@@ -188,6 +189,66 @@ describe('emails go out only after the owner taps Send', () => {
     const svc = fakeServices({ telegramDown: true })
     await expect(requestEmail(payload, EMAIL)).rejects.toThrow(/Could not reach the owner/)
     expect(svc.emails()).toHaveLength(0)
+  })
+
+  describe('with a send time, the tap schedules instead of sending', () => {
+    const inHours = (h: number) => new Date(Date.now() + h * 3_600_000).toISOString()
+    const keyboardOf = (s: { body: Record<string, unknown> }) =>
+      (s.body.reply_markup as { inline_keyboard: { text: string; callback_data: string }[][] } | undefined)?.inline_keyboard
+
+    it('shows the send time and a Schedule button, and the tap hands it to Resend to hold', async () => {
+      const svc = fakeServices()
+      const sendAt = inHours(18)
+      const { requestId, expiresAt } = await requestEmail(payload, { ...EMAIL, sendAt })
+      const msg = svc.messages()[0]
+      expect(msg).toContain('Schedule this email?')
+      expect(msg).toContain('🕘 Goes out: <b>')
+      expect(keyboardOf(svc.sent.find((s) => s.method === 'sendMessage')!)![0][0].text).toMatch(/^🕘 Schedule for /)
+      expect(new Date(expiresAt!).getTime()).toBeLessThan(new Date(sendAt).getTime())
+
+      await tap(requestId)
+      expect(await status(requestId)).toBe('scheduled')
+      const [email] = svc.emails()
+      expect(email.scheduled_at).toBe(sendAt)
+      expect(email.to).toEqual(['mfernandez@example.com'])
+      expect(svc.messages().at(-1)).toMatch(/Scheduled for/)
+      const cancel = keyboardOf(svc.sent.filter((s) => s.method === 'sendMessage').at(-1)!)
+      expect(cancel?.[0][0].callback_data).toBe(`em:c:${requestId}`)
+
+      expect(await emailStatus(payload, requestId)).toMatchObject({ status: 'scheduled', sendAt })
+      expect(await emailStatus(payload, requestId, new Date(Date.now() + 19 * 3_600_000))).toMatchObject({ status: 'sent', sentAt: sendAt })
+      expect(await decideEmail(payload, requestId, 'send')).toMatch(/already scheduled/)
+      expect(svc.emails()).toHaveLength(1)
+    })
+
+    it('Cancel stops it before the send time, once', async () => {
+      const svc = fakeServices()
+      const { requestId } = await requestEmail(payload, { ...EMAIL, sendAt: inHours(3) })
+      await tap(requestId)
+      await tap(requestId, 'c')
+      expect(await status(requestId)).toBe('cancelled')
+      expect(svc.sent.filter((s) => s.url.endsWith('/emails/re_123/cancel'))).toHaveLength(1)
+      expect(svc.messages().at(-1)).toMatch(/Cancelled/)
+      await tap(requestId, 'c')
+      expect(svc.messages().at(-1)).toMatch(/nothing to cancel/)
+      expect(svc.sent.filter((s) => s.url.endsWith('/cancel'))).toHaveLength(1)
+    })
+
+    it('a Cancel after the send time says it already went out', async () => {
+      fakeServices()
+      const { requestId } = await requestEmail(payload, { ...EMAIL, sendAt: inHours(2) })
+      await tap(requestId)
+      expect(await cancelEmail(payload, requestId, new Date(Date.now() + 3 * 3_600_000))).toMatch(/already went out/)
+      expect(await status(requestId)).toBe('scheduled')
+    })
+
+    it('refuses a send time without a time zone, too soon or too far out', async () => {
+      fakeServices()
+      await expect(requestEmail(payload, { ...EMAIL, sendAt: '2026-10-30T09:30:00' })).rejects.toThrow(/time zone/)
+      await expect(requestEmail(payload, { ...EMAIL, sendAt: inHours(0.01) })).rejects.toThrow(/less than 5 minutes/)
+      await expect(requestEmail(payload, { ...EMAIL, sendAt: inHours(24 * 31) })).rejects.toThrow(/more than 30 days/)
+      expect((await payload.find({ collection: 'hq-email-approvals', overrideAccess: true })).totalDocs).toBe(0)
+    })
   })
 
   it('MCP can’t approve, edit or create a request', async () => {
