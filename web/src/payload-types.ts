@@ -1745,7 +1745,7 @@ export interface HqSpendApproval {
  */
 export interface HqEmailApproval {
   id: number;
-  status: 'pending' | 'sending' | 'sent' | 'declined' | 'failed' | 'expired';
+  status: 'pending' | 'sending' | 'scheduled' | 'sent' | 'cancelled' | 'declined' | 'failed' | 'expired';
   to: string;
   cc?: string | null;
   subject: string;
@@ -1755,6 +1755,7 @@ export interface HqEmailApproval {
   references?: string | null;
   attachments?: (number | HqMedia)[] | null;
   why?: string | null;
+  sendAt?: string | null;
   expiresAt?: string | null;
   decidedAt?: string | null;
   sentAt?: string | null;
@@ -2404,11 +2405,11 @@ export interface PayloadMcpApiKey {
      */
     hqRedeemSpendApproval?: boolean | null;
     /**
-     * The only way an email goes out from hola@flamingocounty.com. Files the whole email; the owner reads every word of it in Telegram (recipients, subject, body, the quote, attachments) and taps Send or Don't send. On Send, HQ sends exactly this, once, through Resend, with a blind copy to hola@. Write the body as plain text (blank line between paragraphs); the logo footer is added. For a reply, pass the original's Message-ID as inReplyTo (Zoho: More → Show original) so it threads, and the earlier message as quote. Nothing can be changed after filing: to fix a word, file a new one. Refused if it can't fit in one Telegram message. Check with hqEmailStatus.
+     * The only way an email goes out from hola@flamingocounty.com. Files the whole email; the owner reads every word of it in Telegram (recipients, subject, body, the quote, attachments) and taps Send or Don't send. On Send, HQ sends exactly this, once, through Resend, with a blind copy to hola@. To send it later ("send it tomorrow at 9:30"), pass sendAt: his tap then schedules it instead of sending, he can cancel it from Telegram until then, and it goes out at that time. Write the body as plain text (blank line between paragraphs); the logo footer is added. For a reply, pass the original's Message-ID as inReplyTo (Zoho: More → Show original) so it threads, and the earlier message as quote. Nothing can be changed after filing: to fix a word, file a new one. Refused if it can't fit in one Telegram message. Check with hqEmailStatus.
      */
     hqRequestEmail?: boolean | null;
     /**
-     * Where an email request stands: pending, sending, sent, declined (he said don't send), failed (with the error) or expired.
+     * Where an email request stands: pending, sending, scheduled (approved, goes out at sendAt), sent, cancelled (he stopped a scheduled one), declined (he said don't send), failed (with the error) or expired.
      */
     hqEmailStatus?: boolean | null;
   };
@@ -3564,6 +3565,7 @@ export interface HqEmailApprovalsSelect<T extends boolean = true> {
   references?: T;
   attachments?: T;
   why?: T;
+  sendAt?: T;
   expiresAt?: T;
   decidedAt?: T;
   sentAt?: T;

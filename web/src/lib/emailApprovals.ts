@@ -5,7 +5,7 @@ import type { Payload } from 'payload'
 import { hqMediaDir } from '../collections/HqMedia'
 import type { HqEmailApproval } from '../payload-types'
 import { recordEvent } from './hq'
-import { EMAIL_FROM, EMAIL_REPLY_TO, sendEmail, type EmailAttachment } from './resend'
+import { cancelScheduledEmail, EMAIL_FROM, EMAIL_REPLY_TO, sendEmail, type EmailAttachment } from './resend'
 import { esc, MESSAGE_LIMIT, sendMessage, telegramConfigured, type InlineKeyboard } from './telegram'
 
 /**
@@ -18,6 +18,11 @@ import { esc, MESSAGE_LIMIT, sendMessage, telegramConfigured, type InlineKeyboar
  *      at filing, so he never approves text he didn't see.
  *   3. On Send, HQ sends exactly the stored record through Resend, from hola@,
  *      with a blind copy to hola@ so it lands in the Zoho inbox for the record.
+ *   4. Approving and sending are separate when Claude files a send time
+ *      (`sendAt`, owner 2026-10-29): the button reads "Schedule for Fri, Oct 30,
+ *      9:30 AM", the tap hands the email to Resend to hold until then
+ *      (pending → sending → scheduled), and a Cancel button stays under it
+ *      until it goes out.
  *
  * The tap is the permission: the webhook only acts for the owner's own chat,
  * `hq-email-approvals` is not in the MCP plugin's list and its fields are
@@ -35,18 +40,55 @@ const EMAIL_RX = /^[^\s@<>,;"]+@[^\s@<>,;"]+\.[a-z]{2,}$/i
 
 const FOOTER_LOGO = 'https://flamingocounty.com/uploads/flamingo-city-favicon-512.png'
 
-const keyboard = (id: number): InlineKeyboard => ({
+// A send time: at least a few minutes out (time to read and tap), at most what Resend will hold.
+const MIN_LEAD_MS = 5 * 60_000
+const MAX_LEAD_MS = 30 * 24 * 3_600_000
+// The owner reads times in Miami.
+const TIME_ZONE = 'America/New_York'
+
+/** "Fri, Oct 30, 9:30 AM", in Miami time. */
+export function whenText(iso: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: TIME_ZONE,
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(iso))
+}
+
+const keyboard = (id: number, sendAt?: string | null): InlineKeyboard => ({
   inline_keyboard: [
     [
-      { text: '✅ Send it', callback_data: `em:a:${id}` },
+      { text: sendAt ? `🕘 Schedule for ${whenText(sendAt)}` : '✅ Send it', callback_data: `em:a:${id}` },
       { text: "✖️ Don't send", callback_data: `em:d:${id}` },
     ],
   ],
 })
 
-export function parseEmailCallback(data: string | undefined): { action: 'send' | 'decline'; id: number } | null {
-  const m = /^em:([ad]):(\d+)$/.exec(data ?? '')
-  return m ? { action: m[1] === 'a' ? 'send' : 'decline', id: Number(m[2]) } : null
+const cancelKeyboard = (id: number): InlineKeyboard => ({
+  inline_keyboard: [[{ text: '↩️ Cancel this email', callback_data: `em:c:${id}` }]],
+})
+
+const ACTIONS = { a: 'send', d: 'decline', c: 'cancel' } as const
+
+export function parseEmailCallback(data: string | undefined): { action: 'send' | 'decline' | 'cancel'; id: number } | null {
+  const m = /^em:([adc]):(\d+)$/.exec(data ?? '')
+  return m ? { action: ACTIONS[m[1] as keyof typeof ACTIONS], id: Number(m[2]) } : null
+}
+
+/** A send time from Claude: needs its time zone, and must be one Resend can hold. */
+function parseSendAt(raw: string | undefined, now: Date): string | undefined {
+  const s = raw?.trim()
+  if (!s) return undefined
+  const t = new Date(s)
+  if (!/(Z|[+-]\d{2}:?\d{2})$/i.test(s) || Number.isNaN(t.getTime())) {
+    throw new Error(`sendAt: give a date and time with its time zone, e.g. "2026-10-30T09:30:00-04:00" for 9:30 AM in Miami. Got "${s}".`)
+  }
+  if (t.getTime() < now.getTime() + MIN_LEAD_MS) throw new Error('sendAt is less than 5 minutes away. Leave it out to send on the tap.')
+  if (t.getTime() > now.getTime() + MAX_LEAD_MS) throw new Error('sendAt is more than 30 days away, longer than Resend can hold an email.')
+  return t.toISOString()
 }
 
 function addresses(raw: string | string[] | undefined, what: string): string[] {
@@ -74,13 +116,14 @@ async function loadAttachments(payload: Payload, ids: unknown[]): Promise<Attach
 
 /** The Telegram message: the whole email, exactly as it will go out. */
 export function preview(
-  r: Pick<HqEmailApproval, 'id' | 'to' | 'cc' | 'subject' | 'body' | 'quote' | 'inReplyTo' | 'why'>,
+  r: Pick<HqEmailApproval, 'id' | 'to' | 'cc' | 'subject' | 'body' | 'quote' | 'inReplyTo' | 'why' | 'sendAt'>,
   attachments: Attachment[],
 ): string {
   return [
-    `<b>✉️ Send this email? #${r.id}</b>`,
+    `<b>✉️ ${r.sendAt ? 'Schedule' : 'Send'} this email? #${r.id}</b>`,
     ...(r.why ? [`<i>${esc(r.why)}</i>`] : []),
     '',
+    ...(r.sendAt ? [`🕘 Goes out: <b>${whenText(r.sendAt)}</b> (Miami time)`] : []),
     `From: ${esc(EMAIL_FROM)}`,
     `To: <b>${esc(r.to)}</b>`,
     ...(r.cc ? [`Cc: <b>${esc(r.cc)}</b>`] : []),
@@ -93,7 +136,9 @@ export function preview(
     '<i>+ the Flamingo County logo footer</i>',
     ...(r.quote ? ['', '<i>Quoted underneath:</i>', `<blockquote expandable>${esc(r.quote)}</blockquote>`] : []),
     '',
-    '<i>Sends once, from hola@, only when you tap Send. Expires in 24 hours.</i>',
+    r.sendAt
+      ? '<i>Goes out once, from hola@, at that time, only if you tap Schedule. You can cancel it until then.</i>'
+      : '<i>Sends once, from hola@, only when you tap Send. Expires in 24 hours.</i>',
   ].join('\n')
 }
 
@@ -138,6 +183,8 @@ export type EmailInput = {
   references?: string
   attachmentIds?: number[]
   why?: string
+  /** When it goes out, ISO 8601 with its time zone. Left out, it goes on the owner's tap. */
+  sendAt?: string
 }
 
 /** File an email for the owner. Sends nothing by itself. */
@@ -150,6 +197,7 @@ export async function requestEmail(payload: Payload, input: EmailInput, now: Dat
   const body = (input.body ?? '').trim()
   if (!subject) throw new Error('Give it a subject.')
   if (!body) throw new Error('Write the email.')
+  const sendAt = parseSendAt(input.sendAt, now)
   if (!telegramConfigured()) throw new Error('Telegram is not configured, so the owner cannot be asked. Nothing was filed.')
 
   const attachments = await loadAttachments(payload, input.attachmentIds ?? [])
@@ -165,6 +213,7 @@ export async function requestEmail(payload: Payload, input: EmailInput, now: Dat
     inReplyTo: input.inReplyTo?.trim() || undefined,
     references: input.references?.trim() || undefined,
     why: input.why?.trim().slice(0, 200) || undefined,
+    sendAt,
   }
   // Check the size before filing: he must see all of it, and Telegram takes 4096 characters.
   if (preview({ id: 99999, ...fields }, attachments).length > MESSAGE_LIMIT) {
@@ -179,14 +228,15 @@ export async function requestEmail(payload: Payload, input: EmailInput, now: Dat
       status: 'pending',
       ...fields,
       attachments: attachments.map((a) => a.id),
-      expiresAt: new Date(now.getTime() + TTL_MS).toISOString(),
+      // A scheduled email has to be approved before its send time, however soon that is.
+      expiresAt: new Date(Math.min(now.getTime() + TTL_MS, sendAt ? new Date(sendAt).getTime() - 60_000 : Infinity)).toISOString(),
     },
     overrideAccess: true,
   })
 
   let sent: { message_id: number }
   try {
-    sent = await sendMessage(preview(request, attachments), { keyboard: keyboard(request.id) })
+    sent = await sendMessage(preview(request, attachments), { keyboard: keyboard(request.id, request.sendAt) })
   } catch (err) {
     await set(payload, request.id, { status: 'expired' })
     throw new Error(`Could not reach the owner on Telegram, so nothing was filed (${err instanceof Error ? err.message : err}).`)
@@ -198,7 +248,7 @@ export async function requestEmail(payload: Payload, input: EmailInput, now: Dat
     refCollection: 'hq-email-approvals',
     refId: request.id,
   })
-  return { requestId: request.id, expiresAt: request.expiresAt }
+  return { requestId: request.id, expiresAt: request.expiresAt, sendAt: request.sendAt ?? null }
 }
 
 const busy = new Set<number>()
@@ -206,7 +256,11 @@ const busy = new Set<number>()
 const expired = (r: Pick<HqEmailApproval, 'expiresAt'>, now: Date) =>
   Boolean(r.expiresAt && new Date(r.expiresAt).getTime() < now.getTime())
 
-/** The owner's tap. On Send, sends the stored email. Returns the one-line outcome for Telegram. */
+/**
+ * The owner's tap. On Send, sends the stored email, or for one filed with a
+ * send time, hands it to Resend to hold until then. Returns the one-line
+ * outcome for Telegram.
+ */
 export async function decideEmail(payload: Payload, id: number, action: 'send' | 'decline', now: Date = new Date()): Promise<string> {
   // One process serves every request (SQLite pins a single instance), so this stops a double tap.
   if (busy.has(id)) return `#${id} is already being handled.`
@@ -249,7 +303,18 @@ export async function decideEmail(payload: Payload, id: number, action: 'send' |
         ...renderEmail(r),
         ...(Object.keys(headers).length ? { headers } : {}),
         ...(files.length ? { attachments: files } : {}),
+        ...(r.sendAt ? { scheduledAt: r.sendAt } : {}),
       })
+      if (r.sendAt) {
+        await set(payload, id, { status: 'scheduled', resendId: resendId ?? undefined })
+        await recordEvent(payload, {
+          type: 'email.scheduled',
+          summary: `Scheduled for ${whenText(r.sendAt)} to ${r.to}: ${r.subject}`,
+          refCollection: 'hq-email-approvals',
+          refId: id,
+        })
+        return `🕘 Scheduled for <b>${whenText(r.sendAt)}</b> to ${esc(r.to)}. Tap Cancel to stop it before then.`
+      }
       await set(payload, id, { status: 'sent', sentAt: new Date().toISOString(), resendId: resendId ?? undefined })
       await recordEvent(payload, {
         type: 'email.sent',
@@ -274,10 +339,49 @@ export async function decideEmail(payload: Payload, id: number, action: 'send' |
   }
 }
 
-/** Where an email stands, for Claude. */
+const due = (r: Pick<HqEmailApproval, 'sendAt'>, now: Date) => Boolean(r.sendAt && new Date(r.sendAt).getTime() <= now.getTime())
+
+/** The owner's Cancel under a scheduled email: asks Resend to drop it before its send time. */
+export async function cancelEmail(payload: Payload, id: number, now: Date = new Date()): Promise<string> {
+  if (busy.has(id)) return `#${id} is already being handled.`
+  busy.add(id)
+  try {
+    const r = await payload.findByID({ collection: 'hq-email-approvals', id, depth: 0, overrideAccess: true }).catch(() => null)
+    if (!r) return `No email #${id}.`
+    if (r.status !== 'scheduled') return `#${id} is ${r.status}, so there's nothing to cancel.`
+    if (due(r, now)) return `#${id} already went out at ${whenText(r.sendAt!)}.`
+    try {
+      if (!r.resendId) throw new Error('no Resend id was saved for it')
+      await cancelScheduledEmail(r.resendId)
+    } catch (err) {
+      const why = (err instanceof Error ? err.message : String(err)).slice(0, 300)
+      return `⚠️ Couldn't cancel: ${esc(why)}\nIt may still go out at ${whenText(r.sendAt!)}. Cancel it in Resend.`
+    }
+    await set(payload, id, { status: 'cancelled', decidedAt: now.toISOString() })
+    await recordEvent(payload, {
+      type: 'email.cancelled',
+      summary: `Cancelled before ${whenText(r.sendAt!)}: ${r.subject}`,
+      refCollection: 'hq-email-approvals',
+      refId: id,
+    })
+    return `↩️ Cancelled. It won't go out.`
+  } finally {
+    busy.delete(id)
+  }
+}
+
+/** Buttons under a tap's outcome: Cancel while a scheduled email is still waiting to go out. */
+export async function emailOutcomeKeyboard(payload: Payload, id: number, now: Date = new Date()): Promise<InlineKeyboard | undefined> {
+  const r = await payload.findByID({ collection: 'hq-email-approvals', id, depth: 0, overrideAccess: true }).catch(() => null)
+  return r?.status === 'scheduled' && !due(r, now) ? cancelKeyboard(id) : undefined
+}
+
+/** Where an email stands, for Claude. A scheduled email past its send time has gone out. */
 export async function emailStatus(payload: Payload, id: number, now: Date = new Date()) {
   const r = await payload.findByID({ collection: 'hq-email-approvals', id, depth: 0, overrideAccess: true }).catch(() => null)
   if (!r) return { requestId: id, status: 'not found' }
-  const status = r.status === 'pending' && expired(r, now) ? 'expired' : r.status
-  return { requestId: r.id, status, to: r.to, subject: r.subject, sentAt: r.sentAt ?? null, error: r.error ?? null }
+  const status =
+    r.status === 'pending' && expired(r, now) ? 'expired' : r.status === 'scheduled' && due(r, now) ? 'sent' : r.status
+  const sentAt = r.sentAt ?? (status === 'sent' && r.sendAt ? r.sendAt : null)
+  return { requestId: r.id, status, to: r.to, subject: r.subject, sendAt: r.sendAt ?? null, sentAt, error: r.error ?? null }
 }

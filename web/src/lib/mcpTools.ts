@@ -1375,7 +1375,7 @@ export const hqMcpTools: McpTool[] = [
   {
     name: 'hqRequestEmail',
     description:
-      "The only way an email goes out from hola@flamingocounty.com. Files the whole email; the owner reads every word of it in Telegram (recipients, subject, body, the quote, attachments) and taps Send or Don't send. On Send, HQ sends exactly this, once, through Resend, with a blind copy to hola@. Write the body as plain text (blank line between paragraphs); the logo footer is added. For a reply, pass the original's Message-ID as inReplyTo (Zoho: More → Show original) so it threads, and the earlier message as quote. Nothing can be changed after filing: to fix a word, file a new one. Refused if it can't fit in one Telegram message. Check with hqEmailStatus.",
+      "The only way an email goes out from hola@flamingocounty.com. Files the whole email; the owner reads every word of it in Telegram (recipients, subject, body, the quote, attachments) and taps Send or Don't send. On Send, HQ sends exactly this, once, through Resend, with a blind copy to hola@. To send it later (\"send it tomorrow at 9:30\"), pass sendAt: his tap then schedules it instead of sending, he can cancel it from Telegram until then, and it goes out at that time. Write the body as plain text (blank line between paragraphs); the logo footer is added. For a reply, pass the original's Message-ID as inReplyTo (Zoho: More → Show original) so it threads, and the earlier message as quote. Nothing can be changed after filing: to fix a word, file a new one. Refused if it can't fit in one Telegram message. Check with hqEmailStatus.",
     parameters: {
       to: z.array(z.string().email()).min(1).max(5).describe('Plain addresses, e.g. ["name@example.com"]'),
       cc: z.array(z.string().email()).max(4).optional(),
@@ -1386,20 +1386,31 @@ export const hqMcpTools: McpTool[] = [
       references: z.string().max(1000).optional().describe('The References header for a longer thread; defaults to inReplyTo'),
       attachmentIds: z.array(z.number().int().positive()).max(5).optional().describe('hq-media ids to attach'),
       why: z.string().max(200).optional().describe('One line for the owner: what this email is for'),
+      sendAt: z
+        .string()
+        .max(40)
+        .optional()
+        .describe(
+          'When it should go out, ISO 8601 with the time zone, e.g. "2026-10-30T09:30:00-04:00" for 9:30 AM in Miami (-05:00 once DST ends in November). 5 minutes to 30 days ahead. Leave out to send on his tap.',
+        ),
     },
     handler: (args: Record<string, unknown>, req: PayloadRequest) =>
-      guard(async () =>
-        text(
+      guard(async () => {
+        const filed = await requestEmail(req.payload, args as never)
+        return text(
           JSON.stringify({
-            ...(await requestEmail(req.payload, args as never)),
-            next: "Waiting for the owner to tap Send in Telegram. HQ sends it on the tap; don't send it any other way. Check with hqEmailStatus.",
+            ...filed,
+            next: filed.sendAt
+              ? "Waiting for the owner to tap Schedule in Telegram. The tap schedules it, it doesn't send it: it goes out at sendAt unless he cancels. Check with hqEmailStatus."
+              : "Waiting for the owner to tap Send in Telegram. HQ sends it on the tap; don't send it any other way. Check with hqEmailStatus.",
           }),
-        ),
-      ),
+        )
+      }),
   },
   {
     name: 'hqEmailStatus',
-    description: "Where an email request stands: pending, sending, sent, declined (he said don't send), failed (with the error) or expired.",
+    description:
+      "Where an email request stands: pending, sending, scheduled (approved, goes out at sendAt), sent, cancelled (he stopped a scheduled one), declined (he said don't send), failed (with the error) or expired.",
     parameters: { requestId: z.number().int().positive() },
     handler: (args: Record<string, unknown>, req: PayloadRequest) =>
       guard(async () => text(JSON.stringify(await emailStatus(req.payload, Number(args.requestId))))),
