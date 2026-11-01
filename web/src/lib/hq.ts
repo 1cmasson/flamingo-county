@@ -122,7 +122,7 @@ function draftKeyboard(id: number): InlineKeyboard {
   }
 }
 
-async function draftMedia(payload: Payload, draft: HqSocialDraft): Promise<HqMedia[]> {
+export async function draftMedia(payload: Payload, draft: HqSocialDraft): Promise<HqMedia[]> {
   const ids = (draft.media ?? []).map((m) => (typeof m === 'object' ? m.id : m))
   if (!ids.length) return []
   const { docs } = await payload.find({
@@ -281,6 +281,13 @@ async function setDraft(payload: Payload, id: number, data: Partial<HqSocialDraf
 }
 
 /**
+ * How a decision reached the draft. Its own buttons by default; a batch
+ * (lib/socialBatches.ts) passes the fingerprint the batch listed, and asks
+ * for no fresh preview when the draft has moved on: its edit already sent one.
+ */
+export type DecideOptions = { shownHash?: string | null; viaBatch?: boolean }
+
+/**
  * Approve or reject a pending draft. Returns a one-line outcome for Telegram.
  *
  * Only a `pending` draft moves. The status flips to `approved` *before* the
@@ -292,6 +299,7 @@ export async function decideDraft(
   payload: Payload,
   id: number,
   action: DraftAction,
+  opts: DecideOptions = {},
 ): Promise<string> {
   // Read-then-write is not atomic, and Telegram delivers webhooks concurrently,
   // so two taps can both read `pending`. One process serves every request
@@ -300,7 +308,7 @@ export async function decideDraft(
   if (deciding.has(id)) return `Draft #${id} is already being handled.`
   deciding.add(id)
   try {
-    return await decide(payload, id, action)
+    return await decide(payload, id, action, opts)
   } finally {
     deciding.delete(id)
   }
@@ -308,7 +316,7 @@ export async function decideDraft(
 
 const deciding = new Set<number>()
 
-async function decide(payload: Payload, id: number, action: DraftAction): Promise<string> {
+async function decide(payload: Payload, id: number, action: DraftAction, opts: DecideOptions): Promise<string> {
   const draft = await payload
     .findByID({ collection: 'hq-social-drafts', id, depth: 0, overrideAccess: true })
     .catch(() => null)
@@ -326,7 +334,9 @@ async function decide(payload: Payload, id: number, action: DraftAction): Promis
     return `✖️ Draft #${id} rejected. Nothing was sent to Postiz.`
   }
 
-  if (draft.previewedHash !== draftFingerprint(draft)) {
+  const shown = opts.shownHash === undefined ? draft.previewedHash : opts.shownHash
+  if (shown !== draftFingerprint(draft)) {
+    if (opts.viaBatch) return `Draft #${id} changed after the list was sent, so it was not posted. Approve its newer preview.`
     // Edited after the preview the owner tapped. Show the current version
     // instead of posting something they have not seen.
     void sendDraftPreview(payload, draft).catch((err) =>

@@ -35,6 +35,7 @@ import { HqClicks } from './collections/HqClicks'
 import { HqPublishRequests } from './collections/HqPublishRequests'
 import { HqSpendApprovals } from './collections/HqSpendApprovals'
 import { HqEmailApprovals } from './collections/HqEmailApprovals'
+import { HqSocialBatches } from './collections/HqSocialBatches'
 import { HqChatTurns } from './collections/HqChatTurns'
 import { HqVisits } from './collections/HqVisits'
 import { HqUses } from './collections/HqUses'
@@ -113,6 +114,7 @@ export default buildConfig({
     HqPublishRequests,
     HqSpendApprovals,
     HqEmailApprovals,
+    HqSocialBatches,
     HqChatTurns,
     HqVisits,
     HqUses,
@@ -191,7 +193,8 @@ export default buildConfig({
      * write is refused by `mcpDraftsOnly` on the collection itself — and
      * publishing is the owner's tap in Telegram (hqRequestPublish,
      * lib/publishRequests.ts). `hq-publish-requests` (and `hq-spend-approvals`,
-     * lib/spendApprovals.ts, and `hq-email-approvals`, lib/emailApprovals.ts)
+     * lib/spendApprovals.ts, `hq-email-approvals`, lib/emailApprovals.ts, and
+     * `hq-social-batches`, lib/socialBatches.ts)
      * must never be added to
      * this list: a generic update tool on it would let a client approve its
      * own request.
@@ -312,7 +315,7 @@ export default buildConfig({
         serverOptions: {
           serverInfo: { name: 'Flamingo HQ', version: '1.0.0' },
           instructions:
-            'Flamingo HQ, the private ops layer of flamingocounty.com (a bilingual Miami-Dade directory: Hialeah, Miami Lakes, Little Havana). Start with hqBrief. Social posts are drafts in hq-social-drafts; the owner approves each one in Telegram and you cannot. Give every draft a pillar and language (the audience is Spanish-first). Use real listings, events and stories only — never invent business details. Site content (events, weekly events, stories, spotlights, listings) has drafts: save freely with draft: true — nothing you save is visible — then call hqRequestPublish; it goes live only when the owner taps Publish in Telegram. Never try to publish any other way. The goal is traffic: when an open hq-task whose title starts with "Growth review (asked" is assigned to claude, run the growth review (hqGrowthContext, then web/hq/growth-review.md in the repo).',
+            'Flamingo HQ, the private ops layer of flamingocounty.com (a bilingual Miami-Dade directory: Hialeah, Miami Lakes, Little Havana). Start with hqBrief. Social posts are drafts in hq-social-drafts; the owner approves each one in Telegram and you cannot. To save him taps, file related drafts together with hqRequestSocialBatch (one Approve all). Give every draft a pillar and language (the audience is Spanish-first). Use real listings, events and stories only — never invent business details. Site content (events, weekly events, stories, spotlights, listings) has drafts: save freely with draft: true — nothing you save is visible — then call hqRequestPublish; it goes live only when the owner taps Publish in Telegram. Never try to publish any other way. The goal is traffic: when an open hq-task whose title starts with "Growth review (asked" is assigned to claude, run the growth review (hqGrowthContext, then web/hq/growth-review.md in the repo).',
         },
       },
     }),
