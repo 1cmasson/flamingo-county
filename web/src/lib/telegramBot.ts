@@ -8,6 +8,7 @@ import { decideDraft, parseDraftCallback } from './hq'
 import { answerCallback, editMessage, esc, ownerChatId, resolveButtons, sendMessage } from './telegram'
 import { decidePublish, parsePublishCallback } from './publishRequests'
 import { parseReviewCallback, runReviewFromButton } from './reviewReminder'
+import { decideBatch, parseBatchCallback } from './socialBatches'
 import { decideSpend, parseSpendCallback } from './spendApprovals'
 
 /** The slice of a Telegram `Update` the bot reads. */
@@ -173,6 +174,20 @@ export async function handleUpdate(payload: Payload, update: TelegramUpdate): Pr
       await answerCallback(cb.id, publish.action === 'publish' ? 'Publishing…' : 'Rejecting…')
       const outcome = await decidePublish(payload, publish.id, publish.action)
       await resolveButtons(cb.message.chat.id, cb.message.message_id, outcome)
+      return
+    }
+
+    const batch = parseBatchCallback(cb.data)
+    if (batch && cb.message) {
+      await answerCallback(cb.id, batch.action === 'approve' ? 'Scheduling them all…' : 'Rejecting them all…')
+      const { chat, message_id } = cb.message
+      // Not awaited: each draft uploads its file to Postiz, so a week of reels
+      // takes minutes, and the webhook (max_connections=1) must not sit on it
+      // until Telegram redelivers the tap. The batch leaves `pending` first,
+      // so a redelivery finds it handled either way.
+      void decideBatch(payload, batch.id, batch.action)
+        .then((outcome) => resolveButtons(chat.id, message_id, outcome))
+        .catch((err) => console.error('[hq] batch decision failed:', err instanceof Error ? err.message : err))
       return
     }
 

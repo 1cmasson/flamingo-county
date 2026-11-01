@@ -97,6 +97,7 @@ export interface Config {
     'hq-publish-requests': HqPublishRequest;
     'hq-spend-approvals': HqSpendApproval;
     'hq-email-approvals': HqEmailApproval;
+    'hq-social-batches': HqSocialBatch;
     'hq-chat-turns': HqChatTurn;
     'hq-visits': HqVisit;
     'hq-uses': Hqus;
@@ -141,6 +142,7 @@ export interface Config {
     'hq-publish-requests': HqPublishRequestsSelect<false> | HqPublishRequestsSelect<true>;
     'hq-spend-approvals': HqSpendApprovalsSelect<false> | HqSpendApprovalsSelect<true>;
     'hq-email-approvals': HqEmailApprovalsSelect<false> | HqEmailApprovalsSelect<true>;
+    'hq-social-batches': HqSocialBatchesSelect<false> | HqSocialBatchesSelect<true>;
     'hq-chat-turns': HqChatTurnsSelect<false> | HqChatTurnsSelect<true>;
     'hq-visits': HqVisitsSelect<false> | HqVisitsSelect<true>;
     'hq-uses': HqUsesSelect<false> | HqUsesSelect<true>;
@@ -1765,6 +1767,31 @@ export interface HqEmailApproval {
   createdAt: string;
 }
 /**
+ * Social drafts Claude asked you to approve together. Each goes out only when you tap Approve all in Telegram.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-social-batches".
+ */
+export interface HqSocialBatch {
+  id: number;
+  status: 'pending' | 'approving' | 'approved' | 'rejected' | 'expired' | 'failed';
+  title?: string | null;
+  note?: string | null;
+  items?:
+    | {
+        draft: number;
+        hash: string;
+        outcome?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  expiresAt?: string | null;
+  telegramMessageId?: number | null;
+  error?: string | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * The Telegram chat's short memory. Redacted, and pruned after two days.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2384,6 +2411,14 @@ export interface PayloadMcpApiKey {
      */
     hqCancelDraft?: boolean | null;
     /**
+     * Ask the owner to approve several pending social drafts with ONE tap (a week's posts). Create the drafts first as usual; wait until each has its own Telegram preview (telegramMessageId set), then call this with their ids. The owner gets one message listing each draft (platforms, language, Miami time, file, first caption line) with Approve all / Reject all. Approve all schedules each draft exactly as its own Approve would; a draft edited after this call is skipped and keeps its own new preview. The single-draft buttons keep working. Approves nothing by itself. Check with hqSocialBatchStatus.
+     */
+    hqRequestSocialBatch?: boolean | null;
+    /**
+     * Where a batch stands (pending, approving, approved, rejected, expired, failed), with each draft's outcome once decided.
+     */
+    hqSocialBatchStatus?: boolean | null;
+    /**
      * Ask the owner to publish the current draft of a site document (events, weekly-events, stories, spotlights, listings, promotions) or of the link page (link-page, no id). Save the draft first with the create/update tool and draft: true — drafts are never visible on the site. The owner sees exactly what changes against the live page in Telegram and taps Publish or Reject. If you edit the draft again before they tap, they are shown the new version instead. Publishes nothing by itself.
      */
     hqRequestPublish?: boolean | null;
@@ -2680,6 +2715,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'hq-email-approvals';
         value: number | HqEmailApproval;
+      } | null)
+    | ({
+        relationTo: 'hq-social-batches';
+        value: number | HqSocialBatch;
       } | null)
     | ({
         relationTo: 'hq-chat-turns';
@@ -3575,6 +3614,28 @@ export interface HqEmailApprovalsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-social-batches_select".
+ */
+export interface HqSocialBatchesSelect<T extends boolean = true> {
+  status?: T;
+  title?: T;
+  note?: T;
+  items?:
+    | T
+    | {
+        draft?: T;
+        hash?: T;
+        outcome?: T;
+        id?: T;
+      };
+  expiresAt?: T;
+  telegramMessageId?: T;
+  error?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "hq-chat-turns_select".
  */
 export interface HqChatTurnsSelect<T extends boolean = true> {
@@ -3859,6 +3920,8 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         hqFinishSiteArtworkUpload?: T;
         hqAddDraftMediaFromUpload?: T;
         hqCancelDraft?: T;
+        hqRequestSocialBatch?: T;
+        hqSocialBatchStatus?: T;
         hqRequestPublish?: T;
         hqPublishStatus?: T;
         hqRequestSpendApproval?: T;

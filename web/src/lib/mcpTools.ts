@@ -25,6 +25,7 @@ import { marketOutliers } from './market'
 import { PUBLISHABLE, PUBLISHABLE_GLOBALS, publishStatus, requestPublish } from './publishRequests'
 import { redeemSpend, requestSpend, spendStatus } from './spendApprovals'
 import { emailStatus, requestEmail } from './emailApprovals'
+import { BATCH_MAX, BATCH_MIN, requestSocialBatch, socialBatchStatus } from './socialBatches'
 import { PHOTO_LICENSES, canonicalLicenseUrl, isPhotoLicense, licenseLabel, type PhotoLicense } from './photoLicense'
 import { REQUEST_KINDS, isRequestKind, type RequestKind } from './requestKinds'
 import {
@@ -1307,6 +1308,31 @@ export const hqMcpTools: McpTool[] = [
     parameters: { id: z.number().int().positive().describe('The hq-social-drafts id') },
     handler: (args: Record<string, unknown>, req: PayloadRequest) =>
       guard(async () => text(JSON.stringify({ result: await cancelDraft(req.payload, Number(args.id)) }))),
+  },
+  {
+    name: 'hqRequestSocialBatch',
+    description:
+      "Ask the owner to approve several pending social drafts with ONE tap (a week's posts). Create the drafts first as usual; wait until each has its own Telegram preview (telegramMessageId set), then call this with their ids. The owner gets one message listing each draft (platforms, language, Miami time, file, first caption line) with Approve all / Reject all. Approve all schedules each draft exactly as its own Approve would; a draft edited after this call is skipped and keeps its own new preview. The single-draft buttons keep working. Approves nothing by itself. Check with hqSocialBatchStatus.",
+    parameters: {
+      draftIds: z.array(z.number().int().positive()).min(BATCH_MIN).max(BATCH_MAX).describe('hq-social-drafts ids, all pending'),
+      note: z.string().max(300).optional().describe('One line for the owner: what this batch is, e.g. "Week of Nov 2: Cachao + ep. 3 + Emilio"'),
+    },
+    handler: (args: Record<string, unknown>, req: PayloadRequest) =>
+      guard(async () =>
+        text(
+          JSON.stringify({
+            ...(await requestSocialBatch(req.payload, args as never)),
+            next: 'Waiting for the owner to tap Approve all in Telegram. Check with hqSocialBatchStatus.',
+          }),
+        ),
+      ),
+  },
+  {
+    name: 'hqSocialBatchStatus',
+    description: "Where a batch stands (pending, approving, approved, rejected, expired, failed), with each draft's outcome once decided.",
+    parameters: { batchId: z.number().int().positive() },
+    handler: (args: Record<string, unknown>, req: PayloadRequest) =>
+      guard(async () => text(JSON.stringify(await socialBatchStatus(req.payload, Number(args.batchId))))),
   },
   {
     name: 'hqRequestPublish',

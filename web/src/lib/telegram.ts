@@ -132,6 +132,18 @@ export async function resolveButtons(
 }
 
 /**
+ * Take a message's buttons away without a reply: for a preview something else
+ * already decided (a batch tap), where a reply under each would be noise.
+ */
+export async function clearButtons(chatId: string | number, messageId: number): Promise<void> {
+  await call('editMessageReplyMarkup', {
+    chat_id: chatId,
+    message_id: messageId,
+    reply_markup: { inline_keyboard: [] },
+  }).catch(() => undefined)
+}
+
+/**
  * Rewrite a text message in place and drop its buttons. For text messages
  * only: a media caption needs `resolveButtons`. Editing to the same text
  * again (a double tap) is not an error; a message Telegram won't let us edit
