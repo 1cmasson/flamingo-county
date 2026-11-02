@@ -44,6 +44,7 @@ import * as migration_20261021_133014_reel_now from './20261021_133014_reel_now'
 import * as migration_20261021_162843_promo_coupons from './20261021_162843_promo_coupons';
 import * as migration_20261024_154336_email_approvals from './20261024_154336_email_approvals';
 import * as migration_20261102_171003_rankings from './20261102_171003_rankings';
+import * as migration_20261102_200129_ranking_nominations from './20261102_200129_ranking_nominations';
 
 export const migrations = [
   {
@@ -274,6 +275,11 @@ export const migrations = [
   {
     up: migration_20261102_171003_rankings.up,
     down: migration_20261102_171003_rankings.down,
-    name: '20261102_171003_rankings'
+    name: '20261102_171003_rankings',
+  },
+  {
+    up: migration_20261102_200129_ranking_nominations.up,
+    down: migration_20261102_200129_ranking_nominations.down,
+    name: '20261102_200129_ranking_nominations'
   },
 ];

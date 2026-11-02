@@ -22,6 +22,7 @@ import { Partners } from './collections/Partners'
 import { PromoCoupons } from './collections/PromoCoupons'
 import { Rankings } from './collections/Rankings'
 import { RankingVotes } from './collections/RankingVotes'
+import { RankingNominations } from './collections/RankingNominations'
 import { Subscribers } from './collections/Subscribers'
 import { ListingRequests } from './collections/ListingRequests'
 import { Members } from './collections/Members'
@@ -102,6 +103,7 @@ export default buildConfig({
     PromoCoupons,
     Rankings,
     RankingVotes,
+    RankingNominations,
     Subscribers,
     ListingRequests,
     Members,
@@ -286,6 +288,11 @@ export default buildConfig({
           enabled: { find: true, create: true, update: true },
           description:
             'Neighbors’ votes (best croquetas in Hialeah…), lib/rankings.ts. entrants = the most-nominated places, most nominated first (that order is the seeding); each needs a key, and a listing or a sourceUrl. rounds = when each round is open. Never reorder entrants or change a key once voting opens. Save with draft: true; publish with hqRequestPublish.',
+        },
+        'ranking-nominations': {
+          enabled: { find: true },
+          description:
+            'Places neighbors named on a ranking’s page (read-only). Unchecked text, never shown publicly. Tally with where ranking = id and test != true; the same place typed different ways counts together (lib/rankingNominations.ts foldPlace). The most-named become the ranking’s entrants.',
         },
         cities: { enabled: { find: true } },
         categories: { enabled: { find: true } },

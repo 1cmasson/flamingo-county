@@ -84,6 +84,7 @@ export interface Config {
     'promo-coupons': PromoCoupon;
     rankings: Ranking;
     'ranking-votes': RankingVote;
+    'ranking-nominations': RankingNomination;
     subscribers: Subscriber;
     'listing-requests': ListingRequest;
     members: Member;
@@ -130,6 +131,7 @@ export interface Config {
     'promo-coupons': PromoCouponsSelect<false> | PromoCouponsSelect<true>;
     rankings: RankingsSelect<false> | RankingsSelect<true>;
     'ranking-votes': RankingVotesSelect<false> | RankingVotesSelect<true>;
+    'ranking-nominations': RankingNominationsSelect<false> | RankingNominationsSelect<true>;
     subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
     'listing-requests': ListingRequestsSelect<false> | ListingRequestsSelect<true>;
     members: MembersSelect<false> | MembersSelect<true>;
@@ -1247,7 +1249,7 @@ export interface Ranking {
   question: string;
   intro?: string | null;
   /**
-   * The Instagram post where people nominate in the comments. Shown while nominating.
+   * Optional: a post where people can also nominate in the comments. Shown under the page’s own nomination form.
    */
   nominatePostUrl?: string | null;
   /**
@@ -1281,7 +1283,7 @@ export interface Ranking {
          */
         sourceUrl?: string | null;
         /**
-         * Times named in the comments.
+         * Times named (the page’s nominations, plus any from a post’s comments).
          */
         nominations?: number | null;
         /**
@@ -1321,6 +1323,32 @@ export interface RankingVote {
    * The place’s key in the ranking.
    */
   entrant: string;
+  /**
+   * instagram, facebook, google, direct…
+   */
+  source?: string | null;
+  lang?: ('es' | 'en') | null;
+  test?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Places neighbors named on a ranking’s page. Unchecked text: never shown publicly. The most-named become the ranking’s entrants. "Test" = from a staff or owner device; left out of the counts.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ranking-nominations".
+ */
+export interface RankingNomination {
+  id: number;
+  ranking: number | Ranking;
+  /**
+   * The place, as the neighbor typed it.
+   */
+  name: string;
+  /**
+   * Where, if they said: a street or a corner.
+   */
+  area?: string | null;
   /**
    * instagram, facebook, google, direct…
    */
@@ -2402,6 +2430,12 @@ export interface PayloadMcpApiKey {
      */
     update?: boolean | null;
   };
+  rankingNominations?: {
+    /**
+     * Allow clients to find ranking-nominations.
+     */
+    find?: boolean | null;
+  };
   cities?: {
     /**
      * Allow clients to find cities.
@@ -2752,6 +2786,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'ranking-votes';
         value: number | RankingVote;
+      } | null)
+    | ({
+        relationTo: 'ranking-nominations';
+        value: number | RankingNomination;
       } | null)
     | ({
         relationTo: 'subscribers';
@@ -3478,6 +3516,20 @@ export interface RankingVotesSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ranking-nominations_select".
+ */
+export interface RankingNominationsSelect<T extends boolean = true> {
+  ranking?: T;
+  name?: T;
+  area?: T;
+  source?: T;
+  lang?: T;
+  test?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "subscribers_select".
  */
 export interface SubscribersSelect<T extends boolean = true> {
@@ -3999,6 +4051,11 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         find?: T;
         create?: T;
         update?: T;
+      };
+  rankingNominations?:
+    | T
+    | {
+        find?: T;
       };
   cities?:
     | T

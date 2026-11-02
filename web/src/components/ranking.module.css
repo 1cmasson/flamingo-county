@@ -111,3 +111,43 @@ button.side:disabled {
   font-family: var(--display);
   font-size: 16px;
 }
+
+/* The nomination form, while a ranking is nominating. */
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.label {
+  font-weight: 800;
+  font-size: 16px;
+}
+.input {
+  width: 100%;
+  min-height: 54px;
+  padding: 12px 14px;
+  font: inherit;
+  /* 16px or more, so iOS doesn't zoom into the field. */
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--cream);
+  border: 4px solid var(--ink);
+  border-radius: 14px;
+}
+.input:focus-visible {
+  outline: 3px solid var(--magenta);
+  outline-offset: 2px;
+}
+.form .label + .input {
+  margin-top: -4px;
+}
+.form button {
+  margin-top: 6px;
+}
+.thanks {
+  margin: 0;
+  font-family: var(--display);
+  font-size: 24px;
+  line-height: 1.1;
+}
