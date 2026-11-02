@@ -18,9 +18,10 @@ import type { City, Media } from '../../../../payload-types'
 import { JsonLd } from '../../../../components/JsonLd'
 import { breadcrumbJsonLd, itemListJsonLd, titleCase } from '../../../../lib/jsonld'
 import { PageShell } from '../../../../components/PageShell'
-import { LineBullet } from '../../../../components/Transit'
+import { LineBullet, fill } from '../../../../components/Transit'
 import tr from '../../../../components/transit.module.css'
 import { TRANSIT } from '../../../../lib/transit'
+import { countyRoutesIn, routeName } from '../../../../lib/county'
 import { BusinessCard } from '../../../../components/BusinessCard'
 import { SearchForm } from '../../../../components/SearchForm'
 import { buildSrcSet } from '../../../../lib/srcset'
@@ -99,6 +100,7 @@ export default async function CityPage({
     if (aliased) permanentRedirect(routes.city(lang, aliased.slug))
     notFound()
   }
+  const busRoutes = countyRoutesIn(slug)
 
   // The city page is the browse surface now: every listing in the city, not a
   // curated three. The fetch is unfiltered and `?q=` is applied in memory, so
@@ -296,6 +298,21 @@ export default async function CityPage({
                     : t('Getting around Miami Lakes for free →')}
                 </span>
               </Link>
+            ) : null}
+            {busRoutes.length ? (
+              <p style={{ margin: 0, fontWeight: 800, fontSize: 14, lineHeight: 1.6 }}>
+                <Link href={routes.bus(lang)} style={{ color: 'var(--ink)' }}>
+                  {fill(t('County buses through {city}:'), { city: titleCase(city.name) ?? city.name })}
+                </Link>{' '}
+                {busRoutes.map((r, i) => (
+                  <span key={r.slug}>
+                    {i ? ' · ' : ''}
+                    <Link href={routes.busRoute(lang, r.slug)} style={{ color: 'var(--ink)' }}>
+                      {routeName(r, lang)}
+                    </Link>
+                  </span>
+                ))}
+              </p>
             ) : null}
           </div>
 

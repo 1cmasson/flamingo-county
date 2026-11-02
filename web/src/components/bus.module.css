@@ -1,0 +1,248 @@
+/**
+ * The county bus pages: the vote pages' look (ink hero, cream cards with a
+ * hard shadow, vote.module.css) plus what a route needs, a schedule that
+ * reads on a phone and stop lists a rider scans for their corner.
+ */
+
+.bullet {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.9em;
+  height: 1.9em;
+  padding: 0 0.3em;
+  border: 4px solid var(--ink);
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--display);
+  line-height: 1;
+}
+
+.heroTop {
+  display: flex;
+  align-items: center;
+  gap: clamp(12px, 3vw, 18px);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.chip {
+  background: var(--cream);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.6px;
+  padding: 6px 10px 5px;
+}
+.chipFree {
+  background: var(--yellow);
+}
+
+/* --- The schedule: a real table; under 560px each day is a small card. --- */
+
+.scheduleDir {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.scheduleTo {
+  margin: 6px 0 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 19px;
+  line-height: 1.1;
+}
+
+.schedule {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+  line-height: 1.35;
+}
+.schedule caption {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+}
+.schedule th {
+  text-align: left;
+  font-size: 12px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  padding: 8px 10px;
+  background: var(--ink);
+  color: var(--cream);
+}
+.schedule td,
+.schedule tbody th {
+  padding: 10px;
+  border-top: 2px dotted var(--ink);
+  text-align: left;
+  font-weight: 700;
+}
+.schedule tbody th {
+  background: none;
+  color: inherit;
+  letter-spacing: 0;
+  text-transform: none;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 19px;
+  line-height: 1.05;
+}
+.cellLabel {
+  display: none;
+}
+
+@media (max-width: 560px) {
+  .schedule thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+  }
+  .schedule tr {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 4px 12px;
+    padding: 12px 0 10px;
+    border-top: 2px dotted var(--ink);
+  }
+  .schedule tbody th {
+    grid-column: 1 / -1;
+  }
+  .schedule td,
+  .schedule tbody th {
+    display: block;
+    padding: 0;
+    border-top: 0;
+  }
+  .cellLabel {
+    display: block;
+    font-size: 11px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-weight: 800;
+  }
+}
+
+/* --- Stop lists --- */
+
+.directions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr));
+  gap: clamp(16px, 3vw, 22px);
+  align-items: start;
+}
+
+.stops {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+.stop {
+  display: grid;
+  grid-template-columns: 3.4em minmax(0, 1fr);
+  gap: 2px 10px;
+  padding: 8px 0 7px;
+  border-top: 2px dotted var(--ink);
+}
+.stop:first-child {
+  border-top: 0;
+}
+.stopMin {
+  font-weight: 800;
+  font-size: 13px;
+  padding-top: 2px;
+  white-space: nowrap;
+}
+.stopName {
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.stopKey .stopName {
+  font-weight: 800;
+}
+.transfers {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+}
+.line {
+  border: 2px solid var(--ink);
+  padding: 2px 6px 1px;
+  background: var(--cream);
+  color: var(--ink);
+  font-weight: 800;
+  text-decoration: none;
+  white-space: nowrap;
+}
+a.line {
+  background: var(--yellow);
+}
+.lineRail {
+  background: var(--ink);
+  color: var(--cream);
+}
+
+.all summary {
+  cursor: pointer;
+  font-weight: 800;
+  padding: 10px 0 4px;
+}
+
+/* --- Places near the route, and the hub's route cards --- */
+
+.places,
+.routes {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 260px), 1fr));
+  gap: 10px;
+}
+.placeLink,
+.routeLink {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  height: 100%;
+  padding: 12px 14px 10px;
+  background: var(--cream);
+  color: var(--ink);
+  border: 3px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  text-decoration: none;
+}
+.placeName,
+.routeName {
+  font-family: var(--display);
+  font-size: 20px;
+  line-height: 1.05;
+}
+.routeTop {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.meta {
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+}

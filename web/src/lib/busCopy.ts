@@ -1,0 +1,192 @@
+import type { Lang } from '../i18n'
+
+/**
+ * Copy for the county bus pages (/[lang]/bus). Every time and count in it
+ * comes from Miami-Dade Transit's schedule (lib/county.ts); the sentences
+ * only say what that schedule is. Spanish says «guagua», as the free-rides
+ * pages do: it is what Hialeah calls the bus.
+ */
+
+const n = (x: number, one: string, many: string) => `${x} ${x === 1 ? one : many}`
+
+/** Spanish names carry their article ("la Ruta 54", "el Trolley…"): "de el" is "del". */
+const del = (s: string) => s.replace(/\bde el\b/g, 'del')
+const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+
+const ES = {
+  breadcrumb: 'Ruta de navegación',
+  home: 'Flamingo County',
+  hub: 'Rutas de guagua',
+  kickerBus: 'METROBUS · MIAMI-DADE TRANSIT',
+  kickerTrolley: 'TROLLEY GRATIS · CIUDAD DE MIAMI',
+  hubTitle: 'Rutas de guagua',
+  hubSub:
+    'Las guaguas del condado que pasan por Hialeah, Miami Lakes, la Pequeña Habana y Miami Gardens: todas las paradas, la primera y la última guagua, y cada cuánto pasan.',
+  hubMetaTitle:
+    'Rutas de Metrobus en Hialeah, Miami Lakes, la Pequeña Habana y Miami Gardens: paradas y horarios',
+  hubMetaDescription:
+    'Las rutas de guagua de Miami-Dade que pasan por Hialeah, Miami Lakes, la Pequeña Habana y Miami Gardens: cada parada, la primera y la última guagua, y cada cuánto pasan, según el horario del condado.',
+  hubQuestion: '¿Qué guaguas pasan por Hialeah, Miami Lakes, la Pequeña Habana y Miami Gardens?',
+  hubAnswer: (count: number) =>
+    `Aquí hay ${n(count, 'ruta', 'rutas')} del condado que cruzan esas ciudades, con todas sus paradas y su horario. En Hialeah también hay dos guaguas gratis de la ciudad, la Flamingo y la Marlin.`,
+  cityHeading: (city: string) => `PASAN POR ${city.toUpperCase()}`,
+  freeLines: 'Las guaguas gratis de Hialeah: Flamingo y Marlin →',
+  metaTitle: (name: string, a: string, b: string) =>
+    `${name} de Metrobus: paradas y horario, ${a} ⇄ ${b}`,
+  metaTitleTrolley: (name: string) => `${name}: paradas y horario (gratis)`,
+  metaDescription: (name: string, via: string, stops: number, every: string | null) =>
+    del(
+      `Todas las ${stops} paradas de ${name} por ${via}, en los dos sentidos, con la primera y la última guagua${every ? ` y cada cuánto pasa (${every} al mediodía entre semana)` : ''}. Según el horario de Miami-Dade Transit.`,
+    ),
+  question: (name: string) => `¿Por dónde pasa ${name} y a qué hora?`,
+  answer: (
+    name: string,
+    via: string,
+    a: string,
+    b: string,
+    minutes: number,
+    weekday: string | null,
+    sunday: string | null,
+  ) =>
+    `${cap(name)} va de ${a} a ${b} por ${via}, en unos ${minutes} minutos de punta a punta.` +
+    (weekday ? ` Entre semana ${weekday}.` : '') +
+    (sunday ? ` Los domingos ${sunday}.` : ' Los domingos no pasa.'),
+  answerNoTimes: (name: string, via: string, a: string, b: string) =>
+    `${cap(name)} va de ${a} a ${b} por ${via}. El condado está cambiando su horario: confirma la hora en GO Miami-Dade Transit antes de salir.`,
+  dayLine: (first: string, last: string, every: string | null) =>
+    every ? `pasa de ${first} a ${last}, ${every}` : `pasa de ${first} a ${last}`,
+  dayLineAllNight: (every: string | null) =>
+    every ? `pasa toda la noche, ${every}` : 'pasa toda la noche',
+  free: 'GRATIS',
+  fare: 'Pasaje del condado',
+  ride: (m: number) => `${m} min de punta a punta`,
+  stopsCount: (k: number) => n(k, 'parada', 'paradas'),
+  schedule: 'HORARIO',
+  scheduleCaption: (name: string) => del(`Horario de ${name}, por día`),
+  day: 'Día',
+  firstBus: 'Primera guagua',
+  lastBus: 'Última guagua',
+  rush: 'Mañana (6:30–9)',
+  midday: 'Mediodía (10–2)',
+  evening: 'Noche (7–10)',
+  weekday: 'Lunes a viernes',
+  saturday: 'Sábado',
+  sunday: 'Domingo',
+  noService: 'No pasa',
+  allNight: 'Toda la noche',
+  every: (m: number) => `cada ~${m} min`,
+  scheduleNote: (date: string) =>
+    `Según el horario de Miami-Dade Transit, vigente hasta el ${date}. Las horas son de salida del principio de la ruta; en cada parada la guagua pasa más tarde.`,
+  stale:
+    'El horario que teníamos del condado ya venció. Confirma las horas en GO Miami-Dade Transit.',
+  toward: (place: string) => `HACIA ${place.toUpperCase()}`,
+  alsoEnds: (places: string) => `Algunas guaguas terminan antes, en ${places}.`,
+  stopList: (place: string) => `Paradas hacia ${place}`,
+  minutes: (m: number) => `${m} min`,
+  transfer: 'Cambia a',
+  more: (k: number) => `+${k}`,
+  allStops: (k: number) => `Ver las ${k} paradas`,
+  keyStops: 'Paradas principales; las otras se ven al abrir la lista.',
+  near: 'CERCA DE LA RUTA',
+  nearNote: (route: string) =>
+    del(`Negocios del directorio a pocos minutos caminando de una parada de ${route}.`),
+  walk: (m: number, stop: string) => `${m} min caminando desde ${stop}`,
+  live: 'Dónde viene la guagua ahora',
+  liveNote: 'La app oficial GO Miami-Dade Transit muestra cada guagua en vivo.',
+  countyPage: 'La ruta en la página del condado',
+  sources: 'FUENTES',
+  sourceLine: (date: string) =>
+    `Paradas, tiempos y horario: Miami-Dade Transit (GTFS), leído el ${date}.`,
+  otherRoutes: 'OTRAS RUTAS',
+  freeRides: 'Guaguas gratis en Hialeah',
+}
+
+type BusCopy = typeof ES
+
+const EN: BusCopy = {
+  breadcrumb: 'Breadcrumb',
+  home: 'Flamingo County',
+  hub: 'Bus routes',
+  kickerBus: 'METROBUS · MIAMI-DADE TRANSIT',
+  kickerTrolley: 'FREE TROLLEY · CITY OF MIAMI',
+  hubTitle: 'Bus routes',
+  hubSub:
+    'The county buses through Hialeah, Miami Lakes, Little Havana and Miami Gardens: every stop, the first and last bus, and how often they come.',
+  hubMetaTitle:
+    'Metrobus routes in Hialeah, Miami Lakes, Little Havana and Miami Gardens: stops and schedules',
+  hubMetaDescription:
+    'The Miami-Dade bus routes through Hialeah, Miami Lakes, Little Havana and Miami Gardens: every stop, the first and last bus, and how often each comes, from the county’s schedule.',
+  hubQuestion: 'Which buses run through Hialeah, Miami Lakes, Little Havana and Miami Gardens?',
+  hubAnswer: (count: number) =>
+    `Here are ${n(count, 'county route', 'county routes')} that cross those cities, with every stop and the schedule. Hialeah also runs two free buses of its own, the Flamingo and the Marlin.`,
+  cityHeading: (city: string) => `THROUGH ${city.toUpperCase()}`,
+  freeLines: 'Hialeah’s free buses: Flamingo and Marlin →',
+  metaTitle: (name: string, a: string, b: string) =>
+    `Metrobus ${name}: stops and schedule, ${a} ⇄ ${b}`,
+  metaTitleTrolley: (name: string) => `${name}: stops and schedule (free)`,
+  metaDescription: (name: string, via: string, stops: number, every: string | null) =>
+    `All ${stops} stops on ${name} along ${via}, both directions, with the first and last bus${every ? ` and how often it comes (${every} on a weekday midday)` : ''}. From Miami-Dade Transit’s schedule.`,
+  question: (name: string) => `Where does ${name} go, and when does it run?`,
+  answer: (
+    name: string,
+    via: string,
+    a: string,
+    b: string,
+    minutes: number,
+    weekday: string | null,
+    sunday: string | null,
+  ) =>
+    `${name} runs between ${a} and ${b} along ${via}, about ${minutes} minutes end to end.` +
+    (weekday ? ` On weekdays it ${weekday}.` : '') +
+    (sunday ? ` On Sundays it ${sunday}.` : ' It doesn’t run on Sundays.'),
+  answerNoTimes: (name: string, via: string, a: string, b: string) =>
+    `${name} runs between ${a} and ${b} along ${via}. The county is changing its schedule: check the time in GO Miami-Dade Transit before you leave.`,
+  dayLine: (first: string, last: string, every: string | null) =>
+    every ? `runs from ${first} to ${last}, ${every}` : `runs from ${first} to ${last}`,
+  dayLineAllNight: (every: string | null) =>
+    every ? `runs all night, ${every}` : 'runs all night',
+  free: 'FREE',
+  fare: 'County fare',
+  ride: (m: number) => `${m} min end to end`,
+  stopsCount: (k: number) => n(k, 'stop', 'stops'),
+  schedule: 'SCHEDULE',
+  scheduleCaption: (name: string) => `${name} schedule, by day`,
+  day: 'Day',
+  firstBus: 'First bus',
+  lastBus: 'Last bus',
+  rush: 'Morning (6:30–9)',
+  midday: 'Midday (10–2)',
+  evening: 'Evening (7–10)',
+  weekday: 'Monday to Friday',
+  saturday: 'Saturday',
+  sunday: 'Sunday',
+  noService: 'No service',
+  allNight: 'All night',
+  every: (m: number) => `every ~${m} min`,
+  scheduleNote: (date: string) =>
+    `From Miami-Dade Transit’s schedule, in force until ${date}. Times are when buses leave the start of the route; at each stop the bus comes later.`,
+  stale: 'The county schedule we had has ended. Check the times in GO Miami-Dade Transit.',
+  toward: (place: string) => `TOWARD ${place.toUpperCase()}`,
+  alsoEnds: (places: string) => `Some buses end early, at ${places}.`,
+  stopList: (place: string) => `Stops toward ${place}`,
+  minutes: (m: number) => `${m} min`,
+  transfer: 'Change to',
+  more: (k: number) => `+${k}`,
+  allStops: (k: number) => `See all ${k} stops`,
+  keyStops: 'Main stops; open the list for the rest.',
+  near: 'NEAR THE ROUTE',
+  nearNote: (route: string) => `Places in the directory a few minutes’ walk from a ${route} stop.`,
+  walk: (m: number, stop: string) => `${m} min walk from ${stop}`,
+  live: 'Where the bus is right now',
+  liveNote: 'The official GO Miami-Dade Transit app shows every bus live.',
+  countyPage: 'The route on the county’s site',
+  sources: 'SOURCES',
+  sourceLine: (date: string) =>
+    `Stops, ride times and schedule: Miami-Dade Transit (GTFS), read ${date}.`,
+  otherRoutes: 'OTHER ROUTES',
+  freeRides: 'Free buses in Hialeah',
+}
+
+export function busCopy(lang: Lang): BusCopy {
+  return lang === 'es' ? ES : EN
+}
