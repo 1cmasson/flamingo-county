@@ -98,7 +98,9 @@ export function routeName(route: CountyRoute, lang: Lang): string {
 
 /** The street a rider knows the route by. Street names stay as the signs print them; a neighborhood is translated. */
 export function routeVia(route: CountyRoute, lang: Lang): string {
-  return lang === 'es' ? route.via.replace('Little Havana', 'la Pequeña Habana') : route.via
+  return lang === 'es'
+    ? route.via.replace('Little Havana', 'la Pequeña Habana').replace(/ and /g, ' y ')
+    : route.via
 }
 
 /** The name inside a sentence: Spanish gives it its article («la Ruta 54», «el Trolley…»). */

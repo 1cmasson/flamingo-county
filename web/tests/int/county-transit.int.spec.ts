@@ -12,6 +12,7 @@ import {
   routeEnds,
   routeName,
   routeNameInline,
+  routeVia,
   scheduleCurrent,
   typicalHeadway,
 } from '@/lib/county'
@@ -112,6 +113,8 @@ describe('names and links', () => {
     const r = getCountyRoute('54')!
     expect(routeName(r, 'en')).toBe('Route 54')
     expect(routeNameInline(r, 'es')).toBe('la Ruta 54')
+    expect(routeVia(r, 'es')).toBe('NW 54 St y W 21 St')
+    expect(routeVia(getCountyRoute('little-havana-trolley')!, 'es')).toBe('la Pequeña Habana')
     expect(routeNameInline(getCountyRoute('little-havana-trolley')!, 'es')).toBe(
       'el Trolley de la Pequeña Habana',
     )
@@ -142,6 +145,21 @@ describe('names and links', () => {
   it('reads the two ends off the head signs', () => {
     const [a, z] = routeEnds(getCountyRoute('8')!)
     expect([a, z]).toContain('Brickell Station')
+  })
+})
+
+describe('headways', () => {
+  it('never claims a bus more often than the day’s trips allow', () => {
+    for (const r of COUNTY.routes) {
+      for (const d of r.directions) {
+        for (const day of Object.values(d.schedule)) {
+          if (!day) continue
+          const average = (day.last - day.first) / day.trips
+          for (const gap of Object.values(day.headway))
+            if (gap) expect(gap).toBeGreaterThanOrEqual(average / 2)
+        }
+      }
+    }
   })
 })
 

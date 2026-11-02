@@ -141,9 +141,22 @@ function servicesOn(date: string, calendar: Row[], exceptions: Row[]): Set<strin
   return on
 }
 
+/**
+ * Buses closer together than this are one wait to a rider: two branches of a
+ * route meeting on the trunk (route 8's buses reach Calle Ocho in pairs four
+ * minutes apart, every half hour). Counted apart, the median gap came out at
+ * "every 5 min".
+ */
+const BUNCH_MINUTES = 7
+
 /** Typical minutes between buses in a window of the day, or null when fewer than three buses pass. */
 function headwayIn(times: number[], from: number, to: number): number | null {
-  const inside = times.filter((t) => t >= from && t < to)
+  const inside: number[] = []
+  for (const t of times) {
+    if (t < from || t >= to) continue
+    if (inside.length && t - inside[inside.length - 1] < BUNCH_MINUTES) continue
+    inside.push(t)
+  }
   if (inside.length < 3) return null
   const gaps = inside.slice(1).map((t, i) => t - inside[i])
   const m = median(gaps)
