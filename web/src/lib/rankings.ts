@@ -289,7 +289,8 @@ export async function castVote(payload: Payload, input: VoteInput, headers: Head
   })
   if (!test) noteBurst(ranking, chosen, now)
 
+  // The voter sees their own vote in the split, a staff test too; only the stored counts leave tests out.
   const votes: [number, number] = [game.votes[0], game.votes[1]]
-  if (!test) votes[chosen === game.a ? 0 : 1]++
+  votes[chosen === game.a ? 0 : 1]++
   return { ok: true, stage: game.stage, matchup: index, votes }
 }

@@ -12,7 +12,6 @@ import {
   getPublishedRanking,
   phaseOf,
   roundFor,
-  stagesFor,
   bracketSize,
   talliesFor,
   type Entrant,
@@ -99,7 +98,8 @@ export default async function RankingPage({ params }: Props) {
   const jsonLd: Record<string, unknown>[] = [webPageJsonLd(lang, path, { name: ranking.title }), breadcrumbJsonLd(crumbs)]
   if (order.length) jsonLd.push(itemListJsonLd(ranking.title, order.map((e) => ({ name: e.name, path: placePath(lang, e) ?? path }))))
 
-  const firstRound = roundFor(ranking, stagesFor(size)[0] ?? 'final')
+  // While nominating there are no entrants yet, so the bracket's size can't say which round is first: the earliest date can.
+  const votingOpens = (ranking.rounds ?? []).map((r) => r.opensAt).sort()[0] ?? null
   const openGames = rounds.flat().filter((g) => g.open)
   const nextRound = rounds.find((games) => games.some((g) => !g.closed && !g.open))?.[0]
   const nextOpens = nextRound ? roundFor(ranking, nextRound.stage)?.opensAt : null
@@ -125,7 +125,7 @@ export default async function RankingPage({ params }: Props) {
               <>
                 <p className={p.warn}>
                   {ranking.nominationsCloseOn ? c.nominatingUntil(whenLabel(ranking.nominationsCloseOn, lang, false)) : `${c.nominating}.`}{' '}
-                  {firstRound?.opensAt ? c.votingOpens(whenLabel(firstRound.opensAt, lang)) : null}
+                  {votingOpens ? c.votingOpens(whenLabel(votingOpens, lang)) : null}
                 </p>
                 {ranking.nominatePostUrl ? (
                   <a className={p.btn} href={ranking.nominatePostUrl} rel="noopener noreferrer">

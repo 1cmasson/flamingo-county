@@ -11,10 +11,15 @@ export function rankingCopy(lang: Lang): RankingCopy {
   return lang === 'es' ? ES : EN
 }
 
-/** "Sun, Nov 8, 11:59 PM" / "dom 8 nov, 11:59 p. m." in Miami time. */
+/**
+ * "Sun, Nov 8, 11:59 PM" / "dom 8 nov, 11:59 p. m." in Miami time. A day-only
+ * field (`withTime` false) is read in UTC, like promoCopy's `dayLabel`: it is
+ * stored as that day at noon or midnight UTC, and Miami time would make
+ * midnight the day before.
+ */
 export function whenLabel(iso: string, lang: Lang, withTime = true): string {
   return new Intl.DateTimeFormat(lang === 'es' ? 'es-US' : 'en-US', {
-    timeZone: 'America/New_York',
+    timeZone: withTime ? 'America/New_York' : 'UTC',
     weekday: 'short',
     month: 'short',
     day: 'numeric',

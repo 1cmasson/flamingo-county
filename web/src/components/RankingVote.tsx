@@ -20,6 +20,15 @@ const miamiDay = () =>
   new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
 const KEY = (slug: string, stage: Stage, index: number) => `fc.vote.${slug}.${stage}.${index}`
 
+/** Storage can be blocked (some in-app browsers, private mode): then nothing is remembered. */
+function stored(key: string): string | null {
+  try {
+    return localStorage.getItem(key)
+  } catch {
+    return null
+  }
+}
+
 function remembered(key: string): [number, number] | null {
   try {
     const raw = localStorage.getItem(key)
@@ -50,7 +59,7 @@ export function RankingVote({
 }) {
   const c = rankingCopy(lang)
   const key = KEY(slug, stage, index)
-  const earlier = useSyncExternalStore(noSubscribe, () => localStorage.getItem(key), () => null)
+  const earlier = useSyncExternalStore(noSubscribe, () => stored(key), () => null)
   const [fresh, setFresh] = useState<[number, number] | null>(null)
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
