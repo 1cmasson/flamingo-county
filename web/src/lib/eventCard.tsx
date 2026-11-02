@@ -54,6 +54,9 @@ const YELLOW = '#ffd400'
 const ORANGE = '#ff7a1a'
 /** Halloween's purple: the Hialeah Park scene's sky (`SCENE_SKY`). */
 const PURPLE = '#390a75'
+/** Navidad's ground and its red: lib/seasons.ts carries the same pair as `ground` and `accent`. */
+const HOLLY = '#0b5d34'
+const RED = '#e8233b'
 
 /**
  * The colours the card is drawn in, apart from the background. Design C is
@@ -141,6 +144,24 @@ export const SEASON_THEMES: Record<SeasonCardTheme, CardTheme> = {
     sceneWash: 'rgba(57,10,117,0.3)',
     // The title sits in the poster's top 45%; the mascot and the place below stay clear.
     backdropShade: 'linear-gradient(180deg, rgba(57,10,117,0.94) 0%, rgba(57,10,117,0.85) 36%, rgba(57,10,117,0) 58%)',
+  },
+  /**
+   * Navidad: a deep holly green with red dots and a yellow title, so it reads
+   * as the holidays at thumbnail size without any drawn scene.
+   */
+  holly: {
+    bg: HOLLY,
+    dot: RED,
+    dotOpacity: 0.45,
+    title: YELLOW,
+    titleShadow: RED,
+    text: CREAM,
+    chipBg: RED,
+    chipText: CREAM,
+    ticketBg: CREAM,
+    ticketText: HOLLY,
+    archBg: CREAM,
+    archBorder: RED,
   },
 }
 

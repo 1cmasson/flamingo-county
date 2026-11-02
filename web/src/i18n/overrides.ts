@@ -372,6 +372,9 @@ export const ES_OVERRIDES: Record<string, string> = {
   // The home page's row of the newest stories.
   'NEW STORIES': 'HISTORIAS NUEVAS',
   'ALL STORIES →': 'VER TODAS →',
+  // A city page's row of its own stories, and a story's way back to its town.
+  'STORIES FROM': 'HISTORIAS DE',
+  'MORE FROM': 'MÁS DE',
 
   // --- Metadata ----------------------------------------------------------
   'A directory of the restaurants and bars the locals actually vouch for.':

@@ -29,7 +29,7 @@ export const SEASON_OPTIONS: { label: string; value: SeasonKey }[] = [
 ]
 
 /** The season card's palette, drawn by lib/eventCard.tsx. */
-export type SeasonCardTheme = 'night' | 'pumpkin' | 'dusk'
+export type SeasonCardTheme = 'night' | 'pumpkin' | 'dusk' | 'holly'
 
 type Copy = Record<Lang, string>
 
@@ -156,6 +156,54 @@ export const SEASONS: Partial<Record<SeasonKey, Season>> = {
     boardLink: (lang, year) => (lang === 'es' ? `HALLOWEEN EN HIALEAH ${year} →` : `HALLOWEEN IN HIALEAH ${year} →`),
     // The card's orange.
     accent: '#ff7a1a',
+  },
+  // Thanksgiving to Three Kings: the window opens the week before Thanksgiving
+  // so the guide is indexed before people search for it, and closes after
+  // Reyes on Jan 6. The title names the year the window starts in.
+  navidad: {
+    key: 'navidad',
+    path: 'navidad',
+    title: (lang, year) =>
+      lang === 'es' ? `Navidad en Hialeah y Miami Lakes ${year}` : `Holidays in Hialeah & Miami Lakes ${year}`,
+    metaTitle: (lang, year) =>
+      lang === 'es'
+        ? `Navidad en Hialeah y Miami Lakes ${year}: eventos y luces`
+        : `Holiday & Christmas events in Hialeah & Miami Lakes ${year}`,
+    description: (lang, year) =>
+      lang === 'es'
+        ? `Los eventos de Navidad ${year} en Hialeah, Hialeah Gardens, Miami Lakes y la Pequeña Habana, de Acción de Gracias a Reyes: luces, desfiles, Nochebuena y más, cada uno con su enlace oficial.`
+        : `Thanksgiving, Christmas and New Year's events ${year} in Hialeah, Hialeah Gardens, Miami Lakes and Little Havana, through Three Kings Day: lights, parades and more, each with its official link.`,
+    intro: {
+      es: 'Esta es la guía de las fiestas de fin de año en Hialeah, Hialeah Gardens, Miami Lakes y la Pequeña Habana: de Acción de Gracias a Nochebuena, Fin de Año y el Día de Reyes. Cada evento lleva el enlace oficial de quien lo organiza, para que confirmes allí la hora y los detalles. La vamos actualizando a medida que se anuncian.',
+      en: 'This is the guide to the holidays in Hialeah, Hialeah Gardens, Miami Lakes and Little Havana: from Thanksgiving to Christmas Eve, New Year’s and Three Kings Day. Every event carries the official link of whoever puts it on, so you can check the time and details with them. We update it as events are announced.',
+    },
+    empty: {
+      es: 'Todavía no hay eventos de Navidad anunciados. Vuelve pronto: los añadimos en cuanto salen.',
+      en: 'No holiday events have been announced yet. Check back soon: we add them as they come out.',
+    },
+    window: { from: '11-20', to: '01-06' },
+    card: {
+      theme: 'holly',
+      mascot: 'hialeah',
+      city: { slug: 'hialeah', name: 'HIALEAH' },
+      title: { es: 'NAVIDAD EN HIALEAH Y MIAMI LAKES', en: 'HOLIDAYS IN HIALEAH & MIAMI LAKES' },
+      chip: { es: 'GUÍA', en: 'GUIDE' },
+      line: {
+        es: 'De Acción de Gracias a Reyes · con su enlace oficial',
+        en: 'Thanksgiving to Three Kings · each with its official link',
+      },
+      // No drawn scene yet: the mascot's arch over the holly palette. A
+      // tagged event's cards wear the same palette and the season's chip.
+      event: {
+        theme: 'holly',
+        chip: { es: 'NAVIDAD', en: 'HOLIDAYS' },
+        ground: '#0b5d34',
+      },
+    },
+    boardLink: (lang, year) =>
+      lang === 'es' ? `NAVIDAD EN HIALEAH Y MIAMI LAKES ${year} →` : `HOLIDAYS IN HIALEAH & MIAMI LAKES ${year} →`,
+    // The card's red.
+    accent: '#e8233b',
   },
 }
 
