@@ -11,6 +11,7 @@ import {
   getCityByAlias,
   getListings,
   getSiteSettings,
+  getStoriesForCity,
   rel,
 } from '../../../../lib/data'
 import { castBg } from '../../../../lib/castBg'
@@ -25,6 +26,7 @@ import { BusinessCard } from '../../../../components/BusinessCard'
 import { SearchForm } from '../../../../components/SearchForm'
 import { buildSrcSet } from '../../../../lib/srcset'
 import { UseOnce } from '../../../../components/UseTracker'
+import { StoryShelf } from '../../../../components/StoryShelf'
 
 /**
  * Rendered per request, always.
@@ -106,9 +108,10 @@ export default async function CityPage({
   // state tell "no listings yet" apart from "no search results" — is just the
   // length of what we already have, rather than the second query this used to
   // fire alongside the first.
-  const [settings, all] = await Promise.all([
+  const [settings, all, stories] = await Promise.all([
     getSiteSettings(lang),
     getListings(lang, { city: slug }),
+    getStoriesForCity(lang, slug),
   ])
   const { list, suggestions } = applySearch(all, lang, q)
   const total = all.length
@@ -430,6 +433,8 @@ export default async function CityPage({
             )}
           </>
         )}
+        {/* The city's own stories (lib/storyCities.ts): the link that tells Google they belong to this town. */}
+        <StoryShelf lang={lang} title={`${t('STORIES FROM')} ${city.name}`} stories={stories} t={t} onDark />
         {/* A search, counted once per query; kept as typed only if it is one of the site's words (lib/uses.ts). */}
         {q.trim() ? (
           <UseOnce tool="search" action={list.length ? 'search' : 'no_match'} term={q} results={list.length} once={q} />

@@ -5,7 +5,11 @@ import { isLang } from '../../../../../i18n'
 import { routes } from '../../../../../lib/routes'
 import { openGraph } from '../../../../../lib/site'
 import { electionState, voteData, type VoteData } from '../../../../../lib/civic'
-import { areaRows, counts, findArea, sitesOf } from '../../../../../lib/vote'
+import { areaRows, counts, directoryCityFor, findArea, sitesOf } from '../../../../../lib/vote'
+import { getCity } from '../../../../../lib/data'
+import { titleCase } from '../../../../../lib/civicGeo'
+import { todayISO } from '../../../../../lib/dates'
+import { getSeason, isSeasonOpen, seasonWindow } from '../../../../../lib/seasons'
 import { municSlug } from '../../../../../lib/civicSync'
 import { areaName, dayMonth, electionName, longDay, voteCopy } from '../../../../../lib/voteCopy'
 import { breadcrumbJsonLd, webPageJsonLd } from '../../../../../lib/jsonld'
@@ -81,6 +85,13 @@ export default async function VoteArea({ params }: Props) {
       : c.areaAnswerLayer(name, n.precincts, n.places)
   const commissioner = area.district != null ? data.commission.find((o) => o.district === area.district) : null
   const others = data.areas.filter((a) => a.slug !== slug)
+  // Onward links from a page search engines already rank: the town's
+  // directory page, and the holiday guide while its season is on.
+  const citySlug = directoryCityFor(slug)
+  const city = citySlug ? await getCity(lang, citySlug) : null
+  const today = todayISO()
+  const holidays = getSeason('navidad')
+  const holidayLink = holidays && isSeasonOpen(holidays, today) ? holidays : null
 
   return (
     <PageShell>
@@ -104,6 +115,16 @@ export default async function VoteArea({ params }: Props) {
           >
             {c.morePlace(area.district != null ? `${lang === 'es' ? 'el distrito' : 'District'} ${area.district}` : name)} →
           </Link>
+          {city ? (
+            <Link href={routes.city(lang, city.slug)} style={{ fontWeight: 800, color: 'var(--ink)' }}>
+              {c.moreCity(titleCase(city.name))} →
+            </Link>
+          ) : null}
+          {holidayLink ? (
+            <Link href={routes.season(lang, holidayLink.path)} style={{ fontWeight: 800, color: 'var(--ink)' }}>
+              {holidayLink.title(lang, seasonWindow(holidayLink, today).year)} →
+            </Link>
+          ) : null}
         </section>
 
         <VoteSources data={data} lang={lang} c={c} />

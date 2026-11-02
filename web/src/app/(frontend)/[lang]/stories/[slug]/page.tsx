@@ -4,7 +4,8 @@ import type { Metadata } from 'next'
 import { isLang, translator, type Lang } from '../../../../../i18n'
 import { routes } from '../../../../../lib/routes'
 import { getCity, getStories, getStory, getStoryVideos, rel } from '../../../../../lib/data'
-import type { City, Listing, Media, Video } from '../../../../../payload-types'
+import { storyCitySlug } from '../../../../../lib/storyCities'
+import type { Listing, Media, Video } from '../../../../../payload-types'
 import { PageShell } from '../../../../../components/PageShell'
 import { StoryBlocks } from '../../../../../components/StoryBlocks'
 import { StoryArt } from '../../../../../components/StoryArt'
@@ -89,11 +90,12 @@ export default async function StoryPage({
   const coverRatio = coverDoc?.width && coverDoc?.height ? `${coverDoc.width} / ${coverDoc.height}` : null
 
   const listing = rel<Listing>(story.listing)
+  // The story's town: its listing's city, or the slug map (lib/storyCities.ts).
   // story -> listing -> city populates at depth 2, but the city's own mascot
   // upload sits one level deeper than that, so it comes back as a bare id.
   // Re-fetch the city rather than raising depth on the whole story query.
-  const cityRef = listing ? rel<City>(listing.city) : null
-  const city = cityRef ? await getCity(lang, cityRef.slug) : null
+  const citySlug = storyCitySlug(story)
+  const city = citySlug ? await getCity(lang, citySlug) : null
   const mascot = city ? rel<Media>(city.solo) : null
 
   const others = (await getStories(lang)).filter((s) => s.slug !== slug)
@@ -199,8 +201,10 @@ export default async function StoryPage({
           >
             <div style={{ display: 'flex', gap: 9, flexWrap: 'wrap', alignItems: 'center' }}>
               {city ? (
-                <div
+                <Link
+                  href={routes.city(lang, city.slug)}
                   style={{
+                    textDecoration: 'none',
                     background: 'var(--grad-pink)',
                     color: 'var(--cream)',
                     fontFamily: 'var(--display)',
@@ -209,7 +213,7 @@ export default async function StoryPage({
                   }}
                 >
                   {city.name}
-                </div>
+                </Link>
               ) : null}
               <div
                 style={{
@@ -475,6 +479,7 @@ export default async function StoryPage({
                 style={{
                   marginTop: 'clamp(24px,4vw,40px)',
                   display: 'flex',
+                  flexWrap: 'wrap',
                   alignItems: 'center',
                   gap: 12,
                 }}
@@ -492,7 +497,16 @@ export default async function StoryPage({
                 >
                   {t('READ ANOTHER')}
                 </h2>
-                <div style={{ flex: 1, height: 5, background: 'var(--ink)' }} />
+                <div style={{ flex: 1, minWidth: 8, height: 5, background: 'var(--ink)' }} />
+                {/* The way back to the story's town and to the index: links Google follows. */}
+                {city ? (
+                  <Link href={routes.city(lang, city.slug)} style={moreLink}>
+                    {t('MORE FROM')} {city.name} →
+                  </Link>
+                ) : null}
+                <Link href={routes.stories(lang)} style={moreLink}>
+                  {t('ALL STORIES →')}
+                </Link>
               </div>
               <div
                 style={{
@@ -557,3 +571,12 @@ export default async function StoryPage({
     </PageShell>
   )
 }
+
+/** The small links beside "Read another", styled like the home page's ALL STORIES →. */
+const moreLink = {
+  color: 'var(--ink)',
+  fontWeight: 800,
+  fontSize: 11,
+  letterSpacing: '1px',
+  whiteSpace: 'nowrap',
+} as const

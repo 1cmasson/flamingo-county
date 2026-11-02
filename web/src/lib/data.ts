@@ -7,6 +7,7 @@ import { PUBLISHED } from '../fields/shared'
 import { routes } from './routes'
 import { todayISO } from './dates'
 import { seasonEvents, type SeasonKey } from './seasons'
+import { storyCitySlug } from './storyCities'
 import { fold, matches, metaLine, prepare, squash, type Suggestion } from './search'
 import { partnerFor, promoOpen } from './promos'
 
@@ -309,6 +310,11 @@ export async function getStoryVideos(slug: string): Promise<Video[]> {
     depth: 1,
   })
   return videos.filter((v) => v.url)
+}
+
+/** The published stories that belong to a city (lib/storyCities.ts), in the stories index's order. */
+export async function getStoriesForCity(lang: Lang, citySlug: string): Promise<Story[]> {
+  return (await getStories(lang)).filter((s) => storyCitySlug(s) === citySlug)
 }
 
 /** The story written about a given business, if there is one. */
