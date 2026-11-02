@@ -118,10 +118,13 @@ export async function syncPublishTimes(payload: Payload, now: Date = new Date())
 }
 
 /**
- * Mark a scheduled draft `published` once Postiz reports every one of its
- * posts as PUBLISHED. Only a draft whose time has passed is looked at, and a
- * post Postiz does not list (deleted, or outside the window) leaves the draft
- * as it was. Returns how many drafts changed.
+ * Settle a scheduled draft once Postiz has finished with every one of its
+ * posts: `published` when at least one went out, `failed` when none did. A
+ * post Postiz marks ERROR (Instagram refusing an upload, say) is final there
+ * and never retried, so the owner is pinged in Telegram rather than left with
+ * a draft that says "scheduled" forever. Only a draft whose time has passed is
+ * looked at, and a post Postiz does not list (deleted, or outside the window)
+ * leaves the draft as it was. Returns how many drafts changed.
  */
 export async function markPublished(payload: Payload, now: Date = new Date()): Promise<number> {
   const drafts = await payload.find({
@@ -143,21 +146,47 @@ export async function markPublished(payload: Payload, now: Date = new Date()): P
   const states = await listPostStates(new Date(now.getTime() - LOOKBACK_MS), now)
   let changed = 0
   for (const draft of due) {
-    const mine = (draft.postizPosts ?? []).map((p) => states.get(p.postId))
-    if (!mine.every((st) => st === 'PUBLISHED')) continue
+    const posts = draft.postizPosts ?? []
+    const mine = posts.map((p) => states.get(p.postId))
+    if (!mine.every((st) => st === 'PUBLISHED' || st === 'ERROR')) continue
+    const live = posts.filter((_, i) => mine[i] === 'PUBLISHED').map((p) => p.platform)
+    const failed = posts.filter((_, i) => mine[i] === 'ERROR').map((p) => p.platform)
+    const error = failed.length
+      ? `Postiz couldn't publish it on ${failed.join(', ')} (the post is marked ERROR there and won't be retried).`
+      : undefined
     await payload.update({
       collection: 'hq-social-drafts',
       id: draft.id,
-      data: { status: 'published' },
+      data: { status: live.length ? 'published' : 'failed', ...(error ? { error } : {}) },
       overrideAccess: true,
       context: { [HQ_INTERNAL]: true },
     })
-    await recordEvent(payload, {
-      type: 'social.published',
-      summary: `Draft #${draft.id} is live on ${(draft.platforms ?? []).join(', ')}`,
-      refCollection: 'hq-social-drafts',
-      refId: draft.id,
-    })
+    if (live.length) {
+      await recordEvent(payload, {
+        type: 'social.published',
+        summary: `Draft #${draft.id} is live on ${live.join(', ')}`,
+        refCollection: 'hq-social-drafts',
+        refId: draft.id,
+      })
+    }
+    if (failed.length) {
+      await recordEvent(
+        payload,
+        {
+          type: 'social.failed',
+          summary: `Draft #${draft.id} failed to publish on ${failed.join(', ')}`,
+          refCollection: 'hq-social-drafts',
+          refId: draft.id,
+          data: { error },
+        },
+        {
+          ping:
+            `⚠️ Draft #${draft.id} did not go out on ${failed.join(', ')}. Postiz marked it ERROR at publish time` +
+            (live.length ? ` (it is live on ${live.join(', ')}).` : '.') +
+            ' Ask Claude to redraft it.',
+        },
+      )
+    }
     changed++
   }
   return changed
