@@ -6,6 +6,7 @@ import type { City } from '../../payload-types'
 import { allSeasons, seasonWindow } from '../../lib/seasons'
 import { todayISO } from '../../lib/dates'
 import { TRANSIT } from '../../lib/transit'
+import { COUNTY, routeEnds, routeName } from '../../lib/county'
 import { electionState, placesData, surgeData, voteData } from '../../lib/civic'
 import { SURGE_PAGES } from '../../lib/surgeCopy'
 import { areaName } from '../../lib/voteCopy'
@@ -103,6 +104,11 @@ export async function GET() {
       (r) =>
         `- [${r.name} free bus line](${absUrl(routes.freeRoute('en', r.slug))}): every stop on Hialeah’s free ${r.name} line, with ride times and the spots near each stop. Spanish: ${absUrl(routes.freeRoute('es', r.slug))}`,
     ),
+    `- [Bus routes](${absUrl(routes.bus('en'))}): the Miami-Dade Transit routes through Hialeah, Miami Lakes, Little Havana and Miami Gardens, from the county’s schedule. Spanish: ${absUrl(routes.bus('es'))}`,
+    ...COUNTY.routes.map((r) => {
+      const [a, z] = routeEnds(r)
+      return `- [${routeName(r, 'en')}](${absUrl(routes.busRoute('en', r.slug))}): ${a} to ${z} along ${r.via}: every stop both ways, the first and last bus, how often it comes, and the transfers. Spanish: ${absUrl(routes.busRoute('es', r.slug))}`
+    }),
     '',
     '## Events',
     `- [All events](${absUrl(routes.events('en'))})`,

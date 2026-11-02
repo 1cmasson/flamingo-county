@@ -6,6 +6,7 @@ import { absUrl } from '../lib/site'
 import { isStillOn, todayISO } from '../lib/dates'
 import { allSeasons, seasonEvents } from '../lib/seasons'
 import { ROUTE_SLUGS } from '../lib/transit'
+import { COUNTY, COUNTY_SLUGS } from '../lib/county'
 import type { City } from '../payload-types'
 import { placesData, surgeData, voteData } from '../lib/civic'
 import { SURGE_PAGES } from '../lib/surgeCopy'
@@ -57,6 +58,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...both(routes.listYourSpot, undefined, 0.4),
     ...both(routes.freeRides, undefined, 0.7),
     ...ROUTE_SLUGS.flatMap((r) => both((l) => routes.freeRoute(l, r), undefined, 0.6)),
+    // The county bus routes, dated by the day their schedule was read.
+    ...both(routes.bus, COUNTY.source.fetchedAt, 0.7),
+    ...COUNTY_SLUGS.flatMap((r) => both((l) => routes.busRoute(l, r), COUNTY.source.fetchedAt, 0.6)),
     // The search page only: a single address (`?a=`) is noindex.
     ...both(routes.address, undefined, 0.7),
     // How AI assistants connect to the civic tools. (The API endpoints themselves are noindex.)

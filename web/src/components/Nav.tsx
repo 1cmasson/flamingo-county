@@ -212,6 +212,10 @@ export async function Nav({ lang }: { lang: Lang }) {
                 label: t('FREE RIDES'),
               },
               {
+                href: routes.bus(lang),
+                label: t('BUS ROUTES'),
+              },
+              {
                 href: routes.address(lang),
                 label: t('YOUR ADDRESS'),
               },

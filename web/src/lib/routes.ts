@@ -36,6 +36,9 @@ export const routes = {
   privacy: (lang: Lang) => `/${lang}/privacy`,
   freeRides: (lang: Lang) => `/${lang}/free-rides`,
   freeRoute: (lang: Lang, route: string) => `/${lang}/free-rides/${route}`,
+  /** Miami-Dade Transit's routes through the directory's cities: the hub, and `/es/bus/54` (lib/county.ts). */
+  bus: (lang: Lang) => `/${lang}/bus`,
+  busRoute: (lang: Lang, route: string) => `/${lang}/bus/${route}`,
   /** What the city and county know about a Hialeah address; `?a=<slug>` picks one. */
   address: (lang: Lang) => `/${lang}/address`,
   /** Election Day polling places: the hub, and one page per municipality or unincorporated commission district. */
