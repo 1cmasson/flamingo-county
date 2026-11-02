@@ -241,19 +241,39 @@ describe('marking drafts published', () => {
     const now = new Date('2031-01-02T00:00:00Z')
     const live = await scheduled('a', '2031-01-01T15:00:00Z')
     const queued = await scheduled('b', '2031-01-01T15:00:00Z')
-    const half = await scheduled('c', '2031-01-01T15:00:00Z', ['facebook', 'instagram'])
+    const waiting = await scheduled('c', '2031-01-01T15:00:00Z', ['facebook', 'instagram'])
     const missing = await scheduled('d', '2031-01-01T15:00:00Z')
     const future = await scheduled('e', '2031-02-01T15:00:00Z')
     stub([
       { id: 'a-facebook', state: 'PUBLISHED' }, { id: 'b-facebook', state: 'QUEUE' },
-      { id: 'c-facebook', state: 'PUBLISHED' }, { id: 'c-instagram', state: 'ERROR' },
+      { id: 'c-facebook', state: 'PUBLISHED' }, { id: 'c-instagram', state: 'QUEUE' },
       { id: 'e-facebook', state: 'PUBLISHED' },
     ])
     expect(await markPublished(payload, now)).toBe(1)
     expect(await status(live.id)).toBe('published')
     expect(await status(queued.id)).toBe('scheduled')
-    expect(await status(half.id)).toBe('scheduled')
+    expect(await status(waiting.id)).toBe('scheduled')
     expect(await status(missing.id)).toBe('scheduled')
     expect(await status(future.id)).toBe('scheduled')
+  })
+
+  it('records a Postiz ERROR on the draft instead of leaving it scheduled', async () => {
+    const now = new Date('2031-03-02T00:00:00Z')
+    const dead = await scheduled('f', '2031-03-01T15:00:00Z', ['instagram'])
+    const half = await scheduled('g', '2031-03-01T15:00:00Z', ['facebook', 'instagram'])
+    stub([
+      { id: 'f-instagram', state: 'ERROR' },
+      { id: 'g-facebook', state: 'PUBLISHED' }, { id: 'g-instagram', state: 'ERROR' },
+    ])
+    expect(await markPublished(payload, now)).toBe(2)
+    const read = (id: number) => payload.findByID({ collection: 'hq-social-drafts', id, overrideAccess: true })
+    expect(await read(dead.id)).toMatchObject({ status: 'failed', error: expect.stringMatching(/instagram.*ERROR/) })
+    expect(await read(half.id)).toMatchObject({ status: 'published', error: expect.stringMatching(/instagram/) })
+    const events = await payload.find({
+      collection: 'hq-events',
+      where: { and: [{ type: { equals: 'social.failed' } }, { refId: { in: [String(dead.id), String(half.id)] } }] },
+      overrideAccess: true,
+    })
+    expect(events.totalDocs).toBe(2)
   })
 })
