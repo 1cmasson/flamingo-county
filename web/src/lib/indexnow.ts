@@ -43,6 +43,8 @@ export function urlsFor(
       return [...bothLangs((l) => routes.story(l, doc.slug!)), ...bothLangs(routes.stories)]
     case 'cities':
       return bothLangs((l) => routes.city(l, doc.slug!))
+    case 'rankings':
+      return bothLangs((l) => routes.ranking(l, doc.slug!))
     default:
       return []
   }
@@ -83,7 +85,7 @@ async function citySlugOf(
 }
 
 /** `afterChange` and `afterDelete` hooks for a collection. */
-export function indexNowHooks(collection: 'listings' | 'events' | 'stories' | 'cities') {
+export function indexNowHooks(collection: 'listings' | 'events' | 'stories' | 'cities' | 'rankings') {
   const run = async (
     req: Parameters<CollectionAfterChangeHook>[0]['req'],
     doc: Record<string, any>,

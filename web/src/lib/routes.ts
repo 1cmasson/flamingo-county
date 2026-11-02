@@ -54,6 +54,8 @@ export const routes = {
   district: (lang: Lang, n: number) => `/${lang}/miami-dade/commission-district-${n}`,
   /** A partner's promotion, where a visitor takes a coupon (lib/promos.ts). */
   promo: (lang: Lang, slug: string) => `/${lang}/promo/${slug}`,
+  /** A neighbors' vote: nominations, the bracket, then the results (lib/rankings.ts). */
+  ranking: (lang: Lang, slug: string) => `/${lang}/rankings/${slug}`,
   /** One visitor's coupon: the code is the only key to it. Never indexed or counted by code. */
   coupon: (lang: Lang, slug: string, code: string) => `/${lang}/promo/${slug}/c/${code}`,
   /** A partner business's private coupon dashboard. */

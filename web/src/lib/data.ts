@@ -2,7 +2,7 @@ import { getPayload } from 'payload'
 import type { Where } from 'payload'
 import config from '../payload.config'
 import { translator, type Lang } from '../i18n'
-import type { City, Listing, Story, Event, WeeklyEvent, Spotlight, Category, EventKind, Video, Promotion } from '../payload-types'
+import type { City, Listing, Story, Event, WeeklyEvent, Spotlight, Category, EventKind, Video, Promotion, Ranking } from '../payload-types'
 import { PUBLISHED } from '../fields/shared'
 import { routes } from './routes'
 import { todayISO } from './dates'
@@ -435,6 +435,23 @@ export async function getOpenPromotions(lang: Lang, listingId: number, today: st
     depth: 0,
   })
   return docs.filter((p) => promoOpen(p, today))
+}
+
+/* ----------------------------------------------------------------- rankings */
+
+/** Published neighbors' rankings (lib/rankings.ts), newest first: the sitemap's list. */
+export async function getRankings(lang: Lang): Promise<Pick<Ranking, 'slug' | 'updatedAt'>[]> {
+  const payload = await db()
+  const { docs } = await payload.find({
+    collection: 'rankings',
+    where: PUBLISHED,
+    locale: lang,
+    sort: '-createdAt',
+    limit: 200,
+    depth: 0,
+    select: { slug: true, updatedAt: true },
+  })
+  return docs
 }
 
 /* ------------------------------------------------------------------ globals */

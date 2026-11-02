@@ -1,0 +1,113 @@
+/*
+ * A neighbors' ranking (lib/rankings.ts). Shares the coupon pages' card,
+ * button and heading look (promo.module.css); this adds the contenders list
+ * and the head-to-head matchups. Opened mostly inside Instagram's browser:
+ * one column, big tap targets.
+ */
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.entry {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  gap: 4px 10px;
+  align-items: baseline;
+}
+.seed {
+  font-family: var(--display);
+  font-size: 24px;
+  line-height: 1;
+}
+.name {
+  margin: 0;
+  font-weight: 800;
+  font-size: 18px;
+}
+.name a {
+  color: inherit;
+}
+.sub {
+  grid-column: 2;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.round {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.game {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 14px;
+  border-top: 3px dashed var(--ink);
+}
+.game:first-of-type {
+  border-top: 0;
+  padding-top: 0;
+}
+.side {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 56px;
+  width: 100%;
+  padding: 12px 14px 9px;
+  font: inherit;
+  font-weight: 800;
+  font-size: 17px;
+  text-align: left;
+  color: var(--ink);
+  background: var(--cream);
+  border: 4px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 4px 4px 0 var(--ink);
+  overflow: hidden;
+}
+button.side {
+  cursor: pointer;
+}
+button.side:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+button.side:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+.bar {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: var(--yellow);
+  z-index: 0;
+}
+.side > span {
+  position: relative;
+  z-index: 1;
+}
+.count {
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 18px;
+  white-space: nowrap;
+}
+.won {
+  background: var(--yellow);
+}
+.vs {
+  align-self: center;
+  margin: 0;
+  font-family: var(--display);
+  font-size: 16px;
+}

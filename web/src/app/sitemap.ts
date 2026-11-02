@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next'
 import { LOCALES, type Lang } from '../i18n'
 import { routes } from '../lib/routes'
-import { getCities, getEvents, getListings, getStories, rel } from '../lib/data'
+import { getCities, getEvents, getListings, getRankings, getStories, rel } from '../lib/data'
 import { absUrl } from '../lib/site'
 import { isStillOn, todayISO } from '../lib/dates'
 import { allSeasons, seasonEvents } from '../lib/seasons'
@@ -27,7 +27,7 @@ function both(path: (lang: Lang) => string, lastModified?: string | Date, priori
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [cities, listings, events, stories, vote, surge, places] = await Promise.all([
+  const [cities, listings, events, stories, vote, surge, places, rankings] = await Promise.all([
     getCities('en'),
     getListings('en'),
     getEvents('en'),
@@ -35,6 +35,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     voteData(),
     surgeData(),
     placesData(),
+    getRankings('en'),
   ])
 
   // A seasonal guide's lastmod is its newest listed event's edit: the page
@@ -102,6 +103,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       .filter((e) => isStillOn(e, today))
       .flatMap((e) => both((l) => routes.event(l, e.slug), e.updatedAt, 0.6)),
     ...stories.flatMap((s) => both((l) => routes.story(l, s.slug), s.updatedAt, 0.6)),
+    ...rankings.flatMap((r) => both((l) => routes.ranking(l, r.slug), r.updatedAt, 0.7)),
   ]
   return entries
 }
