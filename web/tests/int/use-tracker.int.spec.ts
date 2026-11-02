@@ -102,6 +102,11 @@ describe('clickUse (the site-wide listener)', () => {
           createElement('button', { 'data-use': 'save', 'data-testid': 'save' }, 'save'),
         ),
         createElement('div', { 'data-use-local': '' }, createElement('a', { href: 'tel:1', 'data-testid': 'local' }, 'x')),
+        createElement(
+          'div',
+          { 'data-use-tool': 'event', 'data-use-target': 'son-night' },
+          createElement('a', { href: '/es/hialeah/el-gallo', 'data-use': 'spot', 'data-use-target': 'el-gallo', 'data-testid': 'spot' }, 'spot'),
+        ),
       ),
     )
   const own = 'flamingocounty.com'
@@ -111,6 +116,8 @@ describe('clickUse (the site-wide listener)', () => {
     expect(clickUse(getByTestId('tel').firstChild, own)).toEqual({ tool: 'listing', target: 'el-gallo', action: 'call' })
     expect(clickUse(getByTestId('ig'), own)).toEqual({ tool: 'listing', target: 'el-gallo', action: 'social', network: 'instagram' })
     expect(clickUse(getByTestId('save'), own)).toEqual({ tool: 'event', target: 'son-night', action: 'save' })
+    // A nearby business's card names its own target, inside the event's page.
+    expect(clickUse(getByTestId('spot'), own)).toEqual({ tool: 'event', target: 'el-gallo', action: 'spot' })
   })
 
   it('leaves links inside the site, and the address report\'s own counter, alone', () => {

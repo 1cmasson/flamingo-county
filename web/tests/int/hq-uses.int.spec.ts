@@ -187,6 +187,16 @@ describe('address tool uses', () => {
       expect(await recordUse(payload, { tool: 'listing', action: 'call', target: 'no-such-place' }, browser())).toBe(false)
     })
 
+    it('counts a nearby-business tap for that business, from any page', async () => {
+      expect(await recordUse(payload, { tool: 'event', action: 'spot', target: 'el-gallo', path: '/es/events/son-night' }, browser())).toBe(true)
+      expect(await latest()).toMatchObject({ tool: 'event', action: 'spot', target: 'el-gallo' })
+      expect(await recordUse(payload, { tool: 'address', action: 'spot', target: 'el-gallo', area: 'HIALEAH' }, browser())).toBe(true)
+      expect(await recordUse(payload, { tool: 'event', action: 'spot', target: 'no-such-place' }, browser())).toBe(false)
+      const r = await toolUseReport(payload, 28)
+      expect(r.spots.byTool).toMatchObject({ event: 1, address: 1 })
+      expect(r.spots.top.find((t) => t.target === 'el-gallo')?.total).toBe(2)
+    })
+
     it('knows the free-ride lines without asking the database', async () => {
       expect(await recordUse(payload, { tool: 'route', action: 'call', target: 'flamingo' }, browser())).toBe(true)
       expect(await recordUse(payload, { tool: 'route', action: 'call', target: 'nowhere' }, browser())).toBe(false)

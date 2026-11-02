@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
@@ -43,6 +44,9 @@ import { UseClicks, UseOnce } from '../../../../components/UseTracker'
 import { isMapLens, type LensId } from '../../../../lib/mapLenses'
 import { detectWebview, type Webview } from '../../../../lib/webview'
 import { HoursLines, LineBullet } from '../../../../components/Transit'
+import { spotsNear } from '../../../../lib/nearbySpots'
+import { rel } from '../../../../lib/data'
+import type { Category, City } from '../../../../payload-types'
 import s from '../../../../components/address.module.css'
 
 type Props = {
@@ -509,6 +513,11 @@ function Report({
               <Place label={c.park} p={r.nearby.park} c={c} />
             </div>
           </section>
+
+          {/* --- Local spots: a listing lookup may wait on a geocode, so it streams in --- */}
+          <Suspense fallback={null}>
+            <SpotsCard r={r} lang={lang} c={c} />
+          </Suspense>
         </div>
 
         <p className={`${s.meta} ${s.sheetOnly}`}>{c.sheetFooter}</p>
@@ -726,5 +735,53 @@ function Place({
       ) : null}
       <p className={s.small}>{p.address}</p>
     </div>
+  )
+}
+
+/**
+ * The listed businesses closest to this address, inside the cap in
+ * lib/spotRank.ts; nothing at all when none are that close. Name, kind and
+ * distance only: hours and phone live on the business's own page, where their
+ * sourcing is shown. Each tap is counted as a `spot` for that business (never
+ * with the address), which is what a partner is shown.
+ */
+async function SpotsCard({ r, lang, c }: { r: AddressReport; lang: Lang; c: AddressCopy }) {
+  const spots = await spotsNear(lang, r.at)
+  if (!spots.length) return null
+  const city = rel<City>(spots[0].item.city)
+  return (
+    <section className={`${s.card} ${s.noPrint}`} aria-labelledby="spots">
+      <h3 id="spots" className={s.cardTag} style={{ background: 'var(--yellow)', color: 'var(--ink)' }}>
+        🍽️ {c.spots}
+      </h3>
+      <p className={s.small}>{c.spotsLead}</p>
+      <div className={s.rows}>
+        {spots.map(({ item: l, meters, walk }) => {
+          const lc = rel<City>(l.city)
+          if (!lc) return null
+          return (
+            <div key={l.id} className={s.row}>
+              <span className={s.rowLabel}>
+                {rel<Category>(l.category)?.label} · {walk <= 20 ? c.walk(walk) : c.far((meters / 1000).toFixed(1))}
+              </span>
+              <Link
+                className={s.big}
+                style={{ gridColumn: '1 / -1', color: 'inherit' }}
+                href={routes.business(lang, lc.slug, l.slug)}
+                data-use="spot"
+                data-use-target={l.slug}
+              >
+                {l.name} →
+              </Link>
+            </div>
+          )
+        })}
+      </div>
+      {city ? (
+        <Link className={s.link} href={routes.city(lang, city.slug)}>
+          {c.spotsAll} →
+        </Link>
+      ) : null}
+    </section>
   )
 }

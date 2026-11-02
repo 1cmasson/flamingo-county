@@ -128,6 +128,10 @@ const EN = {
   emergency: 'Emergency? Call 911.',
   nonEmergency: 'non-emergency',
 
+  spots: 'SPOTS NEAR YOU',
+  spotsLead: 'Local places on Flamingo County, closest first.',
+  spotsAll: 'All local spots',
+
   sources: 'WHERE THIS COMES FROM',
   sourcesText: (d: string) =>
     `Public records of Miami-Dade County, the cities of Hialeah and Miami, and FEMA, copied ${d}. We keep addresses only, never who lives there.`,
@@ -255,6 +259,10 @@ const ES: AddressCopy = {
   hospital: 'Hospital',
   emergency: '¿Emergencia? Llama al 911.',
   nonEmergency: 'no emergencias',
+
+  spots: 'SITIOS CERCA DE TI',
+  spotsLead: 'Negocios locales en Flamingo County, del más cercano al más lejos.',
+  spotsAll: 'Todos los sitios locales',
 
   sources: 'DE DÓNDE SALE ESTO',
   sourcesText: (d: string) =>

@@ -78,7 +78,7 @@ export type NearMeCopy = Record<
   string
 >
 
-export type NearMePlace = { name: string; href: string; route: TransitRoute['slug']; index: number; walk: number }
+export type NearMePlace = { name: string; slug: string; href: string; route: TransitRoute['slug']; index: number; walk: number }
 
 type Origin = { at: LatLng; label: string; fromGps: boolean; picked?: boolean }
 
@@ -608,7 +608,7 @@ export function NearMe({
                           <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 6 }}>
                             {rides.map((p) => (
                               <li key={p.href}>
-                                <Link href={p.href} className={tr.place} style={{ flexWrap: 'wrap', rowGap: 2, padding: '10px 12px 9px' }}>
+                                <Link href={p.href} data-use="spot" data-use-target={p.slug} className={tr.place} style={{ flexWrap: 'wrap', rowGap: 2, padding: '10px 12px 9px' }}>
                                   <span style={{ fontFamily: 'var(--display)', fontSize: 17, lineHeight: 1.1 }}>{p.name}</span>
                                   <span style={{ fontWeight: 800, fontSize: 14, whiteSpace: 'nowrap' }}>
                                     {p.ride ? fill(copy.ride, { n: p.ride }) : null}

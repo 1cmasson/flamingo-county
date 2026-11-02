@@ -12,6 +12,10 @@
  * without a matching entry here silently ships English to Spanish readers.
  */
 export const ES_OVERRIDES: Record<string, string> = {
+  // --- Nearby spots (events) ---------------------------------------------
+  'NEAR THIS EVENT': 'CERCA DEL EVENTO',
+  'min walk': 'min a pie',
+
   // --- Partners ----------------------------------------------------------
   // Businesses on the site are partners, not paying members. The design
   // source says MEMBER/MEMBERSHIP, so the generated dictionary still carries

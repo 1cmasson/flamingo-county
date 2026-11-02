@@ -56,22 +56,28 @@ export const USE_ACTIONS = [
   /** A search that found something, and one that found nothing. */
   'search',
   'no_match',
+  /**
+   * A tap on a nearby-business card that leads to the business's page (the
+   * address report's local spots, an event's "near here"); `target` is the
+   * listing's slug, whatever page the tap was on.
+   */
+  'spot',
 ] as const
 export type UseAction = (typeof USE_ACTIONS)[number]
 
 /** What can happen where: anything else is refused. */
 export const TOOL_ACTIONS: Record<UseTool, readonly UseAction[]> = {
-  address: ['lookup', 'not_found', 'calendar', 'print', 'open_chrome', 'copy_link', 'map', 'change', 'link'],
-  listing: ['call', 'email', 'directions', 'website', 'social'],
-  event: ['going', 'save', 'calendar', 'call', 'email', 'directions', 'website', 'social'],
-  story: ['read_end', 'call', 'email', 'directions', 'website', 'social'],
-  route: ['call', 'email', 'directions', 'website', 'social'],
+  address: ['lookup', 'not_found', 'calendar', 'print', 'open_chrome', 'copy_link', 'map', 'change', 'link', 'spot'],
+  listing: ['call', 'email', 'directions', 'website', 'social', 'spot'],
+  event: ['going', 'save', 'calendar', 'call', 'email', 'directions', 'website', 'social', 'spot'],
+  story: ['read_end', 'call', 'email', 'directions', 'website', 'social', 'spot'],
+  route: ['call', 'email', 'directions', 'website', 'social', 'spot'],
   search: ['search', 'no_match'],
-  page: ['call', 'email', 'directions', 'website', 'social'],
+  page: ['call', 'email', 'directions', 'website', 'social', 'spot'],
 }
 
 /** The address report's cards, by their heading id on the address page. */
-export const USE_SECTIONS = ['trash', 'bus', 'flood', 'reps', 'vote', 'schools', 'near', 'sources'] as const
+export const USE_SECTIONS = ['trash', 'bus', 'flood', 'reps', 'vote', 'schools', 'near', 'spots', 'sources'] as const
 export type UseSection = (typeof USE_SECTIONS)[number]
 
 /** Where the page was open: a normal browser or one app's built-in one. */

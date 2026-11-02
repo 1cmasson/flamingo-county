@@ -85,7 +85,7 @@ export function UseClicks({ area, lang, children }: { area?: string; lang?: stri
     const el = (e.target as Element | null)?.closest?.('[data-use], a, button')
     if (!el) return
     const named = el.getAttribute('data-use')
-    if (named) return send({ tool: 'address', action: named, area, lang })
+    if (named) return send({ tool: 'address', action: named, area, lang, target: el.getAttribute('data-use-target') || undefined })
     const section = el.closest('section[aria-labelledby]')?.getAttribute('aria-labelledby')
     if (section && SECTIONS.has(section)) send({ tool: 'address', action: 'link', section, area, lang })
   }
@@ -105,7 +105,8 @@ export function clickUse(target: EventTarget | null, ownHost: string): Use | nul
   const tool = ctx?.getAttribute('data-use-tool') ?? 'page'
   const about = ctx?.getAttribute('data-use-target') || undefined
   const named = el.getAttribute('data-use')
-  if (named) return { tool, action: named, target: about }
+  // A control can name its own target (a nearby business's card on an event page).
+  if (named) return { tool, action: named, target: el.getAttribute('data-use-target') || about }
   const kind = linkKind(el.getAttribute('href') ?? '', ownHost)
   return kind ? { tool, target: about, ...kind } : null
 }
