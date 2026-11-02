@@ -82,6 +82,8 @@ export interface Config {
     promotions: Promotion;
     partners: Partner;
     'promo-coupons': PromoCoupon;
+    rankings: Ranking;
+    'ranking-votes': RankingVote;
     subscribers: Subscriber;
     'listing-requests': ListingRequest;
     members: Member;
@@ -126,6 +128,8 @@ export interface Config {
     promotions: PromotionsSelect<false> | PromotionsSelect<true>;
     partners: PartnersSelect<false> | PartnersSelect<true>;
     'promo-coupons': PromoCouponsSelect<false> | PromoCouponsSelect<true>;
+    rankings: RankingsSelect<false> | RankingsSelect<true>;
+    'ranking-votes': RankingVotesSelect<false> | RankingVotesSelect<true>;
     subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
     'listing-requests': ListingRequestsSelect<false> | ListingRequestsSelect<true>;
     members: MembersSelect<false> | MembersSelect<true>;
@@ -1221,6 +1225,112 @@ export interface PromoCoupon {
   createdAt: string;
 }
 /**
+ * Neighbors’ votes (best croquetas in Hialeah…). The page is /es/rankings/<slug>. The order comes from votes only.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rankings".
+ */
+export interface Ranking {
+  id: number;
+  /**
+   * URL identifier. Changing it breaks existing links.
+   */
+  slug: string;
+  city: number | City;
+  /**
+   * What people search for, e.g. "Las mejores croquetas de Hialeah".
+   */
+  title: string;
+  /**
+   * The question we asked, e.g. "¿Dónde hacen las croquetas más ricas de Hialeah?"
+   */
+  question: string;
+  intro?: string | null;
+  /**
+   * The Instagram post where people nominate in the comments. Shown while nominating.
+   */
+  nominatePostUrl?: string | null;
+  /**
+   * Shown while nominating.
+   */
+  nominationsCloseOn?: string | null;
+  /**
+   * Our own artwork for the page and its link preview.
+   */
+  image?: (number | null) | Media;
+  /**
+   * The most-nominated places, MOST NOMINATED FIRST: the order is the seeding. 8 (or 4) make the bracket; never reorder once voting opens.
+   */
+  entrants?:
+    | {
+        /**
+         * Votes are stored under this. Never change it once voting opens.
+         */
+        key: string;
+        name: string;
+        /**
+         * If the place is in our directory. Its page, coupon and nearby bus stops link from here.
+         */
+        listing?: (number | null) | Listing;
+        /**
+         * Where, as people say it: "W 49th St & Palm Ave".
+         */
+        area?: string | null;
+        /**
+         * For a place not in our directory: its own site or Google Maps page, so every fact has a source.
+         */
+        sourceUrl?: string | null;
+        /**
+         * Times named in the comments.
+         */
+        nominations?: number | null;
+        /**
+         * One sourced line: what to order, since when.
+         */
+        note?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  /**
+   * When each round is open (Miami time). 8 places: qf, sf, final. 4 places: sf, final. Rounds must not overlap.
+   */
+  rounds?:
+    | {
+        stage: 'qf' | 'sf' | 'final';
+        opensAt: string;
+        closesAt: string;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * Votes in the neighbors’ rankings. No name, IP or cookie. "Test" = cast on a staff or owner device; left out of the counts.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ranking-votes".
+ */
+export interface RankingVote {
+  id: number;
+  ranking: number | Ranking;
+  stage: 'qf' | 'sf' | 'final';
+  matchup: number;
+  /**
+   * The place’s key in the ranking.
+   */
+  entrant: string;
+  /**
+   * instagram, facebook, google, direct…
+   */
+  source?: string | null;
+  lang?: ('es' | 'en') | null;
+  test?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "subscribers".
  */
@@ -2278,6 +2388,20 @@ export interface PayloadMcpApiKey {
      */
     update?: boolean | null;
   };
+  rankings?: {
+    /**
+     * Allow clients to find rankings.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to create rankings.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update rankings.
+     */
+    update?: boolean | null;
+  };
   cities?: {
     /**
      * Allow clients to find cities.
@@ -2384,7 +2508,7 @@ export interface PayloadMcpApiKey {
      */
     hqCancelDraft?: boolean | null;
     /**
-     * Ask the owner to publish the current draft of a site document (events, weekly-events, stories, spotlights, listings, promotions) or of the link page (link-page, no id). Save the draft first with the create/update tool and draft: true — drafts are never visible on the site. The owner sees exactly what changes against the live page in Telegram and taps Publish or Reject. If you edit the draft again before they tap, they are shown the new version instead. Publishes nothing by itself.
+     * Ask the owner to publish the current draft of a site document (events, weekly-events, stories, spotlights, listings, promotions, rankings) or of the link page (link-page, no id). Save the draft first with the create/update tool and draft: true — drafts are never visible on the site. The owner sees exactly what changes against the live page in Telegram and taps Publish or Reject. If you edit the draft again before they tap, they are shown the new version instead. Publishes nothing by itself.
      */
     hqRequestPublish?: boolean | null;
     /**
@@ -2620,6 +2744,14 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'promo-coupons';
         value: number | PromoCoupon;
+      } | null)
+    | ({
+        relationTo: 'rankings';
+        value: number | Ranking;
+      } | null)
+    | ({
+        relationTo: 'ranking-votes';
+        value: number | RankingVote;
       } | null)
     | ({
         relationTo: 'subscribers';
@@ -3294,6 +3426,58 @@ export interface PromoCouponsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "rankings_select".
+ */
+export interface RankingsSelect<T extends boolean = true> {
+  slug?: T;
+  city?: T;
+  title?: T;
+  question?: T;
+  intro?: T;
+  nominatePostUrl?: T;
+  nominationsCloseOn?: T;
+  image?: T;
+  entrants?:
+    | T
+    | {
+        key?: T;
+        name?: T;
+        listing?: T;
+        area?: T;
+        sourceUrl?: T;
+        nominations?: T;
+        note?: T;
+        id?: T;
+      };
+  rounds?:
+    | T
+    | {
+        stage?: T;
+        opensAt?: T;
+        closesAt?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ranking-votes_select".
+ */
+export interface RankingVotesSelect<T extends boolean = true> {
+  ranking?: T;
+  stage?: T;
+  matchup?: T;
+  entrant?: T;
+  source?: T;
+  lang?: T;
+  test?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "subscribers_select".
  */
 export interface SubscribersSelect<T extends boolean = true> {
@@ -3803,6 +3987,13 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         update?: T;
       };
   promotions?:
+    | T
+    | {
+        find?: T;
+        create?: T;
+        update?: T;
+      };
+  rankings?:
     | T
     | {
         find?: T;

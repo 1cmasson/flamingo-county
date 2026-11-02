@@ -20,6 +20,8 @@ import { Spotlights } from './collections/Spotlights'
 import { Promotions } from './collections/Promotions'
 import { Partners } from './collections/Partners'
 import { PromoCoupons } from './collections/PromoCoupons'
+import { Rankings } from './collections/Rankings'
+import { RankingVotes } from './collections/RankingVotes'
 import { Subscribers } from './collections/Subscribers'
 import { ListingRequests } from './collections/ListingRequests'
 import { Members } from './collections/Members'
@@ -98,6 +100,8 @@ export default buildConfig({
     Promotions,
     Partners,
     PromoCoupons,
+    Rankings,
+    RankingVotes,
     Subscribers,
     ListingRequests,
     Members,
@@ -276,6 +280,12 @@ export default buildConfig({
           enabled: { find: true, create: true, update: true },
           description:
             'Coupon promotions for a partner business (one-time codes, redeemed with the business’s staff PIN). Never a price or a saving in dollars. Save with draft: true; publish with hqRequestPublish.',
+        },
+        // ranking-votes stays off MCP, like promo-coupons: rows only visitors create.
+        rankings: {
+          enabled: { find: true, create: true, update: true },
+          description:
+            'Neighbors’ votes (best croquetas in Hialeah…), lib/rankings.ts. entrants = the most-nominated places, most nominated first (that order is the seeding); each needs a key, and a listing or a sourceUrl. rounds = when each round is open. Never reorder entrants or change a key once voting opens. Save with draft: true; publish with hqRequestPublish.',
         },
         cities: { enabled: { find: true } },
         categories: { enabled: { find: true } },
