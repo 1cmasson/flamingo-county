@@ -292,7 +292,8 @@ export async function toolUseReport(payload: Payload, days: number, now: Date = 
     select: { tool: true, action: true, section: true, area: true, target: true, network: true, term: true, results: true, browser: true },
   })
   const rows = res.docs as Row[]
-  const on = (tool: UseTool) => rows.filter((r) => (r.tool ?? 'address') === tool)
+  // A spot tap names a business, not the page it was on, so it is counted under `spots` only.
+  const on = (tool: UseTool) => rows.filter((r) => (r.tool ?? 'address') === tool && r.action !== 'spot')
   const address = on('address')
   const of = (a: UseAction) => address.filter((r) => r.action === a)
   const lookups = of('lookup')

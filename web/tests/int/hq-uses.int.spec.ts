@@ -195,6 +195,9 @@ describe('address tool uses', () => {
       const r = await toolUseReport(payload, 28)
       expect(r.spots.byTool).toMatchObject({ event: 1, address: 1 })
       expect(r.spots.top.find((t) => t.target === 'el-gallo')?.total).toBe(2)
+      // Never mistaken for an event, or for the address tool's own funnel.
+      expect(r.events.top.find((t) => t.target === 'el-gallo')).toBeUndefined()
+      expect(r.address.actions.spot).toBeUndefined()
     })
 
     it('knows the free-ride lines without asking the database', async () => {
