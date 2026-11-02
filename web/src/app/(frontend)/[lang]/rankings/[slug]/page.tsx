@@ -26,6 +26,8 @@ import { JsonLd } from '../../../../../components/JsonLd'
 import { AnswerBlock } from '../../../../../components/AnswerBlock'
 import { Breadcrumbs, type Crumb } from '../../../../../components/Breadcrumbs'
 import { RankingVote } from '../../../../../components/RankingVote'
+import { RankingNominate } from '../../../../../components/RankingNominate'
+import { nominationCount, nominationsOpen } from '../../../../../lib/rankingNominations'
 import p from '../../../../../components/promo.module.css'
 import s from '../../../../../components/ranking.module.css'
 
@@ -75,7 +77,13 @@ async function standing(payload: Payload, ranking: Ranking) {
   const now = Date.now()
   const phase = phaseOf(ranking, now)
   const tallies = phase === 'nominating' ? {} : await talliesFor(payload, ranking.id)
-  return { phase, rounds: bracket(ranking, tallies, now) }
+  const nominating = nominationsOpen(ranking, now)
+  return {
+    phase,
+    rounds: bracket(ranking, tallies, now),
+    nominating,
+    nominations: nominating ? await nominationCount(payload, ranking.id) : 0,
+  }
 }
 
 export default async function RankingPage({ params, searchParams }: Props) {
@@ -89,7 +97,7 @@ export default async function RankingPage({ params, searchParams }: Props) {
   const city = rel<City>(ranking.city)
   // Stored as display caps ("HIALEAH"); sentences want "Hialeah".
   const cityName = titleCase(city?.name) ?? ''
-  const { phase, rounds } = await standing(payload, ranking)
+  const { phase, rounds, nominating, nominations } = await standing(payload, ranking)
   const size = bracketSize(ranking.entrants?.length ?? 0)
   const field = (ranking.entrants ?? []).slice(0, size)
   const order = phase === 'results' ? finalOrder(ranking, rounds) : []
@@ -135,15 +143,23 @@ export default async function RankingPage({ params, searchParams }: Props) {
                   {ranking.nominationsCloseOn ? c.nominatingUntil(whenLabel(ranking.nominationsCloseOn, lang, false)) : `${c.nominating}.`}{' '}
                   {votingOpens ? c.votingOpens(whenLabel(votingOpens, lang)) : null}
                 </p>
-                {ranking.nominatePostUrl ? (
-                  <a className={p.btn} href={ranking.nominatePostUrl} rel="noopener noreferrer">
-                    {c.nominate}
-                  </a>
-                ) : null}
               </>
             ) : null}
           </div>
         </article>
+
+        {nominating ? (
+          <section className={`${p.card} ${p.body}`}>
+            <h2 className={p.h2}>{c.nominateTitle}</h2>
+            {nominations ? <p className={p.meta}>{c.nominationCount(nominations)}</p> : null}
+            <RankingNominate slug={slug} lang={lang} preview={preview} />
+            {ranking.nominatePostUrl ? (
+              <a className={`${p.btn} ${p.quiet}`} href={ranking.nominatePostUrl} rel="noopener noreferrer">
+                {c.nominate}
+              </a>
+            ) : null}
+          </section>
+        ) : null}
 
         {phase === 'results' && order[0] ? (
           <AnswerBlock question={ranking.question} answer={c.resultsAnswer(ranking.title, cityName, order[0].name, totalVotes)} />

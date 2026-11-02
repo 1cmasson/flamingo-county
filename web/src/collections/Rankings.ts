@@ -6,7 +6,7 @@ const KEY = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 /**
  * A neighbors' vote: "the best croquetas in Hialeah, according to Hialeah".
- * Nominations happen in the comments of our post; the most-named places go
+ * Neighbors nominate on the page itself (lib/rankingNominations.ts); the most-named places go
  * in `entrants`, best first, and a bracket of 8 (or 4) is voted on the site
  * round by round. See lib/rankings.ts.
  *
@@ -45,7 +45,7 @@ export const Rankings: CollectionConfig = {
     {
       name: 'nominatePostUrl',
       type: 'text',
-      admin: { description: 'The Instagram post where people nominate in the comments. Shown while nominating.' },
+      admin: { description: 'Optional: a post where people can also nominate in the comments. Shown under the page’s own nomination form.' },
     },
     {
       name: 'nominationsCloseOn',
@@ -91,7 +91,7 @@ export const Rankings: CollectionConfig = {
           type: 'text',
           admin: { description: 'For a place not in our directory: its own site or Google Maps page, so every fact has a source.' },
         },
-        { name: 'nominations', type: 'number', min: 0, admin: { description: 'Times named in the comments.' } },
+        { name: 'nominations', type: 'number', min: 0, admin: { description: 'Times named (the page’s nominations, plus any from a post’s comments).' } },
         { name: 'note', type: 'textarea', localized: true, validate: noPrice, admin: { description: 'One sourced line: what to order, since when.' } },
       ],
     },
