@@ -43,6 +43,8 @@ const EN = {
   nominating: 'Nominations are open',
   nominate: 'Nominate on Instagram',
   nominatingUntil: (day: string) => `Nominations are open through ${day}.`,
+  preview: (live: boolean): string =>
+    live ? 'PREVIEW of the latest saved version. Votes here are tests.' : 'PREVIEW: not published, only you can see this. Votes here are tests.',
   votingOpens: (day: string) => `Voting opens here ${day}.`,
   contenders: 'The contenders',
   nominations: (n: number) => (n === 1 ? '1 nomination' : `${n} nominations`),
@@ -82,6 +84,10 @@ const ES: RankingCopy = {
   nominating: 'Las nominaciones están abiertas',
   nominate: 'Nominar en Instagram',
   nominatingUntil: (day: string) => `Las nominaciones están abiertas hasta el ${day}.`,
+  preview: (live: boolean): string =>
+    live
+      ? 'VISTA PREVIA de la última versión guardada. Los votos aquí son de prueba.'
+      : 'VISTA PREVIA: no está publicada, solo tú la ves. Los votos aquí son de prueba.',
   votingOpens: (day: string) => `La votación abre aquí el ${day}.`,
   contenders: 'Los candidatos',
   nominations: (n: number) => (n === 1 ? '1 nominación' : `${n} nominaciones`),

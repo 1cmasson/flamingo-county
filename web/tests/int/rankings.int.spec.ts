@@ -157,4 +157,22 @@ describe('voting', () => {
     expect(out).toMatchObject({ ok: true })
     expect((await talliesFor(payload, rankingId)).qf?.[3]).toEqual(before.qf?.[3])
   })
+
+  it('lets an admin preview vote on an unpublished draft, as a test, and nobody else', async () => {
+    const draftSlug = `${slug}-draft`
+    const draft = await payload.create({
+      collection: 'rankings',
+      data: { slug: draftSlug, city: cityId, title: 'Draft', question: 'Where?', entrants: eight, rounds },
+      draft: true,
+      overrideAccess: true,
+    })
+    try {
+      expect(await castVote(payload, { slug: draftSlug, matchup: 0, pick: 'a' }, browser(), during)).toMatchObject({ ok: false, reason: 'not-found' })
+      expect(await castVote(payload, { slug: draftSlug, matchup: 0, pick: 'a' }, browser(), during, { preview: true })).toMatchObject({ ok: true })
+      expect(await talliesFor(payload, draft.id)).toEqual({})
+    } finally {
+      await payload.delete({ collection: 'ranking-votes', where: { ranking: { equals: draft.id } }, overrideAccess: true })
+      await payload.delete({ collection: 'rankings', id: draft.id, overrideAccess: true })
+    }
+  })
 })

@@ -49,6 +49,7 @@ export function RankingVote({
   index,
   a,
   b,
+  preview = false,
 }: {
   slug: string
   lang: Lang
@@ -56,6 +57,8 @@ export function RankingVote({
   index: number
   a: Side
   b: Side
+  /** The admin's preview of an unpublished ranking: votes go in as tests, and aren't remembered. */
+  preview?: boolean
 }) {
   const c = rankingCopy(lang)
   const key = KEY(slug, stage, index)
@@ -85,14 +88,17 @@ export function RankingVote({
           lang,
           ref,
           utm: new URLSearchParams(window.location.search).get('utm_source'),
+          preview,
         }),
       })
       const out = (await res.json()) as { ok: boolean; votes?: [number, number]; reason?: string }
       if (out.ok && out.votes) {
-        try {
-          localStorage.setItem(key, JSON.stringify({ day: miamiDay(), votes: out.votes }))
-        } catch {
-          // Storage blocked: the vote still counted.
+        if (!preview) {
+          try {
+            localStorage.setItem(key, JSON.stringify({ day: miamiDay(), votes: out.votes }))
+          } catch {
+            // Storage blocked: the vote still counted.
+          }
         }
         setFresh(out.votes)
       } else {

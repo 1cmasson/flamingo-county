@@ -142,10 +142,20 @@ export function finalOrder(ranking: Pick<Ranking, 'entrants'>, rounds: Matchup[]
 
 /* ------------------------------------------------------------------ reading */
 
-export async function getPublishedRanking(payload: Payload, slug: string, lang?: 'es' | 'en'): Promise<Ranking | null> {
+/**
+ * The live ranking. With `draft`, the latest saved version instead, published
+ * or not: only for a signed-in admin's preview (?preview=1), never the public.
+ */
+export async function getPublishedRanking(
+  payload: Payload,
+  slug: string,
+  lang?: 'es' | 'en',
+  { draft = false }: { draft?: boolean } = {},
+): Promise<Ranking | null> {
   const { docs } = await payload.find({
     collection: 'rankings',
-    where: { and: [PUBLISHED, { slug: { equals: slug } }] },
+    where: draft ? { slug: { equals: slug } } : { and: [PUBLISHED, { slug: { equals: slug } }] },
+    draft,
     locale: lang,
     // A field left blank in one language shows the other's, never nothing.
     fallbackLocale: lang === 'en' ? 'es' : 'en',
@@ -246,15 +256,24 @@ export type VoteResult =
 
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
-/** One vote in an open round. Answers with the matchup's new count, which the page shows. */
-export async function castVote(payload: Payload, input: VoteInput, headers: Headers, now: number = Date.now()): Promise<VoteResult> {
+/**
+ * One vote in an open round. Answers with the matchup's new count, which the page shows.
+ * `preview` (an admin checked by the route) votes on the saved draft, always as a test.
+ */
+export async function castVote(
+  payload: Payload,
+  input: VoteInput,
+  headers: Headers,
+  now: number = Date.now(),
+  { preview = false }: { preview?: boolean } = {},
+): Promise<VoteResult> {
   const slug = typeof input.slug === 'string' && SLUG.test(input.slug) ? input.slug : null
   if (!slug) return { ok: false, reason: 'not-found' }
   if (isBot(headers.get('user-agent'))) return { ok: false, reason: 'refused' }
   const site = headers.get('sec-fetch-site')
   if (site && site !== 'same-origin') return { ok: false, reason: 'refused' }
 
-  const ranking = await getPublishedRanking(payload, slug)
+  const ranking = await getPublishedRanking(payload, slug, undefined, { draft: preview })
   if (!ranking) return { ok: false, reason: 'not-found' }
   const index = typeof input.matchup === 'number' && Number.isInteger(input.matchup) ? input.matchup : -1
   const pick = typeof input.pick === 'string' ? input.pick : ''
@@ -273,7 +292,7 @@ export async function castVote(payload: Payload, input: VoteInput, headers: Head
   const utm = typeof input.utm === 'string' && isSourceSlug(input.utm.toLowerCase()) ? input.utm.toLowerCase() : null
   const ref = normalizeHost(input.ref)
   const own = normalizeHost(headers.get('x-forwarded-host') ?? headers.get('host'))
-  const test = isStaff(headers)
+  const test = preview || isStaff(headers)
   await payload.create({
     collection: 'ranking-votes',
     data: {

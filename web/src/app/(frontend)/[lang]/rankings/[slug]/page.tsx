@@ -1,3 +1,4 @@
+import { headers } from 'next/headers'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { getPayload, type Payload } from 'payload'
@@ -36,18 +37,25 @@ import s from '../../../../../components/ranking.module.css'
  */
 export const dynamic = 'force-dynamic'
 
-type Props = { params: Promise<{ lang: string; slug: string }> }
+type Props = { params: Promise<{ lang: string; slug: string }>; searchParams: Promise<{ preview?: string }> }
 
-async function load(lang: Lang, slug: string) {
+/**
+ * ?preview=1 shows the latest saved draft, so the owner can see a ranking on
+ * the real site before tapping Publish. Only with a real admin session (checked,
+ * not just the cookie's name); anyone else gets the published page or nothing.
+ */
+async function load(lang: Lang, slug: string, searchParams: Props['searchParams']) {
   const payload = await getPayload({ config })
-  return getPublishedRanking(payload, slug, lang)
+  const preview = (await searchParams).preview === '1' && Boolean((await payload.auth({ headers: await headers() })).user)
+  return { payload, preview, ranking: await getPublishedRanking(payload, slug, lang, { draft: preview }) }
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const { lang, slug } = await params
   if (!isLang(lang)) return {}
-  const ranking = await load(lang, slug)
+  const { ranking, preview } = await load(lang, slug, searchParams)
   if (!ranking) return {}
+  if (preview) return { title: `Preview: ${ranking.title}`, robots: { index: false, follow: false } }
   const image = mediaUrl(rel<Media>(ranking.image))
   const description = ranking.intro ?? ranking.question
   return {
@@ -70,12 +78,11 @@ async function standing(payload: Payload, ranking: Ranking) {
   return { phase, rounds: bracket(ranking, tallies, now) }
 }
 
-export default async function RankingPage({ params }: Props) {
+export default async function RankingPage({ params, searchParams }: Props) {
   const { lang: raw, slug } = await params
   if (!isLang(raw)) notFound()
   const lang = raw as Lang
-  const payload = await getPayload({ config })
-  const ranking = await getPublishedRanking(payload, slug, lang)
+  const { payload, preview, ranking } = await load(lang, slug, searchParams)
   if (!ranking) notFound()
 
   const c = rankingCopy(lang)
@@ -106,8 +113,9 @@ export default async function RankingPage({ params }: Props) {
 
   return (
     <PageShell>
-      <JsonLd data={jsonLd} />
+      {preview ? null : <JsonLd data={jsonLd} />}
       <main className={`${p.page}`}>
+        {preview ? <p className={p.warn}>{c.preview(ranking._status === 'published')}</p> : null}
         <Breadcrumbs items={crumbs} label={c.crumbs} />
 
         <article className={p.card}>
@@ -159,6 +167,7 @@ export default async function RankingPage({ params }: Props) {
                     index={g.index}
                     a={{ key: g.a.key, name: g.a.name }}
                     b={{ key: g.b.key, name: g.b.name }}
+                    preview={preview}
                   />
                 ) : null,
               )}
