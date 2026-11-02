@@ -112,12 +112,13 @@ const PATH_TOLERANCE_METERS = 15
 type DayKind = 'weekday' | 'saturday' | 'sunday'
 
 const iso = (d: string) => `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`
+const ymd = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, '')
 
 /** YYYYMMDD of the next date on or after `from` with this day of the week. */
 function nextDow(from: Date, dow: number): string {
   const d = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate()))
   while (d.getUTCDay() !== dow) d.setUTCDate(d.getUTCDate() + 1)
-  return d.toISOString().slice(0, 10).replace(/-/g, '')
+  return ymd(d)
 }
 
 const DOW_FIELD = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
@@ -163,6 +164,59 @@ function headwayIn(times: number[], from: number, to: number): number | null {
   return m === null ? null : Math.round(m)
 }
 
+/** Main-line stops a trip may skip and still count as running the stretch (a stop it passes by). */
+const MAX_SKIP = 3
+
+/**
+ * One trip as the pages read it: the stretch of the main line it serves and
+ * its times there. `[from, to, at from, at to, ...at each timed stop]`, the
+ * timed stops outside the stretch null. The stops between are interpolated by
+ * ride minutes, as the county's own feed does between its timepoints; every
+ * stop's time for every trip would be a megabyte for no better answer.
+ */
+type Run = (number | null)[]
+
+function runOf(trip: Row[], ids: string[], mins: number[], timed: number[]): Run | null {
+  const hit: (number | undefined)[] = []
+  let j = 0
+  for (const st of trip) {
+    const k = ids.indexOf(st.stop_id, j)
+    if (k === -1) continue
+    hit[k] = minutes(st.departure_time || st.arrival_time)
+    j = k + 1
+  }
+  // The longest stretch the trip runs along the main line: a bus that leaves
+  // it for a branch isn't offered at the stops it skips.
+  const served = hit.flatMap((t, k) => (t === undefined ? [] : [k]))
+  let best: number[] = []
+  let cur: number[] = []
+  for (const k of served) {
+    if (cur.length && k - cur[cur.length - 1] > MAX_SKIP + 1) cur = []
+    cur.push(k)
+    if (cur.length > best.length) best = cur
+  }
+  if (best.length < 2) return null
+  const from = best[0]
+  const to = best[best.length - 1]
+  const inBest = new Set(best)
+  /** A stop's time from the served stops either side of it. */
+  const timeAt = (i: number) => {
+    if (inBest.has(i)) return Math.round(hit[i]!)
+    const lo = best.filter((k) => k < i).pop()!
+    const hi = best.find((k) => k > i)!
+    const span = mins[hi] - mins[lo]
+    const f = span > 0 ? (mins[i] - mins[lo]) / span : 0
+    return Math.round(hit[lo]! + f * (hit[hi]! - hit[lo]!))
+  }
+  return [
+    from,
+    to,
+    timeAt(from),
+    timeAt(to),
+    ...timed.map((i) => (i > from && i < to ? timeAt(i) : null)),
+  ]
+}
+
 async function main() {
   const zipArg = process.argv.indexOf('--zip')
   const dir = mkdtempSync(join(tmpdir(), 'mdt-county-'))
@@ -193,6 +247,30 @@ async function main() {
     weekday: servicesOn(nextDow(today, 3), calendar, exceptions),
     saturday: servicesOn(nextDow(today, 6), calendar, exceptions),
     sunday: servicesOn(nextDow(today, 0), calendar, exceptions),
+  }
+  /**
+   * The dates, until a route's schedule ends, that don't run their weekday's
+   * usual buses: a holiday on Sunday hours, or no buses at all (null).
+   */
+  const dayKindsUntil = (from: Date, until: string, mine: Set<string>) => {
+    const only = (set: Set<string>) => [...set].filter((id) => mine.has(id)).sort().join(' ')
+    const usual = Object.fromEntries(
+      (Object.keys(days) as DayKind[]).map((k) => [k, only(days[k])]),
+    ) as Record<DayKind, string>
+    const out: Record<string, DayKind | null> = {}
+    const d = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate()))
+    for (let date = ymd(d); date <= until; d.setUTCDate(d.getUTCDate() + 1), date = ymd(d)) {
+      const dow = d.getUTCDay()
+      const own: DayKind = dow === 0 ? 'sunday' : dow === 6 ? 'saturday' : 'weekday'
+      const runs = only(servicesOn(date, calendar, exceptions))
+      if (runs === usual[own]) continue
+      if (!runs) out[iso(date)] = null
+      else {
+        const kind = (Object.keys(usual) as DayKind[]).find((k) => usual[k] === runs)
+        if (kind) out[iso(date)] = kind
+      }
+    }
+    return out
   }
   const routeOf = new Map(routes.map((r) => [r.route_id, r]))
   const picked = ROUTES.map((r) => {
@@ -291,6 +369,24 @@ async function main() {
           transfers: transfersAt(st.stop_id, p.short),
         }))
 
+        // Every trip's times along the main line, per kind of day: what "the
+        // next bus at your stop" is read from.
+        const ids = repStops.map((st) => st.stop_id)
+        const mins = stationList.map((st) => st.min)
+        const timed = stationList
+          .map((st, i) => (st.timepoint || i === 0 || i === stationList.length - 1 ? i : -1))
+          .filter((i) => i > -1)
+        const runs = Object.fromEntries(
+          (Object.keys(days) as DayKind[]).map((kind) => [
+            kind,
+            dirTrips
+              .filter((t) => days[kind].has(t.service_id))
+              .map((t) => runOf(byTrip.get(t.trip_id)!, ids, mins, timed))
+              .filter((r): r is Run => r !== null)
+              .sort((a, b) => a[2]! - b[2]!),
+          ]),
+        )
+
         // The schedule, per kind of day: the first and last bus out, and the
         // gaps between buses at the day's busiest stop — every pattern passes
         // there, short runs included.
@@ -350,6 +446,8 @@ async function main() {
             Number(lo.toFixed(5)),
           ]),
           schedule,
+          timed,
+          runs,
         }
       })
       .filter((d) => d !== null)
@@ -361,6 +459,7 @@ async function main() {
       .filter((c) => used.has(c.service_id))
       .map((c) => c.end_date)
       .sort()
+    const end = routeEnds[0] ?? null
     return {
       slug: p.slug,
       short: p.short,
@@ -371,7 +470,8 @@ async function main() {
       cities: p.cities,
       color: `#${p.row.route_color || '0c0f14'}`,
       // Past this day the county's schedule for the route may have changed.
-      serviceEnds: routeEnds.length ? iso(routeEnds[0]) : null,
+      serviceEnds: end ? iso(end) : null,
+      dayKinds: end ? dayKindsUntil(today, end, new Set(mine.map((t) => t.service_id))) : {},
       directions,
     }
   })

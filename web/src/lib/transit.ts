@@ -1,6 +1,9 @@
 import type { Lang } from '../i18n'
-import { SITE_TZ, todayISO } from './dates'
+import { todayISO } from './dates'
+import { formatClock, meters, miamiClock, walkMinutes, type LatLng } from './transitMath'
 import data from '../data/transit/hialeah.json'
+
+export { formatClock, meters, miamiClock, walkMinutes, type LatLng }
 
 /**
  * Hialeah's free circulators, Flamingo and Marlin.
@@ -24,7 +27,6 @@ import data from '../data/transit/hialeah.json'
  *   quote the city's hours and a typical frequency, never a departure time.
  */
 
-export type LatLng = [number, number]
 
 export type Station = {
   id: string
@@ -108,21 +110,6 @@ export const CITY_HOURS = {
   saturday: { opens: 9 * 60, closes: 15 * 60 + 30 },
 } as const
 
-/** Day of week (0 = Sunday) and minutes past midnight, on Miami's clock. */
-export function miamiClock(now: Date = new Date()): { dow: number; min: number } {
-  const parts = new Intl.DateTimeFormat('en-US', {
-    timeZone: SITE_TZ,
-    weekday: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).formatToParts(now)
-  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? ''
-  const dow = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].indexOf(get('weekday'))
-  // `hour` can come back as 24 at midnight under hour12:false.
-  return { dow, min: (Number(get('hour')) % 24) * 60 + Number(get('minute')) }
-}
-
 const hoursFor = (dow: number) => (dow === 0 ? null : dow === 6 ? CITY_HOURS.saturday : CITY_HOURS.weekday)
 
 export type ServiceStatus =
@@ -151,16 +138,6 @@ export function headwayToday(route: TransitRoute, now: Date = new Date()): numbe
   return dow === 0 ? null : dow === 6 ? route.headwayMin.saturday : route.headwayMin.weekday
 }
 
-/** "7:30 PM" / "7:30 p. m." — the way each language writes a clock time. */
-export function formatClock(min: number, lang: Lang): string {
-  const h24 = Math.floor(min / 60)
-  const m = min % 60
-  const h = h24 % 12 || 12
-  const mm = m ? `:${String(m).padStart(2, '0')}` : ''
-  if (lang === 'es') return `${h}${mm} ${h24 < 12 ? 'a. m.' : 'p. m.'}`
-  return `${h}${mm} ${h24 < 12 ? 'AM' : 'PM'}`
-}
-
 /** Frequencies over an hour read better as hours: "every 2 hours". */
 export function formatHeadway(min: number, lang: Lang): string {
   if (min >= 90) {
@@ -169,23 +146,6 @@ export function formatHeadway(min: number, lang: Lang): string {
     return lang === 'es' ? `cada ~${n} horas` : `every ~${n} hours`
   }
   return lang === 'es' ? `cada ~${min} min` : `every ~${min} min`
-}
-
-export function meters(a: LatLng, b: LatLng): number {
-  const R = 6371000
-  const toRad = (d: number) => (d * Math.PI) / 180
-  const dLat = toRad(b[0] - a[0])
-  const dLng = toRad(b[1] - a[1])
-  const h = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a[0])) * Math.cos(toRad(b[0])) * Math.sin(dLng / 2) ** 2
-  return 2 * R * Math.asin(Math.sqrt(h))
-}
-
-/**
- * Straight-line distance understates a walk on a street grid by roughly a
- * third; 80 m a minute is an unhurried pace. Rounded up, never below one.
- */
-export function walkMinutes(m: number): number {
-  return Math.max(1, Math.ceil((m * 1.3) / 80))
 }
 
 /** About a ten-minute walk. Further than that, the bus isn't the answer. */

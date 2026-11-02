@@ -1,7 +1,8 @@
 import type { Lang } from '../i18n'
 import { todayISO } from './dates'
 import { routes } from './routes'
-import { formatClock, meters, type LatLng } from './transit'
+import { formatClock, meters, type LatLng } from './transitMath'
+import type { DayKind, RouteTimes, Run } from './busTime'
 import data from '../data/transit/county.json'
 
 /**
@@ -36,7 +37,7 @@ export type DaySchedule = {
   headway: { morning: number | null; midday: number | null; evening: number | null }
 }
 
-export type DayKind = 'weekday' | 'saturday' | 'sunday'
+export type { DayKind }
 
 export type CountyDirection = {
   id: string
@@ -48,6 +49,9 @@ export type CountyDirection = {
   stations: CountyStation[]
   path: LatLng[]
   schedule: Record<DayKind, DaySchedule | null>
+  /** The stations the county times its buses to, by index, and every trip's times there (lib/busTime). */
+  timed: number[]
+  runs: Record<DayKind, Run[]>
 }
 
 export type CountyRoute = {
@@ -63,6 +67,8 @@ export type CountyRoute = {
   cities: string[]
   color: string
   serviceEnds: string | null
+  /** Dates that don't run their weekday's usual buses (a holiday on Sunday hours); null is none at all. */
+  dayKinds: Record<string, DayKind | null>
   directions: CountyDirection[]
 }
 
@@ -172,6 +178,21 @@ export function allNight(day: DaySchedule): boolean {
 /** The day's typical wait: the midday gap, or the busiest-hours one when midday has too few buses. */
 export function typicalHeadway(day: DaySchedule): number | null {
   return day.headway.midday ?? day.headway.morning ?? day.headway.evening
+}
+
+/** What the browser needs to say when the next bus comes: one route's trips, nothing else. */
+export function routeTimes(route: CountyRoute): RouteTimes {
+  return {
+    serviceEnds: route.serviceEnds,
+    dayKinds: route.dayKinds,
+    directions: route.directions.map((d) => ({
+      id: d.id,
+      toward: d.toward,
+      stations: d.stations.map(({ name, at, min }) => ({ name, at, min })),
+      timed: d.timed,
+      runs: d.runs,
+    })),
+  }
 }
 
 /** Each direction's head sign, in the order the feed numbers them: the route's two ends. */

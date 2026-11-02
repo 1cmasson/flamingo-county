@@ -15,6 +15,7 @@ import {
   routeEnds,
   routeName,
   routeNameInline,
+  routeTimes,
   routeVia,
   scheduleCurrent,
   typicalHeadway,
@@ -28,6 +29,7 @@ import { JsonLd } from '../../../../../components/JsonLd'
 import { AnswerBlock } from '../../../../../components/AnswerBlock'
 import { Breadcrumbs, type Crumb } from '../../../../../components/Breadcrumbs'
 import { DirectionStops, RouteBullet, ScheduleTable } from '../../../../../components/Bus'
+import { NextBus } from '../../../../../components/NextBus'
 import s from '../../../../../components/vote.module.css'
 import b from '../../../../../components/bus.module.css'
 
@@ -145,6 +147,8 @@ export default async function BusRoute({ params }: Props) {
         </header>
 
         <AnswerBlock question={c.question(inline)} answer={answer} />
+
+        {current ? <NextBus slug={route.slug} times={routeTimes(route)} lang={lang} /> : null}
 
         <section className={s.card} aria-labelledby="schedule">
           <h2 id="schedule" className={s.cardTag}>
