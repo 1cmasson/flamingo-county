@@ -683,10 +683,13 @@ request. The tap is your Telegram account behind the webhook's secret.
 version, which could be an unapproved draft, so the seed skips any document
 with a pending draft and says so.
 
-**A published story gets a social draft. An event gets an Instagram story.** When a story
-goes from draft to published (your Publish tap, or Publish in the admin),
-`src/lib/autoDraft.ts` writes one pending `hq-social-drafts` entry, and its
-preview arrives in Telegram for Approve / Reject like any other draft.
+**A published story gets no social draft. An event gets an Instagram story.**
+A story reaches the feed through its own reels, never as a post about the
+article (your rule, Oct 23 and again Nov 3). Publishing a story page drafts
+nothing. The story post path is still in `src/lib/autoDraft.ts`, switched off
+by `STORY_AUTO_DRAFTS`; setting it to `true` brings back one pending
+`hq-social-drafts` entry per newly published story, previewed in Telegram for
+Approve / Reject like any other draft.
 
 Events used to get one too, and a busy week meant a post per event every
 day. Now the week's events go out together in a carousel (*The Monday
