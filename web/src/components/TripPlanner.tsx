@@ -60,10 +60,13 @@ type Result = Destination & { kind: 'place' | 'address'; id: string }
 
 export function TripSearch({
   lang,
+  label,
   onPick,
   onCancel,
 }: {
   lang: Lang
+  /** What the field asks: where to, or (on the routes page) where from. */
+  label?: string
   onPick: (d: Destination) => void
   onCancel: () => void
 }) {
@@ -94,7 +97,7 @@ export function TripSearch({
   return (
     <>
       <label className={b.sheetPick}>
-        <span className={b.sheetKicker}>{c.tripWhere}</span>
+        <span className={b.sheetKicker}>{label ?? c.tripWhere}</span>
         <input
           ref={input}
           className={b.select}
@@ -134,16 +137,16 @@ export function TripSearch({
 
 type StopTimes = { live: { departures: { at: number }[] } | null; scheduled: Departure[] }
 
-/** The next buses at the trip's boarding stop: live, then the schedule. Refreshed every 30 s. */
-function useBoardTimes(trip: Trip | null) {
-  const key = trip ? `${trip.slug}|${trip.dir}|${trip.board.id}` : null
+/** The next buses at one stop: live, then the schedule. Refreshed every 30 s; null until known. */
+export function useStopNext(slug: string | null, dir: string, stop: string) {
+  const key = slug ? `${slug}|${dir}|${stop}` : null
   const [state, setState] = useState<{ key: string; times: StopTimes } | null>(null)
   useEffect(() => {
-    if (!trip || !key) return
+    if (!slug || !key) return
     let alive = true
     const read = () => {
       if (document.visibilityState !== 'visible') return
-      const q = new URLSearchParams({ route: trip.slug, dir: trip.dir, stop: trip.board.id })
+      const q = new URLSearchParams({ route: slug, dir, stop })
       fetch(`/api/transit/county-arrivals?${q}`)
         .then((r) => (r.ok ? r.json() : null))
         .then((j: StopTimes | null) => alive && j && setState({ key, times: j }))
@@ -155,12 +158,77 @@ function useBoardTimes(trip: Trip | null) {
       alive = false
       clearInterval(id)
     }
-    // `key` stands for the trip's route, direction and stop.
+    // `key` stands for the route, direction and stop.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])
   if (!state || state.key !== key) return null
   const { live, scheduled } = state.times
   return mergeDepartures(live ? live.departures.map((x) => x.at) : [], scheduled ?? [], new Date())
+}
+
+/* ------------------------------------------------- handing a trip to a map */
+
+const TRIP_KEY = 'fc-bus-trip'
+export type StashedTrip = { dest: Destination; from: Destination | null }
+
+/** Leave a trip for the route map the visitor is about to open (this tab only, never a URL). */
+export function stashTrip(t: StashedTrip) {
+  try {
+    sessionStorage.setItem(TRIP_KEY, JSON.stringify(t))
+  } catch {}
+}
+
+/** The trip left for this map, once. */
+export function takeStashedTrip(): StashedTrip | null {
+  try {
+    const raw = sessionStorage.getItem(TRIP_KEY)
+    sessionStorage.removeItem(TRIP_KEY)
+    return raw ? (JSON.parse(raw) as StashedTrip) : null
+  } catch {
+    return null
+  }
+}
+
+/* ------------------------------------------------------------ the steps */
+
+/** "In 6 min, live" / "By the schedule: 10:32 PM" for the next bus at a stop. */
+export function Soon({ lang, next }: { lang: Lang; next: ReturnType<typeof useStopNext> }) {
+  const c = busCopy(lang)
+  const soon = next?.[0] ?? null
+  if (!next) return null
+  if (!soon) return <span>{c.tripSoonNone}</span>
+  const time = (at: number) =>
+    at >= 1440 ? `${formatClock(at - 1440, lang)} ${c.tomorrow}` : formatClock(at, lang)
+  return soon.live ? (
+    <strong className={b.tripLive}>{c.tripSoonLive(c.inMin(soon.wait))}</strong>
+  ) : (
+    <span>{c.tripSoonScheduled(time(soon.at), c.inMin(soon.wait))}</span>
+  )
+}
+
+/** A trip as numbered steps, with its total and the next bus at the stop to board. */
+export function TripSteps({ lang, trip, destName }: { lang: Lang; trip: Trip; destName: string }) {
+  const c = busCopy(lang)
+  const next = useStopNext(trip.slug, trip.dir, trip.board.id)
+  const soon = next?.[0] ?? null
+  const soonWait = soon && soon.wait <= 60 ? soon.wait : null
+  return (
+    <>
+      <p className={b.tripTotal}>
+        {/* A wait past an hour is tomorrow's first bus, not part of the trip. */}
+        {c.tripAbout(trip.total + (soonWait ?? 0))}{' '}
+        <span className={b.tripTotalNote}>{c.tripAboutNote(soonWait !== null)}</span>
+      </p>
+      <ol className={b.tripSteps}>
+        <li>{c.tripWalkTo(trip.board.walk, trip.board.name)}</li>
+        <li>
+          {c.tripTake(c.tripRouteInline(trip.number), trip.toward)} <Soon lang={lang} next={next} />
+        </li>
+        <li>{c.tripGetOff(trip.alight.name, trip.stops, trip.ride)}</li>
+        <li>{c.tripWalkFrom(trip.alight.walk, destName)}</li>
+      </ol>
+    </>
+  )
 }
 
 /** What the map draws of a trip. */
@@ -189,6 +257,7 @@ export function TripPanel({
   onLocate,
   denied,
   pageSlug,
+  from,
   onChange,
   onClose,
 }: {
@@ -203,16 +272,13 @@ export function TripPanel({
   denied: boolean
   /** The route this map is for: a trip on another one links to that route's map. */
   pageSlug: string
+  /** A start the visitor typed, when it isn't where they are. */
+  from?: Destination | null
   onChange: () => void
   onClose: () => void
 }) {
   const c = busCopy(lang)
   const trip = plan?.trips[pick] ?? null
-  const next = useBoardTimes(trip)
-  const time = (at: number) =>
-    at >= 1440 ? `${formatClock(at - 1440, lang)} ${c.tomorrow}` : formatClock(at, lang)
-  const soon = next?.[0] ?? null
-  const soonWait = soon && soon.wait <= 60 ? soon.wait : null
   const google = transitDirectionsHref(dest.at)
 
   return (
@@ -249,31 +315,13 @@ export function TripPanel({
               ))}
             </div>
           ) : null}
-          <p className={b.tripTotal}>
-            {/* A wait past an hour is tomorrow's first bus, not part of the trip. */}
-            {c.tripAbout(trip.total + (soonWait ?? 0))}{' '}
-            <span className={b.tripTotalNote}>{c.tripAboutNote(soonWait !== null)}</span>
-          </p>
-          <ol className={b.tripSteps}>
-            <li>{c.tripWalkTo(trip.board.walk, trip.board.name)}</li>
-            <li>
-              {c.tripTake(c.tripRouteInline(trip.number), trip.toward)}{' '}
-              {soon ? (
-                soon.live ? (
-                  <strong className={b.tripLive}>{c.tripSoonLive(c.inMin(soon.wait))}</strong>
-                ) : (
-                  <span>{c.tripSoonScheduled(time(soon.at), c.inMin(soon.wait))}</span>
-                )
-              ) : next ? (
-                <span>{c.tripSoonNone}</span>
-              ) : null}
-            </li>
-            <li>{c.tripGetOff(trip.alight.name, trip.stops, trip.ride)}</li>
-            <li>{c.tripWalkFrom(trip.alight.walk, dest.name)}</li>
-          </ol>
+          <TripSteps lang={lang} trip={trip} destName={dest.name} />
           {trip.slug !== pageSlug ? (
             <p className={b.meta}>
-              <Link href={routes.busMap(lang, trip.slug)}>
+              <Link
+                href={routes.busMap(lang, trip.slug)}
+                onClick={() => stashTrip({ dest, from: from ?? null })}
+              >
                 {c.tripOtherMap(c.tripRouteName(trip.number))}
               </Link>
             </p>

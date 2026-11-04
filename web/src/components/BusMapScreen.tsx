@@ -10,7 +10,14 @@ import type { MapPlaceCard } from '../lib/busPlaces'
 import { BusMap, DIR_COLORS, type BusMapDirection } from './BusMap'
 import { NextTimes } from './NextBus'
 import { MAP_FROM, useRouteChoice } from './useRouteChoice'
-import { TripPanel, TripSearch, mapTrip, useTripPlan, type Destination } from './TripPlanner'
+import {
+  TripPanel,
+  TripSearch,
+  mapTrip,
+  takeStashedTrip,
+  useTripPlan,
+  type Destination,
+} from './TripPlanner'
 import b from './bus.module.css'
 import s from './vote.module.css'
 
@@ -59,6 +66,19 @@ export function BusMapScreen({
   const [mode, setMode] = useState<'stop' | 'search' | 'trip'>('stop')
   const [dest, setDest] = useState<Destination | null>(null)
   const [pick, setPick] = useState(0)
+  // A start typed on the routes page, when the trip isn't from where the visitor is.
+  const [from, setFrom] = useState<Destination | null>(null)
+
+  // A trip planned on the routes page arrives here drawn.
+  useEffect(() => {
+    const t = takeStashedTrip()
+    if (!t) return
+    // A one-time hand-off from the page before, read after hydration.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setDest(t.dest)
+    setFrom(t.from)
+    setMode('trip')
+  }, [])
 
   // Location already allowed for this site: pin the visitor and their nearest stop straight away.
   // (Asking unprompted would be a permission box before they've done anything.)
@@ -82,19 +102,18 @@ export function BusMapScreen({
     setPick(0)
     setPlaceId(null)
     setMode('trip')
-    if (!v.origin && !v.locating) v.locate()
+    if (!from && !v.origin && !v.locating) v.locate()
   }
+  const start = from?.at ?? v.origin
   const plan = useTripPlan(
-    mode === 'trip' ? v.origin : null,
+    mode === 'trip' ? start : null,
     mode === 'trip' ? (dest?.at ?? null) : null,
   )
   const trip = plan?.trips[pick] ?? null
   const shownTrip = useMemo(
     () =>
-      mode === 'trip' && trip && v.origin && dest
-        ? mapTrip(trip, v.origin, dest, c.tripDest)
-        : null,
-    [mode, trip, v.origin, dest, c.tripDest],
+      mode === 'trip' && trip && start && dest ? mapTrip(trip, start, dest, c.tripDest) : null,
+    [mode, trip, start, dest, c.tripDest],
   )
 
   // Opened from the route page: going back is the browser's back, which also keeps its scroll.
@@ -254,10 +273,11 @@ export function BusMapScreen({
           <TripPanel
             lang={lang}
             dest={dest}
-            plan={v.origin ? plan : null}
+            plan={start ? plan : null}
             pick={pick}
             onPick={setPick}
-            needLocation={!v.origin}
+            needLocation={!start}
+            from={from}
             locating={v.locating}
             onLocate={v.locate}
             denied={v.denied}
@@ -266,6 +286,7 @@ export function BusMapScreen({
             onClose={() => {
               setMode('stop')
               setDest(null)
+              setFrom(null)
             }}
           />
         ) : place ? (

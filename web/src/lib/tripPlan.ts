@@ -148,3 +148,48 @@ export function transitDirectionsHref(to: LatLng): string {
   })
   return `https://www.google.com/maps/dir/?${q}`
 }
+
+export type NearbyRoute = {
+  slug: string
+  number: string | null
+  kind: NetworkRoute['kind']
+  /** Minutes on foot to the route's nearest stop, either way. */
+  walk: number
+  /** Each direction's nearest stop to board, by index (none at the end of the line). */
+  dirs: { dir: string; toward: string; index: number; id: string; name: string; walk: number }[]
+}
+
+/** "Which buses can I catch from here?": every route with a stop within a walk, nearest first. */
+export function nearbyRoutes(net: Network, from: LatLng, maxM = MAX_WALK_M): NearbyRoute[] {
+  const out: NearbyRoute[] = []
+  for (const r of net.routes) {
+    const dirs: NearbyRoute['dirs'] = []
+    for (const d of r.directions) {
+      let best = { k: -1, m: Infinity }
+      // The last stop is where the bus ends: not one to board.
+      d.stations.slice(0, -1).forEach((st, k) => {
+        const m = meters(from, st.at)
+        if (m < best.m) best = { k, m }
+      })
+      if (best.k < 0 || best.m > maxM) continue
+      const st = d.stations[best.k]
+      dirs.push({
+        dir: d.id,
+        toward: d.toward,
+        index: best.k,
+        id: st.id,
+        name: st.name,
+        walk: walkMinutes(best.m),
+      })
+    }
+    if (dirs.length)
+      out.push({
+        slug: r.slug,
+        number: r.number,
+        kind: r.kind,
+        walk: Math.min(...dirs.map((x) => x.walk)),
+        dirs,
+      })
+  }
+  return out.sort((a, b) => a.walk - b.walk)
+}

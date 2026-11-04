@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest'
-import { planTrips, slicePath, transitDirectionsHref, type Network } from '@/lib/tripPlan'
+import {
+  nearbyRoutes,
+  planTrips,
+  slicePath,
+  transitDirectionsHref,
+  type Network,
+} from '@/lib/tripPlan'
 
 /** A made-up north–south line along one avenue, a stop every ~550 m, 2 minutes apart. */
 const lat = (k: number) => 25.8 + k * 0.005
@@ -76,5 +82,14 @@ describe('bus trip planner', () => {
 
   it('never puts the visitor’s location in the Google link', () => {
     expect(transitDirectionsHref([25.8, -80.3])).not.toContain('origin')
+  })
+
+  it('lists the routes within a walk, nearest first, with a stop each way', () => {
+    const near = nearbyRoutes(net, [lat(4), -80.299])
+    expect(near.map((r) => r.slug)).toEqual(['A'])
+    expect(near[0].dirs.map((d) => d.dir)).toEqual(['0', '1'])
+    expect(near[0].dirs[0].index).toBe(4)
+    // Between both lines (~2.5 km each way from either): none in a walk.
+    expect(nearbyRoutes(net, [lat(4), -80.275], 1300)).toEqual([])
   })
 })

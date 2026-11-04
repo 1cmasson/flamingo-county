@@ -694,6 +694,10 @@ a.line {
   flex-wrap: wrap;
   gap: 10px;
 }
+/* The same for the cream and cyan buttons that are links. */
+.sheetActions a:hover {
+  color: var(--ink);
+}
 .sheetHint {
   font-size: 13px;
   font-weight: 700;
@@ -837,6 +841,130 @@ a.line {
   font-weight: 800;
   text-decoration: underline;
   cursor: pointer;
+}
+
+/* --- «¿Qué guagua cojo?» on the routes hub ------------------------------ */
+
+.finderFields,
+.finderSearch {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.finderField {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.finderField .whereBtn {
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.finderValue {
+  min-height: 46px;
+  padding: 8px 14px 6px;
+  border: 3px solid var(--ink);
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 17px;
+  line-height: 1.1;
+  text-align: left;
+  cursor: pointer;
+}
+.finderHeading {
+  margin: 6px 0 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 1.1;
+}
+.finderList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.finderRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border: 3px solid var(--ink);
+  background: var(--cream);
+  box-shadow: 4px 4px 0 var(--ink);
+  color: var(--ink);
+  text-decoration: none;
+}
+.finderRow:hover,
+.finderRow:focus-visible {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 var(--ink);
+  /* globals.css turns hovered links cream: on these cream cards that's invisible. */
+  color: var(--ink);
+}
+.finderBullet {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  min-width: 42px;
+  height: 42px;
+  padding: 3px 6px 0;
+  border: 3px solid var(--ink);
+  background: var(--ink);
+  color: var(--cream);
+  font-family: var(--display);
+  font-size: 20px;
+  line-height: 1;
+}
+.finderRowBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.finderRowName {
+  font-family: var(--display);
+  font-size: 18px;
+  line-height: 1.1;
+}
+.finderRowLine {
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.finderRowStop {
+  font-size: 13px;
+  opacity: 0.75;
+}
+.finderGo {
+  align-self: center;
+  font-family: var(--display);
+  font-size: 24px;
+}
+.finderTrip {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 3px solid var(--ink);
+  background: var(--cream);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.finderTrip p {
+  margin: 0;
+}
+.finderTripHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 @media (min-width: 760px) {
