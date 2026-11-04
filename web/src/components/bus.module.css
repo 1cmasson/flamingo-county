@@ -537,9 +537,12 @@ a.line {
   position: absolute;
   inset: 0;
 }
-.fullMap {
-  position: absolute;
-  inset: 0;
+/* Sized by width/height, not by absolute + inset: MapLibre's own .maplibregl-map sets
+   position: relative, and in the production build its sheet loads after this one,
+   which left the map 0 px tall (a blank screen) on Nov 3. */
+.fullMapWrap .fullMap {
+  width: 100%;
+  height: 100%;
 }
 .fullStatus {
   position: absolute;
