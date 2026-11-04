@@ -6,6 +6,7 @@ import { routes } from '../../../../lib/routes'
 import { absUrl, openGraph } from '../../../../lib/site'
 import { breadcrumbJsonLd, webPageJsonLd } from '../../../../lib/jsonld'
 import { RATE_LIMIT } from '../../../../lib/civicApiHttp'
+import { busLink, busPrompt } from '../../../../lib/busForAi'
 import { PageShell } from '../../../../components/PageShell'
 import { JsonLd } from '../../../../components/JsonLd'
 import { Breadcrumbs, type Crumb } from '../../../../components/Breadcrumbs'
@@ -40,6 +41,18 @@ const COPY = {
       ['trash_schedule', 'Quién maneja la recogida de basura en una ciudad y sus zonas, donde los registros las tienen.'],
       ['local_officials', 'Quién gobierna una ciudad: la alcaldía del condado, la de la ciudad y sus comisionados del condado, con la fuente y la fecha.'],
     ],
+    bus: 'CÓMO LLEGAR EN GUAGUA: UN ENLACE',
+    busLead:
+      'Para «¿qué guagua cojo para llegar a…?» no hace falta conectar nada: el asistente escribe un enlace y la persona lo abre. La página encuentra los lugares, arma el viaje (una guagua o un cambio de guagua), lo explica paso a paso con la próxima guagua en vivo y lo dibuja en el mapa.',
+    busRules: [
+      'from: de dónde sale (un lugar, un negocio o una dirección, como «2001 W 68 St, Hialeah»). to: a dónde va. Con nombres basta; el sitio encuentra el lugar.',
+      'Si no sabes de dónde sale, pon solo to: la página le pide su ubicación en su teléfono, y la ubicación nunca sale de ahí.',
+      'Un nombre de cadena o de tipo de lugar («Publix», «farmacia») se toma como el más cercano a from.',
+      'Codifica los espacios como + y el & como %26. /es/ para español, /en/ para inglés.',
+      'Solo Miami-Dade. Si no encuentra un lugar, la página lo dice y deja buscarlo a mano.',
+    ],
+    busExamples: 'Ejemplos',
+    busPrompt: 'Para un GPT propio, pega esto en sus instrucciones:',
     claude: 'CLAUDE',
     claudeSteps: [
       'En Claude, abre Configuración → Conectores → «Agregar conector personalizado».',
@@ -82,6 +95,18 @@ const COPY = {
       ['trash_schedule', 'Who handles trash pickup in a city, and its zones where the records hold them.'],
       ['local_officials', 'Who governs a city: the county mayor, the city mayor and its county commissioners, with source and date.'],
     ],
+    bus: 'BUS DIRECTIONS: A LINK',
+    busLead:
+      'For "which bus do I take to get to…?" nothing needs connecting: the assistant writes a link and the person opens it. The page finds the places, plans the trip (one bus or one change of bus), explains it step by step with the next bus live, and draws it on the map.',
+    busRules: [
+      'from: where they leave from (a place, a business or an address, like "2001 W 68 St, Hialeah"). to: where they’re going. Names are enough; the site finds the place.',
+      'If you don’t know where they leave from, give only to: the page asks for their location on their phone, and the location never leaves it.',
+      'A chain or a kind of place ("Publix", "pharmacy") is taken as the one nearest from.',
+      'Encode spaces as + and & as %26. /en/ for English, /es/ for Spanish.',
+      'Miami-Dade only. If a place can’t be found, the page says so and lets them search by hand.',
+    ],
+    busExamples: 'Examples',
+    busPrompt: 'For your own GPT, paste this into its instructions:',
     claude: 'CLAUDE',
     claudeSteps: [
       'In Claude, open Settings → Connectors → "Add custom connector".',
@@ -140,6 +165,10 @@ export default async function AiPage({ params }: Props) {
     { name: c.title, path },
   ]
   const example = absUrl(`/api/civic/v1/evacuation-zones?city=hialeah&lang=${lang}`)
+  const busExamples =
+    lang === 'es'
+      ? [busLink('es', 'Hialeah Park', 'Palmetto General Hospital'), busLink('es', '2001 W 68 St, Hialeah', 'Westland Mall'), busLink('es', null, 'Jackson Memorial Hospital')]
+      : [busLink('en', 'Versailles Restaurant', 'Miami International Airport'), busLink('en', 'Hialeah Park', 'Publix'), busLink('en', null, 'Dadeland Mall')]
   return (
     <PageShell>
       <JsonLd data={[webPageJsonLd(lang, path, { name: c.title }), breadcrumbJsonLd(crumbs)]} />
@@ -169,6 +198,31 @@ export default async function AiPage({ params }: Props) {
               ))}
             </tbody>
           </table>
+        </section>
+
+        <section className={v.card} aria-labelledby="bus">
+          <h2 id="bus" className={v.cardTag}>
+            {c.bus}
+          </h2>
+          <p className={v.note}>{c.busLead}</p>
+          <Url href={absUrl(`/${lang}/bus/trip?from=…&to=…`)} />
+          <ul className={s.facts}>
+            {c.busRules.map((r) => (
+              <li key={r}>{r}</li>
+            ))}
+          </ul>
+          <p className={v.note}>{c.busExamples}:</p>
+          <ul className={s.facts}>
+            {busExamples.map((href) => (
+              <li key={href}>
+                <a href={href} rel="nofollow" style={{ fontWeight: 800, color: 'var(--ink)', wordBreak: 'break-all' }}>
+                  {href}
+                </a>
+              </li>
+            ))}
+          </ul>
+          <p className={v.note}>{c.busPrompt}</p>
+          <Url href={busPrompt(lang)} />
         </section>
 
         <section className={v.card} aria-labelledby="claude">

@@ -26,7 +26,7 @@ import {
   type Destination,
 } from './TripPlanner'
 import { ShareTrip, shareStart } from './TripShare'
-import { tripBuses } from '../lib/tripLink'
+import { readHubDest, tripBuses } from '../lib/tripLink'
 import b from './bus.module.css'
 import s from './vote.module.css'
 
@@ -78,6 +78,15 @@ export function BusFinder({ lang }: { lang: Lang }) {
   const [searching, setSearching] = useState<'from' | 'to' | null>(null)
   const [locating, setLocating] = useState(false)
   const [denied, setDenied] = useState(false)
+
+  // A destination handed over in the link (`?a=…&ac=…`, as a trip link written
+  // with only where to go becomes): it plans from where the visitor is.
+  useEffect(() => {
+    const to = readHubDest(new URLSearchParams(window.location.search))
+    // The URL is only readable after hydration, so this can't be the initial state.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (to) setDest({ name: to.name, sub: '', at: to.at, href: null })
+  }, [])
 
   useEffect(() => {
     let alive = true

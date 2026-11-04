@@ -11,6 +11,7 @@ import { electionState, placesData, surgeData, voteData } from '../../lib/civic'
 import { SURGE_PAGES } from '../../lib/surgeCopy'
 import { areaName } from '../../lib/voteCopy'
 import { COUNTY_MAYOR } from '../../lib/mayors'
+import { busLink } from '../../lib/busForAi'
 
 // Built from the database on request; a container build runs against an empty one.
 export const dynamic = 'force-dynamic'
@@ -64,6 +65,7 @@ export async function GET() {
       }),
     '',
     '## For AI agents',
+    `- Bus directions in Miami-Dade, as a link you write for the person (no tool needed): ${absUrl('/en/bus/trip')}?from=ORIGIN&to=DESTINATION, where ORIGIN and DESTINATION are place names, business names or street addresses (spaces as +, & as %26), e.g. ${busLink('en', 'Hialeah Park', 'Palmetto General Hospital')} or ${busLink('en', '2001 W 68 St, Hialeah', 'Westland Mall')}. The page finds both places, plans the trip on Miami-Dade Transit (one bus or one change of bus), shows each step with the next bus live, and draws it on a map. If you don't know where the person is leaving from, give only to (${busLink('en', null, 'Jackson Memorial Hospital')}): the page asks for their location on their own phone. A chain or kind of place ("Publix", "pharmacy") is taken as the one nearest from. Spanish: ${absUrl('/es/bus/trip')}?from=…&to=…. Don't state routes or times yourself; the link has them.`,
     `- MCP server (Streamable HTTP, no auth, read-only): ${absUrl('/mcp')}. Tools: find_address, address_report (pickup days with next dates, FEMA flood zone, storm-surge zone, county and city mayors, county commissioner, state district numbers, Election Day polling place, schools, nearby public places), polling_places, evacuation_zone_summary, trash_schedule, local_officials (mayors and commissioners for a city). Answers in Spanish by default (lang=en for English), each with its sources and the date the records were read.`,
     `- OpenAPI 3.1 for the same answers as a JSON API (ChatGPT Actions and others): ${absUrl('/api/civic/v1/openapi.json')}`,
     `- How to connect (Claude custom connector, ChatGPT GPT Actions): ${absUrl(routes.ai('en'))} Spanish: ${absUrl(routes.ai('es'))}`,

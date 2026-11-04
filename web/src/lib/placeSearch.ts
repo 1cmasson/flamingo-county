@@ -10,7 +10,8 @@ import type { LatLng } from './transitMath'
  * Not Google's Places: that needs a paid key, and its terms tie the results
  * to Google's own map. Photon is free and best-effort, so it's used politely:
  * - only the typed text is sent, with a fixed Miami-Dade centre and box,
- *   never the visitor's location (the browser sorts by distance itself);
+ *   never the visitor's location (the browser sorts by distance itself; a
+ *   trip link written by hand may rank from its other, named, end);
  * - answers are kept in memory for a day, so a popular search is asked once;
  * - a timeout of 6 s (Photon can take 5 at busy times), and any failure is simply no extra results.
  * If traffic grows past polite use, Photon can be self-hosted.
@@ -34,7 +35,7 @@ export type PlacePoint = { id: string; name: string; sub: string; at: LatLng }
  * OpenStreetMap tag ("farmacia" → amenity=pharmacy), with whatever else was
  * typed ("farmacia 49" keeps "49").
  */
-const KINDS: Record<string, { word: string; tag: string }> = {
+export const KINDS: Record<string, { word: string; tag: string }> = {
   farmacia: { word: 'pharmacy', tag: 'amenity:pharmacy' },
   farmacias: { word: 'pharmacy', tag: 'amenity:pharmacy' },
   supermercado: { word: 'supermarket', tag: 'shop:supermarket' },
@@ -97,19 +98,27 @@ type Feature = {
   }
 }
 
-/** The places found, or null when Photon didn't answer (so the answer isn't kept as "none"). */
-export function searchPlaces(q: string, limit = 8): Promise<PlacePoint[] | null> {
-  const key = fold(q)
-  if (key.length < 3) return Promise.resolve([])
+/**
+ * The places found, or null when Photon didn't answer (so the answer isn't kept as "none").
+ * `near` ranks them from a place instead of the county's centre: only ever a
+ * place someone named (the other end of a trip link), never where a visitor
+ * is, and only to about a kilometre.
+ */
+export function searchPlaces(q: string, limit = 8, near?: LatLng): Promise<PlacePoint[] | null> {
+  const centre = near
+    ? { lat: Math.round(near[0] * 100) / 100, lon: Math.round(near[1] * 100) / 100 }
+    : CENTER
+  const key = near ? `${fold(q)}@${centre.lat},${centre.lon}` : fold(q)
+  if (fold(q).length < 3) return Promise.resolve([])
   const hit = cache.get(key)
   if (hit && Date.now() - hit.at < TTL_MS) return hit.result
 
-  const [first, ...rest] = key.split(' ')
+  const [first, ...rest] = fold(q).split(' ')
   const kind = KINDS[first]
   const params = new URLSearchParams({
     q: kind ? [kind.word, ...rest].join(' ') : q.trim().slice(0, 100),
-    lat: String(CENTER.lat),
-    lon: String(CENTER.lon),
+    lat: String(centre.lat),
+    lon: String(centre.lon),
     bbox: BBOX,
     limit: String(limit + 4),
   })
