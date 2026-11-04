@@ -118,6 +118,41 @@ const ES = {
     'El condado publica en su página los desvíos, los avisos y el horario en PDF de la ruta.',
   mapTitle: 'DÓNDE VIENEN LAS GUAGUAS',
   mapYou: 'Tú',
+  tripWhere: '¿A dónde vas?',
+  tripPlaceholder: 'Un lugar o una dirección',
+  tripSearching: 'Buscando…',
+  tripNoResults: 'No encontramos ese lugar. Prueba con la dirección, como «1000 W 49 St».',
+  tripNeedLocation:
+    'Para planear el viaje necesitamos saber dónde estás. Tu ubicación se queda en tu teléfono.',
+  tripUseLocation: 'Usar mi ubicación',
+  tripTo: 'CÓMO LLEGAR A',
+  tripAbout: (m: number) =>
+    m < 60 ? `Unos ${m} min` : `Unas ${Math.floor(m / 60)} h ${m % 60} min`,
+  tripAboutNote: (wait: boolean): string =>
+    wait ? 'caminando, esperando y en guagua' : 'caminando y en guagua',
+  tripRouteInline: (number: string | null) =>
+    number ? `la Ruta ${number}` : 'el Trolley de la Pequeña Habana',
+  tripRouteName: (number: string | null) =>
+    number ? `Ruta ${number}` : 'Trolley de la Pequeña Habana',
+  tripWalkTo: (m: number, stop: string) => `Camina ${m} min hasta la parada ${stop}.`,
+  tripTake: (route: string, toward: string) => `Toma ${route} hacia ${toward}.`,
+  tripGetOff: (stop: string, k: number, m: number) =>
+    `Bájate en ${stop} (${n(k, 'parada', 'paradas')}, unos ${m} min).`,
+  tripWalkFrom: (m: number, place: string) => `Camina ${m} min hasta ${place}.`,
+  tripSoonLive: (wait: string) => `En vivo: pasa ${wait}.`,
+  tripSoonScheduled: (time: string, wait: string) => `Según el horario: ${time}, ${wait}.`,
+  tripSoonNone: 'Ahora mismo no hay más guaguas en el horario de hoy.',
+  tripJustWalk: (m: number) => `Te queda a ${m} min caminando: no vale la pena esperar la guagua.`,
+  tripNoBus:
+    'Ninguna de nuestras rutas te lleva directo hasta allí. Google Maps te busca un viaje con cambio de guagua.',
+  tripGoogle: 'Ver el viaje en Google Maps ↗',
+  tripOtherMap: (route: string) => `Abrir el mapa de ${route} →`,
+  tripHowBus: 'Cómo llegar en guagua',
+  tripOption: (route: string, m: number) => `${route} · ${m} min`,
+  tripChange: 'Cambiar destino',
+  tripDest: 'Destino',
+  tripPrivacy:
+    'Lo que escribes se busca en el directorio y en las direcciones del condado. Tu ubicación no sale de tu teléfono.',
   mapOpen: 'Abrir el mapa',
   mapOpenHint: 'Toca el mapa para verlo en grande: las paradas, las guaguas y los lugares cerca.',
   mapBack: (route: string) => `← ${route}`,
@@ -270,6 +305,40 @@ const EN: BusCopy = {
   liveNote: 'The county posts the route’s detours, alerts and PDF timetable on its own page.',
   mapTitle: 'WHERE THE BUSES ARE',
   mapYou: 'You',
+  tripWhere: 'Where are you going?',
+  tripPlaceholder: 'A place or an address',
+  tripSearching: 'Searching…',
+  tripNoResults: 'We couldn’t find that place. Try the address, like “1000 W 49 St”.',
+  tripNeedLocation:
+    'To plan the trip we need to know where you are. Your location stays on your phone.',
+  tripUseLocation: 'Use my location',
+  tripTo: 'GETTING TO',
+  tripAbout: (m: number) =>
+    m < 60 ? `About ${m} min` : `About ${Math.floor(m / 60)} h ${m % 60} min`,
+  tripAboutNote: (wait: boolean): string =>
+    wait ? 'walking, waiting and on the bus' : 'walking and on the bus',
+  tripRouteInline: (number: string | null) =>
+    number ? `Route ${number}` : 'the Little Havana Trolley',
+  tripRouteName: (number: string | null) => (number ? `Route ${number}` : 'Little Havana Trolley'),
+  tripWalkTo: (m: number, stop: string) => `Walk ${m} min to the ${stop} stop.`,
+  tripTake: (route: string, toward: string) => `Take ${route} toward ${toward}.`,
+  tripGetOff: (stop: string, k: number, m: number) =>
+    `Get off at ${stop} (${n(k, 'stop', 'stops')}, about ${m} min).`,
+  tripWalkFrom: (m: number, place: string) => `Walk ${m} min to ${place}.`,
+  tripSoonLive: (wait: string) => `Live: it comes ${wait}.`,
+  tripSoonScheduled: (time: string, wait: string) => `By the schedule: ${time}, ${wait}.`,
+  tripSoonNone: 'There are no more buses on today’s schedule.',
+  tripJustWalk: (m: number) => `It’s a ${m} min walk: not worth waiting for the bus.`,
+  tripNoBus:
+    'None of our routes goes straight there. Google Maps can find you a trip with a change of bus.',
+  tripGoogle: 'See the trip in Google Maps ↗',
+  tripOtherMap: (route: string) => `Open the ${route} map →`,
+  tripHowBus: 'Get there by bus',
+  tripOption: (route: string, m: number) => `${route} · ${m} min`,
+  tripChange: 'Change destination',
+  tripDest: 'There',
+  tripPrivacy:
+    'What you type is looked up in the directory and the county’s addresses. Your location never leaves your phone.',
   mapOpen: 'Open the map',
   mapOpenHint: 'Tap the map to see it big: the stops, the buses and the places nearby.',
   mapBack: (route: string) => `← ${route}`,

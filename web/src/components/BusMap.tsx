@@ -96,6 +96,20 @@ export type BusMapProps = {
   onPickPlace?: (id: number) => void
   /** Pixels at the bottom covered by the page's own panel: the map centres above it. */
   padBottom?: number
+  /** A dotted walk from the visitor to their stop, when there's no trip on the map. */
+  walkTo?: LatLng[] | null
+  /** A planned trip: the walks, the ride, and where it ends. The map fits to it. */
+  trip?: MapTrip | null
+}
+
+export type MapTrip = {
+  /** Changes when the trip does, so the map re-fits only then. */
+  key: string
+  walks: LatLng[][]
+  ride: LatLng[]
+  color: string
+  stops: LatLng[]
+  dest: { at: LatLng; label: string }
 }
 
 export function BusMap(props: BusMapProps) {
@@ -107,6 +121,7 @@ export function BusMap(props: BusMapProps) {
   const ml = useRef<typeof ML | null>(null)
   const markers = useRef(new Map<string, ML.Marker>())
   const you = useRef<ML.Marker | null>(null)
+  const destPin = useRef<ML.Marker | null>(null)
   const [start, setStart] = useState(full)
   const [ready, setReady] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -265,6 +280,42 @@ export function BusMap(props: BusMapProps) {
                 'circle-stroke-width': 3.5,
               },
             })
+            // The trip on top of the route: the ride thick in its colour, the walks dotted.
+            m.addSource('trip-ride', { type: 'geojson', data: empty })
+            m.addSource('trip-walk', { type: 'geojson', data: empty })
+            m.addSource('trip-stops', { type: 'geojson', data: empty })
+            m.addLayer({
+              id: 'trip-ride-casing',
+              type: 'line',
+              source: 'trip-ride',
+              layout: { 'line-join': 'round', 'line-cap': 'round' },
+              paint: { 'line-color': INK, 'line-width': width(8) },
+            })
+            m.addLayer({
+              id: 'trip-ride',
+              type: 'line',
+              source: 'trip-ride',
+              layout: { 'line-join': 'round', 'line-cap': 'round' },
+              paint: { 'line-color': ['get', 'color'], 'line-width': width(5) },
+            })
+            m.addLayer({
+              id: 'trip-walk',
+              type: 'line',
+              source: 'trip-walk',
+              layout: { 'line-cap': 'round', 'line-join': 'round' },
+              paint: { 'line-color': INK, 'line-width': width(3), 'line-dasharray': [0.1, 1.8] },
+            })
+            m.addLayer({
+              id: 'trip-stops',
+              type: 'circle',
+              source: 'trip-stops',
+              paint: {
+                'circle-radius': width(5),
+                'circle-color': CREAM,
+                'circle-stroke-color': INK,
+                'circle-stroke-width': 3.5,
+              },
+            })
             // A finger is wider than a stop: anything within 14 px of the tap counts.
             m.on('click', (e) => {
               if (
@@ -321,6 +372,7 @@ export function BusMap(props: BusMapProps) {
       alive = false
       have.clear()
       you.current = null
+      destPin.current = null
       m?.remove()
       map.current = null
     }
@@ -363,7 +415,19 @@ export function BusMap(props: BusMapProps) {
   useEffect(() => {
     const m = map.current
     const st = directions[selDir]?.stops[selStop]
-    if (!full || !ready || !m || !st) return
+    if (!full || !ready || !m || !st || cb.current.trip) return
+    // With the visitor on the map, show them and their stop together.
+    const here = cb.current.origin
+    const L = ml.current
+    if (here && L) {
+      const bounds = new L.LngLatBounds(lngLat(here), lngLat(here)).extend(lngLat(st.at))
+      m.fitBounds(bounds, {
+        padding: { top: 80, bottom: pad + 40, left: 40, right: 70 },
+        maxZoom: 16.5,
+        duration: 600,
+      })
+      return
+    }
     m.easeTo({
       center: lngLat(st.at),
       zoom: Math.max(m.getZoom(), 15),
@@ -387,6 +451,80 @@ export function BusMap(props: BusMapProps) {
       })),
     })
   }, [full, ready, places, placeId])
+
+  /* ---- full map: the walk to the stop, or a whole trip ---- */
+  const walkTo = props.walkTo ?? null
+  const trip = props.trip ?? null
+  useEffect(() => {
+    const m = map.current
+    const L = ml.current
+    if (!full || !ready || !m || !L) return
+    const line = (coords: LatLng[]) => ({
+      type: 'Feature' as const,
+      properties: {},
+      geometry: { type: 'LineString' as const, coordinates: coords.map(lngLat) },
+    })
+    const walks = trip ? trip.walks : walkTo ? [walkTo] : []
+    ;(m.getSource('trip-walk') as ML.GeoJSONSource | undefined)?.setData({
+      type: 'FeatureCollection',
+      features: walks.filter((w) => w.length > 1).map(line),
+    })
+    ;(m.getSource('trip-ride') as ML.GeoJSONSource | undefined)?.setData(
+      trip ? { ...line(trip.ride), properties: { color: trip.color } } : empty,
+    )
+    ;(m.getSource('trip-stops') as ML.GeoJSONSource | undefined)?.setData({
+      type: 'FeatureCollection',
+      features: (trip?.stops ?? []).map((p) => ({
+        type: 'Feature' as const,
+        properties: {},
+        geometry: { type: 'Point' as const, coordinates: lngLat(p) },
+      })),
+    })
+    // The page's own route steps back while another trip is on the map.
+    for (const id of ['line-casing', 'line-fill'])
+      m.setPaintProperty(id, 'line-opacity', trip ? 0.3 : 1)
+    for (const id of ['stops', 'picked', 'places'])
+      m.setLayoutProperty(id, 'visibility', trip ? 'none' : 'visible')
+    if (trip) {
+      if (!destPin.current) {
+        const el = document.createElement('div')
+        el.className = `${rm.pin} ${rm.pinStop}`
+        destPin.current = new L.Marker({ element: el, anchor: 'bottom' })
+          .setLngLat(lngLat(trip.dest.at))
+          .addTo(m)
+      }
+      destPin.current.setLngLat(lngLat(trip.dest.at))
+      destPin.current.getElement().innerHTML = `<span class="${rm.pinLabel}">${esc(trip.dest.label)}</span><span class="${rm.pinHead}" aria-hidden="true"></span>`
+    } else {
+      destPin.current?.remove()
+      destPin.current = null
+    }
+  }, [full, ready, walkTo, trip])
+
+  // A new trip is fitted on screen, start to end.
+  const tripKey = trip?.key ?? null
+  useEffect(() => {
+    if (full && ready && trip) fitTrip(map.current, ml.current, trip, 700)
+    // Only when the trip itself changes, not on every refresh of its times.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [full, ready, tripKey])
+
+  // The page's panel grows and shrinks under the map (a trip's steps, a place's card), and
+  // MapLibre only watches the window: follow the box, and keep a trip in view as it changes.
+  useEffect(() => {
+    const el = box.current
+    if (!full || !ready || !el || !('ResizeObserver' in window)) return
+    let last = el.clientHeight
+    const ro = new ResizeObserver(() => {
+      const m = map.current
+      if (!m || el.clientHeight === last) return
+      last = el.clientHeight
+      m.resize()
+      if (cb.current.trip) fitTrip(m, ml.current, cb.current.trip, 0)
+    })
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [full, ready])
 
   /* ---- full map: "you" ---- */
   const origin = props.origin ?? null
@@ -494,4 +632,13 @@ export function BusMap(props: BusMapProps) {
       </p>
     </div>
   )
+}
+
+/** Fit a trip on screen: both walks and the ride, with room for the map's own buttons. */
+function fitTrip(m: ML.Map | null, L: typeof ML | null, trip: MapTrip, duration: number) {
+  if (!m || !L) return
+  const b = new L.LngLatBounds()
+  for (const w of trip.walks) for (const p of w) b.extend(lngLat(p))
+  for (const p of trip.ride) b.extend(lngLat(p))
+  m.fitBounds(b, { padding: { top: 70, bottom: 30, left: 30, right: 64 }, maxZoom: 16, duration })
 }

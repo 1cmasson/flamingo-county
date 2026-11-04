@@ -1,6 +1,7 @@
 import type { Lang } from '../i18n'
 import type { Category, City, Listing } from '../payload-types'
 import { getListings, rel } from './data'
+import { routes } from './routes'
 import { geocode } from './geocode'
 import { nearestCountyStop, type CountyRoute, type CountyStation } from './county'
 import { walkMinutes } from './transit'
@@ -67,4 +68,36 @@ export function placeCards(
     stop: p.station.name,
     walk: p.walk,
   }))
+}
+
+/** Every listing with a place on the map, for the trip planner's "where are you going?". */
+export type DirectoryPoint = {
+  id: number
+  name: string
+  at: LatLng
+  category: string | null
+  city: string | null
+  href: string
+}
+
+export async function directoryPoints(lang: Lang): Promise<DirectoryPoint[]> {
+  const listings = (await getListings(lang)).filter((l) => l.publicationStatus !== 'unsourced')
+  const located = await Promise.all(
+    listings.map(async (l) => ({ l, at: await geocode(l.detail?.address) })),
+  )
+  const out: DirectoryPoint[] = []
+  for (const { l, at } of located) {
+    const city = rel<City>(l.city)
+    if (!at || !city?.slug) continue
+    out.push({
+      id: l.id,
+      name: l.name,
+      at,
+      category: rel<Category>(l.category)?.label ?? null,
+      // Stored in caps (a proper noun on the nav tabs); a card reads it in title case.
+      city: city.name ? city.name.toLowerCase().replace(/(^|\s)\S/g, (c) => c.toUpperCase()) : null,
+      href: routes.business(lang, city.slug, l.slug),
+    })
+  }
+  return out
 }

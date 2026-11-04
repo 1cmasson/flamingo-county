@@ -1,14 +1,16 @@
 'use client'
 
 import Link from 'next/link'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Lang } from '../i18n'
 import { busCopy } from '../lib/busCopy'
 import { stopMapsHref, type RouteTimes } from '../lib/busTime'
+import { meters } from '../lib/transitMath'
 import type { MapPlaceCard } from '../lib/busPlaces'
 import { BusMap, DIR_COLORS, type BusMapDirection } from './BusMap'
 import { NextTimes } from './NextBus'
 import { MAP_FROM, useRouteChoice } from './useRouteChoice'
+import { TripPanel, TripSearch, mapTrip, useTripPlan, type Destination } from './TripPlanner'
 import b from './bus.module.css'
 import s from './vote.module.css'
 
@@ -17,6 +19,11 @@ import s from './vote.module.css'
  * is the map, with a bar on top (back to the route page, which way) and a
  * panel at the bottom that answers for what was tapped: a stop's next buses,
  * or a place from the directory near the route.
+ *
+ * «¿A dónde vas?» plans a trip there by one bus from where the visitor is
+ * (TripPlanner.tsx): the walk to the stop, the ride, the walk to the door,
+ * all drawn on the map. If the phone already lets the site see its location,
+ * the "you" pin and the walk to the nearest stop show as soon as it opens.
  *
  * It covers the site's own header and footer while it's open; the back link
  * (or the phone's back button) is the way out, to the route page it came
@@ -49,6 +56,46 @@ export function BusMapScreen({
   const v = useRouteChoice(slug, times, { live, schedule })
   const [placeId, setPlaceId] = useState<number | null>(null)
   const [touched, setTouched] = useState(false)
+  const [mode, setMode] = useState<'stop' | 'search' | 'trip'>('stop')
+  const [dest, setDest] = useState<Destination | null>(null)
+  const [pick, setPick] = useState(0)
+
+  // Location already allowed for this site: pin the visitor and their nearest stop straight away.
+  // (Asking unprompted would be a permission box before they've done anything.)
+  const locate = useRef(v.locate)
+  useEffect(() => {
+    locate.current = v.locate
+  })
+  useEffect(() => {
+    let alive = true
+    navigator.permissions
+      ?.query({ name: 'geolocation' })
+      .then((p) => alive && p.state === 'granted' && locate.current())
+      .catch(() => {})
+    return () => {
+      alive = false
+    }
+  }, [])
+
+  const goTo = (d: Destination) => {
+    setDest(d)
+    setPick(0)
+    setPlaceId(null)
+    setMode('trip')
+    if (!v.origin && !v.locating) v.locate()
+  }
+  const plan = useTripPlan(
+    mode === 'trip' ? v.origin : null,
+    mode === 'trip' ? (dest?.at ?? null) : null,
+  )
+  const trip = plan?.trips[pick] ?? null
+  const shownTrip = useMemo(
+    () =>
+      mode === 'trip' && trip && v.origin && dest
+        ? mapTrip(trip, v.origin, dest, c.tripDest)
+        : null,
+    [mode, trip, v.origin, dest, c.tripDest],
+  )
 
   // Opened from the route page: going back is the browser's back, which also keeps its scroll.
   const [fromRoute, setFromRoute] = useState(false)
@@ -78,6 +125,12 @@ export function BusMapScreen({
   const { state, d, i, station } = v
   // A stop is the visitor's once they tap one, use "near me", or picked one on an earlier visit.
   const chosen = v.ready && (touched || v.origin !== null || v.saved)
+  // "Routing me to the nearest stop": the dotted walk from the visitor to the chosen stop.
+  // Only a walk someone would take: a stop picked across town gets no line from "you".
+  const walkTo =
+    mode !== 'trip' && v.origin && chosen && meters(v.origin, station.at) <= 2000
+      ? [v.origin, station.at]
+      : null
 
   return (
     <div className={b.screen}>
@@ -137,7 +190,12 @@ export function BusMapScreen({
             setPlaceId(null)
             setTouched(true)
           }}
-          onPickPlace={(id) => setPlaceId(id)}
+          onPickPlace={(id) => {
+            setPlaceId(id)
+            setMode('stop')
+          }}
+          walkTo={walkTo}
+          trip={shownTrip}
         />
 
         <details className={b.legendBox}>
@@ -174,27 +232,63 @@ export function BusMapScreen({
           </ul>
         </details>
 
-        <button
-          type="button"
-          className={b.nearBtn}
-          onClick={() => {
-            setPlaceId(null)
-            v.locate()
-          }}
-          disabled={v.locating}
-        >
-          ◎ {v.locating ? c.locating : c.mapNearMe}
-        </button>
+        {mode === 'trip' ? null : (
+          <button
+            type="button"
+            className={b.nearBtn}
+            onClick={() => {
+              setPlaceId(null)
+              v.locate()
+            }}
+            disabled={v.locating}
+          >
+            ◎ {v.locating ? c.locating : c.mapNearMe}
+          </button>
+        )}
       </div>
 
       <section className={b.sheet} aria-live="polite">
-        {place ? (
+        {mode === 'search' ? (
+          <TripSearch lang={lang} onPick={goTo} onCancel={() => setMode(dest ? 'trip' : 'stop')} />
+        ) : mode === 'trip' && dest ? (
+          <TripPanel
+            lang={lang}
+            dest={dest}
+            plan={v.origin ? plan : null}
+            pick={pick}
+            onPick={setPick}
+            needLocation={!v.origin}
+            locating={v.locating}
+            onLocate={v.locate}
+            denied={v.denied}
+            pageSlug={slug}
+            onChange={() => setMode('search')}
+            onClose={() => {
+              setMode('stop')
+              setDest(null)
+            }}
+          />
+        ) : place ? (
           <>
             <p className={b.sheetKicker}>{place.category ?? ''}</p>
             <p className={b.sheetTitle}>{place.name}</p>
             <p className={s.note}>{c.mapPlaceWalk(place.walk, place.stop)}</p>
             <div className={b.sheetActions}>
-              <Link className={s.action} href={place.href}>
+              <button
+                type="button"
+                className={s.action}
+                onClick={() =>
+                  goTo({
+                    name: place.name,
+                    sub: place.category ?? '',
+                    at: place.at,
+                    href: place.href,
+                  })
+                }
+              >
+                {c.tripHowBus}
+              </button>
+              <Link className={`${s.action} ${s.actionAlt}`} href={place.href}>
                 {c.mapPlaceOpen}
               </Link>
               <button
@@ -210,6 +304,9 @@ export function BusMapScreen({
           <p className={s.note}>{c.mapPickHint}</p>
         ) : (
           <>
+            <button type="button" className={b.whereBtn} onClick={() => setMode('search')}>
+              <span aria-hidden="true">⌕</span> {c.tripWhere}
+            </button>
             {!chosen ? <p className={b.sheetTitle}>{c.mapPickTitle}</p> : null}
             <label className={b.sheetPick}>
               <span className={b.sheetKicker}>{chosen ? c.mapStopLabel : c.mapPickOr}</span>

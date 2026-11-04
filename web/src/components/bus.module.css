@@ -700,6 +700,145 @@ a.line {
   opacity: 0.8;
 }
 
+/* --- trip planner -------------------------------------------------------- */
+
+.whereBtn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 50px;
+  padding: 10px 14px 8px;
+  border: 3px solid var(--ink);
+  background: var(--yellow);
+  box-shadow: 4px 4px 0 var(--ink);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 19px;
+  line-height: 1;
+  text-align: left;
+  cursor: pointer;
+}
+.whereBtn span {
+  font-size: 22px;
+}
+.tripResults {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 3px solid var(--ink);
+}
+.tripResults li + li {
+  border-top: 2px solid var(--ink);
+}
+.tripResult {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 12px;
+  border: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.tripResult:hover,
+.tripResult:focus-visible {
+  background: #fff;
+}
+.tripResultName {
+  font-weight: 800;
+  font-size: 16px;
+}
+.tripResultSub {
+  font-size: 13px;
+  opacity: 0.75;
+}
+.tripOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tripOption {
+  min-height: 40px;
+  padding: 6px 12px 4px;
+  border: 3px solid var(--ink);
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 14px;
+  cursor: pointer;
+}
+.tripOption[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--cream);
+}
+.tripTotal {
+  font-family: var(--display);
+  font-size: 22px;
+  line-height: 1.1;
+}
+.tripTotalNote {
+  font-family: var(--body);
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.75;
+}
+.tripSteps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.35;
+}
+.tripSteps li {
+  position: relative;
+  padding-left: 36px;
+  counter-increment: step;
+}
+.tripSteps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: -1px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--cream);
+  font-family: var(--display);
+  font-size: 14px;
+  padding-top: 2px;
+}
+.tripLive {
+  display: inline-block;
+  padding: 1px 6px;
+  background: #19c26b;
+  color: var(--ink);
+}
+.textBtn {
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
 @media (min-width: 760px) {
   .screenBar {
     flex-direction: row;
