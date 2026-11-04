@@ -673,6 +673,58 @@ a.line {
 .sheet p {
   margin: 0;
 }
+.sheetHandle {
+  display: flex;
+  justify-content: flex-end;
+  margin: -6px -4px -4px 0;
+}
+.sheetToggle {
+  min-height: 36px;
+  padding: 4px 10px 2px;
+  border: 2px solid var(--ink);
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+/* Folded: one bar along the bottom, the map gets the rest. */
+.sheetClosed {
+  padding: 0;
+  overflow: hidden;
+}
+.sheetPeek {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 14px calc(8px + env(safe-area-inset-bottom));
+  border: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sheetPeekShow {
+  flex: none;
+  padding: 6px 10px 4px;
+  border: 2px solid var(--ink);
+  background: var(--yellow);
+  font-family: var(--display);
+  font-size: 14px;
+  line-height: 1;
+}
+.sheetPeekText {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 800;
+  font-size: 15px;
+}
 .sheetKicker {
   font-size: 12px;
   font-weight: 800;
@@ -694,10 +746,277 @@ a.line {
   flex-wrap: wrap;
   gap: 10px;
 }
+/* The same for the cream and cyan buttons that are links. */
+.sheetActions a:hover {
+  color: var(--ink);
+}
 .sheetHint {
   font-size: 13px;
   font-weight: 700;
   opacity: 0.8;
+}
+
+/* --- trip planner -------------------------------------------------------- */
+
+.whereBtn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 50px;
+  padding: 10px 14px 8px;
+  border: 3px solid var(--ink);
+  background: var(--yellow);
+  box-shadow: 4px 4px 0 var(--ink);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 19px;
+  line-height: 1;
+  text-align: left;
+  cursor: pointer;
+}
+.whereBtn span {
+  font-size: 22px;
+}
+.tripResults {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border: 3px solid var(--ink);
+}
+.tripResults li + li {
+  border-top: 2px solid var(--ink);
+}
+.tripResult {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 12px;
+  border: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.tripResult:hover,
+.tripResult:focus-visible {
+  background: #fff;
+}
+.tripResultName {
+  font-weight: 800;
+  font-size: 16px;
+}
+.tripResultSub {
+  font-size: 13px;
+  opacity: 0.75;
+}
+.tripOptions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tripOption {
+  min-height: 40px;
+  padding: 6px 12px 4px;
+  border: 3px solid var(--ink);
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 14px;
+  cursor: pointer;
+}
+.tripOption[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--cream);
+}
+.tripTotal {
+  font-family: var(--display);
+  font-size: 22px;
+  line-height: 1.1;
+}
+.tripTotalNote {
+  font-family: var(--body);
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.75;
+}
+.tripSteps {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.35;
+}
+.tripSteps li {
+  position: relative;
+  padding-left: 36px;
+  counter-increment: step;
+}
+.tripSteps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: -1px;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--ink);
+  color: var(--cream);
+  font-family: var(--display);
+  font-size: 14px;
+  padding-top: 2px;
+}
+.tripLive {
+  display: inline-block;
+  padding: 1px 6px;
+  background: #19c26b;
+  color: var(--ink);
+}
+.textBtn {
+  padding: 6px 0;
+  border: 0;
+  background: none;
+  color: var(--ink);
+  font: inherit;
+  font-weight: 800;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* --- «¿Qué guagua cojo?» on the routes hub ------------------------------ */
+
+.finderFields,
+.finderSearch {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.finderField {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+}
+.finderField .whereBtn {
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.finderValue {
+  min-height: 46px;
+  padding: 8px 14px 6px;
+  border: 3px solid var(--ink);
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 17px;
+  line-height: 1.1;
+  text-align: left;
+  cursor: pointer;
+}
+.finderHeading {
+  margin: 6px 0 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 1.1;
+}
+.finderList {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.finderRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px;
+  border: 3px solid var(--ink);
+  background: var(--cream);
+  box-shadow: 4px 4px 0 var(--ink);
+  color: var(--ink);
+  text-decoration: none;
+}
+.finderRow:hover,
+.finderRow:focus-visible {
+  transform: translate(-1px, -1px);
+  box-shadow: 5px 5px 0 var(--ink);
+  /* globals.css turns hovered links cream: on these cream cards that's invisible. */
+  color: var(--ink);
+}
+.finderBullet {
+  flex: none;
+  display: inline-grid;
+  place-items: center;
+  min-width: 42px;
+  height: 42px;
+  padding: 3px 6px 0;
+  border: 3px solid var(--ink);
+  background: var(--ink);
+  color: var(--cream);
+  font-family: var(--display);
+  font-size: 20px;
+  line-height: 1;
+}
+.finderRowBody {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.finderRowName {
+  font-family: var(--display);
+  font-size: 18px;
+  line-height: 1.1;
+}
+.finderRowLine {
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.finderRowStop {
+  font-size: 13px;
+  opacity: 0.75;
+}
+.finderGo {
+  align-self: center;
+  font-family: var(--display);
+  font-size: 24px;
+}
+.finderTrip {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px;
+  border: 3px solid var(--ink);
+  background: var(--cream);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.finderTrip p {
+  margin: 0;
+}
+.finderTripHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 @media (min-width: 760px) {

@@ -2,11 +2,41 @@ import { existsSync, statSync } from 'node:fs'
 import { createClient, type Client } from '@libsql/client'
 
 import { todayISO } from './dates'
-import { meters, nearestServing, TRANSIT, walkMinutes, type LatLng, type NearestStop, type TransitRoute } from './transit'
-import { nextDates, normalizeAddress, prettyAddress, slugOf, titleCase, type Rule } from './civicGeo'
-import { dbPath, type CityCivic, type DistrictCivic, type Pickup as StoredPickup, type SurgeSummary, type VoteArea } from './civicSync'
+import {
+  meters,
+  nearestServing,
+  TRANSIT,
+  walkMinutes,
+  type LatLng,
+  type NearestStop,
+  type TransitRoute,
+} from './transit'
+import {
+  nextDates,
+  normalizeAddress,
+  prettyAddress,
+  slugOf,
+  titleCase,
+  type Rule,
+} from './civicGeo'
+import {
+  dbPath,
+  type CityCivic,
+  type DistrictCivic,
+  type Pickup as StoredPickup,
+  type SurgeSummary,
+  type VoteArea,
+} from './civicSync'
 
-export { KIND, normalizeAddress, parseRule, matchesRule, nextDates, rrule, prettyAddress } from './civicGeo'
+export {
+  KIND,
+  normalizeAddress,
+  parseRule,
+  matchesRule,
+  nextDates,
+  rrule,
+  prettyAddress,
+} from './civicGeo'
 export { slugOf }
 
 /**
@@ -57,12 +87,24 @@ type Meta = {
     byArea: number[]
     unlisted: number[]
     unplaced: number[]
-    lastElection: { election: string; electionName: string; published: string; url: string; by: string } | null
+    lastElection: {
+      election: string
+      electionName: string
+      published: string
+      url: string
+      by: string
+    } | null
   }
 }
 
 /** Where the Election Day sites came from: the Supervisor of Elections' list for `election`, or the county layer. */
-export type PollingSource = { by: string; url: string; election: string | null; electionName: string | null; published: string | null }
+export type PollingSource = {
+  by: string
+  url: string
+  election: string | null
+  electionName: string | null
+  published: string | null
+}
 
 /** As stored: the zip, the city names and the coordinates are numbers (coordinates in 1e-5 degrees). */
 type Row = {
@@ -106,7 +148,9 @@ async function open(): Promise<typeof conn> {
   }
   const db = createClient({ url: `file:${path}` })
   const rows = (await db.execute('SELECT key, value FROM meta')).rows
-  const meta = Object.fromEntries(rows.map((r) => [String(r.key), JSON.parse(String(r.value))])) as Meta
+  const meta = Object.fromEntries(
+    rows.map((r) => [String(r.key), JSON.parse(String(r.value))]),
+  ) as Meta
   conn?.db.close()
   conn = { db, mtime, meta, checked: now }
   return conn
@@ -125,7 +169,12 @@ export async function civicVersion(): Promise<string | null> {
 export async function tileAt(z: number, x: number, y: number): Promise<Uint8Array | null> {
   const c = await open()
   if (!c) return null
-  const row = (await c.db.execute({ sql: 'SELECT data FROM tiles WHERE z = ? AND x = ? AND y = ?', args: [z, x, y] })).rows[0]
+  const row = (
+    await c.db.execute({
+      sql: 'SELECT data FROM tiles WHERE z = ? AND x = ? AND y = ?',
+      args: [z, x, y],
+    })
+  ).rows[0]
   return row ? new Uint8Array(row.data as ArrayBuffer) : null
 }
 
@@ -173,8 +222,13 @@ export function electionState(
   last: VoteData['lastElection'],
   today: string = todayISO(),
 ): { upcoming: boolean; election: string | null; over: string | null } {
-  if (source?.election && today <= source.election) return { upcoming: true, election: source.election, over: null }
-  const past = [source?.election, last?.election].filter((d): d is string => !!d && d < today).sort().pop() ?? null
+  if (source?.election && today <= source.election)
+    return { upcoming: true, election: source.election, over: null }
+  const past =
+    [source?.election, last?.election]
+      .filter((d): d is string => !!d && d < today)
+      .sort()
+      .pop() ?? null
   return { upcoming: false, election: null, over: past }
 }
 
@@ -211,7 +265,12 @@ export async function placesData(): Promise<PlacesData | null> {
   return {
     cities: m.cities,
     districts: m.districts,
-    zones: { garbage: m.zones.garbage, recycling: m.zones.recycling, bulk: m.zones.bulk, flood: m.zones.flood },
+    zones: {
+      garbage: m.zones.garbage,
+      recycling: m.zones.recycling,
+      bulk: m.zones.bulk,
+      flood: m.zones.flood,
+    },
     surge: m.surge,
     vote: m.vote,
     precincts: new Map(m.zones.precinct.map((p) => [p.precinct, p])),
@@ -233,12 +292,14 @@ const atOf = (r: Row): LatLng => [r.lat / 1e5, r.lon / 1e5]
 
 export type Suggestion = { slug: string; label: string; zip: string; city: string }
 
-const toSuggestion = (names: string[]) => (r: Row): Suggestion => ({
-  slug: slugOf(r.key, zipText(r.zip)),
-  label: prettyAddress(r.key),
-  zip: zipText(r.zip),
-  city: titleCase(names[r.city] ?? ''),
-})
+const toSuggestion =
+  (names: string[]) =>
+  (r: Row): Suggestion => ({
+    slug: slugOf(r.key, zipText(r.zip)),
+    label: prettyAddress(r.key),
+    zip: zipText(r.zip),
+    city: titleCase(names[r.city] ?? ''),
+  })
 
 /**
  * Up to `limit` addresses for what has been typed so far: a prefix of the
@@ -247,10 +308,29 @@ const toSuggestion = (names: string[]) => (r: Row): Suggestion => ({
  * for a street typed without a number, addresses on it.
  */
 export async function suggest(q: string, limit = 8): Promise<Suggestion[]> {
+  const found = await suggestRows(q, limit)
+  return found ? found.rows.map(toSuggestion(found.names)) : []
+}
+
+/** The same search with each address's point: for the bus trip planner, which needs where to go. */
+export async function suggestPoints(
+  q: string,
+  limit = 6,
+): Promise<(Suggestion & { at: LatLng })[]> {
+  const found = await suggestRows(q, limit)
+  if (!found) return []
+  const named = toSuggestion(found.names)
+  return found.rows.map((r) => ({ ...named(r), at: atOf(r) }))
+}
+
+async function suggestRows(
+  q: string,
+  limit: number,
+): Promise<{ rows: Row[]; names: string[] } | null> {
   const { text, zip } = normalizeAddress(q)
-  if (text.length < 2) return []
+  if (text.length < 2) return null
   const c = await open()
-  if (!c) return []
+  if (!c) return null
   const zipSql = zip ? ' AND zip = ?' : ''
   const zipArg = zip ? [Number(zip)] : []
   // Every key that starts with `text`: from text up to text followed by the highest character.
@@ -264,7 +344,10 @@ export async function suggest(q: string, limit = 8): Promise<Suggestion[]> {
   const [num, ...words] = text.split(' ')
   if (!rows.length && /^\d+$/.test(num) && words.length) {
     const candidates = (
-      await c.db.execute({ sql: `SELECT * FROM addr WHERE key >= ? AND key < ?${zipSql} LIMIT 4000`, args: [`${num} `, `${num} ￿`, ...zipArg] })
+      await c.db.execute({
+        sql: `SELECT * FROM addr WHERE key >= ? AND key < ?${zipSql} LIMIT 4000`,
+        args: [`${num} `, `${num} ￿`, ...zipArg],
+      })
     ).rows.map(toRow)
     rows = candidates
       .filter((r) => {
@@ -274,9 +357,14 @@ export async function suggest(q: string, limit = 8): Promise<Suggestion[]> {
       .slice(0, limit)
   }
   if (!rows.length && !/^\d/.test(num) && text.length >= 4) {
-    rows = (await c.db.execute({ sql: `SELECT * FROM addr WHERE key LIKE ?${zipSql} LIMIT ?`, args: [`% ${text}%`, ...zipArg, limit] })).rows.map(toRow)
+    rows = (
+      await c.db.execute({
+        sql: `SELECT * FROM addr WHERE key LIKE ?${zipSql} LIMIT ?`,
+        args: [`% ${text}%`, ...zipArg, limit],
+      })
+    ).rows.map(toRow)
   }
-  return rows.map(toSuggestion(c.meta.names))
+  return { rows, names: c.meta.names }
 }
 
 /** The nearest address to a point, if one is within `maxMeters`: for "use my location". */
@@ -308,7 +396,13 @@ export async function nearestAddress(at: LatLng, maxMeters = 120): Promise<Sugge
 
 export type Pickup = StoredPickup & { rule: Rule | null; next: string[] }
 export type Nearby = Place & { meters: number; walk: number }
-export type BusStop = { route: TransitRoute; stopName: string; stationId: string; meters: number; walk: number }
+export type BusStop = {
+  route: TransitRoute
+  stopName: string
+  stationId: string
+  meters: number
+  walk: number
+}
 
 export type AddressReport = {
   slug: string
@@ -359,30 +453,51 @@ async function bySlug(db: Client, slug: string): Promise<Row | null> {
   if (!m) return null
   const [, words, zip] = m
   const guess = words.replace(/-/g, ' ').toUpperCase()
-  const exact = (await db.execute({ sql: 'SELECT * FROM addr WHERE key = ? AND zip = ?', args: [guess, Number(zip)] })).rows[0]
+  const exact = (
+    await db.execute({
+      sql: 'SELECT * FROM addr WHERE key = ? AND zip = ?',
+      args: [guess, Number(zip)],
+    })
+  ).rows[0]
   if (exact) return toRow(exact)
   const loose = (
-    await db.execute({ sql: 'SELECT * FROM addr WHERE key LIKE ? AND zip = ? LIMIT 20', args: [guess.replace(/ /g, '%'), Number(zip)] })
+    await db.execute({
+      sql: 'SELECT * FROM addr WHERE key LIKE ? AND zip = ? LIMIT 20',
+      args: [guess.replace(/ /g, '%'), Number(zip)],
+    })
   ).rows.map(toRow)
   return loose.find((r) => slugOf(r.key, zip) === slug) ?? null
 }
 
-export async function addressReport(slug: string, today: string = todayISO()): Promise<AddressReport | null> {
+export async function addressReport(
+  slug: string,
+  today: string = todayISO(),
+): Promise<AddressReport | null> {
   const c = await open()
   if (!c || !slug) return null
   const r = await bySlug(c.db, slug)
   if (!r) return null
   const z = c.meta.zones
-  const pick = <T,>(list: T[], i: number | null): T | null => (i != null && i >= 0 ? (list[i] ?? null) : null)
-  const pickup = (p: StoredPickup | null): Pickup | null => (p ? { ...p, next: p.rule ? nextDates(p.rule, today) : [] } : null)
+  const pick = <T>(list: T[], i: number | null): T | null =>
+    i != null && i >= 0 ? (list[i] ?? null) : null
+  const pickup = (p: StoredPickup | null): Pickup | null =>
+    p ? { ...p, next: p.rule ? nextDates(p.rule, today) : [] } : null
   const at = atOf(r)
   const precinct = pick(z.precinct, r.precinct)
   const bus = TRANSIT.routes
     .map((route) => {
-      const ways = [nearestServing(route, at, 'end'), nearestServing(route, at, 'start')].filter((s): s is NearestStop => !!s)
+      const ways = [nearestServing(route, at, 'end'), nearestServing(route, at, 'start')].filter(
+        (s): s is NearestStop => !!s,
+      )
       const s = ways.sort((p, q) => p.meters - q.meters)[0]
       return s && s.meters <= BUS_METERS
-        ? { route, stopName: s.stopName, stationId: s.station.id, meters: s.meters, walk: walkMinutes(s.meters) }
+        ? {
+            route,
+            stopName: s.stopName,
+            stationId: s.station.id,
+            meters: s.meters,
+            walk: walkMinutes(s.meters),
+          }
         : null
     })
     .filter((b): b is BusStop => !!b)
@@ -409,7 +524,11 @@ export async function addressReport(slug: string, today: string = todayISO()): P
     precinct: precinct?.precinct ?? null,
     polling: precinct?.polling ?? null,
     pollingSource: c.meta.pollingSource ?? null,
-    schools: { elementary: pick(z.elementary, r.elementary), middle: pick(z.middle, r.middle), high: pick(z.high, r.high) },
+    schools: {
+      elementary: pick(z.elementary, r.elementary),
+      middle: pick(z.middle, r.middle),
+      high: pick(z.high, r.high),
+    },
     nearby: {
       fire: nearest(c.meta.places.fire, at),
       police: nearest(c.meta.places.police, at),

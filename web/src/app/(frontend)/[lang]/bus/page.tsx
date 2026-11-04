@@ -20,6 +20,7 @@ import { JsonLd } from '../../../../components/JsonLd'
 import { AnswerBlock } from '../../../../components/AnswerBlock'
 import { Breadcrumbs, type Crumb } from '../../../../components/Breadcrumbs'
 import { RouteBullet } from '../../../../components/Bus'
+import { BusFinder } from '../../../../components/BusFinder'
 import s from '../../../../components/vote.module.css'
 import b from '../../../../components/bus.module.css'
 
@@ -84,6 +85,8 @@ export default async function BusHub({ params }: Props) {
           <h1 className={s.title}>{c.hubTitle}</h1>
           <p className={s.sub}>{c.hubSub}</p>
         </header>
+
+        <BusFinder lang={lang} />
 
         <AnswerBlock question={c.hubQuestion} answer={c.hubAnswer(COUNTY.routes.length)} />
 

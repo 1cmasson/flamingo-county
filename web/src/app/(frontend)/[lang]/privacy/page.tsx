@@ -134,6 +134,7 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
         p: [
           'The live times on our county bus pages come from Miami-Dade Transit’s real-time data, provided by Swiftly, Inc. They are shown as is, with no promise that they are complete, accurate or on time; neither Swiftly nor Flamingo County is responsible for any loss from relying on them, and the feed can stop at any time. When it does, the pages show the county’s schedule instead.',
           'To show them, your browser sends our server only the route, direction and stop you picked. Your location, if you use “Find the stop nearest me”, never leaves your phone.',
+          'On the bus map, “Where are you going?” sends what you type to our server to look it up in the directory and the county’s address list; nothing typed is kept. The trip itself is worked out in your browser, so your location stays on your phone.',
         ],
       },
       {
@@ -257,6 +258,7 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
         p: [
           'Las horas en vivo de nuestras páginas de guaguas del condado vienen de los datos en tiempo real de Miami-Dade Transit, que provee Swiftly, Inc. Se muestran tal cual, sin garantía de que estén completas, sean exactas o lleguen a tiempo; ni Swiftly ni Flamingo County responden por pérdidas por confiar en ellas, y el servicio puede detenerse en cualquier momento. Cuando eso pasa, las páginas muestran el horario del condado.',
           'Para mostrarlas, tu navegador le manda a nuestro servidor solo la ruta, el sentido y la parada que escogiste. Tu ubicación, si usas «Buscar la parada más cerca de mí», no sale de tu teléfono.',
+          'En el mapa de las guaguas, «¿A dónde vas?» le manda a nuestro servidor lo que escribes para buscarlo en el directorio y en las direcciones del condado; no se guarda nada de lo que escribes. El viaje se calcula en tu navegador, así que tu ubicación se queda en tu teléfono.',
         ],
       },
       {
