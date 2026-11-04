@@ -388,8 +388,10 @@ function TakeLabel({ lang, leg, color }: { lang: Lang; leg: Leg; color: 0 | 1 })
         {leg.number ?? 'T'}
       </span>
       <span className={b.takeText}>
-        <span className={b.takeRoute}>{c.tripTakeRoute(c.tripRouteInline(leg.number))}</span>{' '}
-        <span className={b.takeToward}>{c.tripTakeToward(leg.toward)}</span>
+        <span className={b.takeRoute}>{c.tripTakeRoute(c.tripRouteInline(leg.number))}</span>
+        <span className={b.takeToward}>
+          <span aria-hidden="true">→</span> {c.tripTakeToward(leg.toward)}
+        </span>
       </span>
     </span>
   )
@@ -409,8 +411,17 @@ export function mapTrip(trip: Trip, from: LatLng, dest: Destination, label: stri
     key: `${tripKey(trip)}|${dest.at.join(',')}`,
     walks,
     rides: [
-      { path: trip.path, color: DIR_COLORS[0] },
-      ...(second ? [{ path: second.path, color: DIR_COLORS[1] }] : []),
+      { path: trip.path, color: DIR_COLORS[0], number: trip.number, toward: trip.toward },
+      ...(second
+        ? [
+            {
+              path: second.path,
+              color: DIR_COLORS[1],
+              number: second.number,
+              toward: second.toward,
+            },
+          ]
+        : []),
     ],
     stops: second
       ? [trip.board.at, trip.alight.at, second.board.at, second.alight.at]

@@ -5,7 +5,7 @@ import type * as ML from 'maplibre-gl'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Lang } from '../i18n'
 import { busCopy } from '../lib/busCopy'
-import type { LatLng } from '../lib/transitMath'
+import { meters, type LatLng } from '../lib/transitMath'
 import { useAgo, usePoll } from './LiveTransit'
 import b from './bus.module.css'
 import rm from './ridemap.module.css'
@@ -92,7 +92,7 @@ export type MapTrip = {
   key: string
   walks: LatLng[][]
   /** The buses ridden, each its own stretch of line and colour (two with a change). */
-  rides: { path: LatLng[]; color: string }[]
+  rides: { path: LatLng[]; color: string; number: string | null; toward: string }[]
   stops: LatLng[]
   dest: { at: LatLng; label: string }
 }
@@ -107,6 +107,7 @@ export function BusMap(props: BusMapProps) {
   const markers = useRef(new Map<string, ML.Marker>())
   const you = useRef<ML.Marker | null>(null)
   const destPin = useRef<ML.Marker | null>(null)
+  const rideTags = useRef<{ mk: ML.Marker; path: LatLng[] }[]>([])
   const [start, setStart] = useState(full)
   const [ready, setReady] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -374,6 +375,7 @@ export function BusMap(props: BusMapProps) {
       have.clear()
       you.current = null
       destPin.current = null
+      rideTags.current = []
       m?.remove()
       map.current = null
     }
@@ -504,6 +506,69 @@ export function BusMap(props: BusMapProps) {
     } else {
       destPin.current?.remove()
       destPin.current = null
+    }
+    // Each bus ridden, labelled on its stretch: «37 → South Miami Station».
+    for (const t of rideTags.current) t.mk.remove()
+    rideTags.current = (trip?.rides ?? []).flatMap((r, k) => {
+      if (r.path.length < 2) return []
+      const el = document.createElement('div')
+      el.className = rm.rideTag
+      el.style.position = 'absolute'
+      el.style.setProperty('--c', r.color)
+      el.style.setProperty('--fg', DIR_FG[k % DIR_FG.length])
+      el.innerHTML = `<span class="${rm.rideTagNum}">${esc(r.number ?? 'T')}</span><span class="${rm.rideTagWay}">→ ${esc(r.toward)}</span>`
+      const mk = new L.Marker({ element: el, anchor: 'center' })
+        .setLngLat(lngLat(along(r.path, 0.5)!))
+        .addTo(m)
+      return [{ mk, path: r.path }]
+    })
+    // Where on its line each label sits is worked out on screen, clear of the pins, the
+    // stops and the other label, and again whenever the view settles.
+    const place = () => {
+      const tags = rideTags.current
+      if (!tags.length || !box.current) return
+      const frame = box.current.getBoundingClientRect()
+      const busy: Rect[] = []
+      const mine = new Set(tags.map((t) => t.mk.getElement()))
+      // The pins and buses on the map, and the buttons floating over it.
+      for (const el of box.current.querySelectorAll<HTMLElement>(
+        '.maplibregl-marker, .maplibregl-ctrl',
+      ))
+        if (!mine.has(el)) busy.push(rectOf(el.getBoundingClientRect(), frame))
+      const over = box.current.parentElement?.parentElement
+      for (const el of over?.querySelectorAll<HTMLElement>('button, a, [aria-live]') ?? []) {
+        if (box.current.contains(el)) continue
+        const r = rectOf(el.getBoundingClientRect(), frame)
+        if (overlap(r, { x: 0, y: 0, w: frame.width, h: frame.height }) > 0) busy.push(r)
+      }
+      for (const p of trip?.stops ?? []) {
+        const q = m.project(lngLat(p))
+        busy.push({ x: q.x - 10, y: q.y - 10, w: 20, h: 20 })
+      }
+      for (const t of tags) {
+        const el = t.mk.getElement()
+        const w = el.offsetWidth
+        const h = el.offsetHeight
+        let best: { at: LatLng; cost: number } | null = null
+        for (const f of [0.5, 0.4, 0.6, 0.3, 0.7, 0.2, 0.8, 0.1, 0.9]) {
+          const at = along(t.path, f)!
+          const q = m.project(lngLat(at))
+          const r = { x: q.x - w / 2, y: q.y - h / 2, w, h }
+          // Overlap with what's there, and being cut off by the edge, both cost.
+          let cost = busy.reduce((sum, o) => sum + overlap(r, o), 0)
+          cost += w * h - overlap(r, { x: 0, y: 0, w: frame.width, h: frame.height })
+          if (!best || cost < best.cost - 1) best = { at, cost }
+          if (cost === 0) break
+        }
+        t.mk.setLngLat(lngLat(best!.at))
+        const q = m.project(lngLat(best!.at))
+        busy.push({ x: q.x - w / 2, y: q.y - h / 2, w, h })
+      }
+    }
+    place()
+    m.on('moveend', place)
+    return () => {
+      m.off('moveend', place)
     }
   }, [full, ready, walkTo, trip])
 
@@ -666,6 +731,33 @@ export function BusMap(props: BusMapProps) {
       </p>
     </div>
   )
+}
+
+type Rect = { x: number; y: number; w: number; h: number }
+const rectOf = (r: DOMRect, frame: DOMRect): Rect => ({
+  x: r.left - frame.left,
+  y: r.top - frame.top,
+  w: r.width,
+  h: r.height,
+})
+const overlap = (a: Rect, b: Rect) =>
+  Math.max(0, Math.min(a.x + a.w, b.x + b.w) - Math.max(a.x, b.x)) *
+  Math.max(0, Math.min(a.y + a.h, b.y + b.h) - Math.max(a.y, b.y))
+
+/** The point a fraction of the way along a line, by distance. */
+function along(path: LatLng[], fraction: number): LatLng | null {
+  if (!path.length) return null
+  const legs = path.slice(1).map((p, i) => meters(path[i], p))
+  let left = legs.reduce((a, d) => a + d, 0) * fraction
+  for (let i = 0; i < legs.length; i++) {
+    if (left <= legs[i]) {
+      const t = legs[i] ? left / legs[i] : 0
+      const [a, b] = [path[i], path[i + 1]]
+      return [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t]
+    }
+    left -= legs[i]
+  }
+  return path[path.length - 1]
 }
 
 /** Fit a trip on screen: the walks and the rides, clear of the bus count, the legend and the zoom buttons. */
