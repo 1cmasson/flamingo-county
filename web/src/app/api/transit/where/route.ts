@@ -55,7 +55,7 @@ export async function GET(req: NextRequest) {
     /^\d/.test(want) ? suggestPoints(q, 4) : Promise.resolve([]),
   ])
   // A place that's also in the directory shows once, as the directory's (it has our page).
-  const osmOnly = osm.filter(
+  const osmOnly = (osm ?? []).filter(
     (o) =>
       !places.some(
         (p) => meters(p.at, o.at) < 100 && fold(p.name).includes(fold(o.name).split(' ')[0]),
@@ -92,6 +92,7 @@ export async function GET(req: NextRequest) {
   ]
   return NextResponse.json(
     { results },
-    { headers: { 'Cache-Control': 'public, max-age=300, s-maxage=3600' } },
+    // Photon not answering isn't "nothing there": that answer mustn't be kept by the browser or the CDN.
+    { headers: { 'Cache-Control': osm ? 'public, max-age=300, s-maxage=3600' : 'no-store' } },
   )
 }
