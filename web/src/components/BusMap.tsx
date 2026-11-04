@@ -9,28 +9,32 @@ import type { LatLng } from '../lib/transitMath'
 import { useAgo, usePoll } from './LiveTransit'
 import b from './bus.module.css'
 import rm from './ridemap.module.css'
-import s from './vote.module.css'
 
 /**
- * A county route's buses on a street map, where Swiftly says they are
- * (api/transit/county-vehicles, the server's shared copy of the feed, read
- * every 15 s while the map is in view).
+ * A county route on the site's street map, with its buses where Swiftly says
+ * they are (api/transit/county-vehicles: the server's shared copy of the
+ * feed, read every 15 s while the map is on screen).
+ *
+ * Two modes:
+ * - `preview`, at the top of the route page: a still picture of the route and
+ *   its buses. It takes no gestures (the page scrolls over it) and the page
+ *   wraps it in a link to the full map.
+ * - `full`, the map page (/[lang]/bus/[route]/map): the whole screen. The
+ *   chosen direction's stops can be tapped, the chosen stop is marked, the
+ *   visitor's own spot shows once they ask for it, and places from the
+ *   directory near the route are pins that open their card.
  *
  * The two directions are drawn side by side in the brand's pink and cyan, and
  * each bus takes its direction's colour, with a wedge for where it's heading.
- * A sentence under the map says the same thing in words.
- *
- * The map library (~800 KB) and the street style load only when the card
- * scrolls near the screen, so the page stays light for the people who only
- * came for the times.
  */
 
 const LIB = '/vendor/maplibre/maplibre-gl.mjs'
 const FALLBACK_STYLE = 'https://tiles.openfreemap.org/styles/liberty'
 const INK = '#0c0f14'
 const CREAM = '#fff6e5'
+const YELLOW = '#ffd400'
 /** Direction colours, in the order the page lists the directions. */
-const DIR_COLORS = ['#ff2e88', '#16e0f2']
+export const DIR_COLORS = ['#ff2e88', '#16e0f2']
 const DIR_FG = [CREAM, INK]
 const POLL_MS = 15_000
 
@@ -54,21 +58,25 @@ function sandStyle(): Promise<unknown> {
   return style
 }
 
-export type BusMapDirection = { id: string; toward: string; path: LatLng[]; stops: LatLng[] }
+export type BusMapDirection = {
+  id: string
+  toward: string
+  path: LatLng[]
+  stops: { name: string; at: LatLng }[]
+}
+
+/** A directory listing near one of the route's stops. */
+export type MapPlace = { id: number; name: string; at: LatLng }
 
 type Bus = { id: string; dir: string; lat: number; lng: number; bearing: number; ts: number }
 type Answer = { live: { asOf: number; buses: Bus[] } | null }
 
 const lngLat = ([lat, lng]: LatLng): [number, number] => [lng, lat]
 const esc = (v: string) => v.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`)
+const empty = { type: 'FeatureCollection' as const, features: [] }
 
-export function BusMap({
-  slug,
-  label,
-  number,
-  lang,
-  directions,
-}: {
+export type BusMapProps = {
+  mode: 'preview' | 'full'
   slug: string
   /** "Ruta 54", for the map's name and each bus's description. */
   label: string
@@ -76,43 +84,64 @@ export function BusMap({
   number: string
   lang: Lang
   directions: BusMapDirection[]
-}) {
+  /** Poll Swiftly's buses: Metrobus only (the trolley isn't in the feed). */
+  live: boolean
+  /** Full map: the chosen direction and stop, by index. */
+  selected?: { dir: number; stop: number } | null
+  origin?: LatLng | null
+  places?: MapPlace[]
+  /** The place whose card is open, so its pin stands out. */
+  placeId?: number | null
+  onPickStop?: (dir: number, stop: number) => void
+  onPickPlace?: (id: number) => void
+  /** Pixels at the bottom covered by the page's own panel: the map centres above it. */
+  padBottom?: number
+}
+
+export function BusMap(props: BusMapProps) {
+  const { mode, slug, label, number, lang, directions, live } = props
+  const full = mode === 'full'
   const c = busCopy(lang)
-  const card = useRef<HTMLElement>(null)
   const box = useRef<HTMLDivElement>(null)
   const map = useRef<ML.Map | null>(null)
   const ml = useRef<typeof ML | null>(null)
   const markers = useRef(new Map<string, ML.Marker>())
-  const [near, setNear] = useState(false)
+  const you = useRef<ML.Marker | null>(null)
+  const [start, setStart] = useState(full)
   const [ready, setReady] = useState(false)
   const [failed, setFailed] = useState(false)
-
-  // Load nothing until the card is about to be seen.
+  // The latest callbacks, for listeners registered once.
+  const cb = useRef(props)
   useEffect(() => {
-    const el = card.current
-    if (!el) return
-    const io = new IntersectionObserver((es) => es.some((e) => e.isIntersecting) && setNear(true), {
-      rootMargin: '300px 0px',
-    })
-    io.observe(el)
-    return () => io.disconnect()
-  }, [])
+    cb.current = props
+  })
+
+  // The preview waits for the page to be idle: the times come first.
+  useEffect(() => {
+    if (full) return
+    const go = () => setStart(true)
+    const w = window as Window & {
+      requestIdleCallback?: (f: () => void, o?: { timeout: number }) => number
+    }
+    if (w.requestIdleCallback) w.requestIdleCallback(go, { timeout: 2500 })
+    else setTimeout(go, 1200)
+  }, [full])
 
   const {
     data,
     at,
     failed: pollFailed,
   } = usePoll<Answer>(
-    near ? `/api/transit/county-vehicles?route=${encodeURIComponent(slug)}` : null,
+    start && live ? `/api/transit/county-vehicles?route=${encodeURIComponent(slug)}` : null,
     POLL_MS,
   )
   const ago = useAgo(at)
-  const live = data?.live ?? null
-  const buses = useMemo(() => live?.buses ?? [], [live])
+  const liveData = data?.live ?? null
+  const buses = useMemo(() => liveData?.buses ?? [], [liveData])
 
-  /* ---- the map, once it's near ---- */
+  /* ---- the map, once ---- */
   useEffect(() => {
-    if (!near) return
+    if (!start) return
     let alive = true
     let m: ML.Map | null = null
     Promise.all([maplibre(), sandStyle()])
@@ -127,7 +156,8 @@ export function BusMap({
           bounds,
           fitBoundsOptions: { padding: 24 },
           attributionControl: { compact: true },
-          cooperativeGestures: true,
+          // The preview is a picture the page scrolls over; the full map is the whole screen.
+          interactive: full,
           dragRotate: false,
           pitchWithRotate: false,
           touchPitch: false,
@@ -138,12 +168,13 @@ export function BusMap({
             'Popup.Close': c.mapClose,
             'AttributionControl.ToggleAttribution': c.mapCredits,
             'Map.Title': c.mapLabel(label),
-            'CooperativeGesturesHandler.MobileHelpText': c.mapTwoFingers,
           },
         })
-        m.touchZoomRotate.disableRotation()
-        m.keyboard.disableRotation()
-        m.addControl(new L.NavigationControl({ showCompass: false }), 'top-right')
+        if (full) {
+          m.touchZoomRotate.disableRotation()
+          m.keyboard.disableRotation()
+          m.addControl(new L.NavigationControl({ showCompass: false }), 'top-right')
+        }
         map.current = m
         m.on('load', () => {
           if (!alive || !m) return
@@ -156,19 +187,6 @@ export function BusMap({
                 properties: { color: DIR_COLORS[k] ?? DIR_COLORS[0] },
                 geometry: { type: 'LineString', coordinates: d.path.map(lngLat) },
               })),
-            },
-          })
-          m.addSource('stops', {
-            type: 'geojson',
-            data: {
-              type: 'FeatureCollection',
-              features: directions.flatMap((d) =>
-                d.stops.map((p) => ({
-                  type: 'Feature' as const,
-                  properties: {},
-                  geometry: { type: 'Point' as const, coordinates: lngLat(p) },
-                })),
-              ),
             },
           })
           const width = (base: number) =>
@@ -209,24 +227,86 @@ export function BusMap({
               'line-offset': offset,
             },
           })
-          m.addLayer({
-            id: 'stops',
-            type: 'circle',
-            source: 'stops',
-            minzoom: 13.5,
-            paint: {
-              'circle-radius': width(2.2),
-              'circle-color': CREAM,
-              'circle-stroke-color': INK,
-              'circle-stroke-width': 1.5,
-            },
-          })
+          if (full) {
+            m.addSource('places', { type: 'geojson', data: empty })
+            m.addSource('stops', { type: 'geojson', data: empty })
+            m.addSource('picked', { type: 'geojson', data: empty })
+            m.addLayer({
+              id: 'places',
+              type: 'circle',
+              source: 'places',
+              minzoom: 12,
+              paint: {
+                'circle-radius': ['case', ['get', 'open'], 10, 6.5],
+                'circle-color': YELLOW,
+                'circle-stroke-color': INK,
+                'circle-stroke-width': ['case', ['get', 'open'], 3.5, 2.5],
+              },
+            })
+            m.addLayer({
+              id: 'stops',
+              type: 'circle',
+              source: 'stops',
+              paint: {
+                'circle-radius': width(3),
+                'circle-color': CREAM,
+                'circle-stroke-color': INK,
+                'circle-stroke-width': 2,
+              },
+            })
+            m.addLayer({
+              id: 'picked',
+              type: 'circle',
+              source: 'picked',
+              paint: {
+                'circle-radius': width(6),
+                'circle-color': ['get', 'color'],
+                'circle-stroke-color': INK,
+                'circle-stroke-width': 3.5,
+              },
+            })
+            // A finger is wider than a stop: anything within 14 px of the tap counts.
+            m.on('click', (e) => {
+              if (
+                (e.originalEvent.target as Element | null)?.closest?.(
+                  '.maplibregl-marker, .maplibregl-popup',
+                )
+              )
+                return
+              const r = 14
+              const hits = m!.queryRenderedFeatures(
+                [
+                  [e.point.x - r, e.point.y - r],
+                  [e.point.x + r, e.point.y + r],
+                ],
+                { layers: ['stops', 'places'] },
+              )
+              const near = (f: ML.MapGeoJSONFeature) => {
+                const [x, y] = (f.geometry as GeoJSON.Point).coordinates
+                const p = m!.project([x, y])
+                return (p.x - e.point.x) ** 2 + (p.y - e.point.y) ** 2
+              }
+              const hit = hits.sort((a, z) => near(a) - near(z))[0]
+              if (!hit) return
+              const p = hit.properties as { dir?: number; stop?: number; place?: number }
+              if (hit.layer.id === 'stops' && p.dir !== undefined && p.stop !== undefined)
+                cb.current.onPickStop?.(p.dir, p.stop)
+              else if (hit.layer.id === 'places' && p.place !== undefined)
+                cb.current.onPickPlace?.(p.place)
+            })
+            m.on('mouseenter', 'stops', () => (m!.getCanvas().style.cursor = 'pointer'))
+            m.on('mouseleave', 'stops', () => (m!.getCanvas().style.cursor = ''))
+            m.on('mouseenter', 'places', () => (m!.getCanvas().style.cursor = 'pointer'))
+            m.on('mouseleave', 'places', () => (m!.getCanvas().style.cursor = ''))
+          }
           box.current
             ?.querySelector('.maplibregl-compact-show')
             ?.classList.remove('maplibregl-compact-show')
           m.resize()
           m.fitBounds(bounds, {
-            padding: { top: 24, bottom: 24, left: 24, right: 64 },
+            padding: full
+              ? { top: 24, bottom: 24 + (cb.current.padBottom ?? 0), left: 24, right: 64 }
+              : 16,
             duration: 0,
           })
           setReady(true)
@@ -240,12 +320,94 @@ export function BusMap({
     return () => {
       alive = false
       have.clear()
+      you.current = null
       m?.remove()
       map.current = null
     }
     // A route's lines never change while the page is open.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [near])
+  }, [start])
+
+  /* ---- full map: the chosen direction's stops, and the chosen stop ---- */
+  const sel = props.selected
+  const selDir = sel?.dir ?? -1
+  const selStop = sel?.stop ?? -1
+  useEffect(() => {
+    const m = map.current
+    if (!full || !ready || !m) return
+    const d = directions[selDir]
+    const stops = m.getSource('stops') as ML.GeoJSONSource | undefined
+    const picked = m.getSource('picked') as ML.GeoJSONSource | undefined
+    stops?.setData({
+      type: 'FeatureCollection',
+      features: (d?.stops ?? []).map((st, k) => ({
+        type: 'Feature',
+        properties: { dir: selDir, stop: k },
+        geometry: { type: 'Point', coordinates: lngLat(st.at) },
+      })),
+    })
+    const st = d?.stops[selStop]
+    picked?.setData(
+      st
+        ? {
+            type: 'Feature',
+            properties: { color: DIR_COLORS[selDir] ?? DIR_COLORS[0] },
+            geometry: { type: 'Point', coordinates: lngLat(st.at) },
+          }
+        : empty,
+    )
+  }, [full, ready, directions, selDir, selStop])
+
+  // A stop chosen (on the map, from the list or by "near me") is brought into view above the panel.
+  const pad = props.padBottom ?? 0
+  useEffect(() => {
+    const m = map.current
+    const st = directions[selDir]?.stops[selStop]
+    if (!full || !ready || !m || !st) return
+    m.easeTo({
+      center: lngLat(st.at),
+      zoom: Math.max(m.getZoom(), 15),
+      padding: { top: 40, bottom: pad + 20, left: 20, right: 20 },
+      duration: 600,
+    })
+  }, [full, ready, directions, selDir, selStop, pad])
+
+  /* ---- full map: places near the route ---- */
+  const places = props.places
+  const placeId = props.placeId ?? null
+  useEffect(() => {
+    const m = map.current
+    if (!full || !ready || !m) return
+    ;(m.getSource('places') as ML.GeoJSONSource | undefined)?.setData({
+      type: 'FeatureCollection',
+      features: (places ?? []).map((p) => ({
+        type: 'Feature',
+        properties: { place: p.id, open: p.id === placeId },
+        geometry: { type: 'Point', coordinates: lngLat(p.at) },
+      })),
+    })
+  }, [full, ready, places, placeId])
+
+  /* ---- full map: "you" ---- */
+  const origin = props.origin ?? null
+  useEffect(() => {
+    const m = map.current
+    const L = ml.current
+    if (!full || !ready || !m || !L) return
+    if (!origin) {
+      you.current?.remove()
+      you.current = null
+      return
+    }
+    if (!you.current) {
+      const el = document.createElement('div')
+      el.className = `${rm.pin} ${rm.pinYou}`
+      el.innerHTML = `<span class="${rm.pinLabel}">${esc(c.mapYou)}</span><span class="${rm.pinHead}" aria-hidden="true"></span>`
+      you.current = new L.Marker({ element: el, anchor: 'bottom' })
+        .setLngLat(lngLat(origin))
+        .addTo(m)
+    } else you.current.setLngLat(lngLat(origin))
+  }, [full, ready, origin, c])
 
   /* ---- the buses ---- */
   useEffect(() => {
@@ -268,22 +430,25 @@ export function BusMap({
       seen.add(v.id)
       let mk = have.get(v.id)
       if (!mk) {
-        const el = document.createElement('button')
-        el.type = 'button'
+        const el = document.createElement(full ? 'button' : 'span')
+        if (full) (el as HTMLButtonElement).type = 'button'
         el.className = rm.bus
-        mk = new L.Marker({ element: el, anchor: 'center' })
-          .setLngLat([v.lng, v.lat])
-          .setPopup(
+        // The bus badge's own `position: relative` can win over MapLibre's `absolute` depending on
+        // stylesheet order, and then the markers stack like lines of text. Absolute, always.
+        el.style.position = 'absolute'
+        mk = new L.Marker({ element: el, anchor: 'center' }).setLngLat([v.lng, v.lat]).addTo(m)
+        if (full)
+          mk.setPopup(
             new L.Popup({ offset: 26, closeButton: true, maxWidth: '260px', className: rm.popup }),
           )
-          .addTo(m)
         have.set(v.id, mk)
       } else mk.setLngLat([v.lng, v.lat])
       const el = mk.getElement()
       el.style.setProperty('--c', DIR_COLORS[k] ?? DIR_COLORS[0])
       el.style.setProperty('--fg', DIR_FG[k] ?? CREAM)
       el.style.setProperty('--bearing', `${v.bearing}deg`)
-      el.setAttribute('aria-label', words)
+      if (full) el.setAttribute('aria-label', words)
+      else el.setAttribute('aria-hidden', 'true')
       el.innerHTML = `<span class="${rm.arrow}" aria-hidden="true"></span><span class="${rm.letter} ${
         number.length > 2 ? b.busNumSmall : ''
       }" aria-hidden="true">${esc(number)}</span>`
@@ -294,53 +459,39 @@ export function BusMap({
       mk.remove()
       have.delete(id)
     }
-  }, [ready, buses, directions, label, number, c])
+  }, [ready, buses, directions, label, number, c, full])
 
   const counts = directions.map((d) => buses.filter((v) => v.dir === d.id).length)
   let status: string
-  if (!data && !pollFailed) status = c.mapLoading
-  else if (!live) status = c.mapNoLive
+  if (!live) status = c.mapNoLiveTrolley
+  else if (!data && !pollFailed) status = c.mapLoading
+  else if (!liveData) status = c.mapNoLive
   else if (!buses.length) status = c.mapNone
+  else if (full) status = c.mapCountShort(buses.length)
   else
     status = c.mapCount(
       buses.length,
       directions.map((d, k) => [d.toward, counts[k]] as [string, number]),
     )
+  const updated = liveData && ago !== null ? ` ${c.mapUpdated(ago)}` : ''
 
   return (
-    <section ref={card} className={s.card} aria-labelledby="bus-map">
-      <h2 id="bus-map" className={s.cardTag}>
-        {c.mapTitle}
-      </h2>
-      <ul className={b.legend}>
-        {directions.map((d, k) => (
-          <li key={d.id}>
-            <span
-              className={b.legendDot}
-              style={{ background: DIR_COLORS[k] }}
-              aria-hidden="true"
-            />
-            {c.toward(d.toward)}
-          </li>
-        ))}
-      </ul>
-      <div className={rm.wrap}>
-        <div
-          ref={box}
-          className={`${rm.map} ${b.busMap}`}
-          role="region"
-          aria-label={c.mapLabel(label)}
-        />
-        {!ready ? (
-          <p className={rm.status} role="status">
-            {failed ? c.mapFailed : c.mapLoading}
-          </p>
-        ) : null}
-      </div>
-      <p className={s.note} aria-live="polite">
+    <div className={full ? b.fullMapWrap : b.previewWrap}>
+      <div
+        ref={box}
+        className={full ? b.fullMap : b.previewMap}
+        role={full ? 'region' : 'img'}
+        aria-label={c.mapLabel(label)}
+      />
+      {!ready ? (
+        <p className={rm.status} role="status">
+          {failed ? c.mapFailed : c.mapLoading}
+        </p>
+      ) : null}
+      <p className={full ? b.fullStatus : b.previewStatus} aria-live="polite">
         {status}
-        {live && ago !== null ? ` ${c.mapUpdated(ago)}` : ''}
+        {updated}
       </p>
-    </section>
+    </div>
   )
 }
