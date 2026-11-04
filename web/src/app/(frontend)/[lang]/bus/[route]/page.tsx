@@ -30,6 +30,7 @@ import { AnswerBlock } from '../../../../../components/AnswerBlock'
 import { Breadcrumbs, type Crumb } from '../../../../../components/Breadcrumbs'
 import { DirectionStops, RouteBullet, ScheduleTable } from '../../../../../components/Bus'
 import { NextBus } from '../../../../../components/NextBus'
+import { BusMap } from '../../../../../components/BusMap'
 import s from '../../../../../components/vote.module.css'
 import b from '../../../../../components/bus.module.css'
 
@@ -154,6 +155,21 @@ export default async function BusRoute({ params }: Props) {
             times={routeTimes(route)}
             lang={lang}
             live={route.kind === 'bus'}
+          />
+        ) : null}
+
+        {route.kind === 'bus' ? (
+          <BusMap
+            slug={route.slug}
+            label={name}
+            number={route.number ?? route.short}
+            lang={lang}
+            directions={route.directions.map((d) => ({
+              id: d.id,
+              toward: d.toward,
+              path: d.path,
+              stops: d.stations.map((st) => st.at),
+            }))}
           />
         ) : null}
 

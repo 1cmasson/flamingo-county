@@ -1,5 +1,6 @@
 import GtfsRealtimeBindings from 'gtfs-realtime-bindings'
 import { COUNTY, getCountyRoute } from './county'
+import type { LatLng } from './transitMath'
 
 /**
  * Miami-Dade Transit's buses, live.
@@ -38,7 +39,8 @@ export type CountyVehicle = {
   tripId: string
   lat: number
   lng: number
-  bearing: number
+  /** Compass heading, when the bus sends one; most of the county's don't. */
+  bearing: number | null
   ts: number
 }
 
@@ -90,7 +92,10 @@ export function reduceFeeds(pos: Message, upd: Message): CountyFeed {
       tripId: v.trip.tripId,
       lat: v.position.latitude,
       lng: v.position.longitude,
-      bearing: v.position.bearing ?? 0,
+      // Decoded messages only carry a field the bus sent: an unsent heading isn't north.
+      bearing: Object.prototype.hasOwnProperty.call(v.position, 'bearing')
+        ? v.position.bearing!
+        : null,
       ts: num(v.timestamp),
     })
   }
@@ -206,4 +211,66 @@ export function stopDepartures(
 export function isRouteStop(slug: string, dir: string, stopId: string): boolean {
   const route = getCountyRoute(slug)
   return !!route?.directions.find((d) => d.id === dir)?.stations.some((s) => s.id === stopId)
+}
+
+export type RouteBus = {
+  id: string
+  dir: string
+  lat: number
+  lng: number
+  bearing: number
+  ts: number
+}
+
+/**
+ * Where a route's buses are right now, for its map: only buses that reported
+ * in the last few minutes (an older position is a bus parked or lost). Null
+ * when there's no live data to stand on.
+ */
+export function routeVehicles(
+  feed: CountyFeed | null,
+  slug: string,
+  nowS: number = Date.now() / 1000,
+): { asOf: number; buses: RouteBus[] } | null {
+  if (!feed || nowS - feed.headerTs > FEED_STALE_S) return null
+  const buses = feed.vehicles
+    .filter((v) => v.slug === slug && nowS - v.ts <= STALE_S)
+    .map(({ id, dir, lat, lng, bearing, ts }) => ({
+      id,
+      dir,
+      lat: Number(lat.toFixed(5)),
+      lng: Number(lng.toFixed(5)),
+      bearing: Math.round(bearing ?? pathBearing(pathOf(slug, dir), [lat, lng])),
+      ts,
+    }))
+  return { asOf: feed.headerTs, buses }
+}
+
+const pathOf = (slug: string, dir: string): LatLng[] =>
+  getCountyRoute(slug)?.directions.find((d) => d.id === dir)?.path ?? []
+
+/**
+ * The heading of the route's line where a bus is, in its direction of travel:
+ * the compass bearing of the path segment nearest it. For the buses that
+ * don't send a heading of their own. 0 (north) when there's no path.
+ */
+export function pathBearing(path: LatLng[], at: LatLng): number {
+  let best = { d: Infinity, k: -1 }
+  // Flat maths is fine at street scale: scale longitude by the latitude.
+  const kx = Math.cos((at[0] * Math.PI) / 180)
+  for (let k = 0; k + 1 < path.length; k++) {
+    const [ay, ax] = [path[k][0], path[k][1] * kx]
+    const [by, bx] = [path[k + 1][0], path[k + 1][1] * kx]
+    const [py, px] = [at[0], at[1] * kx]
+    const len = (bx - ax) ** 2 + (by - ay) ** 2
+    const t = len
+      ? Math.max(0, Math.min(1, ((px - ax) * (bx - ax) + (py - ay) * (by - ay)) / len))
+      : 0
+    const d = (ax + t * (bx - ax) - px) ** 2 + (ay + t * (by - ay) - py) ** 2
+    if (d < best.d) best = { d, k }
+  }
+  if (best.k < 0) return 0
+  const [a, b] = [path[best.k], path[best.k + 1]]
+  const deg = (Math.atan2((b[1] - a[1]) * kx, b[0] - a[0]) * 180) / Math.PI
+  return (deg + 360) % 360
 }
