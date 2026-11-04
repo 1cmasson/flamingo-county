@@ -109,6 +109,36 @@
   background: var(--yellow);
 }
 
+/* --- a trip's bus, labelled on its own stretch of line: number + the way it goes --- */
+.rideTag {
+  display: flex;
+  align-items: stretch;
+  border: 2px solid var(--ink);
+  background: var(--ink);
+  color: var(--cream);
+  font-family: var(--display);
+  font-size: 13px;
+  line-height: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  box-shadow: 2px 2px 0 rgba(12, 15, 20, 0.35);
+}
+.rideTagNum {
+  display: grid;
+  place-items: center;
+  min-width: 24px;
+  padding: 4px 5px 2px;
+  background: var(--c);
+  color: var(--fg);
+}
+.rideTagWay {
+  padding: 4px 7px 2px;
+  text-transform: uppercase;
+  max-width: 190px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* --- buses: the line's bullet with an arrow for the way it's heading --- */
 .bus {
   position: relative;

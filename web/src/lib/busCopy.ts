@@ -153,6 +153,15 @@ const ES = {
   finderSeeMap: 'Ver el viaje en el mapa →',
   tripWhere: '¿A dónde vas?',
   tripAtStop: 'Ya estás en la parada.',
+  tripTakeRoute: (route: string) => `Toma ${route}`,
+  tripTakeToward: (place: string) => `hacia ${place}`,
+  tripAtChange: (route: string) => `Ya estás en la parada: aquí coges ${route}.`,
+  tripGetOffChange: (stop: string, route: string) =>
+    `Bájate aquí, en ${stop}, y cambia a ${route}.`,
+  tripChangeWalk: (m: number, stop: string, route: string) =>
+    `Cambia a ${route}: camina ${m} min hasta la parada ${stop}.`,
+  tripChangeSame: (route: string) => `Cambia a ${route} en esa misma parada.`,
+  tripAboutChange: 'con un cambio de guagua',
   tripRiding: (left: number, stop: string) =>
     `Vas en la guagua: ${left === 1 ? 'te falta 1 parada' : `te faltan ${left} paradas`} para bajarte en ${stop}.`,
   tripGetOffNow: (stop: string) => `Bájate aquí: ${stop}.`,
@@ -384,6 +393,15 @@ const EN: BusCopy = {
   finderSeeMap: 'See the trip on the map →',
   tripWhere: 'Where are you going?',
   tripAtStop: 'You’re at the stop.',
+  tripTakeRoute: (route: string) => `Take ${route}`,
+  tripTakeToward: (place: string) => `toward ${place}`,
+  tripAtChange: (route: string) => `You’re at the stop: take ${route} here.`,
+  tripGetOffChange: (stop: string, route: string) =>
+    `Get off here, at ${stop}, and change to ${route}.`,
+  tripChangeWalk: (m: number, stop: string, route: string) =>
+    `Change to ${route}: walk ${m} min to the ${stop} stop.`,
+  tripChangeSame: (route: string) => `Change to ${route} at that same stop.`,
+  tripAboutChange: 'with one change of bus',
   tripRiding: (left: number, stop: string) =>
     `On the bus: ${left === 1 ? '1 stop' : `${left} stops`} to go to ${stop}.`,
   tripGetOffNow: (stop: string) => `Get off here: ${stop}.`,

@@ -96,9 +96,47 @@ describe('bus trip planner', () => {
 
   it('follows the visitor along the ride', () => {
     const t = planTrips(net, [lat(0), -80.3005], [lat(8), -80.2995]).trips[0]
-    expect(tripProgress(t, [lat(0), -80.3])).toEqual({ kind: 'atStop' })
-    expect(tripProgress(t, [lat(3), -80.3])).toEqual({ kind: 'riding', left: 5 })
-    expect(tripProgress(t, [lat(8), -80.3])).toEqual({ kind: 'getOff' })
+    expect(tripProgress(t, [lat(0), -80.3])).toEqual({ kind: 'atStop', leg: 1 })
+    expect(tripProgress(t, [lat(3), -80.3])).toEqual({ kind: 'riding', leg: 1, left: 5 })
+    expect(tripProgress(t, [lat(8), -80.3])).toEqual({ kind: 'getOff', leg: 1 })
     expect(tripProgress(t, [lat(4), -80.29])).toBeNull()
+  })
+
+  it('changes buses where two lines cross, when no one bus goes there', () => {
+    // C runs east along lat(8), from A's line to B's, a stop every ~500 m.
+    const east = Array.from({ length: 11 }, (_, k) => ({
+      id: `C${k}`,
+      name: `C ${k}`,
+      at: [lat(8), -80.3 + k * 0.005] as [number, number],
+      min: k * 2,
+    }))
+    const withC: Network = {
+      routes: [
+        ...net.routes,
+        {
+          slug: 'C',
+          number: 'C',
+          short: 'C',
+          kind: 'bus',
+          serviceEnds: null,
+          directions: [{ id: '0', toward: 'East', stations: east, path: east.map((s) => s.at) }],
+        },
+      ],
+    }
+    // From A's first stop to the middle of C: A north, change, C east.
+    const plan = planTrips(withC, [lat(0), -80.3], [lat(8) + 0.0005, -80.275])
+    const t = plan.trips[0]
+    expect(t.slug).toBe('A')
+    expect(t.then?.slug).toBe('C')
+    expect(t.alight.index).toBe(8)
+    expect(t.then?.board.index).toBe(0)
+    expect(t.then?.alight.index).toBe(5)
+    // On the second bus, the steps follow the second leg.
+    expect(tripProgress(t, [lat(8), -80.29])).toEqual({ kind: 'riding', leg: 2, left: 3 })
+  })
+
+  it('prefers one bus to a change that saves little', () => {
+    const { trips } = planTrips(net, [lat(0), -80.3005], [lat(8), -80.2995])
+    expect(trips.every((t) => !t.then)).toBe(true)
   })
 })

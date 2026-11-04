@@ -15,6 +15,7 @@ import {
   TripSearch,
   mapTrip,
   takeStashedTrip,
+  tripKey,
   useTripPlan,
   type Destination,
 } from './TripPlanner'
@@ -73,6 +74,8 @@ export function BusMapScreen({
   const [pick, setPick] = useState(0)
   // A start typed on the routes page, when the trip isn't from where the visitor is.
   const [from, setFrom] = useState<Destination | null>(null)
+  // The trip chosen on the routes page, to pick out once the plan here is made.
+  const [wanted, setWanted] = useState<string | null>(null)
 
   // A trip planned on the routes page arrives here drawn.
   useEffect(() => {
@@ -82,6 +85,7 @@ export function BusMapScreen({
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setDest(t.dest)
     setFrom(t.from)
+    setWanted(t.key ?? null)
     setMode('trip')
   }, [])
 
@@ -115,6 +119,11 @@ export function BusMapScreen({
     mode === 'trip' ? start : null,
     mode === 'trip' ? (dest?.at ?? null) : null,
   )
+  if (wanted && plan) {
+    const k = plan.trips.findIndex((t) => tripKey(t) === wanted)
+    if (k >= 0 && k !== pick) setPick(k)
+    setWanted(null)
+  }
   const trip = plan?.trips[pick] ?? null
   const shownTrip = useMemo(
     () =>
@@ -329,7 +338,12 @@ export function BusMapScreen({
           </button>
         )}
         {!open ? null : mode === 'search' ? (
-          <TripSearch lang={lang} near={v.origin} onPick={goTo} onCancel={() => setMode(dest ? 'trip' : 'stop')} />
+          <TripSearch
+            lang={lang}
+            near={v.origin}
+            onPick={goTo}
+            onCancel={() => setMode(dest ? 'trip' : 'stop')}
+          />
         ) : mode === 'trip' && dest ? (
           <TripPanel
             lang={lang}

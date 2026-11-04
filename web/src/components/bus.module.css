@@ -862,6 +862,54 @@ a.line {
   padding-left: 36px;
   counter-increment: step;
 }
+/* The "take this bus" steps: the route badge, the way in bold, the next bus under it. */
+.stepTake {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.takeLine {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+.takeBadge {
+  flex: none;
+  display: grid;
+  place-items: center;
+  min-width: 38px;
+  height: 32px;
+  padding: 3px 6px 0;
+  border: 3px solid var(--ink);
+  background: var(--c);
+  color: var(--fg);
+  font-family: var(--display);
+  font-size: 17px;
+  line-height: 1;
+}
+.takeText {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+.takeRoute {
+  font-size: 14px;
+  font-weight: 700;
+}
+/* The way the bus goes: a black box with cream letters, like a bus's head sign. */
+.takeToward {
+  align-self: flex-start;
+  margin-top: 3px;
+  padding: 5px 8px 3px;
+  border: 2px solid var(--ink);
+  background: var(--ink);
+  color: var(--cream);
+  font-family: var(--display);
+  font-size: 16px;
+  line-height: 1.1;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
 .tripSteps li[data-done] {
   opacity: 0.45;
   text-decoration: line-through;

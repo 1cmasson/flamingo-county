@@ -21,6 +21,7 @@ import {
   TripSearch,
   TripSteps,
   stashTrip,
+  tripKey,
   useStopNext,
   type Destination,
 } from './TripPlanner'
@@ -327,11 +328,19 @@ function FinderTrips({
       <h3 className={b.finderHeading}>{c.finderTripsTitle(dest.name)}</h3>
       <ul className={b.finderList}>
         {plan.trips.map((t: Trip, k) => (
-          <li key={t.slug} className={b.finderTrip}>
+          <li key={tripKey(t)} className={b.finderTrip}>
             <p className={b.finderTripHead}>
               <span className={b.finderBullet} aria-hidden="true">
                 {t.number ?? 'T'}
               </span>
+              {t.then ? (
+                <>
+                  <span aria-hidden="true">→</span>
+                  <span className={b.finderBullet} aria-hidden="true">
+                    {t.then.number ?? 'T'}
+                  </span>
+                </>
+              ) : null}
               {k === 0 ? c.finderBest : c.finderAlso}
             </p>
             <TripSteps lang={lang} trip={t} destName={dest.name} />
@@ -339,7 +348,7 @@ function FinderTrips({
               <Link
                 className={s.action}
                 href={routes.busMap(lang, t.slug)}
-                onClick={() => stashTrip({ dest, from })}
+                onClick={() => stashTrip({ dest, from, key: tripKey(t) })}
               >
                 {c.finderSeeMap}
               </Link>
