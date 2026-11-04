@@ -249,7 +249,7 @@ describe('the Monday roundup draft', () => {
     const d = (await draftWeeklyRoundup(payload, MONDAY_RUN)) as HqSocialDraft
     expect(d).toMatchObject({
       status: 'pending',
-      platforms: ['facebook', 'instagram'],
+      platforms: ['instagram'],
       pillar: 'event',
       language: 'both',
       sourceCollection: 'weekly-roundup',

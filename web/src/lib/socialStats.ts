@@ -4,14 +4,19 @@ import type { HqSocialDraft } from '../payload-types'
 import { miamiHour } from './brief'
 import { HQ_INTERNAL, recordEvent } from './hq'
 import {
+  BACKENDS,
+  backendConfigured,
   channelAnalytics,
   connectedChannels,
+  draftBackend,
   findPostIds,
+  newPostsBackend,
   listPostStates,
   listPostTimes,
   postAnalytics,
   postizConfigured,
   summarizeMetrics,
+  type Backend,
   type CreatedPost,
   type Platform,
 } from './postiz'
@@ -53,12 +58,18 @@ const daysFor = (c: Checkpoint) => (c === '24h' ? 2 : c === '3d' ? 4 : 8)
 async function idsFor(
   payload: Payload,
   draft: HqSocialDraft,
-  channels: () => Promise<Partial<Record<Platform, string>>>,
+  channels: (backend: Backend) => Promise<Partial<Record<Platform, string>>>,
 ): Promise<CreatedPost[]> {
   const saved = (draft.postizPosts ?? []).map((p) => ({ platform: p.platform as Platform, postId: p.postId }))
   if (saved.length || !draft.publishAt) return saved
 
-  const found = await findPostIds(await channels(), (draft.platforms ?? []) as Platform[], new Date(draft.publishAt))
+  const backend = draftBackend(draft)
+  const found = await findPostIds(
+    await channels(backend),
+    (draft.platforms ?? []) as Platform[],
+    new Date(draft.publishAt),
+    backend,
+  )
   if (found.length) {
     await payload.update({
       collection: 'hq-social-drafts',
@@ -69,6 +80,17 @@ async function idsFor(
     })
   }
   return found
+}
+
+/**
+ * Group drafts by the Postiz that holds them, so each sweep asks each backend
+ * only about its own posts: a post id one backend does not list is "leave it",
+ * never "gone". A backend with no credentials is skipped.
+ */
+function byBackend<T extends { postizBackend?: string | null }>(drafts: T[]): [Backend, T[]][] {
+  return BACKENDS.map((b) => [b, drafts.filter((d) => draftBackend(d) === b)] as [Backend, T[]]).filter(
+    ([b, list]) => list.length && backendConfigured(b),
+  )
 }
 
 /** How far ahead a moved post is looked for: the calendar is planned about a month out. */
@@ -98,21 +120,27 @@ export async function syncPublishTimes(payload: Payload, now: Date = new Date())
   const withPosts = drafts.docs.filter((d) => d.postizPosts?.length && d.publishAt)
   if (!withPosts.length) return 0
 
-  const times = await listPostTimes(new Date(now.getTime() - LOOKBACK_MS), new Date(now.getTime() + AHEAD_MS))
   let moved = 0
-  for (const draft of withPosts) {
-    const found = (draft.postizPosts ?? []).map((p) => times.get(p.postId)).filter((t): t is Date => !!t)
-    if (!found.length) continue // deleted in Postiz, or outside the window: leave it
-    const at = new Date(Math.min(...found.map((t) => t.getTime())))
-    if (Math.abs(at.getTime() - new Date(draft.publishAt!).getTime()) < 60_000) continue
-    await payload.update({
-      collection: 'hq-social-drafts',
-      id: draft.id,
-      data: { publishAt: at.toISOString(), scheduledFor: at.toISOString() },
-      overrideAccess: true,
-      context: { [HQ_INTERNAL]: true },
-    })
-    moved++
+  for (const [backend, group] of byBackend(withPosts)) {
+    const times = await listPostTimes(
+      new Date(now.getTime() - LOOKBACK_MS),
+      new Date(now.getTime() + AHEAD_MS),
+      backend,
+    )
+    for (const draft of group) {
+      const found = (draft.postizPosts ?? []).map((p) => times.get(p.postId)).filter((t): t is Date => !!t)
+      if (!found.length) continue // deleted in Postiz, or outside the window: leave it
+      const at = new Date(Math.min(...found.map((t) => t.getTime())))
+      if (Math.abs(at.getTime() - new Date(draft.publishAt!).getTime()) < 60_000) continue
+      await payload.update({
+        collection: 'hq-social-drafts',
+        id: draft.id,
+        data: { publishAt: at.toISOString(), scheduledFor: at.toISOString() },
+        overrideAccess: true,
+        context: { [HQ_INTERNAL]: true },
+      })
+      moved++
+    }
   }
   return moved
 }
@@ -143,51 +171,53 @@ export async function markPublished(payload: Payload, now: Date = new Date()): P
   const due = drafts.docs.filter((d) => d.postizPosts?.length)
   if (!due.length) return 0
 
-  const states = await listPostStates(new Date(now.getTime() - LOOKBACK_MS), now)
   let changed = 0
-  for (const draft of due) {
-    const posts = draft.postizPosts ?? []
-    const mine = posts.map((p) => states.get(p.postId))
-    if (!mine.every((st) => st === 'PUBLISHED' || st === 'ERROR')) continue
-    const live = posts.filter((_, i) => mine[i] === 'PUBLISHED').map((p) => p.platform)
-    const failed = posts.filter((_, i) => mine[i] === 'ERROR').map((p) => p.platform)
-    const error = failed.length
-      ? `Postiz couldn't publish it on ${failed.join(', ')} (the post is marked ERROR there and won't be retried).`
-      : undefined
-    await payload.update({
-      collection: 'hq-social-drafts',
-      id: draft.id,
-      data: { status: live.length ? 'published' : 'failed', ...(error ? { error } : {}) },
-      overrideAccess: true,
-      context: { [HQ_INTERNAL]: true },
-    })
-    if (live.length) {
-      await recordEvent(payload, {
-        type: 'social.published',
-        summary: `Draft #${draft.id} is live on ${live.join(', ')}`,
-        refCollection: 'hq-social-drafts',
-        refId: draft.id,
+  for (const [backend, group] of byBackend(due)) {
+    const states = await listPostStates(new Date(now.getTime() - LOOKBACK_MS), now, backend)
+    for (const draft of group) {
+      const posts = draft.postizPosts ?? []
+      const mine = posts.map((p) => states.get(p.postId))
+      if (!mine.every((st) => st === 'PUBLISHED' || st === 'ERROR')) continue
+      const live = posts.filter((_, i) => mine[i] === 'PUBLISHED').map((p) => p.platform)
+      const failed = posts.filter((_, i) => mine[i] === 'ERROR').map((p) => p.platform)
+      const error = failed.length
+        ? `Postiz couldn't publish it on ${failed.join(', ')} (the post is marked ERROR there and won't be retried).`
+        : undefined
+      await payload.update({
+        collection: 'hq-social-drafts',
+        id: draft.id,
+        data: { status: live.length ? 'published' : 'failed', ...(error ? { error } : {}) },
+        overrideAccess: true,
+        context: { [HQ_INTERNAL]: true },
       })
-    }
-    if (failed.length) {
-      await recordEvent(
-        payload,
-        {
-          type: 'social.failed',
-          summary: `Draft #${draft.id} failed to publish on ${failed.join(', ')}`,
+      if (live.length) {
+        await recordEvent(payload, {
+          type: 'social.published',
+          summary: `Draft #${draft.id} is live on ${live.join(', ')}`,
           refCollection: 'hq-social-drafts',
           refId: draft.id,
-          data: { error },
-        },
-        {
-          ping:
-            `⚠️ Draft #${draft.id} did not go out on ${failed.join(', ')}. Postiz marked it ERROR at publish time` +
-            (live.length ? ` (it is live on ${live.join(', ')}).` : '.') +
-            ' Ask Claude to redraft it.',
-        },
-      )
+        })
+      }
+      if (failed.length) {
+        await recordEvent(
+          payload,
+          {
+            type: 'social.failed',
+            summary: `Draft #${draft.id} failed to publish on ${failed.join(', ')}`,
+            refCollection: 'hq-social-drafts',
+            refId: draft.id,
+            data: { error },
+          },
+          {
+            ping:
+              `⚠️ Draft #${draft.id} did not go out on ${failed.join(', ')}. Postiz marked it ERROR at publish time` +
+              (live.length ? ` (it is live on ${live.join(', ')}).` : '.') +
+              ' Ask Claude to redraft it.',
+          },
+        )
+      }
+      changed++
     }
-    changed++
   }
   return changed
 }
@@ -210,7 +240,11 @@ export async function collectPostStats(payload: Payload, now: Date = new Date())
       and: [
         { status: { in: ['scheduled', 'published'] } },
         { publishAt: { greater_than: new Date(now.getTime() - LOOKBACK_MS).toISOString() } },
-        { publishAt: { less_than: new Date(now.getTime() - CHECKPOINTS[0].hours * HOUR).toISOString() } },
+        {
+          publishAt: {
+            less_than: new Date(now.getTime() - CHECKPOINTS[0].hours * HOUR).toISOString(),
+          },
+        },
       ],
     },
     limit: 100,
@@ -219,8 +253,11 @@ export async function collectPostStats(payload: Payload, now: Date = new Date())
   })
 
   // Looked up at most once per run, and only if some draft needs it.
-  let channelsOnce: Promise<Partial<Record<Platform, string>>> | undefined
-  const channels = () => (channelsOnce ??= connectedChannels())
+  const channelsOnce = new Map<Backend, Promise<Partial<Record<Platform, string>>>>()
+  const channels = (backend: Backend) => {
+    if (!channelsOnce.has(backend)) channelsOnce.set(backend, connectedChannels(backend))
+    return channelsOnce.get(backend)!
+  }
 
   let saved = 0
   for (const draft of drafts.docs) {
@@ -234,11 +271,9 @@ export async function collectPostStats(payload: Payload, now: Date = new Date())
       })
       const posts = await idsFor(payload, draft, channels)
       for (const post of posts) {
-        const taken = new Set(
-          existing.docs.filter((s) => s.platform === post.platform).map((s) => s.checkpoint ?? ''),
-        )
+        const taken = new Set(existing.docs.filter((s) => s.platform === post.platform).map((s) => s.checkpoint ?? ''))
         for (const checkpoint of dueCheckpoints(new Date(draft.publishAt!), now, taken)) {
-          const raw = await postAnalytics(post.postId, daysFor(checkpoint))
+          const raw = await postAnalytics(post.postId, daysFor(checkpoint), draftBackend(draft))
           if (!raw?.length) continue // not live or not matched yet; next hour
           await payload.create({
             collection: 'hq-social-stats',
@@ -292,10 +327,13 @@ export async function collectChannelStats(payload: Payload, now: Date = new Date
   })
   if (stale.totalDocs && miamiHour(now) !== 6) return 0
 
+  // The accounts new posts go to: after the move to Cloud, Hetzner's
+  // Instagram is the dead Facebook-login one.
+  const backend = newPostsBackend()
   let saved = 0
-  for (const [platform, id] of Object.entries(await connectedChannels()) as [Platform, string][]) {
+  for (const [platform, id] of Object.entries(await connectedChannels(backend)) as [Platform, string][]) {
     try {
-      const raw = await channelAnalytics(id, 7)
+      const raw = await channelAnalytics(id, 7, backend)
       if (!raw?.length) continue
       await payload.create({
         collection: 'hq-social-stats',

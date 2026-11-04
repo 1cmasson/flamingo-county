@@ -322,7 +322,8 @@ async function create(payload: Payload, monday: string, now: Date): Promise<HqSo
     en: new Map(en.map((ev) => [ev.id, ev])),
   }
   const pagePath = routes.thisWeek('es')
-  const platforms: Platform[] = ['facebook', 'instagram']
+  // Facebook was dropped 2026-11-03 (web/POSTIZ-CLOUD-MIGRATION.md).
+  const platforms: Platform[] = ['instagram']
   // 11:30 on Monday, or the next free slot by Tuesday evening; past that, the
   // first slot whether or not it is crowded (see `pickPostTime`).
   const scheduledFor = pickPostTime(

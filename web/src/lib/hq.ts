@@ -11,9 +11,12 @@ import {
   connectedChannels,
   createPost,
   deletePost,
+  draftBackend,
   findPostIds,
+  newPostsBackend,
   postIdsFrom,
   uploadMedia,
+  type Backend,
   type Platform,
   facebookProblem,
   languageProblem,
@@ -308,6 +311,27 @@ export async function decideDraft(
 
 const deciding = new Set<number>()
 
+/** Upload a draft's media to one Postiz and create its posts there. */
+async function schedulePosts(payload: Payload, draft: HqSocialDraft, backend: Backend, scheduledFor: Date) {
+  const platforms = (draft.platforms ?? []) as Platform[]
+  const channels = await connectedChannels(backend)
+  const uploaded = []
+  for (const doc of await draftMedia(payload, draft)) {
+    uploaded.push(await uploadMedia(await readMedia(doc), doc.filename ?? `hq-${doc.id}`, backend))
+  }
+  const body = buildPostBody({
+    caption: draft.caption,
+    platforms,
+    integrations: channels,
+    media: uploaded,
+    scheduledFor,
+    format: draft.format,
+    backend,
+  })
+  const response = await createPost(body, backend)
+  return { body, response, channels }
+}
+
 async function decide(payload: Payload, id: number, action: DraftAction): Promise<string> {
   const draft = await payload
     .findByID({ collection: 'hq-social-drafts', id, depth: 0, overrideAccess: true })
@@ -346,27 +370,16 @@ async function decide(payload: Payload, id: number, action: DraftAction): Promis
   await setDraft(payload, id, { status: 'approved', error: null })
   try {
     const platforms = (draft.platforms ?? []) as Platform[]
-    const channels = await connectedChannels()
-    const uploaded = []
-    for (const doc of await draftMedia(payload, draft)) {
-      uploaded.push(await uploadMedia(await readMedia(doc), doc.filename ?? `hq-${doc.id}`))
-    }
-    const body = buildPostBody({
-      caption: draft.caption,
-      platforms,
-      integrations: channels,
-      media: uploaded,
-      scheduledFor: new Date(draft.scheduledFor),
-      format: draft.format,
-    })
-    const response = await createPost(body)
+    const backend = newPostsBackend()
+    const { body, response, channels } = await schedulePosts(payload, draft, backend, new Date(draft.scheduledFor))
 
-    // Saved for the stats job: when it went out, and which Postiz post is
-    // which platform. An empty `postizPosts` is filled in later by
-    // `findPostIds` if the reply carried no ids.
+    // Saved for the stats job: when it went out, which Postiz holds it, and
+    // which Postiz post is which platform. An empty `postizPosts` is filled in
+    // later by `findPostIds` if the reply carried no ids.
     await setDraft(payload, id, {
       status: 'scheduled',
       publishAt: body.date,
+      postizBackend: backend,
       postizPosts: postIdsFrom(response, channels),
       postizResponse: response as never,
     })
@@ -415,15 +428,16 @@ export async function cancelDraft(payload: Payload, id: number, now: Date = new 
   }
 
   const platforms = (draft.platforms ?? []) as Platform[]
+  const backend = draftBackend(draft)
   let posts = (draft.postizPosts ?? []).filter((p) => p.postId)
   if (!posts.length && draft.publishAt) {
-    posts = await findPostIds(await connectedChannels(), platforms, new Date(draft.publishAt))
+    posts = await findPostIds(await connectedChannels(backend), platforms, new Date(draft.publishAt), backend)
   }
   if (!posts.length) throw new Error(`Could not find draft #${id}'s post in Postiz. Delete it in the Postiz calendar.`)
 
   // One call per distinct id: the posts of one draft share a group.
   for (const postId of [...new Set(posts.map((p) => String(p.postId)))]) {
-    await deletePost(postId)
+    await deletePost(postId, backend)
   }
   await setDraft(payload, id, { status: 'rejected', error: 'Cancelled after scheduling.' })
   await recordEvent(payload, {
@@ -433,4 +447,70 @@ export async function cancelDraft(payload: Payload, id: number, now: Date = new 
     refId: id,
   })
   return `Draft #${id} is removed from Postiz and marked rejected.`
+}
+
+/**
+ * Move a draft that is scheduled on the Hetzner Postiz to Postiz Cloud, at
+ * the same time, with the same caption and media, on the owner's existing
+ * approval (he OK'd moving the queued posts on 2026-11-03). In this order:
+ * create on Cloud, save the Cloud ids on the draft, then delete the Hetzner
+ * post. A failure before the save leaves the draft on Hetzner untouched; a
+ * failure after it leaves a duplicate on Hetzner to delete by hand, never a
+ * post that exists nowhere. Instagram only: deleting a Hetzner post drops its
+ * whole group, so a draft with Facebook in it would lose its Facebook post too.
+ */
+export async function moveDraftToCloud(payload: Payload, id: number, now: Date = new Date()): Promise<string> {
+  const draft = await payload
+    .findByID({ collection: 'hq-social-drafts', id, depth: 0, overrideAccess: true })
+    .catch(() => null)
+  if (!draft) throw new Error(`Draft #${id} does not exist.`)
+  if (draft.status !== 'scheduled')
+    throw new Error(`Draft #${id} is ${draft.status}; only a scheduled draft can be moved.`)
+  if (draftBackend(draft) === 'cloud') throw new Error(`Draft #${id} is already on Postiz Cloud.`)
+  if (!draft.publishAt) throw new Error(`Draft #${id} has no publish time.`)
+  const at = new Date(draft.publishAt)
+  if (at.getTime() <= now.getTime() + 2 * 60_000) {
+    throw new Error(`Draft #${id} is due ${miamiTime(draft.publishAt)}, too soon to move.`)
+  }
+  const platforms = (draft.platforms ?? []) as Platform[]
+  if (!platforms.length || platforms.some((p) => p !== 'instagram')) {
+    throw new Error(
+      `Draft #${id} is on ${platforms.join(', ') || 'no platform'}; only Instagram-only drafts are moved.`,
+    )
+  }
+
+  const legacy = (draft.postizPosts ?? []).filter((p) => p.postId)
+  const oldPosts = legacy.length
+    ? legacy
+    : await findPostIds(await connectedChannels('hetzner'), platforms, at, 'hetzner')
+  if (!oldPosts.length) throw new Error(`Could not find draft #${id}'s post on Hetzner, so nothing was moved.`)
+
+  const { body, response, channels } = await schedulePosts(payload, draft, 'cloud', at)
+  const cloudPosts = postIdsFrom(response, channels)
+  await setDraft(payload, id, {
+    postizBackend: 'cloud',
+    publishAt: body.date,
+    postizPosts: cloudPosts,
+    postizResponse: response as never,
+  })
+
+  const leftOnHetzner: string[] = []
+  for (const postId of [...new Set(oldPosts.map((p) => String(p.postId)))]) {
+    try {
+      await deletePost(postId, 'hetzner')
+    } catch (err) {
+      leftOnHetzner.push(postId)
+      console.error(`[hq] draft #${id}: Hetzner post ${postId} not deleted:`, err instanceof Error ? err.message : err)
+    }
+  }
+  await recordEvent(payload, {
+    type: 'social.moved',
+    summary: `Moved draft #${id} to Postiz Cloud for ${miamiTime(body.date)}`,
+    refCollection: 'hq-social-drafts',
+    refId: id,
+    data: { cloudPosts, hetznerPosts: oldPosts.map((p) => p.postId), leftOnHetzner },
+  })
+  return leftOnHetzner.length
+    ? `Draft #${id} is on Postiz Cloud for ${miamiTime(body.date)}, but Hetzner post ${leftOnHetzner.join(', ')} could not be deleted. Delete it there, or it posts twice.`
+    : `Draft #${id} moved to Postiz Cloud for ${miamiTime(body.date)} (Cloud post ${cloudPosts.map((p) => p.postId).join(', ') || 'id pending'}).`
 }

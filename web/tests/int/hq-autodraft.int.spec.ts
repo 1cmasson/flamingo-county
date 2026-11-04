@@ -404,7 +404,7 @@ describe('auto-drafting a social post when a page goes live', () => {
     await publish('stories', story.id)
     const drafts = await draftsFor('stories', story.id)
     expect(drafts).toHaveLength(1)
-    expect(drafts[0]).toMatchObject({ status: 'pending', pillar: 'story', language: 'both', platforms: ['facebook', 'instagram'] })
+    expect(drafts[0]).toMatchObject({ status: 'pending', pillar: 'story', language: 'both', platforms: ['instagram'] })
     expect(drafts[0].caption).toBe(
       [
         'El último torcedor',
@@ -428,7 +428,7 @@ describe('auto-drafting a social post when a page goes live', () => {
     const drafts = await draftsFor('events', ev.id)
     expect(drafts).toHaveLength(1)
     const d = drafts[0]
-    expect(d).toMatchObject({ status: 'pending', pillar: 'event', language: 'both', platforms: ['facebook', 'instagram'] })
+    expect(d).toMatchObject({ status: 'pending', pillar: 'event', language: 'both', platforms: ['instagram'] })
 
     // Every line is a field of the event; the Spanish note named a price, so it is left out.
     expect(d.caption).toBe(
@@ -507,7 +507,7 @@ describe('auto-drafting a social post when a page goes live', () => {
     const ev = await draftEvent('2099-03-14', { image: null })
     await publishAndDraft(ev.id)
     const [d] = await draftsFor('events', ev.id)
-    expect(d.platforms).toEqual(['facebook', 'instagram'])
+    expect(d.platforms).toEqual(['instagram'])
     const media = d.media?.[0]
     expect(typeof media === 'object' && media).toMatchObject({ mimeType: 'image/jpeg', width: 1080, height: 1350 })
   })
@@ -544,7 +544,7 @@ describe('auto-drafting a social post when a page goes live', () => {
     made.push({ collection: 'events', id: ev.id })
     await publishAndDraft(ev.id)
     const [d] = await draftsFor('events', ev.id)
-    expect(d.platforms).toEqual(['facebook', 'instagram'])
+    expect(d.platforms).toEqual(['instagram'])
     const drawn = card.mock.calls.find(([e]) => e.id === ev.id)?.[0]
     expect(drawn?.title).toBe('Domino night')
     card.mockRestore()

@@ -315,7 +315,7 @@ describe('venue photos against the database', () => {
     expect(draft.caption.split('\n').at(-1)).toBe('📷 Foto: Phillip Pessar, CC BY 2.0 (https://creativecommons.org/licenses/by/2.0/)')
     expect(draft.caption).toContain(`/go/fb/${draft.id}`)
     // The picture is the event's card with the photo framed on it.
-    expect(draft.platforms).toEqual(['facebook', 'instagram'])
+    expect(draft.platforms).toEqual(['instagram'])
     const media = await payload.findByID({ collection: 'hq-media', id: (draft.media![0] as { id: number }).id ?? draft.media![0], overrideAccess: true })
     expect(media).toMatchObject({ mimeType: 'image/jpeg', width: 1080, height: 1350 })
   })
