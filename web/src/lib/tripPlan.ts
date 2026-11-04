@@ -48,6 +48,8 @@ export type Trip = {
   total: number
   /** The stretch of the route's line ridden, for the map. */
   path: LatLng[]
+  /** Every stop from the one boarded to the one to get off at, in order: for "N stops to go". */
+  between: LatLng[]
 }
 
 /** A walk longer than this at either end isn't a bus trip worth offering. */
@@ -103,6 +105,7 @@ export function planTrips(net: Network, from: LatLng, to: LatLng, max = 3): Plan
         stops: j - i,
         total: best.total,
         path: slicePath(d.path, st[i].at, st[j].at),
+        between: st.slice(i, j + 1).map((x) => x.at),
       })
     }
   }
@@ -192,4 +195,29 @@ export function nearbyRoutes(net: Network, from: LatLng, maxM = MAX_WALK_M): Nea
       })
   }
   return out.sort((a, b) => a.walk - b.walk)
+}
+
+/** Close enough to a stop to say the visitor is at it (or the bus is). */
+const AT_STOP_M = 120
+
+export type Progress =
+  { kind: 'atStop' } | { kind: 'riding'; left: number } | { kind: 'getOff' } | null
+
+/**
+ * Where the visitor is along a trip, from where the phone says they are: at the
+ * stop to board, on the bus with N stops to go, or at the stop to get off.
+ * Null when they're nowhere near the ride (still walking to it, or past it).
+ */
+export function tripProgress(trip: Pick<Trip, 'between'>, here: LatLng): Progress {
+  let k = -1
+  let best = Infinity
+  trip.between.forEach((p, n) => {
+    const m = meters(here, p)
+    if (m < best) [k, best] = [n, m]
+  })
+  if (k < 0 || best > AT_STOP_M) return null
+  const last = trip.between.length - 1
+  if (k === 0) return { kind: 'atStop' }
+  if (k === last) return { kind: 'getOff' }
+  return { kind: 'riding', left: last - k }
 }

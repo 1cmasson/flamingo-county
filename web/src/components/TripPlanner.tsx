@@ -6,10 +6,11 @@ import type { Lang } from '../i18n'
 import { busCopy } from '../lib/busCopy'
 import { mergeDepartures, type Departure } from '../lib/busTime'
 import { routes } from '../lib/routes'
-import { formatClock, type LatLng } from '../lib/transitMath'
+import { formatClock, meters, walkMinutes, type LatLng } from '../lib/transitMath'
 import {
   planTrips,
   transitDirectionsHref,
+  tripProgress,
   type Network,
   type Plan,
   type Trip,
@@ -51,7 +52,15 @@ export function useTripPlan(from: LatLng | null, to: LatLng | null): Plan | null
       alive = false
     }
   }, [to])
-  return useMemo(() => (net && from && to ? planTrips(net, from, to) : null), [net, from, to])
+  // Planned from where the visitor was when they chose where to go, then kept: following them
+  // as they walk mustn't re-plan the trip (and switch the bus) under their feet.
+  const [anchor, setAnchor] = useState<{ from: LatLng; to: LatLng } | null>(null)
+  if (to && from && anchor?.to !== to) setAnchor({ from, to })
+  if (!to && anchor) setAnchor(null)
+  return useMemo(
+    () => (net && anchor ? planTrips(net, anchor.from, anchor.to) : null),
+    [net, anchor],
+  )
 }
 
 /* ------------------------------------------------------------- the search */
@@ -207,21 +216,49 @@ export function Soon({ lang, next }: { lang: Lang; next: ReturnType<typeof useSt
 }
 
 /** A trip as numbered steps, with its total and the next bus at the stop to board. */
-export function TripSteps({ lang, trip, destName }: { lang: Lang; trip: Trip; destName: string }) {
+export function TripSteps({
+  lang,
+  trip,
+  destName,
+  here = null,
+}: {
+  lang: Lang
+  trip: Trip
+  destName: string
+  /** Where the visitor is now, when the page follows them: the steps keep up. */
+  here?: LatLng | null
+}) {
   const c = busCopy(lang)
   const next = useStopNext(trip.slug, trip.dir, trip.board.id)
   const soon = next?.[0] ?? null
   const soonWait = soon && soon.wait <= 60 ? soon.wait : null
+  const progress = here ? tripProgress(trip, here) : null
+  // Still walking to the stop: the minutes count down as they go.
+  const walkNow =
+    here && !progress
+      ? Math.min(trip.board.walk, walkMinutes(meters(here, trip.board.at)))
+      : trip.board.walk
+  // Steps already behind the visitor fade: at the stop the walk is done; on the bus, boarding too.
+  const done = !progress ? 0 : progress.kind === 'atStop' ? 1 : 2
   return (
     <>
+      {progress ? (
+        <p className={b.tripNow} role="status">
+          {progress.kind === 'atStop'
+            ? c.tripAtStop
+            : progress.kind === 'riding'
+              ? c.tripRiding(progress.left, trip.alight.name)
+              : c.tripGetOffNow(trip.alight.name)}
+        </p>
+      ) : null}
       <p className={b.tripTotal}>
         {/* A wait past an hour is tomorrow's first bus, not part of the trip. */}
         {c.tripAbout(trip.total + (soonWait ?? 0))}{' '}
         <span className={b.tripTotalNote}>{c.tripAboutNote(soonWait !== null)}</span>
       </p>
       <ol className={b.tripSteps}>
-        <li>{c.tripWalkTo(trip.board.walk, trip.board.name)}</li>
-        <li>
+        <li data-done={done >= 1 || undefined}>{c.tripWalkTo(walkNow, trip.board.name)}</li>
+        <li data-done={done >= 2 || undefined}>
           {c.tripTake(c.tripRouteInline(trip.number), trip.toward)} <Soon lang={lang} next={next} />
         </li>
         <li>{c.tripGetOff(trip.alight.name, trip.stops, trip.ride)}</li>
@@ -233,12 +270,16 @@ export function TripSteps({ lang, trip, destName }: { lang: Lang; trip: Trip; de
 
 /** What the map draws of a trip. */
 export function mapTrip(trip: Trip, from: LatLng, dest: Destination, label: string): MapTrip {
+  // At the stop or on the bus, the walk to the stop is behind them: only the one at the end shows.
+  const along = tripProgress(trip, from) !== null
   return {
     key: `${trip.slug}|${trip.dir}|${trip.board.id}|${trip.alight.id}|${dest.at.join(',')}`,
-    walks: [
-      [from, trip.board.at],
-      [trip.alight.at, dest.at],
-    ],
+    walks: along
+      ? [[trip.alight.at, dest.at]]
+      : [
+          [from, trip.board.at],
+          [trip.alight.at, dest.at],
+        ],
     ride: trip.path,
     color: DIR_COLORS[Number(trip.dir)] ?? DIR_COLORS[0],
     stops: [trip.board.at, trip.alight.at],
@@ -258,6 +299,7 @@ export function TripPanel({
   denied,
   pageSlug,
   from,
+  here,
   onChange,
   onClose,
 }: {
@@ -274,6 +316,8 @@ export function TripPanel({
   pageSlug: string
   /** A start the visitor typed, when it isn't where they are. */
   from?: Destination | null
+  /** Where the visitor is now (followed), for the steps' progress. */
+  here?: LatLng | null
   onChange: () => void
   onClose: () => void
 }) {
@@ -315,7 +359,7 @@ export function TripPanel({
               ))}
             </div>
           ) : null}
-          <TripSteps lang={lang} trip={trip} destName={dest.name} />
+          <TripSteps lang={lang} trip={trip} destName={dest.name} here={from ? null : here} />
           {trip.slug !== pageSlug ? (
             <p className={b.meta}>
               <Link

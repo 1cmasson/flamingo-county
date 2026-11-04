@@ -100,6 +100,12 @@ export type BusMapProps = {
   walkTo?: LatLng[] | null
   /** A planned trip: the walks, the ride, and where it ends. The map fits to it. */
   trip?: MapTrip | null
+  /** How far off the visitor's position may be, metres: drawn as a soft circle when it's rough. */
+  accuracy?: number | null
+  /** Keep the visitor in the middle as they move. */
+  follow?: boolean
+  /** The visitor dragged the map: following stops. */
+  onUserMove?: () => void
 }
 
 export type MapTrip = {
@@ -280,6 +286,22 @@ export function BusMap(props: BusMapProps) {
                 'circle-stroke-width': 3.5,
               },
             })
+            // How sure the phone is of "you": a soft ring under the pin when it's rough.
+            m.addSource('you-acc', { type: 'geojson', data: empty })
+            m.addLayer({
+              id: 'you-acc',
+              type: 'fill',
+              source: 'you-acc',
+              paint: { 'fill-color': '#1a73e8', 'fill-opacity': 0.12 },
+            })
+            m.addLayer({
+              id: 'you-acc-edge',
+              type: 'line',
+              source: 'you-acc',
+              paint: { 'line-color': '#1a73e8', 'line-opacity': 0.5, 'line-width': 1.5 },
+            })
+            // Only a person's drag ends "follow me": the map's own moves don't fire dragstart.
+            m.on('dragstart', () => cb.current.onUserMove?.())
             // The trip on top of the route: the ride thick in its colour, the walks dotted.
             m.addSource('trip-ride', { type: 'geojson', data: empty })
             m.addSource('trip-walk', { type: 'geojson', data: empty })
@@ -415,7 +437,7 @@ export function BusMap(props: BusMapProps) {
   useEffect(() => {
     const m = map.current
     const st = directions[selDir]?.stops[selStop]
-    if (!full || !ready || !m || !st || cb.current.trip) return
+    if (!full || !ready || !m || !st || cb.current.trip || cb.current.follow) return
     // With the visitor on the map, show them and their stop together.
     const here = cb.current.origin
     const L = ml.current
@@ -525,6 +547,34 @@ export function BusMap(props: BusMapProps) {
     ro.observe(el)
     return () => ro.disconnect()
   }, [full, ready])
+
+  /* ---- full map: how sure "you" is, and following ---- */
+  const acc = props.accuracy ?? null
+  const follow = props.follow ?? false
+  useEffect(() => {
+    const m = map.current
+    if (!full || !ready || !m) return
+    const here = props.origin ?? null
+    ;(m.getSource('you-acc') as ML.GeoJSONSource | undefined)?.setData(
+      here && acc !== null && acc > 25 ? circle(here, Math.min(acc, 2000)) : empty,
+    )
+  }, [full, ready, props.origin, acc])
+  const firstFollow = useRef(true)
+  useEffect(() => {
+    const m = map.current
+    const here = props.origin ?? null
+    if (!full || !ready || !m || !follow || !here) {
+      if (!follow) firstFollow.current = true
+      return
+    }
+    // Turning it on zooms in to street level; after that each new position just pans.
+    m.easeTo({
+      center: lngLat(here),
+      zoom: firstFollow.current ? Math.max(m.getZoom(), 16) : m.getZoom(),
+      duration: firstFollow.current ? 700 : 900,
+    })
+    firstFollow.current = false
+  }, [full, ready, follow, props.origin])
 
   /* ---- full map: "you" ---- */
   const origin = props.origin ?? null
@@ -641,4 +691,20 @@ function fitTrip(m: ML.Map | null, L: typeof ML | null, trip: MapTrip, duration:
   for (const w of trip.walks) for (const p of w) b.extend(lngLat(p))
   for (const p of trip.ride) b.extend(lngLat(p))
   m.fitBounds(b, { padding: { top: 70, bottom: 30, left: 30, right: 64 }, maxZoom: 16, duration })
+}
+
+/** A circle of `radius` metres around a point, as a polygon the map can fill. */
+function circle([lat, lng]: LatLng, radius: number) {
+  const pts: [number, number][] = []
+  const dLat = radius / 111_320
+  const dLng = radius / (111_320 * Math.cos((lat * Math.PI) / 180))
+  for (let k = 0; k <= 48; k++) {
+    const t = (k / 48) * 2 * Math.PI
+    pts.push([lng + dLng * Math.cos(t), lat + dLat * Math.sin(t)])
+  }
+  return {
+    type: 'Feature' as const,
+    properties: {},
+    geometry: { type: 'Polygon' as const, coordinates: [pts] },
+  }
 }
