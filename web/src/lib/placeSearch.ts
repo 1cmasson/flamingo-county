@@ -12,14 +12,14 @@ import type { LatLng } from './transitMath'
  * - only the typed text is sent, with a fixed Miami-Dade centre and box,
  *   never the visitor's location (the browser sorts by distance itself);
  * - answers are kept in memory for a day, so a popular search is asked once;
- * - a timeout of 3 s, and any failure is simply no extra results.
+ * - a timeout of 6 s (Photon can take 5 at busy times), and any failure is simply no extra results.
  * If traffic grows past polite use, Photon can be self-hosted.
  *
  * Results are OpenStreetMap data (ODbL): the search shows «© OpenStreetMap».
  */
 
 const ENDPOINT = 'https://photon.komoot.io/api/'
-const TIMEOUT_MS = 3000
+const TIMEOUT_MS = 6000
 const TTL_MS = 24 * 60 * 60 * 1000
 const MAX_ENTRIES = 800
 /** Miami-Dade: the box results must fall in, and the centre they're ranked from. */
@@ -81,7 +81,7 @@ export const fold = (s: string) =>
     .replace(/\s+/g, ' ')
     .trim()
 
-const cache = new Map<string, { at: number; result: Promise<PlacePoint[]> }>()
+const cache = new Map<string, { at: number; result: Promise<PlacePoint[] | null> }>()
 
 type Feature = {
   geometry: { coordinates: [number, number] }
@@ -97,7 +97,8 @@ type Feature = {
   }
 }
 
-export function searchPlaces(q: string, limit = 8): Promise<PlacePoint[]> {
+/** The places found, or null when Photon didn't answer (so the answer isn't kept as "none"). */
+export function searchPlaces(q: string, limit = 8): Promise<PlacePoint[] | null> {
   const key = fold(q)
   if (key.length < 3) return Promise.resolve([])
   const hit = cache.get(key)
@@ -144,9 +145,9 @@ export function searchPlaces(q: string, limit = 8): Promise<PlacePoint[]> {
     }
     return out
   })().catch(() => {
-    // A failure isn't an answer: forget it soon, and meanwhile there are just no extra results.
-    setTimeout(() => cache.delete(key), 5 * 60 * 1000).unref?.()
-    return [] as PlacePoint[]
+    // A failure isn't an answer: forget it soon, and say so, so nobody keeps it as "none".
+    setTimeout(() => cache.delete(key), 60 * 1000).unref?.()
+    return null
   })
   if (cache.size >= MAX_ENTRIES) cache.delete(cache.keys().next().value!)
   cache.set(key, { at: Date.now(), result })

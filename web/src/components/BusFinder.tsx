@@ -25,6 +25,8 @@ import {
   useStopNext,
   type Destination,
 } from './TripPlanner'
+import { ShareTrip, shareStart } from './TripShare'
+import { tripBuses } from '../lib/tripLink'
 import b from './bus.module.css'
 import s from './vote.module.css'
 
@@ -352,6 +354,14 @@ function FinderTrips({
               >
                 {c.finderSeeMap}
               </Link>
+              <ShareTrip
+                lang={lang}
+                link={{
+                  from: shareStart(t, from ? { name: from.name, at: from.at } : null),
+                  to: { name: dest.name, at: dest.at },
+                  buses: tripBuses(t),
+                }}
+              />
             </div>
           </li>
         ))}

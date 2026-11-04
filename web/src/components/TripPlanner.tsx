@@ -18,6 +18,8 @@ import {
   type Trip,
 } from '../lib/tripPlan'
 import { DIR_COLORS, type MapTrip } from './BusMap'
+import { ShareTrip, shareStart } from './TripShare'
+import { tripBuses } from '../lib/tripLink'
 import b from './bus.module.css'
 import s from './vote.module.css'
 
@@ -278,10 +280,13 @@ export function TripSteps({
   trip,
   destName,
   here = null,
+  startsAtStop = false,
 }: {
   lang: Lang
   trip: Trip
   destName: string
+  /** The trip starts at the stop itself (a shared trip): no walk to it. */
+  startsAtStop?: boolean
   /** Where the visitor is now, when the page follows them: the steps keep up. */
   here?: LatLng | null
 }) {
@@ -335,7 +340,11 @@ export function TripSteps({
         </span>
       </p>
       <ol className={b.tripSteps}>
-        <li data-done={done >= 1 || undefined}>{c.tripWalkTo(walkNow, trip.board.name)}</li>
+        <li data-done={done >= 1 || undefined}>
+          {startsAtStop && !here
+            ? c.tripStartAt(trip.board.name)
+            : c.tripWalkTo(walkNow, trip.board.name)}
+        </li>
         <li data-done={done >= 2 || undefined} className={b.stepTake}>
           <TakeLabel lang={lang} leg={trip} color={0} />
           <Soon lang={lang} next={next} />
@@ -515,7 +524,23 @@ export function TripPanel({
               ))}
             </div>
           ) : null}
-          <TripSteps lang={lang} trip={trip} destName={dest.name} here={from ? null : here} />
+          <TripSteps
+            lang={lang}
+            trip={trip}
+            destName={dest.name}
+            here={from ? null : here}
+            startsAtStop={!!from && meters(from.at, trip.board.at) < 40}
+          />
+          <div className={b.sheetActions}>
+            <ShareTrip
+              lang={lang}
+              link={{
+                from: shareStart(trip, from ? { name: from.name, at: from.at } : null),
+                to: { name: dest.name, at: dest.at },
+                buses: tripBuses(trip),
+              }}
+            />
+          </div>
           {trip.slug !== pageSlug ? (
             <p className={b.meta}>
               <Link

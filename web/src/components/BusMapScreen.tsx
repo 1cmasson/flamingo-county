@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Lang } from '../i18n'
 import { busCopy } from '../lib/busCopy'
+import { pickByBuses, readTripLink } from '../lib/tripLink'
 import { stopMapsHref, type RouteTimes } from '../lib/busTime'
 import { meters } from '../lib/transitMath'
 import type { MapPlaceCard } from '../lib/busPlaces'
@@ -77,12 +78,21 @@ export function BusMapScreen({
   // The trip chosen on the routes page, to pick out once the plan here is made.
   const [wanted, setWanted] = useState<string | null>(null)
 
-  // A trip planned on the routes page arrives here drawn.
+  // A trip planned on the routes page arrives here drawn; so does a shared trip's link.
+  const [wantedBuses, setWantedBuses] = useState<string[] | null>(null)
   useEffect(() => {
     const t = takeStashedTrip()
+    const link = t ? null : readTripLink(new URLSearchParams(window.location.search))
+    if (link) {
+      // A one-time hand-off (a shared link, or the page before), read after hydration.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDest({ name: link.to.name, sub: '', at: link.to.at, href: null })
+      setFrom({ name: link.from.name, sub: '', at: link.from.at, href: null })
+      setWantedBuses(link.buses)
+      setMode('trip')
+      return
+    }
     if (!t) return
-    // A one-time hand-off from the page before, read after hydration.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDest(t.dest)
     setFrom(t.from)
     setWanted(t.key ?? null)
@@ -123,6 +133,11 @@ export function BusMapScreen({
     const k = plan.trips.findIndex((t) => tripKey(t) === wanted)
     if (k >= 0 && k !== pick) setPick(k)
     setWanted(null)
+  }
+  if (wantedBuses && plan) {
+    const k = pickByBuses(plan.trips, wantedBuses)
+    if (k !== pick) setPick(k)
+    setWantedBuses(null)
   }
   const trip = plan?.trips[pick] ?? null
   const shownTrip = useMemo(
