@@ -2,23 +2,36 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { isLang } from '../../../../i18n'
 import { suggestPoints } from '../../../../lib/civic'
 import { directoryPoints } from '../../../../lib/busPlaces'
+import { fold, searchPlaces } from '../../../../lib/placeSearch'
+import { meters } from '../../../../lib/transitMath'
 
 /**
- * "Where are you going?" for the bus trip planner: `?q=morro&lang=es`.
- * Places from the directory whose name matches, then county addresses (the
- * same synced address data as the address page). Only the typed text comes
- * here and nothing is kept; where the visitor is never does.
+ * "Where are you going?" for the bus trip planner: `?q=palmetto&lang=es`.
+ * In order: places from the directory (they open our own pages), then places
+ * anywhere in Miami-Dade from OpenStreetMap (lib/placeSearch.ts: Photon), then
+ * county addresses (the address page's synced data). Only the typed text
+ * comes here, and only it goes on to Photon; where the visitor is never does.
+ *
+ * Photon is a free service shared by everyone, so each visitor gets a modest
+ * number of searches a minute through here.
  */
 export const dynamic = 'force-dynamic'
 
-const fold = (s: string) =>
-  s
-    .normalize('NFD')
-    .replace(/[̀-ͯ]/g, '')
-    .toLowerCase()
-    .replace(/[^a-z0-9 ]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
+/** Searches per address per minute: typing a few names is fine, a script isn't. */
+const PER_MINUTE = 40
+const hits = new Map<string, { at: number; n: number }>()
+function allowed(req: NextRequest): boolean {
+  const ip = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'local'
+  const now = Date.now()
+  const h = hits.get(ip)
+  if (!h || now - h.at > 60_000) {
+    if (hits.size > 5000) hits.clear()
+    hits.set(ip, { at: now, n: 1 })
+    return true
+  }
+  h.n++
+  return h.n <= PER_MINUTE
+}
 
 export async function GET(req: NextRequest) {
   const q = (req.nextUrl.searchParams.get('q') ?? '').slice(0, 120)
@@ -26,8 +39,9 @@ export async function GET(req: NextRequest) {
   const lang = isLang(langParam) ? langParam : 'es'
   const want = fold(q)
   if (want.length < 2) return NextResponse.json({ results: [] })
+  if (!allowed(req)) return NextResponse.json({ results: [], limited: true }, { status: 429 })
 
-  const [places, addresses] = await Promise.all([
+  const [places, osm, addresses] = await Promise.all([
     directoryPoints(lang).then((all) =>
       all
         .filter((p) =>
@@ -37,8 +51,16 @@ export async function GET(req: NextRequest) {
         )
         .slice(0, 5),
     ),
-    /^\d/.test(want) || want.length >= 4 ? suggestPoints(q, 5) : Promise.resolve([]),
+    searchPlaces(q, 8),
+    /^\d/.test(want) ? suggestPoints(q, 4) : Promise.resolve([]),
   ])
+  // A place that's also in the directory shows once, as the directory's (it has our page).
+  const osmOnly = osm.filter(
+    (o) =>
+      !places.some(
+        (p) => meters(p.at, o.at) < 100 && fold(p.name).includes(fold(o.name).split(' ')[0]),
+      ),
+  )
   const results = [
     ...places.map((p) => ({
       kind: 'place' as const,
@@ -50,6 +72,14 @@ export async function GET(req: NextRequest) {
         .join(' · '),
       at: p.at,
       href: p.href,
+    })),
+    ...osmOnly.map((o) => ({
+      kind: 'osm' as const,
+      id: o.id,
+      name: o.name,
+      sub: o.sub,
+      at: o.at,
+      href: null,
     })),
     ...addresses.map((a) => ({
       kind: 'address' as const,

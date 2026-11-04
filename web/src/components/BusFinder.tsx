@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import type React from 'react'
 import { useEffect, useMemo, useState } from 'react'
 import type { Lang } from '../i18n'
 import { busCopy } from '../lib/busCopy'
@@ -14,6 +15,7 @@ import {
   type NearbyRoute,
   type Trip,
 } from '../lib/tripPlan'
+import { NEAR_COLORS, NearMap } from './NearMap'
 import {
   Soon,
   TripSearch,
@@ -129,67 +131,59 @@ export function BusFinder({ lang }: { lang: Lang }) {
     [net, from, dest],
   )
 
+  const located = from !== null
   return (
-    <section className={s.card} aria-labelledby="bus-finder">
-      <h2 id="bus-finder" className={s.cardTag}>
+    <section className={b.finder} aria-labelledby="bus-finder">
+      <h1 id="bus-finder" className={b.finderTitle}>
         {c.finderTitle}
-      </h2>
-      <p className={s.note}>{c.finderLead}</p>
+      </h1>
 
       {searching ? (
-        <div className={b.finderSearch}>
-          <TripSearch
-            lang={lang}
-            label={searching === 'from' ? c.finderFromSearch : c.tripWhere}
-            onPick={(d) => {
-              if (searching === 'from') setTypedFrom(d)
-              else setDest(d)
-              setSearching(null)
-            }}
-            onCancel={() => setSearching(null)}
-          />
-        </div>
+        <TripSearch
+          lang={lang}
+          near={here}
+          label={searching === 'from' ? c.finderFromSearch : c.tripWhere}
+          onPick={(d) => {
+            if (searching === 'from') setTypedFrom(d)
+            else setDest(d)
+            setSearching(null)
+          }}
+          onCancel={() => setSearching(null)}
+        />
       ) : (
-        <div className={b.finderFields}>
-          <div className={b.finderField}>
-            <span className={b.sheetKicker}>{c.finderFrom}</span>
-            {typedFrom ? (
-              <button type="button" className={b.finderValue} onClick={() => setSearching('from')}>
-                {typedFrom.name}
+        <>
+          {located ? (
+            <p className={b.finderFromLine}>
+              <span>◎ {typedFrom ? typedFrom.name : c.finderNearYou}</span>
+              <button type="button" className={b.textBtn} onClick={() => setSearching('from')}>
+                {c.finderChangeFrom}
               </button>
-            ) : here ? (
-              <button type="button" className={b.finderValue} onClick={() => setSearching('from')}>
-                ◎ {c.finderMyLocation}
-              </button>
-            ) : (
-              <div className={b.sheetActions}>
-                <button type="button" className={s.action} onClick={locate} disabled={locating}>
-                  ◎ {locating ? c.locating : c.tripUseLocation}
+              {typedFrom ? (
+                <button type="button" className={b.textBtn} onClick={locate} disabled={locating}>
+                  {locating ? c.locating : c.finderUseMine}
                 </button>
-                <button type="button" className={b.textBtn} onClick={() => setSearching('from')}>
-                  {c.finderTypeFrom}
-                </button>
-              </div>
-            )}
-            {typedFrom ? (
-              <button type="button" className={b.textBtn} onClick={locate} disabled={locating}>
-                ◎ {locating ? c.locating : c.finderUseMine}
-              </button>
-            ) : null}
-          </div>
-          <div className={b.finderField}>
-            <span className={b.sheetKicker}>{c.finderTo}</span>
-            <button type="button" className={b.whereBtn} onClick={() => setSearching('to')}>
-              <span aria-hidden="true">⌕</span> {dest ? dest.name : c.tripWhere}
+              ) : null}
+            </p>
+          ) : (
+            <button type="button" className={b.bigLocate} onClick={locate} disabled={locating}>
+              ◎ {locating ? c.locating : c.finderLocate}
             </button>
-            {dest ? (
-              <button type="button" className={b.textBtn} onClick={() => setDest(null)}>
-                {c.finderClearDest}
-              </button>
-            ) : null}
-          </div>
+          )}
+          <button type="button" className={b.whereBtn} onClick={() => setSearching('to')}>
+            <span aria-hidden="true">⌕</span> {dest ? dest.name : c.tripWhere}
+          </button>
+          {dest ? (
+            <button type="button" className={b.textBtn} onClick={() => setDest(null)}>
+              {c.finderClearDest}
+            </button>
+          ) : null}
+          {!located ? (
+            <button type="button" className={b.textBtn} onClick={() => setSearching('from')}>
+              {c.finderTypeFrom}
+            </button>
+          ) : null}
           {denied ? <p className={s.notice}>{c.finderDenied}</p> : null}
-        </div>
+        </>
       )}
 
       {searching || !from ? null : !net ? (
@@ -225,11 +219,11 @@ function NearList({
   }
   return (
     <>
-      <h3 className={b.finderHeading}>{c.finderNearTitle}</h3>
-      <ul className={b.finderList}>
-        {near.map((r) => (
+      <NearMap lang={lang} from={from} near={near} net={net} />
+      <ul className={b.nearRows}>
+        {near.map((r, k) => (
           <li key={r.slug}>
-            <NearRow lang={lang} route={r} net={net} />
+            <NearRow lang={lang} route={r} net={net} color={k} />
           </li>
         ))}
       </ul>
@@ -237,7 +231,18 @@ function NearList({
   )
 }
 
-function NearRow({ lang, route, net }: { lang: Lang; route: NearbyRoute; net: Network }) {
+function NearRow({
+  lang,
+  route,
+  net,
+  color,
+}: {
+  lang: Lang
+  route: NearbyRoute
+  net: Network
+  /** Its colour on the map above, by position. */
+  color: number
+}) {
   const c = busCopy(lang)
   const first = route.dirs[0]
   const second = route.dirs[1]
@@ -246,28 +251,40 @@ function NearRow({ lang, route, net }: { lang: Lang; route: NearbyRoute; net: Ne
   return (
     <Link
       href={routes.busMap(lang, route.slug)}
-      className={b.finderRow}
+      className={b.nearRow}
       onClick={() => rememberStop(route, net)}
     >
-      <span className={b.finderBullet} aria-hidden="true">
+      <span
+        className={b.nearBullet}
+        style={
+          {
+            '--c': NEAR_COLORS[color % NEAR_COLORS.length],
+            '--fg':
+              color % NEAR_COLORS.length === 0 || color % NEAR_COLORS.length === 4
+                ? '#fff6e5'
+                : '#0c0f14',
+          } as React.CSSProperties
+        }
+        aria-hidden="true"
+      >
         {route.number ?? 'T'}
       </span>
-      <span className={b.finderRowBody}>
-        <span className={b.finderRowName}>
-          {c.tripRouteName(route.number)} · {c.finderWalk(route.walk)}
+      <span className={b.nearBody}>
+        <span className={b.nearName}>
+          {c.tripRouteName(route.number)}{' '}
+          <span className={b.nearWalk}>{c.finderWalk(route.walk)}</span>
         </span>
-        <span className={b.finderRowLine}>
-          {c.finderToward(first.toward)} <Soon lang={lang} next={nextA} />
+        <span className={b.nearLine}>
+          → {first.toward}: <Soon lang={lang} next={nextA} short />
         </span>
         {second ? (
-          <span className={b.finderRowLine}>
-            {c.finderToward(second.toward)} <Soon lang={lang} next={nextB} />
+          <span className={b.nearLine}>
+            → {second.toward}: <Soon lang={lang} next={nextB} short />
           </span>
         ) : null}
-        <span className={b.finderRowStop}>{c.finderAtStop(first.name)}</span>
       </span>
       <span className={b.finderGo} aria-hidden="true">
-        →
+        ›
       </span>
     </Link>
   )

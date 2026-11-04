@@ -329,7 +329,7 @@ export function BusMapScreen({
           </button>
         )}
         {!open ? null : mode === 'search' ? (
-          <TripSearch lang={lang} onPick={goTo} onCancel={() => setMode(dest ? 'trip' : 'stop')} />
+          <TripSearch lang={lang} near={v.origin} onPick={goTo} onCancel={() => setMode(dest ? 'trip' : 'stop')} />
         ) : mode === 'trip' && dest ? (
           <TripPanel
             lang={lang}

@@ -79,15 +79,10 @@ export default async function BusHub({ params }: Props) {
         ]}
       />
       <main className={s.main}>
-        <Breadcrumbs items={crumbs} label={c.breadcrumb} />
-        <header className={s.hero}>
-          <span className={s.kicker}>{c.kickerBus}</span>
-          <h1 className={s.title}>{c.hubTitle}</h1>
-          <p className={s.sub}>{c.hubSub}</p>
-        </header>
-
+        {/* The tool first (it holds the page's h1); everything to read comes after it. */}
         <BusFinder lang={lang} />
 
+        <h2 className={b.hubAll}>{c.hubAllRoutes}</h2>
         <AnswerBlock question={c.hubQuestion} answer={c.hubAnswer(COUNTY.routes.length)} />
 
         {CITIES.map((city) => {
@@ -133,6 +128,7 @@ export default async function BusHub({ params }: Props) {
             </section>
           )
         })}
+        <Breadcrumbs items={crumbs} label={c.breadcrumb} />
       </main>
     </PageShell>
   )
