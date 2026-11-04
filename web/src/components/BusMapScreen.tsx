@@ -64,6 +64,8 @@ export function BusMapScreen({
   const [placeId, setPlaceId] = useState<number | null>(null)
   const [touched, setTouched] = useState(false)
   const [mode, setMode] = useState<'stop' | 'search' | 'trip'>('stop')
+  // The bottom panel folds down to a bar, so the map can have the whole screen.
+  const [open, setOpen] = useState(true)
   const [dest, setDest] = useState<Destination | null>(null)
   const [pick, setPick] = useState(0)
   // A start typed on the routes page, when the trip isn't from where the visitor is.
@@ -98,6 +100,7 @@ export function BusMapScreen({
   }, [])
 
   const goTo = (d: Destination) => {
+    setOpen(true)
     setDest(d)
     setPick(0)
     setPlaceId(null)
@@ -150,6 +153,18 @@ export function BusMapScreen({
     mode !== 'trip' && v.origin && chosen && meters(v.origin, station.at) <= 2000
       ? [v.origin, station.at]
       : null
+
+  // What the folded panel still says, so it's clear what opening it shows.
+  const peek =
+    mode === 'trip' && dest
+      ? c.mapPeekTrip(dest.name)
+      : mode === 'search'
+        ? c.tripWhere
+        : place
+          ? place.name
+          : chosen
+            ? c.mapPeekStop(station.name)
+            : c.mapPickTitle
 
   return (
     <div className={b.screen}>
@@ -205,11 +220,13 @@ export function BusMapScreen({
           places={places}
           placeId={placeId}
           onPickStop={(dir, stop) => {
+            setOpen(true)
             v.pickStop(dir, stop)
             setPlaceId(null)
             setTouched(true)
           }}
           onPickPlace={(id) => {
+            setOpen(true)
             setPlaceId(id)
             setMode('stop')
           }}
@@ -266,8 +283,34 @@ export function BusMapScreen({
         )}
       </div>
 
-      <section className={b.sheet} aria-live="polite">
-        {mode === 'search' ? (
+      <section
+        className={`${b.sheet} ${open ? '' : b.sheetClosed}`}
+        aria-live="polite"
+        aria-label={c.mapPanel}
+      >
+        {open ? (
+          <div className={b.sheetHandle}>
+            <button
+              type="button"
+              className={b.sheetToggle}
+              aria-expanded="true"
+              onClick={() => setOpen(false)}
+            >
+              ▾ {c.mapHidePanel}
+            </button>
+          </div>
+        ) : (
+          <button
+            type="button"
+            className={b.sheetPeek}
+            aria-expanded="false"
+            onClick={() => setOpen(true)}
+          >
+            <span className={b.sheetPeekShow}>▴ {c.mapShowPanel}</span>
+            <span className={b.sheetPeekText}>{peek}</span>
+          </button>
+        )}
+        {!open ? null : mode === 'search' ? (
           <TripSearch lang={lang} onPick={goTo} onCancel={() => setMode(dest ? 'trip' : 'stop')} />
         ) : mode === 'trip' && dest ? (
           <TripPanel

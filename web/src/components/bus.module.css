@@ -673,6 +673,58 @@ a.line {
 .sheet p {
   margin: 0;
 }
+.sheetHandle {
+  display: flex;
+  justify-content: flex-end;
+  margin: -6px -4px -4px 0;
+}
+.sheetToggle {
+  min-height: 36px;
+  padding: 4px 10px 2px;
+  border: 2px solid var(--ink);
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+/* Folded: one bar along the bottom, the map gets the rest. */
+.sheetClosed {
+  padding: 0;
+  overflow: hidden;
+}
+.sheetPeek {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 8px 14px calc(8px + env(safe-area-inset-bottom));
+  border: 0;
+  background: var(--cream);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.sheetPeekShow {
+  flex: none;
+  padding: 6px 10px 4px;
+  border: 2px solid var(--ink);
+  background: var(--yellow);
+  font-family: var(--display);
+  font-size: 14px;
+  line-height: 1;
+}
+.sheetPeekText {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  font-weight: 800;
+  font-size: 15px;
+}
 .sheetKicker {
   font-size: 12px;
   font-weight: 800;

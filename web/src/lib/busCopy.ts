@@ -118,6 +118,11 @@ const ES = {
     'El condado publica en su página los desvíos, los avisos y el horario en PDF de la ruta.',
   mapTitle: 'DÓNDE VIENEN LAS GUAGUAS',
   mapYou: 'Tú',
+  mapPanel: 'Panel de la parada y el viaje',
+  mapHidePanel: 'Ocultar',
+  mapShowPanel: 'Mostrar',
+  mapPeekStop: (stop: string) => `Parada: ${stop}`,
+  mapPeekTrip: (place: string) => `Cómo llegar a ${place}`,
   finderTitle: '¿QUÉ GUAGUA COJO?',
   finderLead:
     'Desde donde estás, las guaguas que te pasan cerca. Pon a dónde vas y te decimos cuál coger y dónde bajarte.',
@@ -326,6 +331,11 @@ const EN: BusCopy = {
   liveNote: 'The county posts the route’s detours, alerts and PDF timetable on its own page.',
   mapTitle: 'WHERE THE BUSES ARE',
   mapYou: 'You',
+  mapPanel: 'Stop and trip panel',
+  mapHidePanel: 'Hide',
+  mapShowPanel: 'Show',
+  mapPeekStop: (stop: string) => `Stop: ${stop}`,
+  mapPeekTrip: (place: string) => `Getting to ${place}`,
   finderTitle: 'WHICH BUS DO I TAKE?',
   finderLead:
     'From where you are, the buses that pass nearby. Add where you’re going and we’ll tell you which one to take and where to get off.',
