@@ -246,3 +246,119 @@ a.line {
   font-weight: 700;
   line-height: 1.35;
 }
+
+/* --- Next bus: direction, stop, and the next three buses --- */
+
+.dirs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.dirBtn {
+  flex: 1 1 200px;
+  min-height: 44px;
+  padding: 8px 10px 6px;
+  border: 3px solid var(--ink);
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 15px;
+  line-height: 1.1;
+  text-align: left;
+  cursor: pointer;
+}
+.dirBtn[aria-pressed='true'] {
+  background: var(--ink);
+  color: var(--cream);
+  box-shadow: 4px 4px 0 var(--yellow);
+}
+
+.pick {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.pickLabel {
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 800;
+}
+.select {
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 10px;
+  border: 3px solid var(--ink);
+  background: var(--cream);
+  color: var(--ink);
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.next {
+  padding: 14px 16px 12px;
+  background: var(--ink);
+  color: var(--cream);
+  border: 3px solid var(--ink);
+  box-shadow: 4px 4px 0 var(--yellow);
+}
+.next p {
+  margin: 0;
+}
+.nextShell {
+  min-height: 260px;
+}
+.nextFirst {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+}
+.nextTime {
+  font-family: var(--display);
+  font-size: clamp(30px, 8vw, 40px);
+  line-height: 1;
+}
+.liveTag {
+  position: relative;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 8px;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: var(--ink);
+  background: #19c26b;
+}
+.liveTag::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ink);
+  animation: livePulse 1.8s ease-in-out infinite;
+}
+@keyframes livePulse {
+  50% {
+    opacity: 0.25;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .liveTag::before {
+    animation: none;
+  }
+}
+.nextWait {
+  font-weight: 800;
+  font-size: 18px;
+  color: var(--yellow);
+}
+.next .nextThen {
+  margin-top: 8px;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.4;
+}
