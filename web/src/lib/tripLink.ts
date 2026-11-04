@@ -62,6 +62,13 @@ function readName(v: string | null): string | null {
   return name ? name : null
 }
 
+const readBuses = (q: Query) =>
+  (get(q, 'r') ?? '')
+    .split(',')
+    .map((s) => s.trim().toLowerCase())
+    .filter((s) => /^[a-z0-9-]{1,40}$/.test(s))
+    .slice(0, 2)
+
 /** A trip link's ends, or null when it isn't one (or points outside Miami-Dade). */
 export function readTripLink(q: Query): TripLink | null {
   const fromAt = readPoint(get(q, 'dc'))
@@ -69,12 +76,43 @@ export function readTripLink(q: Query): TripLink | null {
   const fromName = readName(get(q, 'de'))
   const toName = readName(get(q, 'a'))
   if (!fromAt || !toAt || !fromName || !toName) return null
-  const buses = (get(q, 'r') ?? '')
-    .split(',')
-    .map((s) => s.trim())
-    .filter((s) => /^[a-z0-9-]{1,40}$/.test(s))
-    .slice(0, 2)
-  return { from: { name: fromName, at: fromAt }, to: { name: toName, at: toAt }, buses }
+  return {
+    from: { name: fromName, at: fromAt },
+    to: { name: toName, at: toAt },
+    buses: readBuses(q),
+  }
+}
+
+/** One end of a trip someone wrote by hand: a name, and its point only if they gave one. */
+export type AskedEnd = { name: string; at: LatLng | null }
+export type TripAsk = { from: AskedEnd | null; to: AskedEnd | null; buses: string[] }
+
+/**
+ * A trip link written by hand, as an assistant (ChatGPT, Claude) writes one
+ * for someone: the names are enough, `/en/bus/trip?from=Hialeah+Park&to=Palmetto+General+Hospital`
+ * (or de/a, as the site's own links say it). The page finds the places and
+ * moves on to the full link (readTripLink). Null when neither end has a name.
+ */
+export function readTripAsk(q: Query): TripAsk | null {
+  const end = (nameKeys: string[], atKey: string): AskedEnd | null => {
+    const name = nameKeys.map((k) => readName(get(q, k))).find(Boolean)
+    return name ? { name, at: readPoint(get(q, atKey)) } : null
+  }
+  const from = end(['de', 'from'], 'dc')
+  const to = end(['a', 'to'], 'ac')
+  if (!from && !to) return null
+  return { from, to, buses: readBuses(q) }
+}
+
+/** A destination handed to the routes hub (`/es/bus?a=…&ac=…`): it plans from where the visitor is. */
+export function readHubDest(q: Query): TripEnd | null {
+  const name = readName(get(q, 'a'))
+  const at = readPoint(get(q, 'ac'))
+  return name && at ? { name, at } : null
+}
+
+export function hubDestQuery(to: TripEnd): string {
+  return new URLSearchParams({ a: to.name.slice(0, NAME_MAX), ac: point(to.at) }).toString()
 }
 
 /** The buses of a trip, as a link names them: "37" or "37,54". */

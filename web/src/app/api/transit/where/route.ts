@@ -4,6 +4,7 @@ import { suggestPoints } from '../../../../lib/civic'
 import { directoryPoints } from '../../../../lib/busPlaces'
 import { fold, searchPlaces } from '../../../../lib/placeSearch'
 import { meters } from '../../../../lib/transitMath'
+import { perMinute } from '../../../../lib/perMinute'
 
 /**
  * "Where are you going?" for the bus trip planner: `?q=palmetto&lang=es`.
@@ -18,20 +19,7 @@ import { meters } from '../../../../lib/transitMath'
 export const dynamic = 'force-dynamic'
 
 /** Searches per address per minute: typing a few names is fine, a script isn't. */
-const PER_MINUTE = 40
-const hits = new Map<string, { at: number; n: number }>()
-function allowed(req: NextRequest): boolean {
-  const ip = (req.headers.get('x-forwarded-for') ?? '').split(',')[0].trim() || 'local'
-  const now = Date.now()
-  const h = hits.get(ip)
-  if (!h || now - h.at > 60_000) {
-    if (hits.size > 5000) hits.clear()
-    hits.set(ip, { at: now, n: 1 })
-    return true
-  }
-  h.n++
-  return h.n <= PER_MINUTE
-}
+const allowed = perMinute(40)
 
 export async function GET(req: NextRequest) {
   const q = (req.nextUrl.searchParams.get('q') ?? '').slice(0, 120)
@@ -39,7 +27,8 @@ export async function GET(req: NextRequest) {
   const lang = isLang(langParam) ? langParam : 'es'
   const want = fold(q)
   if (want.length < 2) return NextResponse.json({ results: [] })
-  if (!allowed(req)) return NextResponse.json({ results: [], limited: true }, { status: 429 })
+  if (!allowed(req.headers))
+    return NextResponse.json({ results: [], limited: true }, { status: 429 })
 
   const [places, osm, addresses] = await Promise.all([
     directoryPoints(lang).then((all) =>
