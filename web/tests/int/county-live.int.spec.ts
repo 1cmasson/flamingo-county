@@ -1,7 +1,14 @@
 import { describe, it, expect } from 'vitest'
 import GtfsRealtimeBindings from 'gtfs-realtime-bindings'
 import { mergeDepartures } from '@/lib/busTime'
-import { isRouteStop, reduceFeeds, stopDepartures, stopKey } from '@/lib/countyLive'
+import {
+  isRouteStop,
+  pathBearing,
+  reduceFeeds,
+  routeVehicles,
+  stopDepartures,
+  stopKey,
+} from '@/lib/countyLive'
 import { getCountyRoute } from '@/lib/county'
 
 /**
@@ -115,6 +122,34 @@ describe('county live feed', () => {
     )
     expect(stopDepartures(feed, '54', '0', s1, NOW + 600)).toBeNull()
     expect(stopDepartures(null, '54', '0', s1, NOW)).toBeNull()
+  })
+
+  it('maps only the route’s buses that are reporting', () => {
+    const feed = reduceFeeds(
+      msg([vehicle('b1', 't1', NOW - 20), vehicle('old', 't3', NOW - 900)]),
+      msg([
+        update('t1', 'b1', [
+          [s1, NOW + 300],
+          [s2, NOW + 400],
+        ]),
+      ]),
+    )
+    const map = routeVehicles(feed, '54', NOW)!
+    expect(map.buses.map((v) => [v.id, v.dir])).toEqual([['b1', '0']])
+    expect(routeVehicles(feed, '27', NOW)!.buses).toEqual([])
+    expect(routeVehicles(feed, '54', NOW + 600)).toBeNull()
+  })
+
+  it('heads a bus along its line when it sends no heading', () => {
+    // A line east, then north.
+    const path: [number, number][] = [
+      [25.8, -80.3],
+      [25.8, -80.29],
+      [25.81, -80.29],
+    ]
+    expect(Math.round(pathBearing(path, [25.8001, -80.295]))).toBe(90)
+    expect(Math.round(pathBearing(path, [25.805, -80.2901]))).toBe(0)
+    expect(pathBearing([], [25.8, -80.3])).toBe(0)
   })
 
   it('answers only for a route’s own stops', () => {

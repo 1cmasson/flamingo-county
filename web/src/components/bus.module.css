@@ -362,3 +362,33 @@ a.line {
   font-size: 15px;
   line-height: 1.4;
 }
+
+/* --- live map ------------------------------------------------------------ */
+
+.busMap {
+  height: clamp(320px, 58vh, 520px);
+}
+.busNumSmall {
+  font-size: 12px;
+}
+.legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  margin: 0 0 10px;
+  padding: 0;
+  list-style: none;
+  font-family: var(--display);
+  font-size: 14px;
+}
+.legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.legendDot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+}
