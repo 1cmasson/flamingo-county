@@ -91,8 +91,8 @@ export type MapTrip = {
   /** Changes when the trip does, so the map re-fits only then. */
   key: string
   walks: LatLng[][]
-  ride: LatLng[]
-  color: string
+  /** The buses ridden, each its own stretch of line and colour (two with a change). */
+  rides: { path: LatLng[]; color: string }[]
   stops: LatLng[]
   dest: { at: LatLng; label: string }
 }
@@ -471,7 +471,12 @@ export function BusMap(props: BusMapProps) {
       features: walks.filter((w) => w.length > 1).map(line),
     })
     ;(m.getSource('trip-ride') as ML.GeoJSONSource | undefined)?.setData(
-      trip ? { ...line(trip.ride), properties: { color: trip.color } } : empty,
+      trip
+        ? {
+            type: 'FeatureCollection',
+            features: trip.rides.map((r) => ({ ...line(r.path), properties: { color: r.color } })),
+          }
+        : empty,
     )
     ;(m.getSource('trip-stops') as ML.GeoJSONSource | undefined)?.setData({
       type: 'FeatureCollection',
@@ -663,13 +668,13 @@ export function BusMap(props: BusMapProps) {
   )
 }
 
-/** Fit a trip on screen: both walks and the ride, with room for the map's own buttons. */
+/** Fit a trip on screen: the walks and the rides, clear of the bus count, the legend and the zoom buttons. */
 function fitTrip(m: ML.Map | null, L: typeof ML | null, trip: MapTrip, duration: number) {
   if (!m || !L) return
   const b = new L.LngLatBounds()
   for (const w of trip.walks) for (const p of w) b.extend(lngLat(p))
-  for (const p of trip.ride) b.extend(lngLat(p))
-  m.fitBounds(b, { padding: { top: 70, bottom: 30, left: 30, right: 64 }, maxZoom: 16, duration })
+  for (const r of trip.rides) for (const p of r.path) b.extend(lngLat(p))
+  m.fitBounds(b, { padding: { top: 160, bottom: 40, left: 40, right: 70 }, maxZoom: 16, duration })
 }
 
 /** A circle of `radius` metres around a point, as a polygon the map can fill. */

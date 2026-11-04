@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import type React from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Lang } from '../i18n'
 import { busCopy } from '../lib/busCopy'
@@ -11,6 +12,7 @@ import {
   planTrips,
   transitDirectionsHref,
   tripProgress,
+  type Leg,
   type Network,
   type Plan,
   type Trip,
@@ -211,7 +213,12 @@ export function useStopNext(slug: string | null, dir: string, stop: string) {
 /* ------------------------------------------------- handing a trip to a map */
 
 const TRIP_KEY = 'fc-bus-trip'
-export type StashedTrip = { dest: Destination; from: Destination | null }
+export type StashedTrip = {
+  dest: Destination
+  from: Destination | null
+  /** Which of the trips there was chosen (tripKey), so the map shows that one. */
+  key?: string
+}
 
 /** Leave a trip for the route map the visitor is about to open (this tab only, never a URL). */
 export function stashTrip(t: StashedTrip) {
@@ -279,7 +286,9 @@ export function TripSteps({
   here?: LatLng | null
 }) {
   const c = busCopy(lang)
+  const second = trip.then ?? null
   const next = useStopNext(trip.slug, trip.dir, trip.board.id)
+  const next2 = useStopNext(second ? second.slug : null, second?.dir ?? '', second?.board.id ?? '')
   const soon = next?.[0] ?? null
   const soonWait = soon && soon.wait <= 60 ? soon.wait : null
   const progress = here ? tripProgress(trip, here) : null
@@ -288,53 +297,139 @@ export function TripSteps({
     here && !progress
       ? Math.min(trip.board.walk, walkMinutes(meters(here, trip.board.at)))
       : trip.board.walk
-  // Steps already behind the visitor fade: at the stop the walk is done; on the bus, boarding too.
-  const done = !progress ? 0 : progress.kind === 'atStop' ? 1 : 2
+  // Steps already behind the visitor fade. One bus: walk, board, get off, walk (1–4). With a
+  // change: walk, board, get off, change, board, get off, walk (1–7).
+  const done = !progress
+    ? 0
+    : progress.leg === 1
+      ? progress.kind === 'atStop'
+        ? 1
+        : 2
+      : progress.kind === 'atStop'
+        ? 4
+        : 5
+  const last = second ?? trip
+  const banner = !progress
+    ? null
+    : progress.kind === 'atStop'
+      ? progress.leg === 2 && second
+        ? c.tripAtChange(c.tripRouteInline(second.number))
+        : c.tripAtStop
+      : progress.kind === 'riding'
+        ? c.tripRiding(progress.left, (progress.leg === 2 && second ? second : trip).alight.name)
+        : progress.leg === 1 && second
+          ? c.tripGetOffChange(trip.alight.name, c.tripRouteInline(second.number))
+          : c.tripGetOffNow(last.alight.name)
   return (
     <>
-      {progress ? (
+      {banner ? (
         <p className={b.tripNow} role="status">
-          {progress.kind === 'atStop'
-            ? c.tripAtStop
-            : progress.kind === 'riding'
-              ? c.tripRiding(progress.left, trip.alight.name)
-              : c.tripGetOffNow(trip.alight.name)}
+          {banner}
         </p>
       ) : null}
       <p className={b.tripTotal}>
         {/* A wait past an hour is tomorrow's first bus, not part of the trip. */}
         {c.tripAbout(trip.total + (soonWait ?? 0))}{' '}
-        <span className={b.tripTotalNote}>{c.tripAboutNote(soonWait !== null)}</span>
+        <span className={b.tripTotalNote}>
+          {second ? c.tripAboutChange : c.tripAboutNote(soonWait !== null)}
+        </span>
       </p>
       <ol className={b.tripSteps}>
         <li data-done={done >= 1 || undefined}>{c.tripWalkTo(walkNow, trip.board.name)}</li>
-        <li data-done={done >= 2 || undefined}>
-          {c.tripTake(c.tripRouteInline(trip.number), trip.toward)} <Soon lang={lang} next={next} />
+        <li data-done={done >= 2 || undefined} className={b.stepTake}>
+          <TakeLabel lang={lang} leg={trip} color={0} />
+          <Soon lang={lang} next={next} />
         </li>
-        <li>{c.tripGetOff(trip.alight.name, trip.stops, trip.ride)}</li>
-        <li>{c.tripWalkFrom(trip.alight.walk, destName)}</li>
+        <li data-done={done >= 3 || undefined}>
+          {c.tripGetOff(trip.alight.name, trip.stops, trip.ride)}
+        </li>
+        {second ? (
+          <>
+            <li data-done={done >= 4 || undefined}>
+              {trip.alight.id === second.board.id
+                ? c.tripChangeSame(c.tripRouteInline(second.number))
+                : c.tripChangeWalk(
+                    second.board.walk,
+                    second.board.name,
+                    c.tripRouteInline(second.number),
+                  )}
+            </li>
+            <li data-done={done >= 5 || undefined} className={b.stepTake}>
+              <TakeLabel lang={lang} leg={second} color={1} />
+              <Soon lang={lang} next={next2} />
+            </li>
+            <li>{c.tripGetOff(second.alight.name, second.stops, second.ride)}</li>
+          </>
+        ) : null}
+        <li>{c.tripWalkFrom(last.alight.walk, destName)}</li>
       </ol>
     </>
   )
 }
 
-/** What the map draws of a trip. */
+/**
+ * "Take Route 37 toward South Miami Station", made easy to spot: the route's
+ * badge in the colour its ride has on the map, and the direction in bold.
+ */
+function TakeLabel({ lang, leg, color }: { lang: Lang; leg: Leg; color: 0 | 1 }) {
+  const c = busCopy(lang)
+  return (
+    <span className={b.takeLine}>
+      <span
+        className={b.takeBadge}
+        style={
+          {
+            '--c': DIR_COLORS[color],
+            '--fg': color === 0 ? '#fff6e5' : '#0c0f14',
+          } as React.CSSProperties
+        }
+        aria-hidden="true"
+      >
+        {leg.number ?? 'T'}
+      </span>
+      <span className={b.takeText}>
+        <span className={b.takeRoute}>{c.tripTakeRoute(c.tripRouteInline(leg.number))}</span>{' '}
+        <span className={b.takeToward}>{c.tripTakeToward(leg.toward)}</span>
+      </span>
+    </span>
+  )
+}
+
+/** What the map draws of a trip: the walks dotted, each bus in its own colour. */
 export function mapTrip(trip: Trip, from: LatLng, dest: Destination, label: string): MapTrip {
-  // At the stop or on the bus, the walk to the stop is behind them: only the one at the end shows.
+  const second = trip.then ?? null
+  const last = second ?? trip
+  // At a stop or on a bus, the walk to the first stop is behind them.
   const along = tripProgress(trip, from) !== null
+  const walks: LatLng[][] = []
+  if (!along) walks.push([from, trip.board.at])
+  if (second && trip.alight.id !== second.board.id) walks.push([trip.alight.at, second.board.at])
+  walks.push([last.alight.at, dest.at])
   return {
-    key: `${trip.slug}|${trip.dir}|${trip.board.id}|${trip.alight.id}|${dest.at.join(',')}`,
-    walks: along
-      ? [[trip.alight.at, dest.at]]
-      : [
-          [from, trip.board.at],
-          [trip.alight.at, dest.at],
-        ],
-    ride: trip.path,
-    color: DIR_COLORS[Number(trip.dir)] ?? DIR_COLORS[0],
-    stops: [trip.board.at, trip.alight.at],
+    key: `${tripKey(trip)}|${dest.at.join(',')}`,
+    walks,
+    rides: [
+      { path: trip.path, color: DIR_COLORS[0] },
+      ...(second ? [{ path: second.path, color: DIR_COLORS[1] }] : []),
+    ],
+    stops: second
+      ? [trip.board.at, trip.alight.at, second.board.at, second.alight.at]
+      : [trip.board.at, trip.alight.at],
     dest: { at: dest.at, label },
   }
+}
+
+/** A trip's identity: its buses and stops. */
+export function tripKey(t: Trip): string {
+  const one = (l: Leg) => `${l.slug}|${l.dir}|${l.board.id}|${l.alight.id}`
+  return t.then ? `${one(t)}>${one(t.then)}` : one(t)
+}
+
+/** "Ruta 37" or "Ruta 37 → 54", for a choice between trips. */
+export function tripName(c: ReturnType<typeof busCopy>, t: Trip): string {
+  return t.then
+    ? `${c.tripRouteName(t.number)} → ${t.then.number ?? 'T'}`
+    : c.tripRouteName(t.number)
 }
 
 export function TripPanel({
@@ -398,13 +493,13 @@ export function TripPanel({
             <div className={b.tripOptions} role="group">
               {plan.trips.map((t, k) => (
                 <button
-                  key={t.slug}
+                  key={tripKey(t)}
                   type="button"
                   className={b.tripOption}
                   aria-pressed={k === pick}
                   onClick={() => onPick(k)}
                 >
-                  {c.tripOption(c.tripRouteName(t.number), t.total)}
+                  {c.tripOption(tripName(c, t), t.total)}
                 </button>
               ))}
             </div>
