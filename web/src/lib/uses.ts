@@ -212,7 +212,9 @@ export async function recordUse(
   if (!shouldCount(headers) || !underLimit(now)) return false
   const ua = headers.get('user-agent')
   try {
-    const target = use.target && (await realTarget(payload, use.tool, use.target, now)) ? use.target : undefined
+    // A spot tap names a business, whichever page it was on.
+    const kind = use.action === 'spot' ? 'listing' : use.tool
+    const target = use.target && (await realTarget(payload, kind, use.target, now)) ? use.target : undefined
     // A target that isn't a real page is a made-up row: refuse it, don't store it without one.
     if (use.target && !target) return false
     const term = use.term && (await searchWords(payload, now)).has(use.term) ? use.term : undefined
@@ -290,7 +292,8 @@ export async function toolUseReport(payload: Payload, days: number, now: Date = 
     select: { tool: true, action: true, section: true, area: true, target: true, network: true, term: true, results: true, browser: true },
   })
   const rows = res.docs as Row[]
-  const on = (tool: UseTool) => rows.filter((r) => (r.tool ?? 'address') === tool)
+  // A spot tap names a business, not the page it was on, so it is counted under `spots` only.
+  const on = (tool: UseTool) => rows.filter((r) => (r.tool ?? 'address') === tool && r.action !== 'spot')
   const address = on('address')
   const of = (a: UseAction) => address.filter((r) => r.action === a)
   const lookups = of('lookup')
@@ -310,6 +313,11 @@ export async function toolUseReport(payload: Payload, days: number, now: Date = 
       note: 'Taps on business pages: call, directions, website, social (network says which). This is what a partner can be shown.',
       actions: count(on('listing').map((r) => r.action)),
       top: byTarget(on('listing'), 15),
+    },
+    spots: {
+      note: 'Taps on a nearby-business card that open the business\'s page, by where the card was (address = the address report\'s local spots, event = an event\'s "near here") and by business. Pair with the listings\' own taps for a partner.',
+      byTool: count(rows.filter((r) => r.action === 'spot').map((r) => r.tool ?? 'address')),
+      top: byTarget(rows.filter((r) => r.action === 'spot'), 15),
     },
     events: { actions: count(on('event').map((r) => r.action)), top: byTarget(on('event'), 15) },
     stories: { readToEnd: byTarget(on('story').filter((r) => r.action === 'read_end'), 15), taps: count(on('story').map((r) => r.action)) },

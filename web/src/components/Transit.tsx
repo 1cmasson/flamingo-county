@@ -497,6 +497,8 @@ export function RouteStrip({
                     <Link
                       key={p.listing.id}
                       href={routes.business(lang, p.citySlug, p.listing.slug)}
+                      data-use="spot"
+                      data-use-target={p.listing.slug}
                       className={tr.place}
                       style={{ flexWrap: 'wrap', rowGap: 4 }}
                     >
@@ -658,6 +660,7 @@ export function busesNowCopy(t: T): BusesNowCopy {
 export function nearMePlaces(places: PlaceOnLine[], lang: Lang): NearMePlace[] {
   return places.map((p) => ({
     name: p.listing.name,
+    slug: p.listing.slug,
     href: routes.business(lang, p.citySlug, p.listing.slug),
     route: p.stop.route.slug,
     index: p.stop.index,

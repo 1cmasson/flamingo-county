@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
 import { isLang, translator, type Lang } from '../../../../../i18n'
@@ -6,7 +7,7 @@ import { routes } from '../../../../../lib/routes'
 import { absUrl, openGraph, twitterCard } from '../../../../../lib/site'
 import { getCity, getEvent, getEvents, rel } from '../../../../../lib/data'
 import { dateOnly, parseISO, shortMonth, shortWeekday } from '../../../../../lib/dates'
-import type { City, EventKind, Listing, Media } from '../../../../../payload-types'
+import type { City, Event, EventKind, Listing, Media } from '../../../../../payload-types'
 import { JsonLd } from '../../../../../components/JsonLd'
 import { breadcrumbJsonLd, eventJsonLd, titleCase, webPageJsonLd } from '../../../../../lib/jsonld'
 import { photoCredit } from '../../../../../lib/photoLicense'
@@ -24,6 +25,10 @@ import { getSeason } from '../../../../../lib/seasons'
 import { EventSource } from '../../../../../components/EventSource'
 import { EventDirections } from '../../../../../components/EventDirections'
 import { MascotBust } from '../../../../../components/MascotBust'
+import { NearbySpots } from '../../../../../components/NearbySpots'
+import { eventAddress } from '../../../../../lib/eventVenue'
+import { geocode } from '../../../../../lib/geocode'
+import { spotsNear } from '../../../../../lib/nearbySpots'
 import s from '../../../../../components/chrome.module.css'
 
 /**
@@ -477,6 +482,11 @@ export default async function EventPage({
 
         <AnswerBlock question={t('When and where?')} answer={answer} />
 
+        {/* Local spots near the venue. It may wait on a geocode, so it streams in. */}
+        <Suspense fallback={null}>
+          <EventSpots ev={ev} lang={lang as Lang} t={t} />
+        </Suspense>
+
         {others.length ? (
           <section
             style={{
@@ -589,4 +599,11 @@ export default async function EventPage({
       </main>
     </PageShell>
   )
+}
+
+/** The listed businesses closest to the venue, leaving out the venue itself. */
+async function EventSpots({ ev, lang, t }: { ev: Event; lang: Lang; t: (s: string) => string }) {
+  const at = await geocode(eventAddress(ev))
+  const spots = await spotsNear(lang, at, { exclude: eventVenue(ev).listing?.id })
+  return <NearbySpots lang={lang} title={t('NEAR THIS EVENT')} spots={spots} t={t} />
 }

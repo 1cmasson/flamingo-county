@@ -89,6 +89,8 @@ export default async function FreeRidesPage({ params }: { params: Promise<{ lang
     <Link
       key={`${p.listing.id}-${p.stop.route.slug}`}
       href={routes.business(lang, p.citySlug, p.listing.slug)}
+      data-use="spot"
+      data-use-target={p.listing.slug}
       className={tr.place}
       style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10, padding: 14 }}
     >

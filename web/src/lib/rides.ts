@@ -17,7 +17,7 @@ export type Ride =
   | { kind: 'freebee'; city: string }
 
 /** Unsourced records are design placeholders: no URL, so no place on a line. */
-const listable = (l: Listing) => l.publicationStatus !== 'unsourced'
+export const listable = (l: Listing) => l.publicationStatus !== 'unsourced'
 
 export async function rideForListing(listing: Listing): Promise<Ride | null> {
   const city = rel<City>(listing.city)?.slug

@@ -1975,11 +1975,12 @@ export interface Hqus {
     | 'save'
     | 'read_end'
     | 'search'
-    | 'no_match';
+    | 'no_match'
+    | 'spot';
   /**
    * For "link": which card of the report.
    */
-  section?: ('trash' | 'bus' | 'flood' | 'reps' | 'vote' | 'schools' | 'near' | 'sources') | null;
+  section?: ('trash' | 'bus' | 'flood' | 'reps' | 'vote' | 'schools' | 'near' | 'spots' | 'sources') | null;
   /**
    * The public page it was about: a business, event or story slug, or a free-ride line.
    */
