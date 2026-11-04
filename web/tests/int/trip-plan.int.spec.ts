@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest'
 import {
   nearbyRoutes,
   planTrips,
+  tripProgress,
   slicePath,
   transitDirectionsHref,
   type Network,
@@ -91,5 +92,13 @@ describe('bus trip planner', () => {
     expect(near[0].dirs[0].index).toBe(4)
     // Between both lines (~2.5 km each way from either): none in a walk.
     expect(nearbyRoutes(net, [lat(4), -80.275], 1300)).toEqual([])
+  })
+
+  it('follows the visitor along the ride', () => {
+    const t = planTrips(net, [lat(0), -80.3005], [lat(8), -80.2995]).trips[0]
+    expect(tripProgress(t, [lat(0), -80.3])).toEqual({ kind: 'atStop' })
+    expect(tripProgress(t, [lat(3), -80.3])).toEqual({ kind: 'riding', left: 5 })
+    expect(tripProgress(t, [lat(8), -80.3])).toEqual({ kind: 'getOff' })
+    expect(tripProgress(t, [lat(4), -80.29])).toBeNull()
   })
 })

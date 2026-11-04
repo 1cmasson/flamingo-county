@@ -862,6 +862,10 @@ a.line {
   padding-left: 36px;
   counter-increment: step;
 }
+.tripSteps li[data-done] {
+  opacity: 0.45;
+  text-decoration: line-through;
+}
 .tripSteps li::before {
   content: counter(step);
   position: absolute;
@@ -877,6 +881,45 @@ a.line {
   font-family: var(--display);
   font-size: 14px;
   padding-top: 2px;
+}
+.tripNow {
+  padding: 8px 12px 6px;
+  border: 3px solid var(--ink);
+  background: #19c26b;
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 18px;
+  line-height: 1.15;
+}
+.followBtn {
+  position: absolute;
+  right: 12px;
+  bottom: 84px;
+  z-index: 2;
+  min-height: 44px;
+  padding: 8px 14px 6px;
+  border: 3px solid var(--ink);
+  background: var(--cream);
+  box-shadow: 3px 3px 0 var(--ink);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+.followBtn[aria-pressed='true'] {
+  background: #1a73e8;
+  color: #fff;
+}
+.closer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  padding: 8px 10px;
+  border: 2px dashed var(--ink);
+  font-weight: 700;
+  font-size: 14px;
 }
 .tripLive {
   display: inline-block;

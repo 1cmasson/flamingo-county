@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import {
   mergeDepartures,
   nearestStation,
@@ -8,7 +8,7 @@ import {
   type RouteTimes,
   type Upcoming,
 } from '../lib/busTime'
-import { walkMinutes, type LatLng } from '../lib/transitMath'
+import { meters, walkMinutes, type LatLng } from '../lib/transitMath'
 
 /**
  * "Which stop, which way, and when's the next bus" for one county route, shared
@@ -23,7 +23,18 @@ import { walkMinutes, type LatLng } from '../lib/transitMath'
  *
  * Privacy: a GPS position never leaves the browser. It picks a stop and, on
  * the map, draws a "you" pin.
+ *
+ * Following: with `watch` (the full map), after the first fix the phone keeps
+ * sending positions (watchPosition) and the pin, the walk and its minutes move
+ * with the visitor. The chosen stop doesn't jump as they walk; when another
+ * stop is clearly nearer, it's offered (`closer`). Watching stops while the
+ * tab is hidden or the phone is locked, and resumes when it's back.
  */
+
+/** A walk the page states as "N min from you"; a stop further than this gets no line or minutes. */
+export const WALK_SHOWN_M = 2000
+/** Offer a nearer stop only when it saves at least this much walking. */
+const CLOSER_BY_M = 150
 
 const STORE = 'fc-bus-stop'
 /** Session key: the route page opened this map, so the map's back button is the browser's back. */
@@ -107,10 +118,14 @@ export type RouteChoice = {
   endOfLine: boolean
   next: Upcoming[]
   anyLive: boolean
-  /** Minutes on foot to the stop "near me" picked, until the visitor picks another. */
+  /** Minutes on foot from the visitor to the chosen stop, when it's a walk. */
   walk: number | null
   /** Where the visitor is, once they asked to find the stop near them. */
   origin: LatLng | null
+  /** How sure the phone is of `origin`, metres (the radius it could be off by). */
+  accuracy: number | null
+  /** A stop of this direction clearly nearer the visitor than the chosen one, to offer. */
+  closer: { index: number; name: string; walk: number } | null
   locating: boolean
   denied: boolean
   setDir: (dir: number) => void
@@ -121,7 +136,7 @@ export type RouteChoice = {
 export function useRouteChoice(
   slug: string,
   times: RouteTimes,
-  opts: { live: boolean; schedule: boolean },
+  opts: { live: boolean; schedule: boolean; watch?: boolean },
 ): RouteChoice {
   const now = useSyncExternalStore(subscribeTick, tick, () => 0)
   const mounted = useSyncExternalStore(
@@ -130,8 +145,8 @@ export function useRouteChoice(
     () => false,
   )
   const [picked, setPicked] = useState<Saved | null>(null)
-  const [walk, setWalk] = useState<number | null>(null)
   const [origin, setOrigin] = useState<LatLng | null>(null)
+  const [accuracy, setAccuracy] = useState<number | null>(null)
   const [locating, setLocating] = useState(false)
   const [denied, setDenied] = useState(false)
 
@@ -153,9 +168,25 @@ export function useRouteChoice(
       ? mergeDepartures(live ? live.departures.map((x) => x.at) : [], scheduled, at)
       : []
 
-  const choose = (v: Saved, walkMin: number | null = null) => {
+  const toStop = origin ? meters(origin, station.at) : null
+  const walk = toStop !== null && toStop <= WALK_SHOWN_M ? walkMinutes(toStop) : null
+  let closer: RouteChoice['closer'] = null
+  if (origin && toStop !== null && !endOfLine) {
+    const near = nearestStation(d, origin)
+    if (
+      near.index !== i &&
+      near.index < d.stations.length - 1 &&
+      toStop - near.meters >= CLOSER_BY_M
+    )
+      closer = {
+        index: near.index,
+        name: d.stations[near.index].name,
+        walk: walkMinutes(near.meters),
+      }
+  }
+
+  const choose = (v: Saved) => {
     setPicked(v)
-    setWalk(walkMin)
     save(slug, v)
   }
   const setDir = (dir: number) => choose({ ...state, dir })
@@ -164,6 +195,43 @@ export function useRouteChoice(
     stops[dir] = stop
     choose({ dir, stops })
   }
+  /* ---- following the visitor ---- */
+  const watchId = useRef<number | null>(null)
+  const following = useRef(false)
+  const stopWatch = () => {
+    if (watchId.current !== null) navigator.geolocation.clearWatch(watchId.current)
+    watchId.current = null
+  }
+  const startWatch = () => {
+    if (!opts.watch || watchId.current !== null || !navigator.geolocation) return
+    watchId.current = navigator.geolocation.watchPosition(
+      (pos) => {
+        setOrigin([pos.coords.latitude, pos.coords.longitude])
+        setAccuracy(pos.coords.accuracy ?? null)
+      },
+      // A lost signal keeps the last position on the map; the next fix moves it.
+      () => {},
+      { enableHighAccuracy: true, maximumAge: 5_000, timeout: 30_000 },
+    )
+  }
+  const watchFns = useRef({ startWatch, stopWatch })
+  useEffect(() => {
+    watchFns.current = { startWatch, stopWatch }
+  })
+  // Hidden tab or locked phone: stop asking for positions (battery); back in view: resume.
+  useEffect(() => {
+    const onVis = () => {
+      if (!following.current) return
+      if (document.visibilityState === 'visible') watchFns.current.startWatch()
+      else watchFns.current.stopWatch()
+    }
+    document.addEventListener('visibilitychange', onVis)
+    return () => {
+      document.removeEventListener('visibilitychange', onVis)
+      watchFns.current.stopWatch()
+    }
+  }, [])
+
   const locate = () => {
     if (!navigator.geolocation) return setDenied(true)
     setLocating(true)
@@ -173,11 +241,11 @@ export function useRouteChoice(
         setLocating(false)
         const here: LatLng = [pos.coords.latitude, pos.coords.longitude]
         setOrigin(here)
+        setAccuracy(pos.coords.accuracy ?? null)
         const near = times.directions.map((dir) => nearestStation(dir, here))
-        choose(
-          { dir: state.dir, stops: near.map((x) => x.index) },
-          walkMinutes(near[state.dir].meters),
-        )
+        choose({ dir: state.dir, stops: near.map((x) => x.index) })
+        following.current = true
+        startWatch()
       },
       () => {
         setLocating(false)
@@ -199,6 +267,8 @@ export function useRouteChoice(
     anyLive: next.some((x) => x.live),
     walk,
     origin,
+    accuracy,
+    closer,
     locating,
     denied,
     setDir,

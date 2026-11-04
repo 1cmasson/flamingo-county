@@ -60,7 +60,10 @@ export function BusMapScreen({
   backHref: string
 }) {
   const c = busCopy(lang)
-  const v = useRouteChoice(slug, times, { live, schedule })
+  // The map follows the visitor's phone once they've shared where they are.
+  const v = useRouteChoice(slug, times, { live, schedule, watch: true })
+  // "Follow me": the map keeps the visitor in the middle until they drag it.
+  const [follow, setFollow] = useState(false)
   const [placeId, setPlaceId] = useState<number | null>(null)
   const [touched, setTouched] = useState(false)
   const [mode, setMode] = useState<'stop' | 'search' | 'trip'>('stop')
@@ -232,6 +235,9 @@ export function BusMapScreen({
           }}
           walkTo={walkTo}
           trip={shownTrip}
+          accuracy={v.accuracy}
+          follow={follow}
+          onUserMove={() => setFollow(false)}
         />
 
         <details className={b.legendBox}>
@@ -268,6 +274,18 @@ export function BusMapScreen({
           </ul>
         </details>
 
+        {v.origin ? (
+          <button
+            type="button"
+            className={b.followBtn}
+            aria-pressed={follow}
+            // On a trip the bottom right is often the destination: the button moves out of its way.
+            style={mode === 'trip' ? { bottom: 28, left: 12, right: 'auto' } : undefined}
+            onClick={() => setFollow((f) => !f)}
+          >
+            ➤ {follow ? c.mapFollowing : c.mapFollow}
+          </button>
+        ) : null}
         {mode === 'trip' ? null : (
           <button
             type="button"
@@ -321,6 +339,7 @@ export function BusMapScreen({
             onPick={setPick}
             needLocation={!start}
             from={from}
+            here={v.origin}
             locating={v.locating}
             onLocate={v.locate}
             denied={v.denied}
@@ -395,6 +414,21 @@ export function BusMapScreen({
               </select>
             </label>
             {v.denied ? <p className={s.notice}>{c.denied}</p> : null}
+            {v.closer ? (
+              <p className={b.closer}>
+                {c.mapCloser(v.closer.name, v.closer.walk)}
+                <button
+                  type="button"
+                  className={b.textBtn}
+                  onClick={() => {
+                    v.pickStop(state.dir, v.closer!.index)
+                    setTouched(true)
+                  }}
+                >
+                  {c.mapUseCloser}
+                </button>
+              </p>
+            ) : null}
             {chosen ? (
               <>
                 {v.walk !== null ? <p className={s.note}>{c.walkToStop(v.walk)}</p> : null}
