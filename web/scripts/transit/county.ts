@@ -253,7 +253,11 @@ async function main() {
    * usual buses: a holiday on Sunday hours, or no buses at all (null).
    */
   const dayKindsUntil = (from: Date, until: string, mine: Set<string>) => {
-    const only = (set: Set<string>) => [...set].filter((id) => mine.has(id)).sort().join(' ')
+    const only = (set: Set<string>) =>
+      [...set]
+        .filter((id) => mine.has(id))
+        .sort()
+        .join(' ')
     const usual = Object.fromEntries(
       (Object.keys(days) as DayKind[]).map((k) => [k, only(days[k])]),
     ) as Record<DayKind, string>
@@ -463,6 +467,9 @@ async function main() {
     return {
       slug: p.slug,
       short: p.short,
+      // The feed's own id, which the live predictions (lib/countyLive.ts) carry.
+      // It belongs to this edition of the feed: re-run after a service change.
+      routeId: p.row.route_id,
       kind: p.kind,
       number: /^\d+$/.test(p.short) ? p.short : null,
       countyName: p.row.route_long_name,

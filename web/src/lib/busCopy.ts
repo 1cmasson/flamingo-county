@@ -106,8 +106,11 @@ const ES = {
   thenAt: 'Después:',
   noMore: 'No quedan guaguas desde esta parada en las próximas 24 horas.',
   endOfLine: 'Aquí termina la ruta en este sentido: escoge el otro sentido.',
-  scheduled:
-    'Según el horario del condado: la guagua puede pasar unos minutos antes o después.',
+  scheduled: 'Según el horario del condado: la guagua puede pasar unos minutos antes o después.',
+  liveTag: 'EN VIVO',
+  scheduledTag: 'horario',
+  liveSource:
+    'En vivo: dónde viene cada guagua, según Miami-Dade Transit. Las horas marcadas «horario» son del horario del condado.',
   mapsStop: 'Cómo llegar a la parada ↗',
   privacy: 'Tu ubicación se queda en tu teléfono.',
   live: 'Dónde viene la guagua ahora',
@@ -116,6 +119,9 @@ const ES = {
   sources: 'FUENTES',
   sourceLine: (date: string) =>
     `Paradas, tiempos y horario: Miami-Dade Transit (GTFS), leído el ${date}.`,
+  liveSourceLine:
+    'Horas en vivo: Miami-Dade Transit, datos en tiempo real de Swiftly, Inc., tal cual y sin garantía.',
+  liveTerms: 'Condiciones de uso',
   otherRoutes: 'OTRAS RUTAS',
   freeRides: 'Guaguas gratis en Hialeah',
 }
@@ -212,6 +218,10 @@ const EN: BusCopy = {
   noMore: 'No more buses from this stop in the next 24 hours.',
   endOfLine: 'The route ends here this way: pick the other direction.',
   scheduled: 'From the county’s schedule: a bus can come a few minutes early or late.',
+  liveTag: 'LIVE',
+  scheduledTag: 'scheduled',
+  liveSource:
+    'Live: where each bus actually is, from Miami-Dade Transit. Times marked “scheduled” are from the county’s schedule.',
   mapsStop: 'Walk to the stop ↗',
   privacy: 'Your location stays on your phone.',
   live: 'Where the bus is right now',
@@ -220,6 +230,9 @@ const EN: BusCopy = {
   sources: 'SOURCES',
   sourceLine: (date: string) =>
     `Stops, ride times and schedule: Miami-Dade Transit (GTFS), read ${date}.`,
+  liveSourceLine:
+    'Live times: Miami-Dade Transit, real-time data from Swiftly, Inc., as is and with no warranty.',
+  liveTerms: 'Terms of use',
   otherRoutes: 'OTHER ROUTES',
   freeRides: 'Free buses in Hialeah',
 }

@@ -1,9 +1,15 @@
 'use client'
 
-import { useState, useSyncExternalStore } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import type { Lang } from '../i18n'
 import { busCopy } from '../lib/busCopy'
-import { nearestStation, nextDepartures, stopMapsHref, type RouteTimes } from '../lib/busTime'
+import {
+  mergeDepartures,
+  nearestStation,
+  nextDepartures,
+  stopMapsHref,
+  type RouteTimes,
+} from '../lib/busTime'
 import { formatClock, walkMinutes } from '../lib/transitMath'
 import b from './bus.module.css'
 import s from './vote.module.css'
@@ -17,12 +23,52 @@ import s from './vote.module.css'
  * server would be stale by the time anyone read it. The stop lists below it
  * stay server-rendered for crawlers.
  *
+ * Live: on a Metrobus route the card asks our server for Swiftly's live
+ * predictions at the chosen stop (api/transit/county-arrivals) every half
+ * minute while the tab is in view. Live buses come first, marked so; the
+ * schedule fills in after them, and stands alone when there's no live data.
+ *
  * Privacy: a GPS position never leaves the browser. It picks a stop and is
- * forgotten.
+ * forgotten. The live request carries only the route, direction and stop.
  */
 
 const STORE = 'fc-bus-stop'
 const TICK_MS = 30_000
+const POLL_MS = 30_000
+
+type Live = { asOf: number; departures: { at: number }[]; canceled: number } | null
+type LiveState = { key: string; live: Live }
+
+/** Live predictions for one stop, refreshed while the page is in view. Null until the first answer. */
+function useLive(enabled: boolean, slug: string, dir: string, stop: string): LiveState | null {
+  const key = `${slug}|${dir}|${stop}`
+  const [state, setState] = useState<LiveState | null>(null)
+  useEffect(() => {
+    if (!enabled || !stop) return
+    let ctrl: AbortController | null = null
+    const read = () => {
+      if (document.visibilityState !== 'visible') return
+      ctrl?.abort()
+      ctrl = new AbortController()
+      const q = new URLSearchParams({ route: slug, dir, stop })
+      fetch(`/api/transit/county-arrivals?${q}`, { signal: ctrl.signal })
+        .then((r) => (r.ok ? r.json() : { live: null }))
+        .then((j: { live: Live }) => setState({ key, live: j.live ?? null }))
+        .catch((e: unknown) => {
+          if ((e as Error)?.name !== 'AbortError') setState({ key, live: null })
+        })
+    }
+    read()
+    const id = setInterval(read, POLL_MS)
+    document.addEventListener('visibilitychange', read)
+    return () => {
+      clearInterval(id)
+      document.removeEventListener('visibilitychange', read)
+      ctrl?.abort()
+    }
+  }, [enabled, slug, dir, stop, key])
+  return state?.key === key ? state : null
+}
 
 const noop = () => () => {}
 /** A number that changes every half minute, so the waits count down; 0 on the server. */
@@ -57,7 +103,18 @@ function save(slug: string, v: Saved) {
 /** Past this, the "nearest stop" is a trip of its own, and the picker says how far. */
 const NEAR_WALK_MIN = 15
 
-export function NextBus({ slug, times, lang }: { slug: string; times: RouteTimes; lang: Lang }) {
+export function NextBus({
+  slug,
+  times,
+  lang,
+  live: liveOn = false,
+}: {
+  slug: string
+  times: RouteTimes
+  lang: Lang
+  /** Ask for Swiftly's live predictions: Metrobus routes only (the city's trolley isn't in the feed). */
+  live?: boolean
+}) {
   const c = busCopy(lang)
   const now = useSyncExternalStore(subscribeTick, tick, () => 0)
   const mounted = useSyncExternalStore(
@@ -69,6 +126,14 @@ export function NextBus({ slug, times, lang }: { slug: string; times: RouteTimes
   const [walk, setWalk] = useState<number | null>(null)
   const [locating, setLocating] = useState(false)
   const [denied, setDenied] = useState(false)
+  // Hooks before the early return: which stop the live request is for.
+  const pre = mounted && now ? (picked ?? load(slug, times.directions.length)) : null
+  const preDir = pre ? (times.directions[pre.dir] ?? times.directions[0]) : null
+  const preStop =
+    pre && preDir
+      ? preDir.stations[Math.min(pre.stops[pre.dir] ?? 0, preDir.stations.length - 1)]
+      : null
+  const liveState = useLive(liveOn && !!preStop, slug, preDir?.id ?? '', preStop?.id ?? '')
 
   // On the server and before hydration: the card's frame, so the page doesn't jump when it fills.
   if (!mounted || !now)
@@ -92,7 +157,13 @@ export function NextBus({ slug, times, lang }: { slug: string; times: RouteTimes
   const i = Math.min(state.stops[state.dir] ?? 0, d.stations.length - 1)
   const station = d.stations[i]
   const endOfLine = i === d.stations.length - 1
-  const next = endOfLine ? [] : nextDepartures(times, d, i, new Date(now * TICK_MS))
+  const at = new Date(now * TICK_MS)
+  const live = liveState?.live ?? null
+  const scheduled = endOfLine ? [] : nextDepartures(times, d, i, at, 6)
+  const next = endOfLine
+    ? []
+    : mergeDepartures(live ? live.departures.map((x) => x.at) : [], scheduled, at)
+  const anyLive = next.some((x) => x.live)
   const time = (at: number) =>
     at >= 1440 ? `${formatClock(at - 1440, lang)} ${c.tomorrow}` : formatClock(at, lang)
 
@@ -174,6 +245,7 @@ export function NextBus({ slug, times, lang }: { slug: string; times: RouteTimes
         ) : next.length ? (
           <>
             <p className={b.nextFirst}>
+              {next[0].live ? <span className={b.liveTag}>{c.liveTag}</span> : null}
               <span className={b.nextTime}>{time(next[0].at)}</span>
               <span className={b.nextWait}>{c.inMin(next[0].wait)}</span>
             </p>
@@ -182,7 +254,10 @@ export function NextBus({ slug, times, lang }: { slug: string; times: RouteTimes
                 {c.thenAt}{' '}
                 {next
                   .slice(1)
-                  .map((x) => `${time(x.at)} (${c.inMin(x.wait)})`)
+                  .map(
+                    (x) =>
+                      `${time(x.at)} (${c.inMin(x.wait)}${anyLive ? `, ${x.live ? c.liveTag.toLowerCase() : c.scheduledTag}` : ''})`,
+                  )
                   .join(' · ')}
               </p>
             ) : null}
@@ -192,7 +267,7 @@ export function NextBus({ slug, times, lang }: { slug: string; times: RouteTimes
         )}
       </div>
 
-      <p className={s.note}>{c.scheduled}</p>
+      <p className={s.note}>{anyLive ? c.liveSource : c.scheduled}</p>
       <p className={b.meta}>
         <a href={stopMapsHref(station.at)} target="_blank" rel="noopener noreferrer">
           {c.mapsStop}

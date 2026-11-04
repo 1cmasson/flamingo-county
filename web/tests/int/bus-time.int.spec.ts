@@ -14,9 +14,9 @@ const dir = (runs: Partial<DirectionTimes['runs']>): DirectionTimes => ({
   id: '0',
   toward: 'Downtown',
   stations: [
-    { name: 'A', at: [25.8, -80.3], min: 0 },
-    { name: 'B', at: [25.81, -80.3], min: 10 },
-    { name: 'C', at: [25.82, -80.3], min: 20 },
+    { id: 'A', name: 'A', at: [25.8, -80.3], min: 0 },
+    { id: 'B', name: 'B', at: [25.81, -80.3], min: 10 },
+    { id: 'C', name: 'C', at: [25.82, -80.3], min: 20 },
   ],
   timed: [0, 2],
   runs: { weekday: [], saturday: [], sunday: [], ...runs },

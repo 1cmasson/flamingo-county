@@ -22,7 +22,7 @@ export type Run = (number | null)[]
 export type DirectionTimes = {
   id: string
   toward: string
-  stations: { name: string; at: LatLng; min: number }[]
+  stations: { id: string; name: string; at: LatLng; min: number }[]
   /** The stations the county times its buses to, by index. */
   timed: number[]
   runs: Record<DayKind, Run[]>
@@ -122,4 +122,30 @@ export function nearestStation(d: DirectionTimes, at: LatLng): { index: number; 
 /** Walking directions to a stop in Google Maps; the stop there shows the county's live arrivals. */
 export function stopMapsHref(at: LatLng): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${at[0]},${at[1]}&travelmode=walking`
+}
+
+/** A bus the card lists: when, how long to wait, and whether the time is live or the schedule's. */
+export type Upcoming = Departure & { live: boolean }
+
+/**
+ * Live predictions first, then the schedule after them. The schedule's trips
+ * carry no ids to match against the live ones, so a scheduled time at or
+ * before the last live bus is taken to be that bus (running late or early)
+ * and dropped; only the ones beyond it are added. With no live buses the
+ * schedule stands alone.
+ */
+export function mergeDepartures(
+  liveAt: number[],
+  scheduled: Departure[],
+  now: Date = new Date(),
+  count = 3,
+): Upcoming[] {
+  const { min } = miamiClock(now)
+  const nowS = now.getTime() / 1000
+  const live: Upcoming[] = liveAt
+    .map((at) => Math.max(0, Math.round((at - nowS) / 60)))
+    .map((wait) => ({ at: min + wait, wait, live: true }))
+  const after = live.length ? live[live.length - 1].at : -Infinity
+  const rest = scheduled.filter((d) => d.at > after + 1).map((d) => ({ ...d, live: false }))
+  return [...live, ...rest].slice(0, count)
 }

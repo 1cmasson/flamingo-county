@@ -148,7 +148,14 @@ export default async function BusRoute({ params }: Props) {
 
         <AnswerBlock question={c.question(inline)} answer={answer} />
 
-        {current ? <NextBus slug={route.slug} times={routeTimes(route)} lang={lang} /> : null}
+        {current ? (
+          <NextBus
+            slug={route.slug}
+            times={routeTimes(route)}
+            lang={lang}
+            live={route.kind === 'bus'}
+          />
+        ) : null}
 
         <section className={s.card} aria-labelledby="schedule">
           <h2 id="schedule" className={s.cardTag}>
@@ -224,6 +231,11 @@ export default async function BusRoute({ params }: Props) {
               Miami-Dade Transit ↗
             </a>
           </p>
+          {route.kind === 'bus' ? (
+            <p>
+              {c.liveSourceLine} <Link href={routes.privacy(lang)}>{c.liveTerms}</Link>
+            </p>
+          ) : null}
         </section>
 
         <nav className={s.card} aria-labelledby="others">

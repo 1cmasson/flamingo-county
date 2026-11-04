@@ -57,6 +57,8 @@ export type CountyDirection = {
 export type CountyRoute = {
   slug: string
   short: string
+  /** The feed's route id, which the live data (lib/countyLive.ts) carries; it changes with each feed edition. */
+  routeId?: string
   kind: 'bus' | 'trolley'
   /** "54" for a Metrobus route; null for a city trolley. */
   number: string | null
@@ -188,7 +190,7 @@ export function routeTimes(route: CountyRoute): RouteTimes {
     directions: route.directions.map((d) => ({
       id: d.id,
       toward: d.toward,
-      stations: d.stations.map(({ name, at, min }) => ({ name, at, min })),
+      stations: d.stations.map(({ id, name, at, min }) => ({ id, name, at, min })),
       timed: d.timed,
       runs: d.runs,
     })),
