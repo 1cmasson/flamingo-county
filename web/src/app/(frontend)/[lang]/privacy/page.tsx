@@ -15,7 +15,7 @@ import { PageShell } from '../../../../components/PageShell'
  * If you add a form, a cookie, an analytics script or a new provider, update
  * this page and bump UPDATED.
  */
-const UPDATED = { en: '1 October 2026', es: '1 de octubre de 2026' }
+const UPDATED = { en: '3 November 2026', es: '3 de noviembre de 2026' }
 const CONTACT = 'hola@flamingocounty.com'
 
 type Section = { h: string; p: (string | { list: string[] })[] }
@@ -47,7 +47,14 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
         h: 'Signing in with Google',
         p: [
           'Saving events to My Week and saying you’re going need you to sign in — with Google, or with an emailed code (below). That’s what lets your week follow you between devices. When you sign in with Google, Google shares with us only the basics you approve on its screen:',
-          { list: ['your name', 'your email address', 'your profile photo link', 'an ID that identifies your Google account to us'] },
+          {
+            list: [
+              'your name',
+              'your email address',
+              'your profile photo link',
+              'an ID that identifies your Google account to us',
+            ],
+          },
           'We then store, for your account:',
           {
             list: [
@@ -123,6 +130,13 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
         ],
       },
       {
+        h: 'Live bus times',
+        p: [
+          'The live times on our county bus pages come from Miami-Dade Transit’s real-time data, provided by Swiftly, Inc. They are shown as is, with no promise that they are complete, accurate or on time; neither Swiftly nor Flamingo County is responsible for any loss from relying on them, and the feed can stop at any time. When it does, the pages show the county’s schedule instead.',
+          'To show them, your browser sends our server only the route, direction and stop you picked. Your location, if you use “Find the stop nearest me”, never leaves your phone.',
+        ],
+      },
+      {
         h: 'Changes',
         p: [
           'If we change how we handle your information, we’ll update this page and the date at the top. If the change is significant, we’ll say so on the site.',
@@ -156,7 +170,14 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
         h: 'Si inicias sesión con Google',
         p: [
           'Para guardar eventos en Mi Semana y decir que vas hay que iniciar sesión — con Google o con un código por correo (más abajo). Así tu semana te sigue de un dispositivo a otro. Al iniciar sesión con Google, Google solo nos comparte lo básico que apruebas en su pantalla:',
-          { list: ['tu nombre', 'tu correo electrónico', 'el enlace a tu foto de perfil', 'un identificador de tu cuenta de Google'] },
+          {
+            list: [
+              'tu nombre',
+              'tu correo electrónico',
+              'el enlace a tu foto de perfil',
+              'un identificador de tu cuenta de Google',
+            ],
+          },
           'Luego guardamos, para tu cuenta:',
           {
             list: [
@@ -229,6 +250,13 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
         h: 'Menores',
         p: [
           'Flamingo County no está dirigido a menores de 13 años, y no recopilamos a sabiendas información de ellos. Si crees que un menor nos dio información, escríbenos y la borramos.',
+        ],
+      },
+      {
+        h: 'Horas de guagua en vivo',
+        p: [
+          'Las horas en vivo de nuestras páginas de guaguas del condado vienen de los datos en tiempo real de Miami-Dade Transit, que provee Swiftly, Inc. Se muestran tal cual, sin garantía de que estén completas, sean exactas o lleguen a tiempo; ni Swiftly ni Flamingo County responden por pérdidas por confiar en ellas, y el servicio puede detenerse en cualquier momento. Cuando eso pasa, las páginas muestran el horario del condado.',
+          'Para mostrarlas, tu navegador le manda a nuestro servidor solo la ruta, el sentido y la parada que escogiste. Tu ubicación, si usas «Buscar la parada más cerca de mí», no sale de tu teléfono.',
         ],
       },
       {
@@ -319,7 +347,9 @@ export default async function PrivacyPage({ params }: { params: Promise<{ lang: 
               padding: '6px 10px',
             }}
           >
-            {es ? `ACTUALIZADO EL ${UPDATED.es.toUpperCase()}` : `UPDATED ${UPDATED.en.toUpperCase()}`}
+            {es
+              ? `ACTUALIZADO EL ${UPDATED.es.toUpperCase()}`
+              : `UPDATED ${UPDATED.en.toUpperCase()}`}
           </div>
           <h1
             style={{
@@ -332,7 +362,9 @@ export default async function PrivacyPage({ params }: { params: Promise<{ lang: 
           >
             {c.title}
           </h1>
-          <p style={{ ...body, margin: '16px 0 0', color: 'var(--cream)', maxWidth: '58ch' }}>{c.intro}</p>
+          <p style={{ ...body, margin: '16px 0 0', color: 'var(--cream)', maxWidth: '58ch' }}>
+            {c.intro}
+          </p>
         </header>
 
         <article
