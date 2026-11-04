@@ -16,10 +16,59 @@
  *   publishes; `UPLOAD` only drops the file in the TikTok app's inbox.
  * - Facebook would allow text-only posts, but we never send one: see
  *   `facebookProblem` (a photo or video, and a flamingocounty.com link).
+ *
+ * Two Postiz backends since 2026-11-03 (web/POSTIZ-CLOUD-MIGRATION.md):
+ * - `hetzner`: the self-hosted instance above, `POSTIZ_API_URL/KEY`.
+ * - `cloud`: Postiz Cloud, `POSTIZ_CLOUD_API_URL/KEY`. Its base has no `/api`
+ *   (`https://api.postiz.com/public/v1`) and its channels have their own
+ *   provider names: `instagram-standalone` and `tiktok-business`. No Facebook.
+ * `POSTIZ_NEW_POSTS=cloud` sends newly approved drafts to Cloud; anything else
+ * keeps them on Hetzner. Each scheduled draft records its backend
+ * (`postizBackend`, empty = hetzner), so cancelling and stats go to the
+ * instance that holds the post, and rolling back is one env var.
  */
+
+export const BACKENDS = ['hetzner', 'cloud'] as const
+export type Backend = (typeof BACKENDS)[number]
+
+function backendEnv(backend: Backend): { url?: string; key?: string } {
+  return backend === 'cloud'
+    ? { url: process.env.POSTIZ_CLOUD_API_URL, key: process.env.POSTIZ_CLOUD_API_KEY }
+    : { url: process.env.POSTIZ_API_URL, key: process.env.POSTIZ_API_KEY }
+}
+
+export function backendConfigured(backend: Backend): boolean {
+  const { url, key } = backendEnv(backend)
+  return Boolean(url && key)
+}
+
+/** Where a newly approved draft is scheduled. Cloud only when it is switched on and configured. */
+export function newPostsBackend(): Backend {
+  return process.env.POSTIZ_NEW_POSTS === 'cloud' && backendConfigured('cloud') ? 'cloud' : 'hetzner'
+}
+
+/** The backend holding a scheduled draft's posts. Drafts from before the field existed are on Hetzner. */
+export function draftBackend(draft: { postizBackend?: string | null }): Backend {
+  return draft.postizBackend === 'cloud' ? 'cloud' : 'hetzner'
+}
 
 export const PLATFORMS = ['facebook', 'instagram', 'tiktok'] as const
 export type Platform = (typeof PLATFORMS)[number]
+
+/**
+ * HQ's platform name → the provider identifier each backend uses for it, in
+ * `/integrations` and as `settings.__type`. Cloud has no Facebook channel.
+ */
+const PROVIDER: Record<Backend, Partial<Record<Platform, string>>> = {
+  hetzner: { facebook: 'facebook', instagram: 'instagram', tiktok: 'tiktok' },
+  cloud: { instagram: 'instagram-standalone', tiktok: 'tiktok-business' },
+}
+
+export function providerFor(platform: Platform, backend: Backend): string {
+  const id = PROVIDER[backend][platform]
+  if (!id) throw new Error(`Postiz ${backend} has no ${platform} channel`)
+  return id
+}
 
 /**
  * Platforms that need a photo or video. Instagram and TikTok reject a post
@@ -126,17 +175,24 @@ const TIKTOK_TITLE_LIMIT = 90
 
 export type UploadedMedia = { id: string; path: string }
 
+/** True when at least one backend is set up. */
 export function postizConfigured(): boolean {
-  return Boolean(process.env.POSTIZ_API_URL && process.env.POSTIZ_API_KEY)
+  return BACKENDS.some(backendConfigured)
 }
 
-function settingsFor(platform: Platform, caption: string, format: DraftFormat): Record<string, unknown> {
+function settingsFor(
+  platform: Platform,
+  caption: string,
+  format: DraftFormat,
+  backend: Backend,
+): Record<string, unknown> {
+  const __type = providerFor(platform, backend)
   switch (platform) {
     case 'instagram':
-      return { __type: 'instagram', post_type: format === 'story' ? 'story' : 'post' }
+      return { __type, post_type: format === 'story' ? 'story' : 'post' }
     case 'tiktok':
       return {
-        __type: 'tiktok',
+        __type,
         title: caption.split('\n')[0].slice(0, TIKTOK_TITLE_LIMIT),
         privacy_level: 'PUBLIC_TO_EVERYONE',
         duet: false,
@@ -148,7 +204,7 @@ function settingsFor(platform: Platform, caption: string, format: DraftFormat): 
         content_posting_method: 'DIRECT_POST',
       }
     case 'facebook':
-      return { __type: 'facebook', post_type: 'post' }
+      return { __type, post_type: 'post' }
   }
 }
 
@@ -170,8 +226,10 @@ export function buildPostBody(args: {
   media: UploadedMedia[]
   scheduledFor: Date
   format?: DraftFormat | null
+  backend?: Backend
   now?: Date
 }) {
+  const backend = args.backend ?? 'hetzner'
   const now = args.now ?? new Date()
   const format = args.format ?? 'post'
   const other = args.platforms.find((p) => p !== 'instagram')
@@ -185,20 +243,25 @@ export function buildPostBody(args: {
     tags: [],
     posts: args.platforms.map((platform) => {
       const id = args.integrations[platform]
-      if (!id) throw new Error(`No connected Postiz channel for ${platform}`)
+      if (!id) throw new Error(`No connected Postiz ${backend} channel for ${platform}`)
       return {
         integration: { id },
         value: [{ content: args.caption, image: args.media }],
-        settings: settingsFor(platform, args.caption, format),
+        settings: settingsFor(platform, args.caption, format, backend),
       }
     }),
   }
 }
 
-async function postiz<T>(pathname: string, init: RequestInit = {}): Promise<T> {
-  const base = process.env.POSTIZ_API_URL
-  const key = process.env.POSTIZ_API_KEY
-  if (!base || !key) throw new Error('POSTIZ_API_URL / POSTIZ_API_KEY are not set')
+async function postiz<T>(pathname: string, init: RequestInit = {}, backend: Backend = 'hetzner'): Promise<T> {
+  const { url: base, key } = backendEnv(backend)
+  if (!base || !key) {
+    throw new Error(
+      backend === 'cloud'
+        ? 'POSTIZ_CLOUD_API_URL / POSTIZ_CLOUD_API_KEY are not set'
+        : 'POSTIZ_API_URL / POSTIZ_API_KEY are not set',
+    )
+  }
 
   const res = await fetch(`${base.replace(/\/$/, '')}${pathname}`, {
     ...init,
@@ -206,7 +269,7 @@ async function postiz<T>(pathname: string, init: RequestInit = {}): Promise<T> {
     signal: AbortSignal.timeout(120_000),
   })
   const text = await res.text()
-  if (!res.ok) throw new Error(`Postiz ${pathname} → ${res.status}: ${text.slice(0, 300)}`)
+  if (!res.ok) throw new Error(`Postiz ${backend} ${pathname} → ${res.status}: ${text.slice(0, 300)}`)
   return (text ? JSON.parse(text) : null) as T
 }
 
@@ -228,33 +291,42 @@ type Integration = {
  * Postiz mints a new id, and a stale one would fail every approval silently
  * until someone noticed nothing was posting.
  */
-export async function connectedChannels(): Promise<Partial<Record<Platform, string>>> {
-  const list = await postiz<Integration[]>('/integrations')
+export async function connectedChannels(backend: Backend = 'hetzner'): Promise<Partial<Record<Platform, string>>> {
+  const list = await postiz<Integration[]>('/integrations', {}, backend)
+  const byProvider = new Map(
+    Object.entries(PROVIDER[backend]).map(([platform, provider]) => [provider, platform as Platform]),
+  )
   const out: Partial<Record<Platform, string>> = {}
   for (const i of list ?? []) {
     const kind = i.identifier ?? i.providerIdentifier ?? i.platform
     if (i.disabled || !kind) continue
-    if ((PLATFORMS as readonly string[]).includes(kind) && !out[kind as Platform]) {
-      out[kind as Platform] = i.id
-    }
+    const platform = byProvider.get(kind)
+    if (platform && !out[platform]) out[platform] = i.id
   }
   return out
 }
 
-export async function uploadMedia(file: Blob, filename: string): Promise<UploadedMedia> {
+export async function uploadMedia(file: Blob, filename: string, backend: Backend = 'hetzner'): Promise<UploadedMedia> {
   const form = new FormData()
   form.set('file', file, filename)
-  const res = await postiz<UploadedMedia>('/upload', { method: 'POST', body: form })
+  const res = await postiz<UploadedMedia>('/upload', { method: 'POST', body: form }, backend)
   if (!res?.id || !res?.path) throw new Error('Postiz upload returned no id/path')
   return { id: res.id, path: res.path }
 }
 
-export async function createPost(body: ReturnType<typeof buildPostBody>): Promise<unknown> {
-  return postiz('/posts', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
+export async function createPost(
+  body: ReturnType<typeof buildPostBody>,
+  backend: Backend = 'hetzner',
+): Promise<unknown> {
+  return postiz(
+    '/posts',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+    backend,
+  )
 }
 
 /**
@@ -263,8 +335,8 @@ export async function createPost(body: ReturnType<typeof buildPostBody>): Promis
  * every channel of that draft. A post that has already gone out stays up on
  * the social account; this only cancels what has not published.
  */
-export async function deletePost(postId: string): Promise<void> {
-  await postiz(`/posts/${encodeURIComponent(postId)}`, { method: 'DELETE' })
+export async function deletePost(postId: string, backend: Backend = 'hetzner'): Promise<void> {
+  await postiz(`/posts/${encodeURIComponent(postId)}`, { method: 'DELETE' }, backend)
 }
 
 /* ------------------------------------------------------------------------ */
@@ -317,8 +389,8 @@ export function isRunningCount(label: string): boolean {
 }
 
 /** Channel analytics for the last `days` days. The id is the integration id. */
-export function channelAnalytics(integrationId: string, days: number): Promise<Metric[]> {
-  return postiz<Metric[]>(`/analytics/${encodeURIComponent(integrationId)}?date=${days}`)
+export function channelAnalytics(integrationId: string, days: number, backend: Backend = 'hetzner'): Promise<Metric[]> {
+  return postiz<Metric[]>(`/analytics/${encodeURIComponent(integrationId)}?date=${days}`, {}, backend)
 }
 
 /**
@@ -326,8 +398,8 @@ export function channelAnalytics(integrationId: string, days: number): Promise<M
  * that is unknown, not yet published, or that Postiz could not match to the
  * platform's copy (it happens on TikTok until the release id is linked).
  */
-export function postAnalytics(postId: string, days: number): Promise<Metric[]> {
-  return postiz<Metric[]>(`/analytics/post/${encodeURIComponent(postId)}?date=${days}`)
+export function postAnalytics(postId: string, days: number, backend: Backend = 'hetzner'): Promise<Metric[]> {
+  return postiz<Metric[]>(`/analytics/post/${encodeURIComponent(postId)}?date=${days}`, {}, backend)
 }
 
 export type CreatedPost = { platform: Platform; postId: string }
@@ -367,9 +439,9 @@ type ListedPost = { id: string; publishDate?: string; state?: string; integratio
  * has it now. A post moved in the Postiz calendar keeps its id and changes
  * its date here; the public API has no way to move one, so HQ only reads it.
  */
-export async function listPostTimes(from: Date, to: Date): Promise<Map<string, Date>> {
+export async function listPostTimes(from: Date, to: Date, backend: Backend = 'hetzner'): Promise<Map<string, Date>> {
   const q = new URLSearchParams({ startDate: from.toISOString(), endDate: to.toISOString() })
-  const res = await postiz<ListedPost[] | { posts?: ListedPost[] }>(`/posts?${q}`)
+  const res = await postiz<ListedPost[] | { posts?: ListedPost[] }>(`/posts?${q}`, {}, backend)
   const list = Array.isArray(res) ? res : (res?.posts ?? [])
   const out = new Map<string, Date>()
   for (const p of list) {
@@ -384,9 +456,9 @@ export async function listPostTimes(from: Date, to: Date): Promise<Map<string, D
  * `PUBLISHED` once it is live, `QUEUE` while it waits, `ERROR` if it failed,
  * `DRAFT` for a draft. Read only.
  */
-export async function listPostStates(from: Date, to: Date): Promise<Map<string, string>> {
+export async function listPostStates(from: Date, to: Date, backend: Backend = 'hetzner'): Promise<Map<string, string>> {
   const q = new URLSearchParams({ startDate: from.toISOString(), endDate: to.toISOString() })
-  const res = await postiz<ListedPost[] | { posts?: ListedPost[] }>(`/posts?${q}`)
+  const res = await postiz<ListedPost[] | { posts?: ListedPost[] }>(`/posts?${q}`, {}, backend)
   const list = Array.isArray(res) ? res : (res?.posts ?? [])
   const out = new Map<string, string>()
   for (const p of list) if (p.id && p.state) out.set(p.id, p.state)
@@ -403,13 +475,14 @@ export async function findPostIds(
   channels: Partial<Record<Platform, string>>,
   platforms: Platform[],
   at: Date,
+  backend: Backend = 'hetzner',
 ): Promise<CreatedPost[]> {
   const window = 10 * 60_000
   const q = new URLSearchParams({
     startDate: new Date(at.getTime() - window).toISOString(),
     endDate: new Date(at.getTime() + window).toISOString(),
   })
-  const res = await postiz<ListedPost[] | { posts?: ListedPost[] }>(`/posts?${q}`)
+  const res = await postiz<ListedPost[] | { posts?: ListedPost[] }>(`/posts?${q}`, {}, backend)
   const list = Array.isArray(res) ? res : (res?.posts ?? [])
   const out: CreatedPost[] = []
   for (const platform of platforms) {

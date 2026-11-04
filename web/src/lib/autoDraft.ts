@@ -209,9 +209,10 @@ async function create(
       ? await payload.findByID({ collection: 'media', id: cover, depth: 0, overrideAccess: true }).catch(() => null)
       : ((cover as Media | null | undefined) ?? null)
   const credit = media ? creditLine(coverDoc) : null
-  // Instagram and TikTok need media; a still goes to Facebook and Instagram.
+  // Instagram and TikTok need media; a still goes to Instagram (Facebook
+  // was dropped 2026-11-03).
   // TikTok is left to the owner, since it wants video.
-  const platforms: Platform[] = ['facebook', 'instagram']
+  const platforms: Platform[] = ['instagram']
   const scheduledFor = pickPostTime(now, await busyTimes(payload, now), deadline, notBefore)
 
   const draft = await payload.create({

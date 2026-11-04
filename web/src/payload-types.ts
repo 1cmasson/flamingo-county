@@ -1568,6 +1568,10 @@ export interface HqSocialDraft {
    */
   publishAt?: string | null;
   /**
+   * Set by HQ. Empty = Hetzner.
+   */
+  postizBackend?: ('cloud' | 'hetzner') | null;
+  /**
    * One Postiz post per platform, for its stats.
    */
   postizPosts?:
@@ -2541,6 +2545,10 @@ export interface PayloadMcpApiKey {
      * Cancel a social draft that is scheduled but has not gone out: removes it from the Postiz calendar and marks the draft rejected. A pending draft is just rejected. Refuses a post whose time has passed. Use when the owner says to pull a post.
      */
     hqCancelDraft?: boolean | null;
+    /**
+     * Move an Instagram-only social draft that is scheduled on the old self-hosted (Hetzner) Postiz to Postiz Cloud: same time, caption and media, on the owner's existing approval. Creates it on Cloud, records the Cloud ids, then deletes the Hetzner post. Refuses drafts not scheduled, already on Cloud, due within two minutes, or with any platform besides Instagram. One-time migration tool (web/POSTIZ-CLOUD-MIGRATION.md); check each move with the Cloud post list.
+     */
+    hqMoveDraftToCloud?: boolean | null;
     /**
      * Ask the owner to publish the current draft of a site document (events, weekly-events, stories, spotlights, listings, promotions, rankings) or of the link page (link-page, no id). Save the draft first with the create/update tool and draft: true — drafts are never visible on the site. The owner sees exactly what changes against the live page in Telegram and taps Publish or Reject. If you edit the draft again before they tap, they are shown the new version instead. Publishes nothing by itself.
      */
@@ -3637,6 +3645,7 @@ export interface HqSocialDraftsSelect<T extends boolean = true> {
   dedupeKey?: T;
   error?: T;
   publishAt?: T;
+  postizBackend?: T;
   postizPosts?:
     | T
     | {
@@ -4107,6 +4116,7 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         hqFinishSiteArtworkUpload?: T;
         hqAddDraftMediaFromUpload?: T;
         hqCancelDraft?: T;
+        hqMoveDraftToCloud?: T;
         hqRequestPublish?: T;
         hqPublishStatus?: T;
         hqRequestSpendApproval?: T;

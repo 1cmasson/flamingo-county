@@ -15,7 +15,7 @@ import { CHUNK_MAX_CHARS, MAX_CHUNKS, addArtworkChunk, finishArtworkUpload, star
 import { buildBrief } from './brief'
 import { trafficReport } from './growth'
 import { addDays, dateOnly, eventEndDay, todayISO } from './dates'
-import { cancelDraft, miamiTime } from './hq'
+import { cancelDraft, miamiTime, moveDraftToCloud } from './hq'
 import { isRunningCount, type MetricSummary } from './postiz'
 import { recentReelReviews } from './reelScore'
 import { reelsNow } from './reelNow'
@@ -1307,6 +1307,14 @@ export const hqMcpTools: McpTool[] = [
     parameters: { id: z.number().int().positive().describe('The hq-social-drafts id') },
     handler: (args: Record<string, unknown>, req: PayloadRequest) =>
       guard(async () => text(JSON.stringify({ result: await cancelDraft(req.payload, Number(args.id)) }))),
+  },
+  {
+    name: 'hqMoveDraftToCloud',
+    description:
+      "Move an Instagram-only social draft that is scheduled on the old self-hosted (Hetzner) Postiz to Postiz Cloud: same time, caption and media, on the owner's existing approval. Creates it on Cloud, records the Cloud ids, then deletes the Hetzner post. Refuses drafts not scheduled, already on Cloud, due within two minutes, or with any platform besides Instagram. One-time migration tool (web/POSTIZ-CLOUD-MIGRATION.md); check each move with the Cloud post list.",
+    parameters: { id: z.number().int().positive().describe('The hq-social-drafts id') },
+    handler: (args: Record<string, unknown>, req: PayloadRequest) =>
+      guard(async () => text(JSON.stringify({ result: await moveDraftToCloud(req.payload, Number(args.id)) }))),
   },
   {
     name: 'hqRequestPublish',

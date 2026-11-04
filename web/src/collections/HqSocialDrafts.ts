@@ -200,6 +200,18 @@ export const HqSocialDrafts: CollectionConfig = {
       },
     },
     {
+      // Which Postiz holds this draft's posts (lib/postiz.ts). Empty on drafts
+      // scheduled before Postiz Cloud, which are all on Hetzner.
+      name: 'postizBackend',
+      access: humanOnly,
+      type: 'select',
+      options: [
+        { label: 'Postiz Cloud', value: 'cloud' },
+        { label: 'Hetzner (self-hosted)', value: 'hetzner' },
+      ],
+      admin: { readOnly: true, position: 'sidebar', description: 'Set by HQ. Empty = Hetzner.' },
+    },
+    {
       name: 'postizPosts',
       access: humanOnly,
       type: 'array',
