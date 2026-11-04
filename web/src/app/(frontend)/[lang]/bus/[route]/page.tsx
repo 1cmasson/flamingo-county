@@ -29,8 +29,8 @@ import { JsonLd } from '../../../../../components/JsonLd'
 import { AnswerBlock } from '../../../../../components/AnswerBlock'
 import { Breadcrumbs, type Crumb } from '../../../../../components/Breadcrumbs'
 import { DirectionStops, RouteBullet, ScheduleTable } from '../../../../../components/Bus'
-import { NextBus } from '../../../../../components/NextBus'
-import { BusMap } from '../../../../../components/BusMap'
+import { RouteLive } from '../../../../../components/RouteLive'
+import { mapDirections } from '../../../../../lib/busMapData'
 import s from '../../../../../components/vote.module.css'
 import b from '../../../../../components/bus.module.css'
 
@@ -129,16 +129,16 @@ export default async function BusRoute({ params }: Props) {
       <main className={s.main}>
         <Breadcrumbs items={crumbs} label={c.breadcrumb} />
 
-        <header className={s.hero}>
+        <header className={`${s.hero} ${b.routeHero}`}>
           <span className={s.kicker}>{route.number ? c.kickerBus : c.kickerTrolley}</span>
           <div className={b.heroTop}>
-            <RouteBullet route={route} size={44} />
+            <RouteBullet route={route} size={38} />
             <h1 className={s.title}>{name}</h1>
           </div>
           <p className={s.sub}>
             {a} ⇄ {z} · {routeVia(route, lang)}
           </p>
-          <div className={b.chips}>
+          <div className={`${b.chips} ${b.heroChips}`}>
             <span className={`${b.chip} ${route.number ? '' : b.chipFree}`}>
               {route.number ? c.fare : c.free}
             </span>
@@ -147,31 +147,19 @@ export default async function BusRoute({ params }: Props) {
           </div>
         </header>
 
+        <RouteLive
+          slug={route.slug}
+          label={name}
+          number={route.number ?? route.short}
+          lang={lang}
+          times={routeTimes(route)}
+          directions={mapDirections(route)}
+          live={route.kind === 'bus'}
+          schedule={current}
+          mapHref={routes.busMap(lang, slug)}
+        />
+
         <AnswerBlock question={c.question(inline)} answer={answer} />
-
-        {current ? (
-          <NextBus
-            slug={route.slug}
-            times={routeTimes(route)}
-            lang={lang}
-            live={route.kind === 'bus'}
-          />
-        ) : null}
-
-        {route.kind === 'bus' ? (
-          <BusMap
-            slug={route.slug}
-            label={name}
-            number={route.number ?? route.short}
-            lang={lang}
-            directions={route.directions.map((d) => ({
-              id: d.id,
-              toward: d.toward,
-              path: d.path,
-              stops: d.stations.map((st) => st.at),
-            }))}
-          />
-        ) : null}
 
         <section className={s.card} aria-labelledby="schedule">
           <h2 id="schedule" className={s.cardTag}>

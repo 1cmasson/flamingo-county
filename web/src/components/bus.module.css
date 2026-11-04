@@ -363,11 +363,85 @@ a.line {
   line-height: 1.4;
 }
 
-/* --- live map ------------------------------------------------------------ */
+/* --- live map: the preview at the top of a route page -------------------- */
 
-.busMap {
-  height: clamp(320px, 58vh, 520px);
+.previewCard {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
+.previewCard .legend {
+  align-self: flex-start;
+  padding: 6px 10px 4px;
+  border: 3px solid var(--ink);
+  background: var(--cream);
+}
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* Phones: the route's name, then its map, without a screen of header between. */
+@media (max-width: 599px) {
+  .routeHero {
+    padding: 14px 16px 16px;
+    gap: 8px;
+  }
+  .heroChips {
+    display: none;
+  }
+}
+.previewLink {
+  position: relative;
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+.previewLink:focus-visible {
+  outline: 4px solid var(--yellow);
+  outline-offset: 3px;
+}
+.previewWrap {
+  position: relative;
+  border: 4px solid var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
+  background: #eadbbd;
+}
+.previewMap {
+  height: clamp(220px, 34vh, 320px);
+  width: 100%;
+}
+.previewStatus {
+  margin: 0;
+  padding: 8px 12px 9px;
+  border-top: 3px solid var(--ink);
+  background: var(--cream);
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.previewOpen {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 8px 12px 6px;
+  border: 3px solid var(--ink);
+  background: var(--yellow);
+  box-shadow: 3px 3px 0 var(--ink);
+  font-family: var(--display);
+  font-size: 15px;
+  line-height: 1;
+  color: var(--ink);
+}
+.previewLink:hover .previewOpen {
+  transform: translate(-1px, -1px);
+  box-shadow: 4px 4px 0 var(--ink);
+}
+
 .busNumSmall {
   font-size: 12px;
 }
@@ -375,7 +449,7 @@ a.line {
   display: flex;
   flex-wrap: wrap;
   gap: 6px 16px;
-  margin: 0 0 10px;
+  margin: 0;
   padding: 0;
   list-style: none;
   font-family: var(--display);
@@ -387,8 +461,257 @@ a.line {
   gap: 8px;
 }
 .legendDot {
+  flex: none;
   width: 14px;
   height: 14px;
   border-radius: 50%;
   border: 3px solid var(--ink);
+}
+
+/* --- the full map page ---------------------------------------------------- */
+
+/* Over the site's header (z 120) and footer: the map is the screen. */
+.screen {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  background: #eadbbd;
+  overscroll-behavior: contain;
+  font-family: var(--body);
+  color: var(--ink);
+}
+.screenBar {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--ink);
+  color: var(--cream);
+  border-bottom: 4px solid var(--ink);
+}
+.screenBack {
+  align-self: flex-start;
+  padding: 6px 12px 4px;
+  border: 3px solid var(--cream);
+  background: var(--yellow);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 17px;
+  line-height: 1.1;
+  text-decoration: none;
+}
+.screenDirs {
+  display: flex;
+  gap: 8px;
+}
+.screenDir {
+  flex: 1 1 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 6px 10px 4px;
+  border: 3px solid var(--cream);
+  background: transparent;
+  color: var(--cream);
+  font-family: var(--display);
+  font-size: 13px;
+  line-height: 1.1;
+  text-align: left;
+  cursor: pointer;
+}
+.screenDir[aria-pressed='true'] {
+  background: var(--cream);
+  color: var(--ink);
+}
+.screenMap {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.fullMapWrap {
+  position: absolute;
+  inset: 0;
+}
+.fullMap {
+  position: absolute;
+  inset: 0;
+}
+.fullStatus {
+  position: absolute;
+  left: 10px;
+  right: 64px;
+  top: 10px;
+  width: fit-content;
+  max-width: calc(100% - 74px);
+  margin: 0;
+  padding: 6px 10px 5px;
+  border: 3px solid var(--ink);
+  background: var(--cream);
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1.3;
+}
+.fullMapWrap :global(.maplibregl-ctrl-group) {
+  border: 3px solid var(--ink);
+  border-radius: 0;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.fullMapWrap :global(.maplibregl-ctrl-group button) {
+  width: 44px;
+  height: 44px;
+}
+.fullMapWrap :global(.maplibregl-ctrl-group button + button) {
+  border-top: 3px solid var(--ink);
+}
+
+.legendBox {
+  position: absolute;
+  left: 10px;
+  top: 64px;
+  max-width: min(300px, calc(100% - 84px));
+  border: 3px solid var(--ink);
+  background: var(--cream);
+  box-shadow: 3px 3px 0 var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+}
+.legendBox summary {
+  padding: 6px 10px 4px;
+  font-family: var(--display);
+  font-size: 14px;
+  cursor: pointer;
+}
+.legendBox ul {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 4px 10px 10px;
+  list-style: none;
+}
+.legendBox li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  line-height: 1.25;
+}
+.legendLine {
+  flex: none;
+  width: 22px;
+  height: 7px;
+  border: 2px solid var(--ink);
+}
+.legendBus {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+  background: #ff2e88;
+  color: var(--cream);
+  font-family: var(--display);
+  font-size: 10px;
+  padding-top: 2px;
+}
+.legendStop {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  margin: 0 5px;
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  background: var(--cream);
+}
+.legendPlace {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0 4px;
+  border-radius: 50%;
+  border: 3px solid var(--ink);
+  background: var(--yellow);
+}
+
+.nearBtn {
+  position: absolute;
+  right: 12px;
+  bottom: 28px;
+  z-index: 2;
+  min-height: 44px;
+  padding: 8px 14px 6px;
+  border: 3px solid var(--ink);
+  background: var(--yellow);
+  box-shadow: 3px 3px 0 var(--ink);
+  color: var(--ink);
+  font-family: var(--display);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.sheet {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 46dvh;
+  overflow-y: auto;
+  padding: 12px 14px calc(14px + env(safe-area-inset-bottom));
+  background: var(--cream);
+  border-top: 4px solid var(--ink);
+}
+.sheet p {
+  margin: 0;
+}
+.sheetKicker {
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+}
+.sheetTitle {
+  font-family: var(--display);
+  font-size: 24px;
+  line-height: 1.05;
+}
+.sheetPick {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.sheetActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+.sheetHint {
+  font-size: 13px;
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+@media (min-width: 760px) {
+  .screenBar {
+    flex-direction: row;
+    align-items: center;
+  }
+  .screenDirs {
+    flex: 1;
+  }
+  .sheet {
+    position: absolute;
+    left: 16px;
+    bottom: 16px;
+    width: 380px;
+    max-height: calc(100dvh - 180px);
+    border: 4px solid var(--ink);
+    box-shadow: 6px 6px 0 var(--ink);
+  }
 }
