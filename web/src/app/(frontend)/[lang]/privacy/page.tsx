@@ -15,7 +15,7 @@ import { PageShell } from '../../../../components/PageShell'
  * If you add a form, a cookie, an analytics script or a new provider, update
  * this page and bump UPDATED.
  */
-const UPDATED = { en: '3 November 2026', es: '3 de noviembre de 2026' }
+const UPDATED = { en: '4 November 2026', es: '4 de noviembre de 2026' }
 const CONTACT = 'hola@flamingocounty.com'
 
 type Section = { h: string; p: (string | { list: string[] })[] }
@@ -134,7 +134,7 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
         p: [
           'The live times on our county bus pages come from Miami-Dade Transit’s real-time data, provided by Swiftly, Inc. They are shown as is, with no promise that they are complete, accurate or on time; neither Swiftly nor Flamingo County is responsible for any loss from relying on them, and the feed can stop at any time. When it does, the pages show the county’s schedule instead.',
           'To show them, your browser sends our server only the route, direction and stop you picked. Your location, if you use “Find the stop nearest me”, never leaves your phone.',
-          'On the bus map, “Where are you going?” sends what you type to our server to look it up in the directory and the county’s address list; nothing typed is kept. The trip itself is worked out in your browser, so your location stays on your phone.',
+          'On the bus pages, “Where are you going?” sends what you type to our server to look it up in the directory and the county’s address list, and passes the same text to Photon, a free place search by komoot over OpenStreetMap data, to find other places in Miami-Dade. Only the text goes, never your location; we keep searches in memory for up to a day so the same search isn’t asked twice, and nothing typed is stored. The trip itself is worked out in your browser, so your location stays on your phone.',
         ],
       },
       {
@@ -258,7 +258,7 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
         p: [
           'Las horas en vivo de nuestras páginas de guaguas del condado vienen de los datos en tiempo real de Miami-Dade Transit, que provee Swiftly, Inc. Se muestran tal cual, sin garantía de que estén completas, sean exactas o lleguen a tiempo; ni Swiftly ni Flamingo County responden por pérdidas por confiar en ellas, y el servicio puede detenerse en cualquier momento. Cuando eso pasa, las páginas muestran el horario del condado.',
           'Para mostrarlas, tu navegador le manda a nuestro servidor solo la ruta, el sentido y la parada que escogiste. Tu ubicación, si usas «Buscar la parada más cerca de mí», no sale de tu teléfono.',
-          'En el mapa de las guaguas, «¿A dónde vas?» le manda a nuestro servidor lo que escribes para buscarlo en el directorio y en las direcciones del condado; no se guarda nada de lo que escribes. El viaje se calcula en tu navegador, así que tu ubicación se queda en tu teléfono.',
+          'En las páginas de las guaguas, «¿A dónde vas?» le manda a nuestro servidor lo que escribes para buscarlo en el directorio y en las direcciones del condado, y le pasa ese mismo texto a Photon, un buscador gratis de komoot con datos de OpenStreetMap, para encontrar otros lugares de Miami-Dade. Solo va el texto, nunca tu ubicación; guardamos las búsquedas en memoria hasta un día para no repetir la misma, y no se almacena nada de lo que escribes. El viaje se calcula en tu navegador, así que tu ubicación se queda en tu teléfono.',
         ],
       },
       {

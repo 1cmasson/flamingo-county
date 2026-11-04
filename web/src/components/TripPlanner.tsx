@@ -65,17 +65,20 @@ export function useTripPlan(from: LatLng | null, to: LatLng | null): Plan | null
 
 /* ------------------------------------------------------------- the search */
 
-type Result = Destination & { kind: 'place' | 'address'; id: string }
+type Result = Destination & { kind: 'place' | 'osm' | 'address'; id: string }
 
 export function TripSearch({
   lang,
   label,
+  near = null,
   onPick,
   onCancel,
 }: {
   lang: Lang
   /** What the field asks: where to, or (on the routes page) where from. */
   label?: string
+  /** Where the visitor is, if known: places found by name are listed nearest first, with how far. */
+  near?: LatLng | null
   onPick: (d: Destination) => void
   onCancel: () => void
 }) {
@@ -100,7 +103,23 @@ export function TripSearch({
     }
   }, [q, lang])
   const want = q.trim()
-  const results = answer && want.length >= 2 ? answer.results : []
+  const found = answer && want.length >= 2 ? answer.results : []
+  // "Publix", "farmacia": many of the same kind; with a location, the nearest come first.
+  // Directory places keep the top (they're ours); addresses stay as typed.
+  const results = near
+    ? [
+        ...found.filter((r) => r.kind === 'place'),
+        ...found
+          .filter((r) => r.kind === 'osm')
+          .sort((a, z) => meters(near, a.at) - meters(near, z.at)),
+        ...found.filter((r) => r.kind === 'address'),
+      ]
+    : found
+  const away = (r: Result) => {
+    if (!near) return null
+    const km = meters(near, r.at) / 1000
+    return km < 1 ? c.tripAwayM(Math.round((km * 1000) / 50) * 50) : c.tripAwayKm(km.toFixed(1))
+  }
   const waiting = want.length >= 2 && answer?.q !== want
 
   return (
@@ -124,13 +143,27 @@ export function TripSearch({
             <li key={r.id}>
               <button type="button" className={b.tripResult} onClick={() => onPick(r)}>
                 <span className={b.tripResultName}>{r.name}</span>
-                {r.sub ? <span className={b.tripResultSub}>{r.sub}</span> : null}
+                <span className={b.tripResultSub}>
+                  {[r.sub, away(r)].filter(Boolean).join(' · ')}
+                </span>
               </button>
             </li>
           ))}
         </ul>
       ) : want.length >= 2 ? (
         <p className={s.note}>{waiting ? c.tripSearching : c.tripNoResults}</p>
+      ) : null}
+      {results.some((r) => r.kind === 'osm') ? (
+        <p className={b.sheetHint}>
+          {c.tripOsm}{' '}
+          <a
+            href="https://www.openstreetmap.org/copyright"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            © OpenStreetMap
+          </a>
+        </p>
       ) : null}
       <p className={b.sheetHint}>{c.tripPrivacy}</p>
       <div className={b.sheetActions}>
@@ -201,13 +234,30 @@ export function takeStashedTrip(): StashedTrip | null {
 /* ------------------------------------------------------------ the steps */
 
 /** "In 6 min, live" / "By the schedule: 10:32 PM" for the next bus at a stop. */
-export function Soon({ lang, next }: { lang: Lang; next: ReturnType<typeof useStopNext> }) {
+export function Soon({
+  lang,
+  next,
+  short = false,
+}: {
+  lang: Lang
+  next: ReturnType<typeof useStopNext>
+  /** A list row: "en vivo · en 8 min" / "5:33 a. m." instead of a sentence. */
+  short?: boolean
+}) {
   const c = busCopy(lang)
   const soon = next?.[0] ?? null
-  if (!next) return null
-  if (!soon) return <span>{c.tripSoonNone}</span>
+  if (!next) return short ? <span className={b.nearSoft}>…</span> : null
+  if (!soon) return <span>{short ? c.finderNoneToday : c.tripSoonNone}</span>
   const time = (at: number) =>
     at >= 1440 ? `${formatClock(at - 1440, lang)} ${c.tomorrow}` : formatClock(at, lang)
+  if (short)
+    return soon.live ? (
+      <strong className={b.tripLive}>{c.finderLiveIn(c.inMin(soon.wait))}</strong>
+    ) : soon.wait <= 60 ? (
+      <span>{c.inMin(soon.wait)}</span>
+    ) : (
+      <span className={b.nearSoft}>{time(soon.at)}</span>
+    )
   return soon.live ? (
     <strong className={b.tripLive}>{c.tripSoonLive(c.inMin(soon.wait))}</strong>
   ) : (

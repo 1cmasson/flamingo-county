@@ -9,6 +9,7 @@ import type { LatLng } from '../lib/transitMath'
 import { useAgo, usePoll } from './LiveTransit'
 import b from './bus.module.css'
 import rm from './ridemap.module.css'
+import { FALLBACK_STYLE, maplibre, sandStyle } from './mapLib'
 
 /**
  * A county route on the site's street map, with its buses where Swiftly says
@@ -28,8 +29,6 @@ import rm from './ridemap.module.css'
  * each bus takes its direction's colour, with a wedge for where it's heading.
  */
 
-const LIB = '/vendor/maplibre/maplibre-gl.mjs'
-const FALLBACK_STYLE = 'https://tiles.openfreemap.org/styles/liberty'
 const INK = '#0c0f14'
 const CREAM = '#fff6e5'
 const YELLOW = '#ffd400'
@@ -37,26 +36,6 @@ const YELLOW = '#ffd400'
 export const DIR_COLORS = ['#ff2e88', '#16e0f2']
 const DIR_FG = [CREAM, INK]
 const POLL_MS = 15_000
-
-let lib: Promise<typeof ML> | null = null
-function maplibre(): Promise<typeof ML> {
-  const url = LIB
-  lib ??= (
-    import(/* webpackIgnore: true */ /* turbopackIgnore: true */ url) as Promise<typeof ML>
-  ).catch((e) => {
-    lib = null
-    throw e
-  })
-  return lib
-}
-
-let style: Promise<unknown> | null = null
-function sandStyle(): Promise<unknown> {
-  style ??= fetch('/api/map/style')
-    .then((r) => (r.ok ? r.json() : null))
-    .catch(() => null)
-  return style
-}
 
 export type BusMapDirection = {
   id: string
