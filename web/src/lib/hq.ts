@@ -22,6 +22,7 @@ import {
   languageProblem,
   singleEventProblem,
   storyProblem,
+  trialProblem,
 } from './postiz'
 import {
   FILE_UPLOAD_LIMIT,
@@ -154,11 +155,15 @@ async function readMedia(doc: HqMedia): Promise<Blob> {
  * nothing, so drafts previewed before stories existed keep their hash.
  */
 export function draftFingerprint(
-  draft: Pick<HqSocialDraft, 'caption' | 'media' | 'platforms' | 'scheduledFor'> & { format?: HqSocialDraft['format'] | null },
+  draft: Pick<HqSocialDraft, 'caption' | 'media' | 'platforms' | 'scheduledFor'> & {
+    format?: HqSocialDraft['format'] | null
+    trialReel?: HqSocialDraft['trialReel'] | null
+  },
 ): string {
   const media = (draft.media ?? []).map((m) => (typeof m === 'object' ? m.id : m))
   const parts: unknown[] = [draft.caption, media, [...(draft.platforms ?? [])].sort(), new Date(draft.scheduledFor).toISOString()]
   if (draft.format === 'story') parts.push('story')
+  if (draft.trialReel) parts.push(`trial:${draft.trialReel}`)
   return createHash('sha256').update(JSON.stringify(parts)).digest('hex')
 }
 
@@ -217,8 +222,17 @@ export function draftPreviewText(draft: HqSocialDraft, extraFiles: number, clash
   const story = draft.format === 'story'
     ? ['📲 Instagram story', "<i>Instagram doesn't show a story's caption: the text below is for you.</i>"]
     : []
+  // A trial reel says so too: the tap shows it to non-followers, not the feed.
+  const trial = draft.trialReel
+    ? [
+        draft.trialReel === 'auto'
+          ? '🧪 Trial reel: non-followers first; Instagram moves it to the grid if it does well'
+          : '🧪 Trial reel: non-followers only; it stays off the grid until shared there by hand',
+      ]
+    : []
   const lines = [
     ...story,
+    ...trial,
     `<b>📣 Social draft #${draft.id}</b>`,
     `${(draft.platforms ?? []).join(' · ')} — ${esc(miamiTime(draft.scheduledFor))}`,
   ]
@@ -326,6 +340,7 @@ async function schedulePosts(payload: Payload, draft: HqSocialDraft, backend: Ba
     media: uploaded,
     scheduledFor,
     format: draft.format,
+    trial: draft.trialReel,
     backend,
   })
   const response = await createPost(body, backend)
@@ -363,6 +378,7 @@ async function decide(payload: Payload, id: number, action: DraftAction): Promis
   const rule =
     facebookProblem(draft.platforms, files, draft.caption) ??
     storyProblem(draft.format, draft.platforms, files) ??
+    trialProblem(draft.trialReel, draft.platforms, draft.format) ??
     singleEventProblem(draft.format, draft.caption) ??
     languageProblem(draft.language, draft.format, draft.caption)
   if (rule) return `🚫 Draft #${id} was not posted. ${rule} Edit it in the admin and approve the new preview.`

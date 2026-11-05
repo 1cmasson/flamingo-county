@@ -108,6 +108,34 @@ export type DraftFormat = 'post' | 'story'
  * frame, not a carousel. Returns what is wrong, or null when it holds (and
  * always for a post).
  */
+/**
+ * An Instagram trial reel (Postiz Cloud `is_trial_reel`): shown to
+ * non-followers first, so one idea can go out with 2–3 openings and only the
+ * winner reaches the feed. `manual` leaves the trial off the grid until it is
+ * shared there by hand in the Instagram app; `auto` lets Instagram move it to
+ * the grid when it does well (`graduation_strategy: SS_PERFORMANCE`).
+ */
+export const TRIAL_MODES = ['manual', 'auto'] as const
+export type TrialMode = (typeof TRIAL_MODES)[number]
+
+/**
+ * A trial reel exists on Instagram only, as a feed post (never a story), and
+ * only Postiz Cloud's Instagram channel can send one.
+ */
+export function trialProblem(
+  trial: string | null | undefined,
+  platforms: readonly string[] | null | undefined,
+  format: string | null | undefined,
+  backend?: Backend,
+): string | null {
+  if (!trial) return null
+  const onlyInstagram = platforms?.length === 1 && platforms[0] === 'instagram'
+  if (!onlyInstagram) return `A trial reel goes to Instagram only (this one has ${platforms?.length ? platforms.join(', ') : 'no platform'}).`
+  if (format === 'story') return 'A trial reel is a reel, not a story.'
+  if (backend && backend !== 'cloud') return 'Trial reels need Postiz Cloud (set POSTIZ_NEW_POSTS=cloud).'
+  return null
+}
+
 export function storyProblem(
   format: string | null | undefined,
   platforms: readonly string[] | null | undefined,
@@ -185,11 +213,16 @@ function settingsFor(
   caption: string,
   format: DraftFormat,
   backend: Backend,
+  trial?: TrialMode | null,
 ): Record<string, unknown> {
   const __type = providerFor(platform, backend)
   switch (platform) {
     case 'instagram':
-      return { __type, post_type: format === 'story' ? 'story' : 'post' }
+      return {
+        __type,
+        post_type: format === 'story' ? 'story' : 'post',
+        ...(trial ? { is_trial_reel: true, graduation_strategy: trial === 'auto' ? 'SS_PERFORMANCE' : 'MANUAL' } : {}),
+      }
     case 'tiktok':
       return {
         __type,
@@ -226,6 +259,7 @@ export function buildPostBody(args: {
   media: UploadedMedia[]
   scheduledFor: Date
   format?: DraftFormat | null
+  trial?: TrialMode | null
   backend?: Backend
   now?: Date
 }) {
@@ -234,6 +268,8 @@ export function buildPostBody(args: {
   const format = args.format ?? 'post'
   const other = args.platforms.find((p) => p !== 'instagram')
   if (format === 'story' && other) throw new Error(`A story goes to Instagram only, not ${other}`)
+  const trialRule = trialProblem(args.trial, args.platforms, format, backend)
+  if (trialRule) throw new Error(trialRule)
   const immediate = args.scheduledFor.getTime() <= now.getTime() + 60_000
 
   return {
@@ -247,7 +283,7 @@ export function buildPostBody(args: {
       return {
         integration: { id },
         value: [{ content: args.caption, image: args.media }],
-        settings: settingsFor(platform, args.caption, format, backend),
+        settings: settingsFor(platform, args.caption, format, backend, args.trial),
       }
     }),
   }

@@ -1,7 +1,15 @@
 import type { CollectionConfig } from 'payload'
 import { humanOnly, staffOnly } from '../fields/shared'
 import { HQ_INTERNAL, draftFingerprint, recordEvent, sendDraftPreview } from '../lib/hq'
-import { NEEDS_MEDIA, PLATFORMS, facebookProblem, languageProblem, singleEventProblem, storyProblem } from '../lib/postiz'
+import {
+  NEEDS_MEDIA,
+  PLATFORMS,
+  facebookProblem,
+  languageProblem,
+  singleEventProblem,
+  storyProblem,
+  trialProblem,
+} from '../lib/postiz'
 import type { HqSocialDraft } from '../payload-types'
 
 /**
@@ -78,6 +86,23 @@ export const HqSocialDrafts: CollectionConfig = {
       admin: {
         position: 'sidebar',
         description: "A story goes to Instagram only, with exactly one photo or video. Instagram doesn't show a story's caption.",
+      },
+    },
+    {
+      // Hook tests (2026-11-04): post one idea 2–3 times with different
+      // openings as trial reels, read each at 3 h, keep the winner.
+      name: 'trialReel',
+      type: 'select',
+      options: [
+        { label: 'Trial reel, I graduate the winner', value: 'manual' },
+        { label: 'Trial reel, Instagram graduates it', value: 'auto' },
+      ],
+      validate: (value: unknown, { siblingData }: { siblingData: Partial<HqSocialDraft> }) =>
+        trialProblem(value as string | null, siblingData.platforms, siblingData.format) ?? true,
+      admin: {
+        position: 'sidebar',
+        description:
+          'Instagram reels only, via Postiz Cloud. A trial is shown to non-followers first. Empty = a normal post.',
       },
     },
     {

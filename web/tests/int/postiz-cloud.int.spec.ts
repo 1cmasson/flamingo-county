@@ -2,8 +2,8 @@
 import { getPayload, type Payload } from 'payload'
 import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import config from '@payload-config'
-import { HQ_INTERNAL, cancelDraft, decideDraft, draftFingerprint, moveDraftToCloud } from '../../src/lib/hq'
-import { buildPostBody, connectedChannels, newPostsBackend } from '../../src/lib/postiz'
+import { HQ_INTERNAL, cancelDraft, decideDraft, draftFingerprint, draftPreviewText, moveDraftToCloud } from '../../src/lib/hq'
+import { buildPostBody, connectedChannels, newPostsBackend, trialProblem } from '../../src/lib/postiz'
 import { markPublished } from '../../src/lib/socialStats'
 import { makeHqMedia } from './helpers/facebook'
 
@@ -104,6 +104,43 @@ describe('Postiz backends, pure', () => {
     ).toThrow(/no facebook channel/)
   })
 
+  it('sends a trial reel to Cloud Instagram with its graduation strategy', () => {
+    const args = {
+      caption: 'Hook A',
+      platforms: ['instagram' as const],
+      integrations: { instagram: 'ig' },
+      media: [{ id: 'm', path: 'p' }],
+      scheduledFor: new Date('2031-01-01T15:00:00Z'),
+      backend: 'cloud' as const,
+    }
+    expect(buildPostBody({ ...args, trial: 'manual' }).posts[0].settings).toEqual({
+      __type: 'instagram-standalone',
+      post_type: 'post',
+      is_trial_reel: true,
+      graduation_strategy: 'MANUAL',
+    })
+    expect(buildPostBody({ ...args, trial: 'auto' }).posts[0].settings).toMatchObject({ graduation_strategy: 'SS_PERFORMANCE' })
+    expect(buildPostBody(args).posts[0].settings).not.toHaveProperty('is_trial_reel')
+    expect(() => buildPostBody({ ...args, trial: 'manual', backend: 'hetzner' })).toThrow(/Postiz Cloud/)
+    expect(() =>
+      buildPostBody({ ...args, trial: 'manual', platforms: ['instagram', 'tiktok'], integrations: { instagram: 'ig', tiktok: 'tt' } }),
+    ).toThrow(/Instagram only/)
+  })
+
+  it('keeps trial reels to Instagram feed reels', () => {
+    expect(trialProblem(null, ['tiktok'], 'post')).toBeNull()
+    expect(trialProblem('manual', ['instagram'], 'post')).toBeNull()
+    expect(trialProblem('manual', ['instagram'], 'story')).toMatch(/not a story/)
+    expect(trialProblem('auto', ['tiktok'], 'post')).toMatch(/Instagram only/)
+  })
+
+  it('tells the owner a draft is a trial, and approving a changed mode needs a new preview', () => {
+    const base = { id: 1, caption: 'x', platforms: ['instagram'], scheduledFor: '2031-01-01T15:00:00Z', media: [] } as never
+    expect(draftPreviewText({ ...(base as object), trialReel: 'manual' } as never, 0)).toMatch(/🧪 Trial reel: non-followers only/)
+    expect(draftPreviewText(base, 0)).not.toMatch(/Trial/)
+    expect(draftFingerprint({ ...(base as object), trialReel: 'manual' } as never)).not.toBe(draftFingerprint(base))
+  })
+
   it('sends new posts to Cloud only when switched on and configured', () => {
     setEnv()
     expect(newPostsBackend()).toBe('hetzner')
@@ -194,6 +231,26 @@ describe('Postiz backends, against the database', () => {
     const after = await read(d.id)
     expect(after).toMatchObject({ status: 'scheduled', postizBackend: 'cloud' })
     expect(after.postizPosts).toMatchObject([{ platform: 'instagram', postId: 'cloud-1' }])
+  })
+
+  it('approves a trial reel draft onto Cloud as a trial', async () => {
+    setEnv('cloud')
+    const net = fakeNetwork()
+    const d = await make({ status: 'pending', trialReel: 'manual' })
+    await payload.update({
+      collection: 'hq-social-drafts',
+      id: d.id,
+      data: { previewedHash: draftFingerprint(d as never) },
+      overrideAccess: true,
+      context: { [HQ_INTERNAL]: true },
+    })
+    expect(await decideDraft(payload, d.id, 'approve')).toMatch(/scheduled/)
+    const create = net.postiz().find((c) => c.url.endsWith('/posts'))!.body as { posts: { settings: Record<string, unknown> }[] }
+    expect(create.posts[0].settings).toMatchObject({ is_trial_reel: true, graduation_strategy: 'MANUAL' })
+  })
+
+  it('refuses a trial reel on TikTok at save', async () => {
+    await expect(make({ status: 'pending', trialReel: 'auto', platforms: ['tiktok'] })).rejects.toThrow()
   })
 
   it('cancels each draft on the backend that holds it', async () => {
