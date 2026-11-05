@@ -1543,6 +1543,10 @@ export interface HqSocialDraft {
    * A story goes to Instagram only, with exactly one photo or video. Instagram doesn't show a story's caption.
    */
   format?: ('post' | 'story') | null;
+  /**
+   * Instagram reels only, via Postiz Cloud. A trial is shown to non-followers first. Empty = a normal post.
+   */
+  trialReel?: ('manual' | 'auto') | null;
   caption: string;
   /**
    * The first file is the cover shown in Telegram.
@@ -3636,6 +3640,7 @@ export interface HqSocialDraftsSelect<T extends boolean = true> {
   scheduledFor?: T;
   platforms?: T;
   format?: T;
+  trialReel?: T;
   caption?: T;
   media?: T;
   pillar?: T;

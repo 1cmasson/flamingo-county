@@ -46,6 +46,7 @@ import * as migration_20261024_154336_email_approvals from './20261024_154336_em
 import * as migration_20261102_171003_rankings from './20261102_171003_rankings';
 import * as migration_20261102_200129_ranking_nominations from './20261102_200129_ranking_nominations';
 import * as migration_20261104_020417_postiz_cloud from './20261104_020417_postiz_cloud';
+import * as migration_20261105_004815_trial_reels from './20261105_004815_trial_reels';
 
 export const migrations = [
   {
@@ -286,6 +287,11 @@ export const migrations = [
   {
     up: migration_20261104_020417_postiz_cloud.up,
     down: migration_20261104_020417_postiz_cloud.down,
-    name: '20261104_020417_postiz_cloud'
+    name: '20261104_020417_postiz_cloud',
+  },
+  {
+    up: migration_20261105_004815_trial_reels.up,
+    down: migration_20261105_004815_trial_reels.down,
+    name: '20261105_004815_trial_reels'
   },
 ];
