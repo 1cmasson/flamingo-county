@@ -31,6 +31,8 @@ import { Breadcrumbs, type Crumb } from '../../../../../components/Breadcrumbs'
 import { DirectionStops, RouteBullet, ScheduleTable } from '../../../../../components/Bus'
 import { RouteLive } from '../../../../../components/RouteLive'
 import { mapDirections } from '../../../../../lib/busMapData'
+import { popularTripsOn } from '../../../../../lib/popularTrips'
+import { AnyTripLink, PopularTripList } from '../../../../../components/PopularTrips'
 import s from '../../../../../components/vote.module.css'
 import b from '../../../../../components/bus.module.css'
 
@@ -241,6 +243,14 @@ export default async function BusRoute({ params }: Props) {
             </p>
           ) : null}
         </section>
+
+        <PopularTripList
+          lang={lang}
+          trips={popularTripsOn(route.slug)}
+          heading={c.popularOnRoute}
+          id="route-trips"
+        />
+        <AnyTripLink lang={lang} />
 
         <nav className={s.card} aria-labelledby="others">
           <h2 id="others" className={s.cardTag}>

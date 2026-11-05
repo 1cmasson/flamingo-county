@@ -21,6 +21,9 @@ import { AnswerBlock } from '../../../../components/AnswerBlock'
 import { Breadcrumbs, type Crumb } from '../../../../components/Breadcrumbs'
 import { RouteBullet } from '../../../../components/Bus'
 import { BusFinder } from '../../../../components/BusFinder'
+import { AnyTripLink, PopularTripList } from '../../../../components/PopularTrips'
+import { POPULAR_TRIPS } from '../../../../lib/popularTrips'
+import { absUrl } from '../../../../lib/site'
 import s from '../../../../components/vote.module.css'
 import b from '../../../../components/bus.module.css'
 
@@ -76,11 +79,39 @@ export default async function BusHub({ params }: Props) {
               path: routes.busRoute(lang, r.slug),
             })),
           ),
+          // The trip any link opens, as a template a machine can fill in.
+          {
+            '@context': 'https://schema.org',
+            '@type': 'WebApplication',
+            name: c.finderTitle,
+            url: absUrl(path),
+            applicationCategory: 'TravelApplication',
+            operatingSystem: 'Web',
+            inLanguage: lang,
+            isAccessibleForFree: true,
+            areaServed: { '@type': 'AdministrativeArea', name: 'Miami-Dade County, Florida' },
+            potentialAction: {
+              '@type': 'SearchAction',
+              target: {
+                '@type': 'EntryPoint',
+                urlTemplate: `${absUrl(`/${lang}/bus/trip`)}?from={from}&to={to}`,
+              },
+              'query-input': ['required name=to', 'optional name=from'],
+            },
+          },
         ]}
       />
       <main className={s.main}>
         {/* The tool first (it holds the page's h1); everything to read comes after it. */}
         <BusFinder lang={lang} />
+
+        <PopularTripList
+          lang={lang}
+          trips={POPULAR_TRIPS}
+          heading={c.popularHeading}
+          id="popular-trips"
+        />
+        <AnyTripLink lang={lang} />
 
         <h2 className={b.hubAll}>{c.hubAllRoutes}</h2>
         <AnswerBlock question={c.hubQuestion} answer={c.hubAnswer(COUNTY.routes.length)} />

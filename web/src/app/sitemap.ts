@@ -7,6 +7,7 @@ import { isStillOn, todayISO } from '../lib/dates'
 import { allSeasons, seasonEvents } from '../lib/seasons'
 import { ROUTE_SLUGS } from '../lib/transit'
 import { COUNTY, COUNTY_SLUGS } from '../lib/county'
+import { POPULAR_TRIPS } from '../lib/popularTrips'
 import type { City } from '../payload-types'
 import { placesData, surgeData, voteData } from '../lib/civic'
 import { SURGE_PAGES } from '../lib/surgeCopy'
@@ -17,7 +18,11 @@ export const dynamic = 'force-dynamic'
 type Entry = MetadataRoute.Sitemap[number]
 
 /** One entry per language version, each listing both in `alternates`. */
-function both(path: (lang: Lang) => string, lastModified?: string | Date, priority?: number): Entry[] {
+function both(
+  path: (lang: Lang) => string,
+  lastModified?: string | Date,
+  priority?: number,
+): Entry[] {
   const languages = Object.fromEntries(LOCALES.map((l) => [l, absUrl(path(l))]))
   return LOCALES.map((l) => ({
     url: absUrl(path(l)),
@@ -44,7 +49,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const today = todayISO()
   const seasonEntries = allSeasons().flatMap((season) => {
     const listed = seasonEvents(events, season.key, today)
-    const newest = listed.map((e) => e.updatedAt).sort().pop()
+    const newest = listed
+      .map((e) => e.updatedAt)
+      .sort()
+      .pop()
     return both((l) => routes.season(l, season.path), newest, 0.7)
   })
 
@@ -61,7 +69,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...ROUTE_SLUGS.flatMap((r) => both((l) => routes.freeRoute(l, r), undefined, 0.6)),
     // The county bus routes, dated by the day their schedule was read.
     ...both(routes.bus, COUNTY.source.fetchedAt, 0.7),
-    ...COUNTY_SLUGS.flatMap((r) => both((l) => routes.busRoute(l, r), COUNTY.source.fetchedAt, 0.6)),
+    ...COUNTY_SLUGS.flatMap((r) =>
+      both((l) => routes.busRoute(l, r), COUNTY.source.fetchedAt, 0.6),
+    ),
+    // Trips people ask for by name; a shared trip link (`/bus/trip?…`) is noindex.
+    ...POPULAR_TRIPS.flatMap((t) =>
+      both((l) => routes.busTrip(l, t.slug), COUNTY.source.fetchedAt, 0.6),
+    ),
     // The search page only: a single address (`?a=`) is noindex.
     ...both(routes.address, undefined, 0.7),
     // How AI assistants connect to the civic tools. (The API endpoints themselves are noindex.)
@@ -72,23 +86,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...(vote
       ? [
           ...both(routes.vote, vote.fetchedAt, 0.8),
-          ...vote.areas.flatMap((a) => both((l) => routes.voteArea(l, a.slug), vote.fetchedAt, 0.7)),
+          ...vote.areas.flatMap((a) =>
+            both((l) => routes.voteArea(l, a.slug), vote.fetchedAt, 0.7),
+          ),
         ]
       : []),
     // Miami-Dade's cities and commission districts, once the data has them.
     ...(places
       ? [
           ...both(routes.places, places.fetchedAt, 0.7),
-          ...places.cities.flatMap((c) => both((l) => routes.place(l, c.slug), places.fetchedAt, 0.6)),
-          ...places.districts.flatMap((d) => both((l) => routes.district(l, d.district), places.fetchedAt, 0.6)),
+          ...places.cities.flatMap((c) =>
+            both((l) => routes.place(l, c.slug), places.fetchedAt, 0.6),
+          ),
+          ...places.districts.flatMap((d) =>
+            both((l) => routes.district(l, d.district), places.fetchedAt, 0.6),
+          ),
         ]
       : []),
     // Storm-surge evacuation zones: the hub and the city pages, once the data has them.
     ...(surge
       ? [
           ...both(routes.evacuation, surge.fetchedAt, 0.8),
-          ...SURGE_PAGES.filter((slug) => surge.areas.some((a) => a.slug === slug)).flatMap((slug) =>
-            both((l) => routes.evacuationArea(l, slug), surge.fetchedAt, 0.7),
+          ...SURGE_PAGES.filter((slug) => surge.areas.some((a) => a.slug === slug)).flatMap(
+            (slug) => both((l) => routes.evacuationArea(l, slug), surge.fetchedAt, 0.7),
           ),
         ]
       : []),
