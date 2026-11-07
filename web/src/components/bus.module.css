@@ -1277,3 +1277,22 @@ a.line {
   font-size: 22px;
   line-height: 1;
 }
+
+/* The link any trip opens from (components/PopularTrips.tsx). */
+.anyTripUrl {
+  margin: 0 0 10px;
+}
+.anyTripUrl code {
+  display: block;
+  word-break: break-all;
+  background: var(--cream);
+  border: 3px solid var(--ink);
+  padding: 8px 10px;
+  font-weight: 800;
+  font-size: 14px;
+}
+.anyTripExample {
+  font-weight: 800;
+  color: var(--ink);
+  word-break: break-all;
+}

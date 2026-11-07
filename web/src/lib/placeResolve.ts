@@ -81,7 +81,7 @@ export async function resolvePlace(name: string, lang: Lang, near?: LatLng): Pro
   if (found === null) return { kind: 'down' }
   if (!found.length) return { kind: 'none' }
   // A kind of place ("farmacia", "pharmacy") takes any of them, the nearest. A name
-  // takes the places it fits best (a chain's are all "Publix"), the nearest of those;
+  // takes the place it fits best, and the nearest one when that's a chain ("Publix");
   // one it doesn't fit at all isn't taken as it: better "not found" than the wrong place.
   const first = asked.split(' ')[0]
   const isKind = first in KINDS || Object.values(KINDS).some((k) => k.word === first)
@@ -91,7 +91,11 @@ export async function resolvePlace(name: string, lang: Lang, near?: LatLng): Pro
       .map((p) => ({ p, x: extra(name, p.name) }))
       .filter((s): s is { p: (typeof found)[number]; x: number } => s.x !== null)
     const best = Math.min(...scored.map((s) => s.x))
-    fitting = scored.filter((s) => s.x === best).map((s) => s.p)
+    // Among names that fit as well, the search's own order decides ("Hialeah Park"
+    // is the racetrack, not a trailer park that happens to be nearer); distance only
+    // picks between places of the same name, a chain's stores.
+    const top = scored.find((s) => s.x === best)
+    fitting = top ? scored.filter((s) => fold(s.p.name) === fold(top.p.name)).map((s) => s.p) : []
   }
   const pick = nearest(fitting, near)
   if (!pick) return { kind: 'none' }

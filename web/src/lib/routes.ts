@@ -40,6 +40,7 @@ export const routes = {
   bus: (lang: Lang) => `/${lang}/bus`,
   busRoute: (lang: Lang, route: string) => `/${lang}/bus/${route}`,
   busMap: (lang: Lang, route: string) => `/${lang}/bus/${route}/map`,
+  busTrip: (lang: Lang, trip: string) => `/${lang}/bus/trip/${trip}`,
   /** What the city and county know about a Hialeah address; `?a=<slug>` picks one. */
   address: (lang: Lang) => `/${lang}/address`,
   /** Election Day polling places: the hub, and one page per municipality or unincorporated commission district. */

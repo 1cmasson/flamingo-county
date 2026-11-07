@@ -12,6 +12,8 @@ import { SURGE_PAGES } from '../../lib/surgeCopy'
 import { areaName } from '../../lib/voteCopy'
 import { COUNTY_MAYOR } from '../../lib/mayors'
 import { busLink } from '../../lib/busForAi'
+import { busCopy } from '../../lib/busCopy'
+import { POPULAR_TRIPS, popularPlan, tripAnswer } from '../../lib/popularTrips'
 
 // Built from the database on request; a container build runs against an empty one.
 export const dynamic = 'force-dynamic'
@@ -107,6 +109,10 @@ export async function GET() {
         `- [${r.name} free bus line](${absUrl(routes.freeRoute('en', r.slug))}): every stop on Hialeah’s free ${r.name} line, with ride times and the spots near each stop. Spanish: ${absUrl(routes.freeRoute('es', r.slug))}`,
     ),
     `- [Bus routes](${absUrl(routes.bus('en'))}): the Miami-Dade Transit routes through Hialeah, Miami Lakes, Little Havana and Miami Gardens, from the county’s schedule. Spanish: ${absUrl(routes.bus('es'))}`,
+    ...POPULAR_TRIPS.map((t) => {
+      const plan = popularPlan(t)
+      return `- [${busCopy('en').popularTitle(t.from.name.en, t.to.name.en)}](${absUrl(routes.busTrip('en', t.slug))}): ${tripAnswer('en', plan.trips[0], t)} Spanish: ${absUrl(routes.busTrip('es', t.slug))}`
+    }),
     ...COUNTY.routes.map((r) => {
       const [a, z] = routeEnds(r)
       return `- [${routeName(r, 'en')}](${absUrl(routes.busRoute('en', r.slug))}): ${a} to ${z} along ${r.via}: every stop both ways, the first and last bus, how often it comes, and the transfers. Spanish: ${absUrl(routes.busRoute('es', r.slug))}`

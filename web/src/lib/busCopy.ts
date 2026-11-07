@@ -169,6 +169,23 @@ const ES = {
   askBusy: 'Demasiadas búsquedas seguidas. Prueba otra vez en un minuto.',
   askNoTo: 'Al enlace le falta a dónde vas.',
   askTitle: 'No pudimos armar este viaje',
+  popularTitle: (a: string, b: string) => `Cómo llegar en guagua de ${a} a ${b}`,
+  popularMetaDescription: (a: string, b: string) =>
+    `Qué guagua coger de ${a} a ${b} en Miami-Dade: la ruta, la parada, cuánto se demora y la próxima guagua en vivo.`,
+  popularFirst: (route: string, toward: string, stop: string) =>
+    `Toma ${route} hacia ${toward} en la parada ${stop}.`,
+  popularThen: (route: string, toward: string, stop: string) =>
+    ` Cámbiate a ${route} hacia ${toward} en ${stop}.`,
+  popularTotal: (m: number) => `Son unos ${m} min caminando y en guagua, más la espera.`,
+  popularNoBus: (a: string, b: string) =>
+    `Ninguna de las rutas que tenemos conecta ${a} con ${b} con un solo cambio de guagua.`,
+  popularQuestion: (a: string, b: string) => `¿Qué guagua cojo de ${a} a ${b}?`,
+  popularHeading: 'VIAJES QUE LA GENTE BUSCA',
+  popularOnRoute: 'VIAJES CON ESTA RUTA',
+  anyTripTitle: 'CUALQUIER VIAJE, CON UN ENLACE',
+  anyTripText:
+    'Cualquier viaje en guagua por Miami-Dade se abre con un enlace: pon de dónde sales y a dónde vas, con el nombre del lugar o la dirección.',
+  anyTripExample: 'Por ejemplo',
   tripWhere: '¿A dónde vas?',
   tripAtStop: 'Ya estás en la parada.',
   tripTakeRoute: (route: string) => `Toma ${route}`,
@@ -427,6 +444,23 @@ const EN: BusCopy = {
   askBusy: 'Too many searches in a row. Try again in a minute.',
   askNoTo: 'The link doesn’t say where you’re going.',
   askTitle: 'We couldn’t put this trip together',
+  popularTitle: (a: string, b: string) => `How to get from ${a} to ${b} by bus`,
+  popularMetaDescription: (a: string, b: string) =>
+    `Which bus to take from ${a} to ${b} in Miami-Dade: the route, the stop, how long it takes and the next bus live.`,
+  popularFirst: (route: string, toward: string, stop: string) =>
+    `Take ${route} toward ${toward} at the ${stop} stop.`,
+  popularThen: (route: string, toward: string, stop: string) =>
+    ` Change to ${route} toward ${toward} at ${stop}.`,
+  popularTotal: (m: number) => `It’s about ${m} min of walking and riding, plus the wait.`,
+  popularNoBus: (a: string, b: string) =>
+    `None of the routes we have connects ${a} and ${b} with one change of bus.`,
+  popularQuestion: (a: string, b: string) => `Which bus goes from ${a} to ${b}?`,
+  popularHeading: 'TRIPS PEOPLE LOOK FOR',
+  popularOnRoute: 'TRIPS ON THIS ROUTE',
+  anyTripTitle: 'ANY TRIP, AS A LINK',
+  anyTripText:
+    'Any bus trip around Miami-Dade opens from a link: put where you’re leaving from and where you’re going, by the place’s name or the address.',
+  anyTripExample: 'For example',
   tripWhere: 'Where are you going?',
   tripAtStop: 'You’re at the stop.',
   tripTakeRoute: (route: string) => `Take ${route}`,
