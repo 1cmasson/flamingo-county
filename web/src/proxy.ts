@@ -121,6 +121,17 @@ export function proxy(req: NextRequest) {
   // its language then. Without this they would be sent to `/es/go/...`, a 404.
   if (first === 'go') return NextResponse.next()
 
+  // flamingocounty.com/guagua: the bus planner's address said out loud in the
+  // Spanish videos, easy to type off a screen. It goes through /go so the
+  // visits are counted (source "guagua") and lands on the Spanish hub.
+  if (pathname.toLowerCase() === '/guagua' || pathname.toLowerCase() === '/guagua/') {
+    const url = req.nextUrl.clone()
+    url.pathname = '/go/guagua'
+    url.search = ''
+    url.searchParams.set('to', '/es/bus')
+    return NextResponse.redirect(url)
+  }
+
   const cookie = req.cookies.get(LANG_COOKIE)?.value
   const fromQuery = searchParams.get('lang')
   const lang =

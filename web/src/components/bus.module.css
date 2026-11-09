@@ -1029,6 +1029,36 @@ a.line {
 .bigLocate:disabled {
   opacity: 0.7;
 }
+/* Typing where you start: the other full answer to "where are you?", sized
+   like the locate button so nobody has to find a small link. */
+.fromBtn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  padding: 12px 16px 10px;
+  border: 3px solid var(--ink);
+  background: var(--cream);
+  color: var(--ink);
+  box-shadow: 4px 4px 0 var(--ink);
+  font-family: var(--display);
+  font-size: clamp(18px, 4.8vw, 22px);
+  line-height: 1;
+  cursor: pointer;
+}
+.askFrom {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding-top: 4px;
+}
+.askFromTitle {
+  font-family: var(--display);
+  font-size: clamp(22px, 6vw, 28px);
+  line-height: 1.05;
+}
 .finderFromLine {
   display: flex;
   flex-wrap: wrap;
