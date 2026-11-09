@@ -141,6 +141,10 @@ const ES = {
   finderUseMine: 'Usar mi ubicación',
   finderClearDest: 'Quitar el destino',
   finderDenied: 'No pudimos ver tu ubicación. Escribe de dónde sales.',
+  finderAskFrom: (place: string) => `Para llegar a ${place}, ¿de dónde sales?`,
+  finderHereBtn: 'Estoy aquí: usa mi ubicación',
+  finderTypeFromBtn: 'Escribir de dónde salgo',
+  finderLocatingYou: 'Buscando dónde estás…',
   finderNoneNear: (m: number) =>
     `Ninguna de nuestras rutas te pasa cerca: la parada más cerca queda a ${m} min caminando. Pon a dónde vas y te buscamos el viaje en Google Maps.`,
   finderNearTitle: 'LAS GUAGUAS CERCA DE TI',
@@ -416,6 +420,10 @@ const EN: BusCopy = {
   finderUseMine: 'Use my location',
   finderClearDest: 'Remove the destination',
   finderDenied: 'We couldn’t see your location. Type where you’re starting.',
+  finderAskFrom: (place: string) => `To get to ${place}, where are you starting from?`,
+  finderHereBtn: 'I’m here: use my location',
+  finderTypeFromBtn: 'Type where I’m starting',
+  finderLocatingYou: 'Finding where you are…',
   finderNoneNear: (m: number) =>
     `None of our routes passes near you: the nearest stop is a ${m} min walk. Add where you’re going and we’ll find the trip in Google Maps.`,
   finderNearTitle: 'BUSES NEAR YOU',

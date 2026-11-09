@@ -157,7 +157,12 @@ export function BusFinder({ lang }: { lang: Lang }) {
           label={searching === 'from' ? c.finderFromSearch : c.tripWhere}
           onPick={(d) => {
             if (searching === 'from') setTypedFrom(d)
-            else setDest(d)
+            else {
+              setDest(d)
+              // Where to go before where from: the tap on the place is the
+              // gesture that lets the phone ask for the location right away.
+              if (!from && !locating) locate()
+            }
             setSearching(null)
           }}
           onCancel={() => setSearching(null)}
@@ -176,9 +181,9 @@ export function BusFinder({ lang }: { lang: Lang }) {
                 </button>
               ) : null}
             </p>
-          ) : (
+          ) : dest ? null : (
             <button type="button" className={b.bigLocate} onClick={locate} disabled={locating}>
-              ◎ {locating ? c.locating : c.finderLocate}
+              <span aria-hidden="true">◎</span> {locating ? c.locating : c.finderLocate}
             </button>
           )}
           <button type="button" className={b.whereBtn} onClick={() => setSearching('to')}>
@@ -189,16 +194,27 @@ export function BusFinder({ lang }: { lang: Lang }) {
               {c.finderClearDest}
             </button>
           ) : null}
-          {!located ? (
-            <button type="button" className={b.textBtn} onClick={() => setSearching('from')}>
-              {c.finderTypeFrom}
+          {!located && !dest ? (
+            <button type="button" className={b.fromBtn} onClick={() => setSearching('from')}>
+              <span aria-hidden="true">✎</span> {c.finderTypeFrom}
             </button>
           ) : null}
-          {denied ? <p className={s.notice}>{c.finderDenied}</p> : null}
+          {denied && !dest ? <p className={s.notice}>{c.finderDenied}</p> : null}
         </>
       )}
 
-      {searching || !from ? null : !net ? (
+      {searching ? null : !from ? (
+        dest ? (
+          <AskFrom
+            lang={lang}
+            place={dest.name}
+            locating={locating}
+            denied={denied}
+            onLocate={locate}
+            onType={() => setSearching('from')}
+          />
+        ) : null
+      ) : !net ? (
         <p className={s.note}>{c.tripSearching}</p>
       ) : dest && plan ? (
         <FinderTrips lang={lang} plan={plan} dest={dest} from={typedFrom} />
@@ -206,6 +222,53 @@ export function BusFinder({ lang }: { lang: Lang }) {
         <NearList lang={lang} near={near} net={net} from={from} />
       ) : null}
     </section>
+  )
+}
+
+/**
+ * A destination but no start yet: one question, two equal ways to answer it.
+ * In Instagram's and Facebook's in-app browsers the location prompt is often
+ * refused, so typing the address is a full-size button, not a footnote.
+ */
+function AskFrom({
+  lang,
+  place,
+  locating,
+  denied,
+  onLocate,
+  onType,
+}: {
+  lang: Lang
+  place: string
+  locating: boolean
+  denied: boolean
+  onLocate: () => void
+  onType: () => void
+}) {
+  const c = busCopy(lang)
+  return (
+    <div className={b.askFrom} role="group" aria-labelledby="bus-ask-from">
+      <p id="bus-ask-from" className={b.askFromTitle}>
+        {c.finderAskFrom(place)}
+      </p>
+      {locating ? (
+        <p className={s.note} role="status">
+          {c.finderLocatingYou}
+        </p>
+      ) : (
+        <button type="button" className={b.bigLocate} onClick={onLocate}>
+          <span aria-hidden="true">◎</span> {c.finderHereBtn}
+        </button>
+      )}
+      <button type="button" className={b.fromBtn} onClick={onType}>
+        <span aria-hidden="true">✎</span> {c.finderTypeFromBtn}
+      </button>
+      {denied ? (
+        <p className={s.notice} role="status">
+          {c.finderDenied}
+        </p>
+      ) : null}
+    </div>
   )
 }
 
