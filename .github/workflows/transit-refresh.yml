@@ -4,7 +4,7 @@ name: Bus schedule refresh
 # (the Jul 31, 2026 edition ends Nov 22). Every morning this downloads the
 # county's feed and compares its edition with the site's. When a new one is
 # out it rebuilds the bus data (`pnpm transit:county` and `pnpm
-# transit:network`), runs the transit tests, merges to main (which Railway
+# transit:network`), runs the transit tests, commits to main (which Railway
 # deploys) and checks that the live site is serving the new edition.
 # On a day the feed hasn't changed, nothing happens. Any failure opens an issue.
 on:
@@ -19,7 +19,6 @@ on:
 
 permissions:
   contents: write
-  pull-requests: write
   issues: write
 
 concurrency:
@@ -87,23 +86,21 @@ jobs:
             tests/int/bus-network.int.spec.ts \
             tests/int/popular-trips.int.spec.ts
 
-      - name: Merge to main (Railway deploys it)
+      # Straight to main (no PR: this repo doesn't let Actions open pull requests). The
+      # commit only touches src/data/transit, and the tests above passed on it.
+      - name: Commit to main (Railway deploys it)
         if: steps.check.outputs.changed == 'true'
         run: |
           git config user.name "flamingo-county-bot"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          branch="transit-refresh/${{ steps.check.outputs.hash }}"
-          git checkout -b "$branch"
           git add src/data/transit
           if git diff --cached --quiet; then echo "No data change after rebuilding."; exit 0; fi
           ends=$(node -p "require('./src/data/transit/network.json').source.serviceEnds")
           git commit -m "Bus schedule: the county's new edition (runs to $ends)" \
-            -m "Rebuilt by the daily refresh (.github/workflows/transit-refresh.yml): pnpm transit:county and pnpm transit:network, transit tests passed."
-          git push origin "$branch"
-          gh pr create --base main --head "$branch" \
-            --title "Bus schedule: the county's new edition (runs to $ends)" \
-            --body "The county published a new edition of its bus schedule (feed ${{ steps.check.outputs.hash }}). Rebuilt and tested by the daily refresh, run ${{ github.run_id }}: route pages, trip planner, popular trips and live-arrival ids."
-          gh pr merge "$branch" --merge --delete-branch
+            -m "Rebuilt by the daily refresh, run ${{ github.run_id }} (.github/workflows/transit-refresh.yml): pnpm transit:county and pnpm transit:network, transit tests passed. Feed ${{ steps.check.outputs.hash }}."
+          # Someone may have pushed while this ran: put the data commit on top of theirs.
+          git pull --rebase origin main
+          git push origin HEAD:main
 
       - name: Check the live site serves the new edition
         if: steps.check.outputs.changed == 'true'
