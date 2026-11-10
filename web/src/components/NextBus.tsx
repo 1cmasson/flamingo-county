@@ -2,7 +2,9 @@
 
 import type { Lang } from '../i18n'
 import { busCopy } from '../lib/busCopy'
-import { stopMapsHref, type RouteTimes } from '../lib/busTime'
+import type { RouteTimes } from '../lib/busTime'
+import { appleWalkHref } from '../lib/walkLink'
+import { useAppleDevice } from './useAppleDevice'
 import { formatClock } from '../lib/transitMath'
 import type { RouteChoice } from './useRouteChoice'
 import b from './bus.module.css'
@@ -61,6 +63,7 @@ export function NextTimes({ lang, v }: { lang: Lang; v: RouteChoice }) {
 
 export function NextBus({ times, lang, v }: { times: RouteTimes; lang: Lang; v: RouteChoice }) {
   const c = busCopy(lang)
+  const apple = useAppleDevice()
 
   // On the server and before hydration: the card's frame, so the page doesn't jump when it fills.
   if (!v.ready)
@@ -125,10 +128,15 @@ export function NextBus({ times, lang, v }: { times: RouteTimes; lang: Lang; v: 
 
       <p className={s.note}>{v.anyLive ? c.liveSource : c.scheduled}</p>
       <p className={b.meta}>
-        <a href={stopMapsHref(station.at)} target="_blank" rel="noopener noreferrer">
-          {c.mapsStop}
-        </a>{' '}
-        · {c.privacy}
+        {apple ? (
+          <>
+            <a href={appleWalkHref(station.at)} target="_blank" rel="noopener noreferrer">
+              {c.mapsStop}
+            </a>{' '}
+            ·{' '}
+          </>
+        ) : null}
+        {c.privacy}
       </p>
     </section>
   )

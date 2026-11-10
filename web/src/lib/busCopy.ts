@@ -302,7 +302,6 @@ const ES = {
   tripJustWalk: (m: number) => `Te queda a ${m} min caminando: no vale la pena esperar la guagua.`,
   tripNoBus:
     'No encontramos un viaje en guagua hasta allí ahora mismo. Google Maps te busca otro camino.',
-  tripGoogle: 'Ver el viaje en Google Maps ↗',
   tripOtherMap: (route: string) => `Abrir el mapa de ${route} →`,
   tripHowBus: 'Cómo llegar en guagua',
   tripOption: (route: string, m: number) => `${route} · ${m} min`,
@@ -610,7 +609,6 @@ const EN: BusCopy = {
   tripJustWalk: (m: number) => `It’s a ${m} min walk: not worth waiting for the bus.`,
   tripNoBus:
     'We couldn’t find a bus trip there right now. Google Maps can look for another way.',
-  tripGoogle: 'See the trip in Google Maps ↗',
   tripOtherMap: (route: string) => `Open the ${route} map →`,
   tripHowBus: 'Get there by bus',
   tripOption: (route: string, m: number) => `${route} · ${m} min`,

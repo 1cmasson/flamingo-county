@@ -119,11 +119,6 @@ export function nearestStation(d: DirectionTimes, at: LatLng): { index: number; 
   return best
 }
 
-/** Walking directions to a stop in Google Maps; the stop there shows the county's live arrivals. */
-export function stopMapsHref(at: LatLng): string {
-  return `https://www.google.com/maps/dir/?api=1&destination=${at[0]},${at[1]}&travelmode=walking`
-}
-
 /** A bus the card lists: when, how long to wait, and whether the time is live or the schedule's. */
 export type Upcoming = Departure & { live: boolean }
 

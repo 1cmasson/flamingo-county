@@ -5,7 +5,9 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Lang } from '../i18n'
 import { busCopy } from '../lib/busCopy'
 import { pickByBuses, readTripLink } from '../lib/tripLink'
-import { stopMapsHref, type RouteTimes } from '../lib/busTime'
+import type { RouteTimes } from '../lib/busTime'
+import { appleWalkHref } from '../lib/walkLink'
+import { useAppleDevice } from './useAppleDevice'
 import { meters } from '../lib/transitMath'
 import type { MapPlaceCard } from '../lib/busPlaces'
 import { BusMap, DIR_COLORS, type BusMapDirection } from './BusMap'
@@ -62,6 +64,7 @@ export function BusMapScreen({
   backHref: string
 }) {
   const c = busCopy(lang)
+  const apple = useAppleDevice()
   // The map follows the visitor's phone once they've shared where they are.
   const v = useRouteChoice(slug, times, { live, schedule, watch: true })
   // "Follow me": the map keeps the visitor in the middle until they drag it.
@@ -468,9 +471,11 @@ export function BusMapScreen({
                 )}
                 <p className={b.meta}>
                   {v.anyLive ? c.liveSource : schedule ? c.scheduled : ''}{' '}
-                  <a href={stopMapsHref(station.at)} target="_blank" rel="noopener noreferrer">
-                    {c.mapsStop}
-                  </a>
+                  {apple ? (
+                    <a href={appleWalkHref(station.at)} target="_blank" rel="noopener noreferrer">
+                      {c.mapsStop}
+                    </a>
+                  ) : null}
                 </p>
               </>
             ) : null}

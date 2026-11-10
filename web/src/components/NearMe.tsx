@@ -1,6 +1,7 @@
 'use client'
 
 import type * as React from 'react'
+import { APPLE_DEVICE, appleWalkHref } from '../lib/walkLink'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import { useCallback, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore, useTransition } from 'react'
@@ -214,7 +215,7 @@ export function NearMe({
   const [locating, setLocating] = useState(false)
   const [searching, startSearch] = useTransition()
   // Apple Maps on iPhone, Google Maps everywhere else. False on the server.
-  const ios = useSyncExternalStore(noop, () => /iphone|ipad|ipod/i.test(navigator.userAgent), () => false)
+  const ios = useSyncExternalStore(noop, () => APPLE_DEVICE.test(navigator.userAgent), () => false)
   const inputRef = useRef<HTMLInputElement>(null)
   const resultsRef = useRef<HTMLDivElement>(null)
   const mapRef = useRef<HTMLDivElement>(null)
@@ -345,13 +346,8 @@ export function NearMe({
     requestAnimationFrame(() => mapRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' }))
   }
 
-  const directions = (to: LatLng) => {
-    const d = to.join(',')
-    const o = origin ? origin.at.join(',') : null
-    return ios
-      ? `https://maps.apple.com/?${o ? `saddr=${o}&` : ''}daddr=${d}&dirflg=w`
-      : `https://www.google.com/maps/dir/?api=1&${o ? `origin=${o}&` : ''}destination=${d}&travelmode=walking`
-  }
+  // Apple Maps on an Apple device; nothing elsewhere: never Google Maps (lib/walkLink).
+  const directions = (to: LatLng): string | null => (ios ? appleWalkHref(to, origin?.at) : null)
 
   const miles = (m: number) =>
     // Street distance, not as the crow flies: the same allowance walkMinutes makes.
@@ -576,15 +572,17 @@ export function NearMe({
                           {fill(copy.walk, { n: walk })} · {fill(copy.distance, { mi: miles(a.meters) })}
                         </div>
                       </div>
-                      <a
-                        href={directions(at)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={tr.btn}
-                        style={{ ...bigButton(true), minHeight: 52, fontSize: 18, boxShadow: `4px 4px 0 ${st.color}` }}
-                      >
-                        {copy.directions}
-                      </a>
+                      {directions(at) ? (
+                        <a
+                          href={directions(at)!}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={tr.btn}
+                          style={{ ...bigButton(true), minHeight: 52, fontSize: 18, boxShadow: `4px 4px 0 ${st.color}` }}
+                        >
+                          {copy.directions}
+                        </a>
+                      ) : null}
 
                       <LeaveTimes
                         route={a.route}

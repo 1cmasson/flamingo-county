@@ -14,7 +14,7 @@ import {
   type TripEnd,
   type TripLink,
 } from '../lib/tripLink'
-import { transitDirectionsHref, type Plan, type Trip } from '../lib/tripPlan'
+import type { Plan, Trip } from '../lib/tripPlan'
 import { TripSteps, tripKey, tripMapSlug, tripName } from './TripPlanner'
 import b from './bus.module.css'
 import s from './vote.module.css'
@@ -63,7 +63,6 @@ export function SharedTrip({ lang, link, plan }: { lang: Lang; link: TripLink; p
   const c = busCopy(lang)
   const [pick, setPick] = useState(() => pickByBuses(plan.trips, link.buses))
   const trip = plan.trips[pick] ?? null
-  const google = transitDirectionsHref(link.to.at)
   if (!trip)
     return (
       <>
@@ -72,16 +71,6 @@ export function SharedTrip({ lang, link, plan }: { lang: Lang; link: TripLink; p
             ? c.tripJustWalk(plan.walkOnly)
             : c.tripNoBus}
         </p>
-        <div className={b.sheetActions}>
-          <a
-            className={`${s.action} ${s.actionAlt}`}
-            href={google}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {c.tripGoogle}
-          </a>
-        </div>
       </>
     )
   const chosen: TripLink = { ...link, buses: tripBuses(trip) }
@@ -118,16 +107,6 @@ export function SharedTrip({ lang, link, plan }: { lang: Lang; link: TripLink; p
           </Link>
         ) : null}
         <ShareTrip lang={lang} link={chosen} />
-      </div>
-      <div className={b.sheetActions}>
-        <a
-          className={`${s.action} ${s.actionAlt}`}
-          href={google}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {c.tripGoogle}
-        </a>
       </div>
     </>
   )

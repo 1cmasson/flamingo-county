@@ -268,7 +268,7 @@ export function eventJsonLd(
                 })
               : undefined)),
         // The same directions link the page shows.
-        hasMap: eventDirections(ev)?.google,
+        hasMap: eventDirections(ev)?.apple,
       })
     : undefined
   // Who puts it on: the organizer the event names, else the venue's own

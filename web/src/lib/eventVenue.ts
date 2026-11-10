@@ -52,12 +52,13 @@ export function eventAddress(ev: Event): string | null {
  * with no address on file, the name and city ("Milander Park, HIALEAH, FL"),
  * which the map search still resolves. Null only when there is no venue name.
  *
- * Both links are built here; the page shows one button that opens the
- * phone's own map (`DirectionsLink`). Google's is the one in the HTML and the
- * structured data: it opens the Google Maps app where it is installed and the
- * web map where it is not.
+ * The page shows one button (`DirectionsLink`): Apple Maps on an Apple device,
+ * and everywhere else our own trip planner to the venue (`plan`, a path
+ * without the language). Never Google Maps: it is the competitor.
  */
-export function eventDirections(ev: Event): { address: string | null; google: string; apple: string } | null {
+export function eventDirections(
+  ev: Event,
+): { address: string | null; plan: string; apple: string } | null {
   const { name, city } = eventVenue(ev)
   if (!name.trim()) return null
   const address = eventAddress(ev)
@@ -67,7 +68,7 @@ export function eventDirections(ev: Event): { address: string | null; google: st
   const q = encodeURIComponent(destination)
   return {
     address,
-    google: `https://www.google.com/maps/dir/?api=1&destination=${q}`,
+    plan: `/bus/trip?${new URLSearchParams({ to: destination })}`,
     apple: `https://maps.apple.com/?daddr=${q}`,
   }
 }
