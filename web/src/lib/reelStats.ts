@@ -244,6 +244,22 @@ export async function collectReelStats(payload: Payload, now: Date = new Date())
 
 const round = (n: number, places: number) => Math.round(n * 10 ** places) / 10 ** places
 
+const first = (metrics: Record<string, number>, keys: string[]): number | undefined =>
+  keys.map((k) => metrics[k]).find((v) => typeof v === 'number')
+
+/**
+ * A Facebook reel's shares. `post_video_social_actions` arrives as
+ * `{ "SHARE": 1, "COMMENT": 2 }` — upper case in practice; lower case is kept
+ * for rows and fixtures saved before. An empty `{}` (nothing yet) flattens to
+ * no key, so it reads as unknown, not 0.
+ */
+export const fbShares = (metrics: Record<string, number>): number | undefined =>
+  first(metrics, ['post_video_social_actions.SHARE', 'post_video_social_actions.share'])
+
+/** A Facebook reel's reach: Meta's current name, else the retired one on rows saved before the switch. */
+export const fbReach = (metrics: Record<string, number>): number | undefined =>
+  first(metrics, ['post_total_media_view_unique', 'post_impressions_unique'])
+
 /**
  * Two numbers worth comparing across reels: average watch as a share of the
  * reel's length (only when the length is known — Instagram does not give it,
@@ -257,8 +273,8 @@ export function reelRatios(
   durationSec: number | null | undefined,
 ): { avgWatchPctOfLength: number | null; sharesPerReach: number | null } {
   const avgMs = platform === 'facebook' ? metrics.post_video_avg_time_watched : metrics.ig_reels_avg_watch_time
-  const shares = platform === 'facebook' ? metrics['post_video_social_actions.share'] : metrics.shares
-  const reach = platform === 'facebook' ? metrics.post_impressions_unique : metrics.reach
+  const shares = platform === 'facebook' ? fbShares(metrics) : metrics.shares
+  const reach = platform === 'facebook' ? fbReach(metrics) : metrics.reach
   return {
     avgWatchPctOfLength:
       durationSec && durationSec > 0 && typeof avgMs === 'number' ? round((avgMs / 1000 / durationSec) * 100, 1) : null,

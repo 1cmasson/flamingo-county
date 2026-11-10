@@ -100,7 +100,7 @@ describe('hqReelNow', () => {
     fakeGraph(now)
     const out = (await reelsNow({ platform: 'facebook' }, now)) as Extract<Awaited<ReturnType<typeof reelsNow>>, { ok: true }>
     expect(out.reels[0]).toMatchObject({ platform: 'facebook', views: 300, avgWatchSec: 13, shares: 3, comments: 1 })
-    expect(out.reels[0]).toHaveProperty('stillWatchingPct', { '3s': 70, '15s': 40, '30s': 30, half: 20, last: 10 })
+    expect(out.reels[0]).toHaveProperty('stillWatchingPct', { '3s': 70, '15s': 40, '20s': 40, '30s': 30, half: 20, last: 10 })
   })
 })
 
@@ -108,6 +108,14 @@ describe('reel-now helpers', () => {
   it('reads the retention curve at fixed moments', () => {
     expect(retentionAt({ '0': 1, '1': 0.9, '2': 0.5 }, 2)).toEqual({ half: 90, last: 50 })
     expect(retentionAt(null, 10)).toBeNull()
+    // Facebook's real shape: 41 points across the reel, not seconds (Mourning EN, 69.7 s, Oct 21 at 3 h)
+    const mourning = Object.fromEntries(
+      [1, 1, 0.8636, 0.6364, 0.5909, 0.5909, 0.4545, 0.3636, 0.3182, 0.2727, 0.2727, 0.2727, 0.2727, 0.2727, 0.2727, 0.2727, 0.2727,
+        0.2273, 0.2273, 0.2273, 0.1818, 0.1818, 0.1818, 0.1364, 0.1364, 0.1364, 0.1364, 0.1364, 0.1364, 0.1364, 0.1364, 0.1364, 0.1364,
+        0.0909, 0, 0, 0, 0, 0, 0, 0].map((v, i) => [String(i), v]),
+    )
+    expect(retentionAt(mourning, 69.653)).toEqual({ '3s': 100, '15s': 31.8, '20s': 27.3, '30s': 22.7, half: 18.2, last: 0 })
+    expect(retentionAt(mourning, null)).toEqual({ last: 0 })
   })
 
   it('leaves the length share empty when the length is unknown', () => {
