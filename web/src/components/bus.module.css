@@ -238,8 +238,36 @@ a.line {
 }
 .routeTop {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 10px;
+  gap: 8px 10px;
+}
+
+/* Free or a fare, on each route (FareChip). */
+.fareFree,
+.farePaid {
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.8px;
+  line-height: 1;
+  padding: 5px 8px 4px;
+  border: 2px solid var(--ink);
+  white-space: nowrap;
+}
+.fareFree {
+  background: var(--yellow);
+  color: var(--ink);
+}
+.farePaid {
+  background: var(--cream);
+  color: var(--ink);
+}
+.fareLegend {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.45;
+  max-width: 62ch;
 }
 .meta {
   font-size: 13px;

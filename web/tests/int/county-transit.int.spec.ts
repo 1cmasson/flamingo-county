@@ -128,7 +128,7 @@ describe('names and links', () => {
   })
 
   it('links the lines the site has pages for, and only those', () => {
-    expect(lineHref('HIAMAR', 'es')).toBe('/es/free-rides/marlin')
+    expect(lineHref('HIAMAR', 'es')).toBe('/es/bus/marlin')
     expect(lineHref('37', 'en')).toBe('/en/bus/37')
     expect(lineHref('MIAHAVA', 'en')).toBe('/en/bus/little-havana-trolley')
     expect(lineHref('9', 'en')).toBeNull()

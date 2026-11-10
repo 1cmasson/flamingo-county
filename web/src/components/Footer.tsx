@@ -108,18 +108,6 @@ export function Footer({ lang }: { lang: Lang }) {
           {t('Hialeah · Miami Lakes · Little Havana')}
         </div>
         <Link
-          href={routes.freeRides(lang)}
-          style={{
-            fontWeight: 800,
-            fontSize: 12,
-            letterSpacing: '1.6px',
-            color: 'var(--cyan)',
-            textDecoration: 'none',
-          }}
-        >
-          {t('FREE RIDES')}
-        </Link>
-        <Link
           href={routes.bus(lang)}
           style={{
             fontWeight: 800,

@@ -75,7 +75,7 @@ export async function GET() {
     '',
     '## Living in Miami-Dade',
     `- [Your address](${absUrl(routes.address('en'))}): type any of Miami-Dade County’s street addresses and see its garbage, recycling and bulk trash days with the next dates, its FEMA flood zone and hurricane storm-surge evacuation zone, its county commissioner and Florida House and Senate districts, its Election Day polling place and precinct, its assigned public schools, and the nearest fire station, police station, hospital, library and park. Built from the public records of Miami-Dade County (Open Data), the City of Hialeah, the City of Miami and FEMA; each result shows the date the records were read. Spanish: ${absUrl(routes.address('es'))}`,
-    `- [Free buses in Hialeah](${absUrl(routes.freeRides('en'))}): Hialeah’s two free bus lines, the Flamingo and the Marlin: where they go, when they run, live bus positions and the local spots a short walk from a stop. From the City of Hialeah’s ETA SPOT system and Miami-Dade Transit. Spanish: ${absUrl(routes.freeRides('es'))}`,
+    `- [Free buses in Hialeah](${absUrl(routes.freeRides('en'))}): Hialeah’s two free bus lines, the Flamingo and the Marlin: where they go, when they run, live bus positions and the local spots a short walk from a stop, on the same page as the county's bus routes. From the City of Hialeah’s ETA SPOT system and Miami-Dade Transit. Spanish: ${absUrl(routes.freeRides('es'))}`,
     ...voteLines,
     ...(places
       ? [
@@ -108,7 +108,7 @@ export async function GET() {
       (r) =>
         `- [${r.name} free bus line](${absUrl(routes.freeRoute('en', r.slug))}): every stop on Hialeah’s free ${r.name} line, with ride times and the spots near each stop. Spanish: ${absUrl(routes.freeRoute('es', r.slug))}`,
     ),
-    `- [Bus routes](${absUrl(routes.bus('en'))}): the Miami-Dade Transit routes through Hialeah, Miami Lakes, Little Havana and Miami Gardens, from the county’s schedule. Spanish: ${absUrl(routes.bus('es'))}`,
+    `- [Bus routes](${absUrl(routes.bus('en'))}): «¿Qué guagua cojo?», one page for every bus: Hialeah's free Flamingo and Marlin lines (marked free) and the Miami-Dade Transit routes (Metrobus, a fare) through Hialeah, Miami Lakes, Little Havana and Miami Gardens, from the county’s schedule. Spanish: ${absUrl(routes.bus('es'))}`,
     ...POPULAR_TRIPS.map((t) => {
       const plan = popularPlan(t)
       return `- [${busCopy('en').popularTitle(t.from.name.en, t.to.name.en)}](${absUrl(routes.busTrip('en', t.slug))}): ${tripAnswer('en', plan.trips[0], t)} Spanish: ${absUrl(routes.busTrip('es', t.slug))}`

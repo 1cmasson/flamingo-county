@@ -8,6 +8,7 @@ import { busCopy } from '../../../../lib/busCopy'
 import {
   COUNTY,
   countyRoutesIn,
+  isFree,
   routeEnds,
   routeName,
   routeVia,
@@ -19,7 +20,11 @@ import { PageShell } from '../../../../components/PageShell'
 import { JsonLd } from '../../../../components/JsonLd'
 import { AnswerBlock } from '../../../../components/AnswerBlock'
 import { Breadcrumbs, type Crumb } from '../../../../components/Breadcrumbs'
-import { RouteBullet } from '../../../../components/Bus'
+import { FareChip, RouteBullet } from '../../../../components/Bus'
+import { FreeRidesSection } from '../../../../components/FreeRidesSection'
+import { LineBullet, ends } from '../../../../components/Transit'
+import { TRANSIT, formatHeadway, headwayToday } from '../../../../lib/transit'
+import { translator } from '../../../../i18n'
 import { BusFinder } from '../../../../components/BusFinder'
 import { AnyTripLink, PopularTripList } from '../../../../components/PopularTrips'
 import { POPULAR_TRIPS } from '../../../../lib/popularTrips'
@@ -60,6 +65,7 @@ export default async function BusHub({ params }: Props) {
   const { lang } = await params
   if (!isLang(lang)) notFound()
   const c = busCopy(lang)
+  const t = translator(lang)
   const path = routes.bus(lang)
   const crumbs: Crumb[] = [
     { name: c.home, path: routes.home(lang) },
@@ -72,13 +78,13 @@ export default async function BusHub({ params }: Props) {
         data={[
           webPageJsonLd(lang, path, { name: c.hubTitle, dateModified: COUNTY.source.fetchedAt }),
           breadcrumbJsonLd(crumbs),
-          itemListJsonLd(
-            c.hubTitle,
-            COUNTY.routes.map((r) => ({
+          itemListJsonLd(c.hubTitle, [
+            ...TRANSIT.routes.map((r) => ({ name: r.name, path: routes.freeRoute(lang, r.slug) })),
+            ...COUNTY.routes.map((r) => ({
               name: routeName(r, lang),
               path: routes.busRoute(lang, r.slug),
             })),
-          ),
+          ]),
           // The trip any link opens, as a template a machine can fill in.
           {
             '@context': 'https://schema.org',
@@ -115,6 +121,7 @@ export default async function BusHub({ params }: Props) {
 
         <h2 className={b.hubAll}>{c.hubAllRoutes}</h2>
         <AnswerBlock question={c.hubQuestion} answer={c.hubAnswer(COUNTY.routes.length)} />
+        <p className={b.fareLegend}>{c.fareLegend}</p>
 
         {CITIES.map((city) => {
           const list = countyRoutesIn(city.slug)
@@ -125,6 +132,28 @@ export default async function BusHub({ params }: Props) {
                 {c.cityHeading(city.name[lang])}
               </h2>
               <ul className={b.routes}>
+                {/* Hialeah's own free lines first: their own routes, marked free. */}
+                {city.slug === 'hialeah'
+                  ? TRANSIT.routes.map((r) => {
+                      const [from, to] = ends(r, t)
+                      const gap = headwayToday(r)
+                      return (
+                        <li key={r.slug}>
+                          <Link className={b.routeLink} href={routes.freeRoute(lang, r.slug)}>
+                            <span className={b.routeTop}>
+                              <LineBullet route={r} size={30} />
+                              <span className={b.routeName}>{r.name}</span>
+                              <FareChip free label={c.fareFree} />
+                            </span>
+                            <span className={b.meta}>
+                              {from} ⇄ {to}
+                            </span>
+                            {gap ? <span className={b.meta}>{formatHeadway(gap, lang)}</span> : null}
+                          </Link>
+                        </li>
+                      )
+                    })
+                  : null}
                 {list.map((r) => {
                   const [a, z] = routeEnds(r)
                   const weekday = r.directions[0]?.schedule.weekday
@@ -135,6 +164,10 @@ export default async function BusHub({ params }: Props) {
                         <span className={b.routeTop}>
                           <RouteBullet route={r} size={18} />
                           <span className={b.routeName}>{routeName(r, lang)}</span>
+                          <FareChip
+                            free={isFree(r)}
+                            label={isFree(r) ? c.fareFree : c.farePaid}
+                          />
                         </span>
                         <span className={b.meta}>
                           {a} ⇄ {z}
@@ -148,17 +181,12 @@ export default async function BusHub({ params }: Props) {
                   )
                 })}
               </ul>
-              {city.slug === 'hialeah' ? (
-                <Link
-                  href={routes.freeRides(lang)}
-                  style={{ fontWeight: 800, color: 'var(--ink)' }}
-                >
-                  {c.freeLines}
-                </Link>
-              ) : null}
             </section>
           )
         })}
+        {/* Hialeah's free lines: the map, the hours, where the buses are (was /free-rides). */}
+        <FreeRidesSection lang={lang} />
+
         <Breadcrumbs items={crumbs} label={c.breadcrumb} />
       </main>
     </PageShell>

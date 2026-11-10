@@ -23,14 +23,17 @@ const ES = {
   hubSub:
     'Las guaguas del condado que pasan por Hialeah, Miami Lakes, la Pequeña Habana y Miami Gardens: todas las paradas, la primera y la última guagua, y cada cuánto pasan.',
   hubMetaTitle:
-    'Rutas de Metrobus en Hialeah, Miami Lakes, la Pequeña Habana y Miami Gardens: paradas y horarios',
+    'Guaguas en Hialeah, Miami Lakes, la Pequeña Habana y Miami Gardens: las gratis y las del condado',
   hubMetaDescription:
-    'Las rutas de guagua de Miami-Dade que pasan por Hialeah, Miami Lakes, la Pequeña Habana y Miami Gardens: cada parada, la primera y la última guagua, y cada cuánto pasan, según el horario del condado.',
+    '¿Qué guagua cojo? Las guaguas gratis de Hialeah (Flamingo y Marlin) y las rutas de Metrobus que pasan por Hialeah, Miami Lakes, la Pequeña Habana y Miami Gardens: cada parada, cuándo pasan y cuáles son gratis.',
   hubQuestion: '¿Qué guaguas pasan por Hialeah, Miami Lakes, la Pequeña Habana y Miami Gardens?',
   hubAnswer: (count: number) =>
     `Aquí hay ${n(count, 'ruta', 'rutas')} del condado que cruzan esas ciudades, con todas sus paradas y su horario. En Hialeah también hay dos guaguas gratis de la ciudad, la Flamingo y la Marlin.`,
   cityHeading: (city: string) => `PASAN POR ${city.toUpperCase()}`,
   freeLines: 'Las guaguas gratis de Hialeah: Flamingo y Marlin →',
+  fareFree: 'GRATIS',
+  farePaid: 'METROBUS · SE PAGA',
+  fareLegend: 'GRATIS: no pagas nada. METROBUS: la guagua del condado, se paga el pasaje al subir.',
   metaTitle: (name: string, a: string, b: string) =>
     `${name} de Metrobus: paradas y horario, ${a} ⇄ ${b}`,
   metaTitleTrolley: (name: string) => `${name}: paradas y horario (gratis)`,
@@ -307,14 +310,17 @@ const EN: BusCopy = {
   hubSub:
     'The county buses through Hialeah, Miami Lakes, Little Havana and Miami Gardens: every stop, the first and last bus, and how often they come.',
   hubMetaTitle:
-    'Metrobus routes in Hialeah, Miami Lakes, Little Havana and Miami Gardens: stops and schedules',
+    'Buses in Hialeah, Miami Lakes, Little Havana and Miami Gardens: free lines and county routes',
   hubMetaDescription:
-    'The Miami-Dade bus routes through Hialeah, Miami Lakes, Little Havana and Miami Gardens: every stop, the first and last bus, and how often each comes, from the county’s schedule.',
+    'Which bus do I take? Hialeah’s free buses (Flamingo and Marlin) and the Metrobus routes through Hialeah, Miami Lakes, Little Havana and Miami Gardens: every stop, when they come, and which ones are free.',
   hubQuestion: 'Which buses run through Hialeah, Miami Lakes, Little Havana and Miami Gardens?',
   hubAnswer: (count: number) =>
     `Here are ${n(count, 'county route', 'county routes')} that cross those cities, with every stop and the schedule. Hialeah also runs two free buses of its own, the Flamingo and the Marlin.`,
   cityHeading: (city: string) => `THROUGH ${city.toUpperCase()}`,
   freeLines: 'Hialeah’s free buses: Flamingo and Marlin →',
+  fareFree: 'FREE',
+  farePaid: 'METROBUS · FARE',
+  fareLegend: 'FREE: you pay nothing. METROBUS: the county bus, you pay the fare when you get on.',
   metaTitle: (name: string, a: string, b: string) =>
     `Metrobus ${name}: stops and schedule, ${a} ⇄ ${b}`,
   metaTitleTrolley: (name: string) => `${name}: stops and schedule (free)`,
