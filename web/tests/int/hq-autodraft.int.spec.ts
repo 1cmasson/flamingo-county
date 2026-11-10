@@ -6,7 +6,7 @@ import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } 
 import { getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
 
-import { EVENT_AUTO_DRAFTS, busyTimes, draftForPublished, pickPostTime, postDeadline, postWindowStart } from '@/lib/autoDraft'
+import { EVENT_AUTO_DRAFTS, STORY_AUTO_DRAFTS, busyTimes, draftForPublished, pickPostTime, postDeadline, postWindowStart } from '@/lib/autoDraft'
 import { miamiInstant } from '@/lib/dates'
 import { STORY_SIZE, draftEventStory, storyKey, storyTime } from '@/lib/eventStory'
 import { HQ_INTERNAL } from '@/lib/hq'
@@ -308,6 +308,16 @@ describe('auto-drafting a social post when a page goes live', () => {
     return draftForPublished(payload, 'events', id)
   }
 
+  /**
+   * A story page's own post. Publishing no longer drafts one (no posts about
+   * articles), so these call the story path directly, as turning
+   * `STORY_AUTO_DRAFTS` back on would.
+   */
+  const publishStoryAndDraft = async (id: number) => {
+    await publish('stories', id)
+    return draftForPublished(payload, 'stories', id)
+  }
+
   /** A bilingual story with a cover, saved as a draft. */
   async function draftStory(): Promise<Story> {
     const story = (await payload.create({
@@ -397,11 +407,20 @@ describe('auto-drafting a social post when a page goes live', () => {
     expect(tg.previews()).toHaveLength(0)
   })
 
-  it('publishing a story with a cover still drafts one pending post, previewed once', async () => {
+  it('publishing a story drafts no post about it', async () => {
+    const tg = fakeTelegram()
+    expect(STORY_AUTO_DRAFTS).toBe(false)
+    const story = await draftStory()
+    await publish('stories', story.id)
+    expect(await draftsFor('stories', story.id)).toHaveLength(0)
+    expect(tg.previews()).toHaveLength(0)
+  })
+
+  it('the story path drafts one pending post with a cover, previewed once', async () => {
     const tg = fakeTelegram()
     const story = await draftStory()
     expect(await draftsFor('stories', story.id)).toHaveLength(0)
-    await publish('stories', story.id)
+    await publishStoryAndDraft(story.id)
     const drafts = await draftsFor('stories', story.id)
     expect(drafts).toHaveLength(1)
     expect(drafts[0]).toMatchObject({ status: 'pending', pillar: 'story', language: 'both', platforms: ['instagram'] })
@@ -468,7 +487,7 @@ describe('auto-drafting a social post when a page goes live', () => {
   it('never drafts a page twice: not on a republish, nor on saving the live page again', async () => {
     const tg = fakeTelegram()
     const story = await draftStory()
-    await publish('stories', story.id)
+    await publishStoryAndDraft(story.id)
     expect(await draftsFor('stories', story.id)).toHaveLength(1)
 
     // Edited as a draft, then published again: that is draft → published once more.
@@ -476,6 +495,7 @@ describe('auto-drafting a social post when a page goes live', () => {
     await publish('stories', story.id)
     // The live page saved again, published → published.
     await publish('stories', story.id)
+    expect(await draftForPublished(payload, 'stories', story.id)).toBeNull()
     expect(await draftsFor('stories', story.id)).toHaveLength(1)
     // And the event path, called twice, drafts once.
     const ev = await draftEvent('2099-03-14')
@@ -497,7 +517,7 @@ describe('auto-drafting a social post when a page goes live', () => {
     made.push({ collection: 'stories', id: story.id })
     await payload.update({ collection: 'stories', id: story.id, data: { title: 'El último torcedor' } as never, locale: 'es', draft: true, overrideAccess: true })
 
-    await publish('stories', story.id)
+    expect(await publishStoryAndDraft(story.id)).toBeNull()
     expect(await draftsFor('stories', story.id)).toHaveLength(0)
     expect(tg.previews()).toHaveLength(0)
   })
@@ -587,26 +607,20 @@ describe('auto-drafting a social post when a page goes live', () => {
     expect(await draftsFor('events', cancelled.id)).toHaveLength(0)
   })
 
-  it('keeps publishing when drafting fails, for a story page or an event', async () => {
+  it('keeps publishing when drafting fails', async () => {
     fakeTelegram()
-    const story = await draftStory()
     const ev = await draftEvent('2099-03-14')
     const find = payload.find.bind(payload)
     const spy = vi.spyOn(payload, 'find').mockImplementation(((args: { collection: string }) =>
       args.collection === 'hq-social-drafts' ? Promise.reject(new Error('boom')) : find(args as never)) as never)
     const errors = vi.spyOn(console, 'error').mockImplementation(() => undefined)
     try {
-      await expect(publish('stories', story.id)).resolves.toMatchObject({ _status: 'published' })
       await expect(publish('events', ev.id)).resolves.toMatchObject({ _status: 'published' })
-      expect(errors.mock.calls).toEqual([
-        ['[hq] auto-draft failed:', 'boom'],
-        ['[hq] auto-draft failed:', 'boom'],
-      ])
+      expect(errors.mock.calls).toEqual([['[hq] auto-draft failed:', 'boom']])
     } finally {
       spy.mockRestore()
       errors.mockRestore()
     }
-    expect(await draftsFor('stories', story.id)).toHaveLength(0)
     expect(await storiesFor(ev.id)).toHaveLength(0)
   })
 })
