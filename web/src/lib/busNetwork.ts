@@ -95,7 +95,12 @@ export function networkWire(): WireNetwork {
     }
   })
   wire = {
-    source: { fetchedAt: raw.source.fetchedAt, serviceEnds: raw.source.serviceEnds },
+    source: {
+      fetchedAt: raw.source.fetchedAt,
+      serviceEnds: raw.source.serviceEnds,
+      // Which edition of the county's schedule: the daily refresh checks the live site serves it.
+      feedHash: raw.source.feedHash,
+    },
     stops,
     routes: [...TRANSIT.routes.map((r) => freeLine(r, stops)), ...county],
   }

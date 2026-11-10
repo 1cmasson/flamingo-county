@@ -1,0 +1,126 @@
+name: Bus schedule refresh
+
+# Miami-Dade Transit publishes a new edition of its schedule every few months
+# (the Jul 31, 2026 edition ends Nov 22). Every morning this downloads the
+# county's feed and compares its edition with the site's. When a new one is
+# out it rebuilds the bus data (`pnpm transit:county` and `pnpm
+# transit:network`), runs the transit tests, merges to main (which Railway
+# deploys) and checks that the live site is serving the new edition.
+# On a day the feed hasn't changed, nothing happens. Any failure opens an issue.
+on:
+  schedule:
+    - cron: '17 11 * * *' # 6:17 AM in Miami
+  workflow_dispatch:
+    inputs:
+      force:
+        description: 'Rebuild and deploy even if the edition looks the same'
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+concurrency:
+  group: transit-refresh
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    defaults:
+      run:
+        working-directory: web
+    env:
+      FEED_URL: https://www.miamidade.gov/transit/googletransit/current/google_transit.zip
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: web/package.json
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Download the county's feed
+        run: curl -fsSL --retry 3 --retry-delay 20 -A "FlamingoCounty/1.0 (+https://flamingocounty.com)" -o "$RUNNER_TEMP/feed.zip" "$FEED_URL"
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Is it a new edition?
+        id: check
+        run: |
+          new=$(pnpm -s exec tsx scripts/transit/feed-hash.ts "$RUNNER_TEMP/feed.zip")
+          old=$(node -p "require('./src/data/transit/network.json').source.feedHash || ''")
+          echo "feed: $new · site: $old"
+          echo "hash=$new" >> "$GITHUB_OUTPUT"
+          if [ "$new" != "$old" ] || [ "${{ inputs.force }}" = "true" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Same edition as the site: nothing to do."
+          fi
+
+      - name: Rebuild the bus data
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          pnpm transit:county --zip "$RUNNER_TEMP/feed.zip"
+          pnpm transit:network --zip "$RUNNER_TEMP/feed.zip"
+
+      - name: Test the new data
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          pnpm exec tsc --noEmit -p .
+          pnpm exec vitest run --config ./vitest.config.mts \
+            tests/int/county-transit.int.spec.ts \
+            tests/int/county-live.int.spec.ts \
+            tests/int/bus-time.int.spec.ts \
+            tests/int/trip-plan.int.spec.ts \
+            tests/int/trip-link.int.spec.ts \
+            tests/int/bus-network.int.spec.ts \
+            tests/int/popular-trips.int.spec.ts
+
+      - name: Merge to main (Railway deploys it)
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          git config user.name "flamingo-county-bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          branch="transit-refresh/${{ steps.check.outputs.hash }}"
+          git checkout -b "$branch"
+          git add src/data/transit
+          if git diff --cached --quiet; then echo "No data change after rebuilding."; exit 0; fi
+          ends=$(node -p "require('./src/data/transit/network.json').source.serviceEnds")
+          git commit -m "Bus schedule: the county's new edition (runs to $ends)" \
+            -m "Rebuilt by the daily refresh (.github/workflows/transit-refresh.yml): pnpm transit:county and pnpm transit:network, transit tests passed."
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "Bus schedule: the county's new edition (runs to $ends)" \
+            --body "The county published a new edition of its bus schedule (feed ${{ steps.check.outputs.hash }}). Rebuilt and tested by the daily refresh, run ${{ github.run_id }}: route pages, trip planner, popular trips and live-arrival ids."
+          gh pr merge "$branch" --merge --delete-branch
+
+      - name: Check the live site serves the new edition
+        if: steps.check.outputs.changed == 'true'
+        run: |
+          want="${{ steps.check.outputs.hash }}"
+          for i in $(seq 1 40); do
+            got=$(curl -fsS "https://flamingocounty.com/api/transit/network?v=check-${{ github.run_id }}-$i" | node -e "let s='';process.stdin.on('data',d=>s+=d).on('end',()=>{try{console.log(JSON.parse(s).source.feedHash||'')}catch{console.log('')}})" || true)
+            echo "live: ${got:-?} (want $want)"
+            [ "$got" = "$want" ] && exit 0
+            sleep 45
+          done
+          echo "The live site still isn't serving the new edition after 30 minutes: check the Railway deploy."
+          exit 1
+
+      - name: Open an issue when something failed
+        if: failure()
+        run: |
+          gh issue create \
+            --title "Bus schedule refresh failed ($(date -u +%Y-%m-%d))" \
+            --body "The daily bus schedule refresh failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}. The site keeps the previous edition (route pages stop quoting times after its end date; the planner keeps planning). Fix and re-run, or run pnpm transit:county and pnpm transit:network by hand."

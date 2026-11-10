@@ -20,6 +20,7 @@ import {
   type WireNetwork,
 } from '../lib/tripPlan'
 import { FareChip } from './FareChip'
+import networkVersion from '../data/transit/network-version.json'
 import { DIR_COLORS, type MapTrip } from './BusMap'
 import { ShareTrip, shareStart } from './TripShare'
 import { tripBuses } from '../lib/tripLink'
@@ -38,16 +39,19 @@ export type Destination = { name: string; sub: string; at: LatLng; href: string 
 /* ---------------------------------------------------------- the network */
 
 /**
- * The network's shape on the wire. Browsers keep /api/transit/network for an
- * hour, so a change of shape gets a new address: a phone holding the old one
- * must not feed it to the new planner.
+ * The network's address carries its shape and the county schedule's edition
+ * (`pnpm transit:network` writes network-version.json). Browsers keep it for
+ * an hour and Cloudflare for a day, so a new edition (new stop ids) or a new
+ * shape must be a new address: a phone holding the old one must not plan
+ * with stops the live arrivals no longer know.
  */
 const NETWORK_SHAPE = 2
+const NETWORK_URL = `/api/transit/network?v=${NETWORK_SHAPE}-${networkVersion.v}`
 
 let network: Promise<Network | null> | null = null
 /** Every route, fetched once per page and shared by the planner and the hub. */
 export function loadNetwork(): Promise<Network | null> {
-  network ??= fetch(`/api/transit/network?v=${NETWORK_SHAPE}`)
+  network ??= fetch(NETWORK_URL)
     .then((r) => (r.ok ? (r.json() as Promise<WireNetwork>) : null))
     .then((w) => (w ? expandNetwork(w) : null))
     .catch(() => {
