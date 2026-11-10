@@ -6,6 +6,11 @@
  *
  *   pnpm social:events -- --from 2026-10-19 --to 2026-10-25
  *   pnpm social:events -- --from 2026-10-23 --to 2026-10-25 --out ~/Desktop/x
+ *   pnpm social:events -- --from 2026-10-16 --to 2026-10-18 --events drafts.json
+ *
+ * `--events` draws from a file instead of the site: `{ es: Event[], en: Event[] }`
+ * (depth 2, as HQ's findEvents returns them with draft: true), so the owner
+ * can see the post before tapping Publish on the events in it.
  *
  * Slides, 1080×1350 (Instagram's 4:5), per language:
  *   1. the cover, a still: EVENTOS / EVENTS and the dates;
@@ -21,7 +26,7 @@
  * as everywhere else.
  */
 import { execFileSync } from 'node:child_process'
-import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -86,7 +91,8 @@ export type Row = {
   started: boolean
   title: Record<Lang, string>
   time: Record<Lang, string>
-  venue: string
+  /** Each language's own venue name: "Biblioteca JFK" / "JFK Library". */
+  venue: Record<Lang, string>
   city: City | null
 }
 
@@ -116,6 +122,7 @@ export function toRows(es: Event[], en: Event[], from: string, to: string): Row[
     if (!days.length) continue
     const other = enById.get(ev.id) ?? ev
     const { name, city } = eventVenue(ev)
+    const enName = eventVenue(other).name || name
     rows.push({
       id: ev.id,
       slug: ev.slug,
@@ -124,7 +131,7 @@ export function toRows(es: Event[], en: Event[], from: string, to: string): Row[
       started: dateOnly(ev.date) < from,
       title: { es: ev.title.trim(), en: (other.title || ev.title).trim() },
       time: { es: ev.timeLabel ?? '', en: other.timeLabel ?? ev.timeLabel ?? '' },
-      venue: name,
+      venue: { es: name, en: enName },
       city,
     })
   }
@@ -247,17 +254,51 @@ function capDay(r: Row, lang: Lang): string {
 export function caption(groups: CityGroup[], from: string, to: string, lang: Lang, fbLink?: string): string {
   const c = CAPTION[lang]
   const range = rangeText(from, to, lang).toLowerCase().replace(/\b([a-z])/g, (m) => (lang === 'en' ? m.toUpperCase() : m))
-  const blocks = groups.map((g) => {
-    const lines = g.rows.map((r) => [`• ${capDay(r, lang)}`, r.title[lang], r.venue].filter(Boolean).join(' · '))
-    return [g.name ? g.name.toUpperCase() : '', ...lines].filter(Boolean).join('\n')
-  })
   const save = fbLink ? c.saveFb(fbLink) : c.save
-  return [c.head(isWeekend(from, to), range), ...blocks, save].join('\n\n')
+  const write = (venues: boolean) => {
+    const blocks = groups.map((g) => {
+      const lines = g.rows.map((r) => [`• ${capDay(r, lang)}`, r.title[lang], venues ? r.venue[lang] : ''].filter(Boolean).join(' · '))
+      return [g.name ? g.name.toUpperCase() : '', ...lines].filter(Boolean).join('\n')
+    })
+    return [c.head(isWeekend(from, to), range), ...blocks, save].join('\n\n')
+  }
+  // A busy range runs past Instagram's limit with a venue on every line; the
+  // slides carry the venues, so the caption drops them before anything else.
+  const full = write(true)
+  return full.length > CAPTION_LIMIT ? write(false) : full
 }
 
 /* ------------------------------------------------------------------------ */
 /* Drawing                                                                   */
 /* ------------------------------------------------------------------------ */
+
+/**
+ * The two looks. The week's post is the site's cyan with a pink-to-yellow
+ * band; the weekend's (Carlos, 2026-10-14: "same post, different colour") is
+ * a dusk version: cyan-to-pink band, pink ticket and day chips, cyan pops, and
+ * the fountain loops graded warmer, so the Thursday post never reads as a
+ * repeat of Monday's. (A pink wash over the cover scene was tried: it muddied it.)
+ */
+type Theme = { band: string; pop: string; kick: string; ticket: string; day: string; grade: string | null }
+const THEMES: Record<'week' | 'weekend', Theme> = {
+  week: {
+    band: 'linear-gradient(180deg, #ff4fa0 0%, #ffd400 100%)',
+    pop: 'var(--pink)',
+    kick: 'var(--yellow)',
+    ticket: 'var(--yellow)',
+    day: 'var(--yellow)',
+    grade: null,
+  },
+  weekend: {
+    band: 'linear-gradient(180deg, #16e0f2 0%, #ff2e88 100%)',
+    pop: '#16e0f2',
+    kick: 'var(--pink)',
+    ticket: 'var(--pink)',
+    day: 'var(--pink)',
+    grade: 'colorbalance=rs=0.10:gs=-0.03:bs=-0.04:rm=0.10:gm=-0.04:bh=0.06',
+  },
+}
+export const themeFor = (from: string, to: string): Theme => THEMES[isWeekend(from, to) ? 'weekend' : 'week']
 
 const esc = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 /** A title, escaped, with hyphenated words kept whole: "N-400" must not break after "N-". */
@@ -273,32 +314,35 @@ html, body { width: ${W}px; height: ${H}px; overflow: hidden; }
 body { font-family: Archivo, sans-serif; font-weight: 800; color: var(--ink); position: relative; }
 .lucky { font-family: Lucky, sans-serif; font-weight: 400; letter-spacing: 1px; }
 .band { position: absolute; left: 0; right: 0; top: 0; height: 150px;
-  background: radial-gradient(circle, rgba(12,15,20,.55) 2px, transparent 2.6px) 0 0/22px 22px, linear-gradient(180deg, #ff4fa0 0%, #ffd400 100%);
+  background: radial-gradient(circle, rgba(12,15,20,.55) 2px, transparent 2.6px) 0 0/22px 22px, var(--band);
   border-bottom: 6px solid var(--ink); }
 .chip { position: absolute; top: 46px; height: 54px; display: flex; align-items: center; padding: 0 20px; font-size: 26px; letter-spacing: 4px; }
-.chip.dark { left: 64px; background: var(--ink); color: var(--yellow); }
+.chip.dark { left: 64px; background: var(--ink); color: var(--kick); }
 .chip.light { right: 64px; background: var(--cream); border: 4px solid var(--ink); }
 `
 
-function page(css: string, body: string, transparent = false): string {
-  return `<!doctype html><html><head><meta charset="utf-8"><style>${BASE_CSS}${css}
+function page(theme: Theme, css: string, body: string, transparent = false): string {
+  const vars = `:root { --band: ${theme.band}; --pop: ${theme.pop}; --kick: ${theme.kick}; --ticket: ${theme.ticket}; --day: ${theme.day}; }`
+  return `<!doctype html><html><head><meta charset="utf-8"><style>${BASE_CSS}${vars}${css}
   body { background: ${transparent ? 'transparent' : 'var(--cyan)'}; }</style></head><body>${body}</body></html>`
 }
 
 function coverHtml(lang: Lang, from: string, to: string, n: number, cities: string[], scene: string): string {
   const c = COPY[lang]
   const range = rangeText(from, to, lang)
+  const theme = themeFor(from, to)
   const css = `
   .scene { position: absolute; inset: 150px 0 0 0; background: url('${file(scene)}') center bottom/cover; }
   .head { position: absolute; left: 64px; top: 210px; background: var(--ink); padding: 40px 56px 60px; box-shadow: 14px 14px 0 var(--cream); }
-  .kick { color: var(--yellow); font-size: 64px; }
-  .title { color: var(--cream); font-size: 168px; line-height: .95; text-shadow: 6px 6px 0 var(--pink); margin-top: 6px; }
-  .ticket { position: absolute; right: 52px; top: 610px; background: var(--yellow); border: 8px solid var(--ink); padding: 26px 40px 14px; transform: rotate(-3deg); box-shadow: 10px 10px 0 var(--ink); font-size: ${range.length > 12 ? 92 : 116}px; white-space: nowrap; }
+  .kick { color: var(--kick); font-size: 64px; }
+  .title { color: var(--cream); font-size: 168px; line-height: .95; text-shadow: 6px 6px 0 var(--pop); margin-top: 6px; }
+  .ticket { position: absolute; right: 52px; top: 610px; background: var(--ticket); border: 8px solid var(--ink); padding: 26px 40px 14px; transform: rotate(-3deg); box-shadow: 10px 10px 0 var(--ink); font-size: ${range.length > 12 ? 92 : 116}px; white-space: nowrap; }
   .meta { position: absolute; left: 64px; bottom: 60px; }
   .count { display: inline-block; background: var(--ink); color: var(--cream); font-size: 54px; padding: 16px 24px 6px; }
   .cities { background: var(--cream); border: 4px solid var(--ink); font-size: 32px; letter-spacing: 3px; padding: 12px 22px; margin-top: 0; }
   `
   return page(
+    theme,
     css,
     `<div class="scene"></div><div class="band"></div>
      <div class="chip dark">${lang === 'es' ? 'AGENDA' : 'WHAT’S ON'}</div><div class="chip light">FLAMINGOCOUNTY.COM</div>
@@ -316,7 +360,7 @@ function coverHtml(lang: Lang, from: string, to: string, n: number, cities: stri
  * right corner, and the rows beside it are pulled in so no title runs under
  * it (done in the page, once the fonts have laid the rows out).
  */
-function listHtml(lang: Lang, g: CityGroup, rows: Row[], part: number, parts: number, total: number): string {
+function listHtml(theme: Theme, lang: Lang, g: CityGroup, rows: Row[], part: number, parts: number, total: number): string {
   const c = COPY[lang]
   const art = CITY_ART[g.slug]
   const mascot = art ? join(MASCOTS, art.mascot) : null
@@ -330,7 +374,7 @@ function listHtml(lang: Lang, g: CityGroup, rows: Row[], part: number, parts: nu
   .panel { position: absolute; left: 40px; right: 40px; bottom: 40px; background: var(--cream); border: 6px solid var(--ink); box-shadow: 0 -10px 0 ${accent}; padding: 8px 28px 10px; }
   .row { display: flex; gap: 20px; align-items: center; padding: 13px 0; border-bottom: 3px dashed rgba(12,15,20,.22); }
   .row:last-child { border-bottom: 0; }
-  .day { flex: 0 0 auto; min-width: 140px; background: var(--yellow); border: 4px solid var(--ink); text-align: center; font-size: 23px; letter-spacing: 1px; padding: 8px 8px 5px; line-height: 1.1; }
+  .day { flex: 0 0 auto; min-width: 140px; background: var(--day); border: 4px solid var(--ink); text-align: center; font-size: 23px; letter-spacing: 1px; padding: 8px 8px 5px; line-height: 1.1; }
   .day.run { font-size: 19px; max-width: 160px; }
   .txt { min-width: 0; flex: 1; }
   .t { font-size: ${titleSize}px; line-height: 1.1; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
@@ -340,9 +384,9 @@ function listHtml(lang: Lang, g: CityGroup, rows: Row[], part: number, parts: nu
   const items = rows
     .map((r) => {
       const day = dayText(r, lang)
-      const where = [r.time[lang], r.venue].filter(Boolean).join(' · ')
+      const where = [r.time[lang], r.venue[lang]].filter(Boolean).join(' · ')
       return `<div class="row"><div class="lucky day${day.length > 9 ? ' run' : ''}">${esc(day)}</div>
-        <div class="txt"><div class="lucky t">${escTitle(r.title[lang])}</div>${where ? `<div class="w">${esc(where)}</div>` : ''}</div></div>`
+        <div class="txt"><div class="lucky t">${escTitle(r.title[lang].toLocaleUpperCase(lang))}</div>${where ? `<div class="w">${esc(where)}</div>` : ''}</div></div>`
     })
     .join('')
   // Pull in the rows the mascot overlaps, then again: a row that wraps to a
@@ -363,6 +407,7 @@ function listHtml(lang: Lang, g: CityGroup, rows: Row[], part: number, parts: nu
     })
   </script>`
   return page(
+    theme,
     css,
     `<div class="city"><div class="lucky name">${esc(g.name.toUpperCase() || (lang === 'es' ? 'MÁS' : 'MORE'))}</div><div class="sub">${c.count(total)}</div></div>
      ${parts > 1 ? `<div class="lucky page">${c.page(part, parts)}</div>` : ''}
@@ -380,7 +425,7 @@ type Shot = { path: string; boxes: Box[] }
 const PHONE = { width: 390, height: 640 }
 const PHONE_W = 452
 
-function saveHtml(lang: Lang, links: Shot, event: Shot): string {
+function saveHtml(theme: Theme, lang: Lang, links: Shot, event: Shot): string {
   const c = COPY[lang]
   const k = PHONE_W / PHONE.width
   const rings = (shot: Shot) =>
@@ -389,7 +434,7 @@ function saveHtml(lang: Lang, links: Shot, event: Shot): string {
       .join('')
   const css = `
   body { background: var(--cream) !important; }
-  .t1 { position: absolute; left: 60px; top: 170px; font-size: 124px; line-height: .95; color: var(--ink); text-shadow: 5px 5px 0 var(--pink); }
+  .t1 { position: absolute; left: 60px; top: 170px; font-size: 124px; line-height: .95; color: var(--ink); text-shadow: 5px 5px 0 var(--pop); }
   .t2 { position: absolute; left: 64px; top: 292px; font-size: 40px; letter-spacing: 1px; }
   .phone { position: absolute; top: 380px; width: ${PHONE_W + 20}px; border: 10px solid var(--ink); border-radius: 44px; overflow: hidden; background: #fff; box-shadow: 12px 12px 0 var(--ink); }
   .phone .in { position: relative; }
@@ -403,6 +448,7 @@ function saveHtml(lang: Lang, links: Shot, event: Shot): string {
   .step b { display: block; font-family: Lucky; font-weight: 400; font-size: 38px; letter-spacing: 1px; margin-bottom: 4px; }
   `
   return page(
+    theme,
     css,
     `<div class="band" style="height:110px"></div>
      <div class="lucky t1">${c.saveTitle}</div><div class="t2">${c.saveSub}</div>
@@ -441,7 +487,7 @@ async function shoot(browser: Browser, html: string, out: string, transparent = 
  * fills the window above the panel (`panelTop`), sharp and centred on it;
  * behind the panel and any gap it is the same loop, blurred and darkened.
  */
-function compose(loop: string | null, overlay: string, panelTop: number, mp4: string, jpg: string): void {
+function compose(loop: string | null, overlay: string, panelTop: number, mp4: string, jpg: string, grade: string | null = null): void {
   const src = loop ?? join(SCENES, 'hialeah-gateway.jpg')
   const [sw, sh] = execFileSync('ffprobe', ['-v', 'error', '-select_streams', 'v:0', '-show_entries', 'stream=width,height', '-of', 'csv=p=0', src])
     .toString()
@@ -455,7 +501,7 @@ function compose(loop: string | null, overlay: string, panelTop: number, mp4: st
   const y = Math.min(0, Math.round((panelTop + 20 - fgH) / 2))
   const input = loop ? ['-stream_loop', '-1', '-i', src] : ['-loop', '1', '-i', src]
   const filter = [
-    `[0:v]fps=30,split[a][b]`,
+    `[0:v]fps=30${grade ? `,${grade}` : ''},split[a][b]`,
     `[a]scale=-2:${H},crop=${W}:${H},boxblur=24:2,eq=brightness=-0.10:saturation=1.05[bg]`,
     `[b]scale=-2:${fgH}:flags=lanczos,crop=${W}:${fgH},eq=saturation=1.12:contrast=1.04[fg]`,
     `[bg][fg]overlay=0:${y}[base]`,
@@ -516,14 +562,17 @@ async function main() {
   const from = arg('from')
   const to = arg('to')
   if (!from || !to || !ISO.test(from) || !ISO.test(to) || to < from) {
-    console.error('Usage: pnpm social:events -- --from YYYY-MM-DD --to YYYY-MM-DD [--out DIR] [--site URL]')
+    console.error('Usage: pnpm social:events -- --from YYYY-MM-DD --to YYYY-MM-DD [--out DIR] [--site URL] [--events FILE]')
     process.exit(2)
   }
   const site = (arg('site') ?? 'https://flamingocounty.com').replace(/\/$/, '')
   const out = resolve(arg('out')?.replace(/^~/, homedir()) ?? join(homedir(), 'Movies/Flamingo County Reels', `${from} events carousel`))
   mkdirSync(out, { recursive: true })
 
-  const [es, en] = await Promise.all([fetchEvents(site, from, to, 'es'), fetchEvents(site, from, to, 'en')])
+  const file = arg('events')
+  const [es, en] = file
+    ? (({ es, en }: { es: Event[]; en: Event[] }) => [es, en])(JSON.parse(readFileSync(resolve(file), 'utf8')))
+    : await Promise.all([fetchEvents(site, from, to, 'es'), fetchEvents(site, from, to, 'en')])
   const rows = toRows(es, en, from, to)
   if (!rows.length) {
     console.log(`No published events between ${from} and ${to}: nothing to draw.`)
@@ -533,6 +582,7 @@ async function main() {
   const slides = groups.flatMap((g) => chunk(g.rows).map((part, i, all) => ({ g, part, i: i + 1, n: all.length })))
   if (slides.length > MAX_LIST_SLIDES) throw new Error(`${slides.length} list slides: Instagram takes ${MAX_LIST_SLIDES} with the cover and the save slide. Narrow the range.`)
 
+  const theme = themeFor(from, to)
   const browser = await chromium.launch()
   const manifest: Record<string, unknown> = { from, to, site, events: rows.map((r) => ({ id: r.id, slug: r.slug, day: r.day, city: r.city?.slug ?? null, title: r.title.es })) }
   try {
@@ -548,15 +598,15 @@ async function main() {
       let k = 2
       for (const s of slides) {
         const base = join(dir, `${String(k++).padStart(2, '0')}-${s.g.slug}${s.n > 1 ? `-${s.i}` : ''}`)
-        const { panelTop } = await shoot(browser, listHtml(lang, s.g, s.part, s.i, s.n, s.g.rows.length), `${base}-overlay.png`, true)
+        const { panelTop } = await shoot(browser, listHtml(theme, lang, s.g, s.part, s.i, s.n, s.g.rows.length), `${base}-overlay.png`, true)
         const art = CITY_ART[s.g.slug]
-        compose(art ? join(LOOPS, art.loop) : null, `${base}-overlay.png`, Number(panelTop), `${base}.mp4`, `${base}.jpg`)
+        compose(art ? join(LOOPS, art.loop) : null, `${base}-overlay.png`, Number(panelTop), `${base}.mp4`, `${base}.jpg`, theme.grade)
         files.ig.push(`${base}.mp4`)
         files.fb.push(`${base}.jpg`)
       }
       const [links, event] = await phoneShots(browser, site, lang, dir, rows.find((r) => !r.started)?.slug ?? rows[0].slug)
       const save = join(dir, `${String(k).padStart(2, '0')}-save.jpg`)
-      await shoot(browser, saveHtml(lang, links, event), save)
+      await shoot(browser, saveHtml(theme, lang, links, event), save)
       files.ig.push(save)
       files.fb.push(save)
 

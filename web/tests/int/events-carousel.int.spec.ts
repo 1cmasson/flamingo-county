@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import type { City, Event } from '../../src/payload-types'
-import { byCity, caption, chunk, dayText, isWeekend, rangeText, toRows, type Row } from '../../scripts/social/events-carousel'
+import { byCity, caption, chunk, dayText, isWeekend, rangeText, themeFor, toRows, type Row } from '../../scripts/social/events-carousel'
 
 const hialeah = { id: 1, slug: 'hialeah', name: 'HIALEAH', order: 0 } as City
 const lakes = { id: 2, slug: 'lakes', name: 'MIAMI LAKES', order: 1 } as City
@@ -44,6 +44,7 @@ describe('events carousel', () => {
     expect(rows[0].title).toEqual({ es: 'Evento 1', en: 'Event 1' })
     // No English version: the Spanish title stands in rather than nothing.
     expect(rows[1].title.en).toBe('Evento 6')
+    expect(rows[0].venue).toEqual({ es: 'Lugar 1', en: 'Lugar 1' })
 
     const groups = byCity(rows)
     expect(groups.map((g) => [g.slug, g.name, g.rows.length])).toEqual([
@@ -69,6 +70,21 @@ describe('events carousel', () => {
     expect(rangeText('2026-10-30', '2026-11-01', 'en')).toBe('OCT 30 – NOV 1')
     expect(isWeekend('2026-10-23', '2026-10-25')).toBe(true)
     expect(isWeekend('2026-10-19', '2026-10-25')).toBe(false)
+  })
+
+  it('drops the venues from a caption that would pass Instagram\'s limit', () => {
+    const many = Array.from({ length: 30 }, (_, i) => ev(i + 1, '2026-10-24', { title: `Un evento con un título bastante largo ${i + 1}`, place: 'Biblioteca de Hialeah Gardens' }))
+    const groups = byCity(toRows(many, [], '2026-10-23', '2026-10-25'))
+    const text = caption(groups, '2026-10-23', '2026-10-25', 'es')
+    expect(text).not.toContain('Biblioteca de Hialeah Gardens')
+    expect(text.length).toBeLessThanOrEqual(2200)
+    expect(caption(byCity(toRows(many.slice(0, 3), [], '2026-10-23', '2026-10-25')), '2026-10-23', '2026-10-25', 'es')).toContain('Biblioteca de Hialeah Gardens')
+  })
+
+  it('gives the weekend post its own colours', () => {
+    expect(themeFor('2026-10-16', '2026-10-18').ticket).toBe('var(--pink)')
+    expect(themeFor('2026-10-19', '2026-10-25').ticket).toBe('var(--yellow)')
+    expect(themeFor('2026-10-19', '2026-10-25').grade).toBeNull()
   })
 
   it('writes a caption per city, with "link in bio" on Instagram and the link on Facebook', () => {
