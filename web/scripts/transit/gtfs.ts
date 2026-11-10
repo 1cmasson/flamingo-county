@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 /**
  * Reading Miami-Dade Transit's GTFS, shared by the two transit scripts:
  * sync.ts (Hialeah's free lines) and county.ts (the county's bus routes).
@@ -258,3 +259,15 @@ export function headwayIn(times: number[], from: number, to: number): number | n
   return m === null ? null : Math.round(m)
 }
 
+/**
+ * Which edition of the county's schedule a feed is: a hash of the files that
+ * change with one. The zip itself is rebuilt with new timestamps even when
+ * nothing in it changed, so it can't be compared whole. The daily refresh
+ * (.github/workflows/transit-refresh.yml) compares this to the site's.
+ */
+export function feedHash(dir: string): string {
+  const h = createHash('sha256')
+  for (const f of ['calendar.txt', 'calendar_dates.txt', 'routes.txt', 'stops.txt', 'trips.txt'])
+    h.update(readFileSync(join(dir, f)))
+  return h.digest('hex').slice(0, 16)
+}

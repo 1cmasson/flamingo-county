@@ -646,7 +646,7 @@ export type WireRoute = Omit<NetworkRoute, 'directions'> & {
   }[]
 }
 export type WireNetwork = {
-  source: { fetchedAt: string; serviceEnds: string | null }
+  source: { fetchedAt: string; serviceEnds: string | null; feedHash?: string }
   stops: [number, number, string, string][]
   routes: WireRoute[]
 }

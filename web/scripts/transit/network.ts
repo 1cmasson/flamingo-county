@@ -33,6 +33,7 @@ import {
   cleanHeadsign,
   cleanStopName,
   eachStopTime,
+  feedHash,
   headwayIn,
   iso,
   meters,
@@ -45,6 +46,9 @@ import {
 
 const FEED_URL = 'https://www.miamidade.gov/transit/googletransit/current/google_transit.zip'
 const OUT = join(import.meta.dirname, '../../src/data/transit/network.json')
+/** A few bytes the browser bundle can carry: which edition the network is, for its cache. */
+const VERSION_OUT = join(import.meta.dirname, '../../src/data/transit/network-version.json')
+
 
 /** Built from the City of Hialeah's data instead (see above). */
 const SKIP = new Set(['HIAFLA', 'HIAMAR'])
@@ -303,18 +307,21 @@ async function main() {
     .map((r) => r.serviceEnds)
     .filter((d) => d !== null)
     .sort()
+  const hash = feedHash(dir)
   const data = {
     source: {
       name: 'Miami-Dade Transit (GTFS)',
       url: FEED_URL,
       fetchedAt: new Date().toISOString(),
       serviceEnds: ends[0] ?? null,
+      feedHash: hash,
     },
     stops: stopTable,
     routes: out,
   }
   const json = JSON.stringify(data)
   writeFileSync(OUT, json + '\n')
+  writeFileSync(VERSION_OUT, JSON.stringify({ v: hash }) + '\n')
   const patterns = out.reduce((n, r) => n + r.patterns.length, 0)
   console.log(
     `Wrote ${OUT}: ${out.length} routes, ${patterns} patterns, ${stopTable.length} stops, ${(json.length / 1024).toFixed(0)} KB; schedule ends ${data.source.serviceEnds}`,
