@@ -1361,3 +1361,15 @@ a.line {
   align-items: center;
   gap: 6px;
 }
+
+/* The hub's Metrobus list: every numbered route, small, so sixty fit on a phone. */
+.routesCompact {
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+.routesCompact .routeLink {
+  padding: 10px;
+}
+.routesCompact .meta {
+  font-size: 12px;
+}

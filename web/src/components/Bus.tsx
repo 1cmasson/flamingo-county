@@ -27,7 +27,7 @@ export function RouteBullet({ route, size = 28 }: { route: CountyRoute; size?: n
       style={{ fontSize: size, boxShadow: `4px 4px 0 ${route.color}` }}
       aria-hidden
     >
-      {route.number ?? 'T'}
+      {route.number ?? (route.kind === 'rail' ? 'MR' : route.kind === 'mover' ? 'MM' : 'T')}
     </span>
   )
 }

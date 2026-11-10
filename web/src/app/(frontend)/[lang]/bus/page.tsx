@@ -7,9 +7,13 @@ import { openGraph } from '../../../../lib/site'
 import { busCopy } from '../../../../lib/busCopy'
 import {
   COUNTY,
+  byRouteOrder,
   countyRoutesIn,
   isFree,
   routeEnds,
+  routeGroup,
+  type CountyRoute,
+  type RouteGroup,
   routeName,
   routeVia,
   scheduleCurrent,
@@ -61,11 +65,77 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 }
 
+/** The hub's sections of every route, in order. */
+const GROUPS: {
+  group: RouteGroup
+  heading: 'groupFree' | 'groupRail' | 'groupBus' | 'groupCity'
+  note: 'groupFreeNote' | 'groupBusNote' | 'groupCityNote' | null
+}[] = [
+  { group: 'free', heading: 'groupFree', note: 'groupFreeNote' },
+  { group: 'rail', heading: 'groupRail', note: null },
+  { group: 'bus', heading: 'groupBus', note: 'groupBusNote' },
+  { group: 'city', heading: 'groupCity', note: 'groupCityNote' },
+]
+
+/** Hialeah's free Flamingo and Marlin, as the hub lists them. */
+function FreeLineItems({ lang }: { lang: Lang }) {
+  const c = busCopy(lang)
+  const t = translator(lang)
+  return TRANSIT.routes.map((r) => {
+    const [from, to] = ends(r, t)
+    const gap = headwayToday(r)
+    return (
+      <li key={r.slug}>
+        <Link className={b.routeLink} href={routes.freeRoute(lang, r.slug)}>
+          <span className={b.routeTop}>
+            <LineBullet route={r} size={30} />
+            <span className={b.routeName}>{r.name}</span>
+            <FareChip free label={c.fareFree} />
+          </span>
+          <span className={b.meta}>
+            {from} ⇄ {to}
+          </span>
+          {gap ? <span className={b.meta}>{formatHeadway(gap, lang)}</span> : null}
+        </Link>
+      </li>
+    )
+  })
+}
+
+/** One county route on the hub: its name, what it costs, its ends; the street and how often, unless compact. */
+function RouteItem({ route: r, lang, compact }: { route: CountyRoute; lang: Lang; compact?: boolean }) {
+  const c = busCopy(lang)
+  const [a, z] = routeEnds(r)
+  const weekday = r.directions[0]?.schedule.weekday
+  const gap = scheduleCurrent(r) && weekday ? typicalHeadway(weekday) : null
+  const via = routeVia(r, lang)
+  const fare =
+    r.fare === 'free' ? c.fareFree : r.fare === 'paid' ? (r.kind === 'rail' ? c.fareRail : c.farePaid) : null
+  return (
+    <li>
+      <Link className={b.routeLink} href={routes.busRoute(lang, r.slug)}>
+        <span className={b.routeTop}>
+          <RouteBullet route={r} size={18} />
+          <span className={b.routeName}>{routeName(r, lang)}</span>
+          {fare && !compact ? <FareChip free={isFree(r)} label={fare} /> : null}
+        </span>
+        <span className={b.meta}>
+          {a} ⇄ {z}
+        </span>
+        {!compact && (via || gap) ? (
+          <span className={b.meta}>
+            {[via, gap ? c.every(gap) : null].filter(Boolean).join(' · ')}
+          </span>
+        ) : null}
+      </Link>
+    </li>
+  )
+}
+
 export default async function BusHub({ params }: Props) {
   const { lang } = await params
   if (!isLang(lang)) notFound()
   const c = busCopy(lang)
-  const t = translator(lang)
   const path = routes.bus(lang)
   const crumbs: Crumb[] = [
     { name: c.home, path: routes.home(lang) },
@@ -120,9 +190,10 @@ export default async function BusHub({ params }: Props) {
         <AnyTripLink lang={lang} />
 
         <h2 className={b.hubAll}>{c.hubAllRoutes}</h2>
-        <AnswerBlock question={c.hubQuestion} answer={c.hubAnswer(COUNTY.routes.length)} />
+        <AnswerBlock question={c.hubQuestion} answer={c.hubAnswer(COUNTY.routes.length + TRANSIT.routes.length)} />
         <p className={b.fareLegend}>{c.fareLegend}</p>
 
+        {/* The routes through the directory's cities first: the ones its readers ride. */}
         {CITIES.map((city) => {
           const list = countyRoutesIn(city.slug)
           if (!list.length) return null
@@ -133,53 +204,32 @@ export default async function BusHub({ params }: Props) {
               </h2>
               <ul className={b.routes}>
                 {/* Hialeah's own free lines first: their own routes, marked free. */}
-                {city.slug === 'hialeah'
-                  ? TRANSIT.routes.map((r) => {
-                      const [from, to] = ends(r, t)
-                      const gap = headwayToday(r)
-                      return (
-                        <li key={r.slug}>
-                          <Link className={b.routeLink} href={routes.freeRoute(lang, r.slug)}>
-                            <span className={b.routeTop}>
-                              <LineBullet route={r} size={30} />
-                              <span className={b.routeName}>{r.name}</span>
-                              <FareChip free label={c.fareFree} />
-                            </span>
-                            <span className={b.meta}>
-                              {from} ⇄ {to}
-                            </span>
-                            {gap ? <span className={b.meta}>{formatHeadway(gap, lang)}</span> : null}
-                          </Link>
-                        </li>
-                      )
-                    })
-                  : null}
-                {list.map((r) => {
-                  const [a, z] = routeEnds(r)
-                  const weekday = r.directions[0]?.schedule.weekday
-                  const gap = scheduleCurrent(r) && weekday ? typicalHeadway(weekday) : null
-                  return (
-                    <li key={r.slug}>
-                      <Link className={b.routeLink} href={routes.busRoute(lang, r.slug)}>
-                        <span className={b.routeTop}>
-                          <RouteBullet route={r} size={18} />
-                          <span className={b.routeName}>{routeName(r, lang)}</span>
-                          <FareChip
-                            free={isFree(r)}
-                            label={isFree(r) ? c.fareFree : c.farePaid}
-                          />
-                        </span>
-                        <span className={b.meta}>
-                          {a} ⇄ {z}
-                        </span>
-                        <span className={b.meta}>
-                          {routeVia(r, lang)}
-                          {gap ? ` · ${c.every(gap)}` : ''}
-                        </span>
-                      </Link>
-                    </li>
-                  )
-                })}
+                {city.slug === 'hialeah' ? <FreeLineItems lang={lang} /> : null}
+                {list.map((r) => (
+                  <RouteItem key={r.slug} route={r} lang={lang} />
+                ))}
+              </ul>
+            </section>
+          )
+        })}
+
+        {/* Then every route in Miami-Dade, by what it costs and what it is. */}
+        <h2 id="todas" className={b.hubAll}>
+          {c.allRoutesLink.toUpperCase()}
+        </h2>
+        {GROUPS.map(({ group, heading, note }) => {
+          const list = COUNTY.routes.filter((r) => routeGroup(r) === group).sort(byRouteOrder)
+          return (
+            <section key={group} className={s.card} aria-labelledby={`group-${group}`}>
+              <h2 id={`group-${group}`} className={s.cardTag}>
+                {c[heading]}
+              </h2>
+              {note ? <p className={s.note}>{c[note]}</p> : null}
+              <ul className={`${b.routes} ${group === 'bus' ? b.routesCompact : ''}`}>
+                {group === 'free' ? <FreeLineItems lang={lang} /> : null}
+                {list.map((r) => (
+                  <RouteItem key={r.slug} route={r} lang={lang} compact={group === 'bus'} />
+                ))}
               </ul>
             </section>
           )

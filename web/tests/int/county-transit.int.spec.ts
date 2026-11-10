@@ -19,9 +19,48 @@ import {
 import { busCopy } from '@/lib/busCopy'
 import { keyStops } from '@/components/Bus'
 
-describe('county.json — the pilot routes', () => {
-  it('has the ten routes, each with two directions of stops', () => {
-    expect(COUNTY_SLUGS).toEqual([
+describe('county.json — every route', () => {
+  it('has a page for every route in the feed but Hialeah’s own two', () => {
+    expect(COUNTY.routes.length).toBeGreaterThan(100)
+    expect(new Set(COUNTY_SLUGS).size).toBe(COUNTY_SLUGS.length)
+    for (const slug of ['metrorail', 'metromover-inner', 'metromover-outer', 'mia-mover', '9', '77'])
+      expect(COUNTY_SLUGS).toContain(slug)
+    expect(COUNTY_SLUGS).not.toContain('hiafla')
+    for (const r of COUNTY.routes) {
+      expect(r.directions.length).toBeGreaterThan(0)
+      for (const d of r.directions) {
+        expect(d.stations.length).toBeGreaterThan(1)
+        expect(d.stations[0].min).toBe(0)
+      }
+    }
+  })
+
+  it('marks what each costs: Metromover and the City of Miami trolleys free, Metrobus and Metrorail paid', () => {
+    expect(getCountyRoute('metromover-inner')!.fare).toBe('free')
+    expect(getCountyRoute('mia-mover')!.fare).toBe('free')
+    expect(getCountyRoute('miawynw')!.fare).toBe('free')
+    expect(getCountyRoute('metrorail')!.fare).toBe('paid')
+    expect(getCountyRoute('9')!.fare).toBe('paid')
+    // Another city's trolley stays unmarked until its own page is checked.
+    expect(getCountyRoute('dloop1')!.fare).toBeNull()
+  })
+
+  it('gives Metrorail both lines, each way', () => {
+    const rail = getCountyRoute('metrorail')!
+    expect(rail.directions.map((d) => d.id).sort()).toEqual([
+      '0-green',
+      '0-orange',
+      '1-green',
+      '1-orange',
+    ])
+    const airport = rail.directions.find((d) => d.id === '1-orange')!
+    expect(airport.stations.some((s) => /Airport/.test(s.name))).toBe(true)
+    expect(routeEnds(rail)).toEqual(['Palmetto Station / Airport Station', 'Dadeland South'])
+    expect(routeName(rail, 'es')).toBe('Metrorail')
+  })
+
+  it('has the featured routes, each with two directions of stops', () => {
+    expect(COUNTY.routes.filter((r) => r.featured).map((r) => r.slug).sort()).toEqual([
       '54',
       '37',
       '42',
@@ -32,8 +71,8 @@ describe('county.json — the pilot routes', () => {
       '8',
       '11',
       'little-havana-trolley',
-    ])
-    for (const r of COUNTY.routes) {
+    ].sort())
+    for (const r of COUNTY.routes.filter((x) => x.featured)) {
       expect(r.directions).toHaveLength(2)
       for (const d of r.directions) {
         expect(d.stations.length).toBeGreaterThan(10)
@@ -131,7 +170,9 @@ describe('names and links', () => {
     expect(lineHref('HIAMAR', 'es')).toBe('/es/bus/marlin')
     expect(lineHref('37', 'en')).toBe('/en/bus/37')
     expect(lineHref('MIAHAVA', 'en')).toBe('/en/bus/little-havana-trolley')
-    expect(lineHref('9', 'en')).toBeNull()
+    expect(lineHref('9', 'en')).toBe('/en/bus/9')
+    expect(lineHref('2600', 'es')).toBe('/es/bus/metrorail')
+    expect(lineHref('NOPE', 'en')).toBeNull()
   })
 
   it('puts Metrorail first and folds the rest past six', () => {
@@ -149,8 +190,9 @@ describe('names and links', () => {
 })
 
 describe('headways', () => {
+  // The featured routes run all day; an express (301, 837) bunches its buses at rush hour.
   it('never claims a bus more often than the day’s trips allow', () => {
-    for (const r of COUNTY.routes) {
+    for (const r of COUNTY.routes.filter((x) => x.featured)) {
       for (const d of r.directions) {
         for (const day of Object.values(d.schedule)) {
           if (!day) continue

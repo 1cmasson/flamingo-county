@@ -12,8 +12,11 @@
  * it passes, so this has to be re-run when the county publishes the next
  * one (it does, every few months, around a service change).
  *
- * A pilot of ten routes through the cities the directory covers (Hialeah,
- * Miami Lakes, Little Havana, Miami Gardens). More are a line each in ROUTES.
+ * Every route in the feed gets a page (Metrobus, Metrorail, Metromover, the
+ * cities' trolleys) except Hialeah's Flamingo and Marlin, which come from the
+ * city's own data. FEATURED are the routes through the cities the directory
+ * covers: a street name written by hand, their cities, and their street path
+ * on the trip planner's map.
  */
 import { execFileSync } from 'node:child_process'
 import { mkdtempSync, writeFileSync } from 'node:fs'
@@ -36,16 +39,17 @@ import {
   tidy,
   ymd,
 } from './gtfs'
+import { SKIP, fareOf, kindOf, nameOf, slugOf, stationName } from './lines'
 
 const FEED_URL = 'https://www.miamidade.gov/transit/googletransit/current/google_transit.zip'
 const OUT = join(import.meta.dirname, '../../src/data/transit/county.json')
 
 /**
- * The routes, by the feed's short name. `via` is the street a rider knows the
- * route by, written by hand: the county's long names are abbreviated to fit a
- * head sign ("HIALEAH-MIAMI LAKES-BISCA VIA 54 ST").
+ * The featured routes, by the feed's short name. `via` is the street a rider
+ * knows the route by, written by hand: the county's long names are abbreviated
+ * to fit a head sign ("HIALEAH-MIAMI LAKES-BISCA VIA 54 ST").
  */
-const ROUTES = [
+const FEATURED = [
   {
     short: '54',
     slug: '54',
@@ -87,6 +91,47 @@ const ROUTES = [
     cities: ['havana'],
   },
 ] as const
+
+/**
+ * The street the other Metrobus routes are known by, where it is one street
+ * (the county's long names abbreviate it: "VIA BISC.BLVD."). A route that
+ * isn't, or a trolley, has none: its two ends say where it goes.
+ */
+const STREETS: Record<string, string> = {
+  '2': 'NW 2 Ave',
+  '3': 'Biscayne Blvd',
+  '7': 'NW 7 St',
+  '9': 'NE 2 Ave',
+  '15': 'the Venetian Causeway',
+  '16': 'NE 6 Ave and NE 16 Ave',
+  '22': 'NW 22 Ave',
+  '24': 'Coral Way',
+  '36': 'NW 36 St',
+  '40': 'Bird Rd',
+  '56': 'SW 56 St (Miller Dr)',
+  '62': 'NW 62 St',
+  '72': 'SW 72 St (Sunset Dr)',
+  '77': 'NW 7 Ave',
+  '79': 'NW 79 St',
+  '87': 'SW 87 Ave',
+  '88': 'SW 88 St (Kendall Dr)',
+  '101': 'Alton Rd',
+  '103': 'NW 103 St',
+  '104': 'SW 104 St',
+  '125': 'NE 125 St',
+  '132': 'NW 36 St',
+  '135': 'NE 135 St',
+  '137': 'SW 137 Ave',
+  '152': 'SW 152 St (Coral Reef Dr)',
+  '199': 'NW 199 St',
+  '203': 'Biscayne Blvd',
+  '204': 'SW 104 St',
+  '211': 'Flagler St',
+  '272': 'SW 72 St (Sunset Dr)',
+  '288': 'SW 88 St (Kendall Dr)',
+  '400': 'US 1',
+  '401': 'NW 22 Ave',
+}
 
 /** Two stops this close, on different routes, are a transfer: the corner, or across the street. */
 const TRANSFER_METERS = 120
@@ -206,11 +251,34 @@ async function main() {
     return out
   }
   const routeOf = new Map(routes.map((r) => [r.route_id, r]))
-  const picked = ROUTES.map((r) => {
-    const row = routes.find((x) => x.route_short_name === r.short)
-    if (!row) throw new Error(`Route ${r.short} is not in this feed — did the county renumber it?`)
-    return { ...r, row }
-  })
+  for (const r of FEATURED)
+    if (!routes.some((x) => x.route_short_name === r.short))
+      throw new Error(`Route ${r.short} is not in this feed — did the county renumber it?`)
+  const picked = routes
+    .filter((row) => !SKIP.has(row.route_short_name))
+    .map((row) => {
+      const short = row.route_short_name
+      const kind = kindOf(short, row.route_type)
+      // Metromover's two feed routes are two loops; each page names its own.
+      const name =
+        short === 'MMI'
+          ? 'Metromover · Downtown Loop'
+          : short === 'MMO'
+            ? 'Metromover · Brickell & Omni'
+            : nameOf(short, row.route_long_name, kind)
+      const own = FEATURED.find((r) => r.short === short)
+      return {
+        short,
+        slug: slugOf(short),
+        kind,
+        name,
+        fare: fareOf(short, row.route_type),
+        via: own?.via ?? STREETS[short] ?? null,
+        cities: own ? [...own.cities] : [],
+        featured: !!own,
+        row,
+      }
+    })
   const pickedIds = new Set(picked.map((p) => p.row.route_id))
 
   // One pass over every trip's stops: which routes stop where (for the
@@ -260,10 +328,16 @@ async function main() {
 
   const out = picked.map((p) => {
     const mine = trips.filter((t) => t.route_id === p.row.route_id)
-    const directions = ['0', '1']
-      .map((dirId) => {
+    // Metrorail is two lines in one feed route: each line, each way, is a direction of its own.
+    const line = (t: Row) => /^(green|orange) line/i.exec(t.trip_headsign.trim())?.[1].toLowerCase() ?? ''
+    const named = p.kind === 'rail' ? [...new Set(mine.map(line))].filter(Boolean).sort() : []
+    const lines = named.length ? named : ['']
+    const keys = ['0', '1'].flatMap((dirId) => lines.map((l) => ({ dirId, l })))
+    const directions = keys
+      .map(({ dirId, l }) => {
         const dirTrips = mine.filter(
-          (t) => t.direction_id === dirId && byTrip.get(t.trip_id)?.length,
+          (t) =>
+            t.direction_id === dirId && (!l || line(t) === l) && byTrip.get(t.trip_id)?.length,
         )
         if (!dirTrips.length) return null
         const weekday = dirTrips.filter((t) => days.weekday.has(t.service_id))
@@ -295,7 +369,9 @@ async function main() {
         const t0 = minutes(repStops[0].departure_time)
         const stationList = repStops.map((st) => ({
           id: st.stop_id,
-          name: tidy(cleanStopName(stops.get(st.stop_id)!.stop_name)),
+          name: ((n) => (/Station|Stat\./.test(n) ? stationName(n) : n))(
+            tidy(cleanStopName(stops.get(st.stop_id)!.stop_name)),
+          ),
           at: at(st.stop_id),
           min: Math.round(minutes(st.arrival_time || st.departure_time) - t0),
           timepoint: st.timepoint === '1',
@@ -365,10 +441,19 @@ async function main() {
         const shape = (shapes.get(rep.shape_id) ?? [])
           .sort((a, b) => a[2] - b[2])
           .map(([la, lo]) => [la, lo] as [number, number])
+        // "Green Line Dadeland South" → "Dadeland South (Green Line)": where it goes first.
+        const sign = mainSign.replace(/^(Green|Orange) Line (.+)$/, '$2 ($1 Line)')
         return {
-          id: dirId,
-          // A trolley's head sign is its own name ("Little Havana Route"); its last stop says where it's going.
-          toward: /\broute$/i.test(mainSign) ? stationList[stationList.length - 1].name : mainSign,
+          id: l ? `${dirId}-${l}` : dirId,
+          // A trolley's head sign is often its own name ("Little Havana Route", "City Of
+          // Doral Trolley (Rt. 1)", "Blue"); its last stop says where it's going.
+          toward:
+            /\broute$/i.test(sign) ||
+            /trolley|loop|express|xpres|link|free-bee|^(city|village) of\b/i.test(sign) ||
+            /^(blue|green|orange|red|purple|yellow|gold)$/i.test(sign) ||
+            (p.name && sign.toLowerCase().includes(p.name.toLowerCase()))
+              ? stationList[stationList.length - 1].name
+              : sign,
           alsoEnds: [...headsigns.entries()]
             .filter(([h, n]) => h !== mainSign && n >= pool.length / 10)
             .map(([h]) => h),
@@ -400,7 +485,10 @@ async function main() {
       // It belongs to this edition of the feed: re-run after a service change.
       routeId: p.row.route_id,
       kind: p.kind,
-      number: /^\d+$/.test(p.short) ? p.short : null,
+      number: p.kind === 'bus' ? p.short : null,
+      name: p.name,
+      fare: p.fare,
+      featured: p.featured,
       countyName: p.row.route_long_name,
       via: p.via,
       cities: p.cities,
@@ -410,7 +498,7 @@ async function main() {
       dayKinds: end ? dayKindsUntil(today, end, new Set(mine.map((t) => t.service_id))) : {},
       directions,
     }
-  })
+  }).filter((r) => r.directions.length)
 
   // Names for every route a transfer can mention, ours or not.
   const lines = Object.fromEntries(
@@ -426,7 +514,7 @@ async function main() {
                 ? 'bus'
                 : 'trolley',
         name: r.route_long_name.replace(/^City of\s+/i, ''),
-        ours: pickedIds.has(r.route_id),
+        ours: picked.some((p) => p.featured && p.row.route_id === r.route_id),
       },
     ]),
   )
