@@ -20,11 +20,15 @@ import {
   Soon,
   TripSearch,
   TripSteps,
+  legBadge,
+  loadNetwork,
   stashTrip,
   tripKey,
-  useStopNext,
+  tripMapSlug,
+  useLegNext,
   type Destination,
 } from './TripPlanner'
+import { FareChip } from './FareChip'
 import { ShareTrip, shareStart } from './TripShare'
 import { readHubDest, tripBuses } from '../lib/tripLink'
 import b from './bus.module.css'
@@ -33,24 +37,14 @@ import s from './vote.module.css'
 /**
  * «¿Qué guagua cojo?» at the top of the routes hub (/[lang]/bus): from where
  * the visitor is (or an address they type), the routes they can walk to, and
- * with a destination, the trips there by one bus. Each answer opens the
- * route's map, the trip already drawn.
+ * with a destination, the trips there with every route in the county (up to
+ * two changes, free rides marked). An answer on a route the site keeps a map
+ * for opens that map, the trip already drawn.
  *
  * Everything is worked out in the browser over /api/transit/network; the
  * visitor's location never leaves the phone. Only typed searches go to the
  * server (/api/transit/where), as on the map.
  */
-
-let network: Promise<Network | null> | null = null
-function loadNetwork(): Promise<Network | null> {
-  network ??= fetch('/api/transit/network')
-    .then((r) => (r.ok ? (r.json() as Promise<Network>) : null))
-    .catch(() => {
-      network = null
-      return null
-    })
-  return network
-}
 
 const STOP_STORE = 'fc-bus-stop'
 
@@ -321,14 +315,23 @@ function NearRow({
   const c = busCopy(lang)
   const first = route.dirs[0]
   const second = route.dirs[1]
-  const nextA = useStopNext(route.slug, first.dir, first.id)
-  const nextB = useStopNext(second ? route.slug : null, second?.dir ?? '', second?.id ?? '')
-  return (
-    <Link
-      href={routes.busMap(lang, route.slug)}
-      className={b.nearRow}
-      onClick={() => rememberStop(route, net)}
-    >
+  const key = (d: NearbyRoute['dirs'][number]) => ({
+    slug: route.slug,
+    live: route.live,
+    feedDir: d.feedDir,
+    board: { id: d.id, eta: d.eta },
+  })
+  const nextA = useLegNext(key(first))
+  const nextB = useLegNext(second ? key(second) : null)
+  // The route's own page when the site has one: a county route's map, a free line's page.
+  const href =
+    route.page === 'bus'
+      ? routes.busMap(lang, route.slug)
+      : route.page === 'free'
+        ? routes.freeRoute(lang, route.slug)
+        : null
+  const body = (
+    <>
       <span
         className={b.nearBullet}
         style={
@@ -342,11 +345,17 @@ function NearRow({
         }
         aria-hidden="true"
       >
-        {route.number ?? 'T'}
+        {legBadge(route)}
       </span>
       <span className={b.nearBody}>
         <span className={b.nearName}>
-          {c.tripRouteName(route.number)}{' '}
+          {c.tripRouteName(route)}{' '}
+          {route.fare ? (
+            <FareChip
+              free={route.fare === 'free'}
+              label={route.fare === 'free' ? c.fareFree : c.farePaidShort}
+            />
+          ) : null}{' '}
           <span className={b.nearWalk}>{c.finderWalk(route.walk)}</span>
         </span>
         <span className={b.nearLine}>
@@ -358,10 +367,19 @@ function NearRow({
           </span>
         ) : null}
       </span>
-      <span className={b.finderGo} aria-hidden="true">
-        ›
-      </span>
+      {href ? (
+        <span className={b.finderGo} aria-hidden="true">
+          ›
+        </span>
+      ) : null}
+    </>
+  )
+  return href ? (
+    <Link href={href} className={b.nearRow} onClick={() => rememberStop(route, net)}>
+      {body}
     </Link>
+  ) : (
+    <div className={b.nearRow}>{body}</div>
   )
 }
 
@@ -404,28 +422,27 @@ function FinderTrips({
         {plan.trips.map((t: Trip, k) => (
           <li key={tripKey(t)} className={b.finderTrip}>
             <p className={b.finderTripHead}>
-              <span className={b.finderBullet} aria-hidden="true">
-                {t.number ?? 'T'}
-              </span>
-              {t.then ? (
-                <>
-                  <span aria-hidden="true">→</span>
+              {t.legs.map((l, x) => (
+                <span key={x} className={b.finderLegs}>
+                  {x > 0 ? <span aria-hidden="true">→</span> : null}
                   <span className={b.finderBullet} aria-hidden="true">
-                    {t.then.number ?? 'T'}
+                    {legBadge(l)}
                   </span>
-                </>
-              ) : null}
+                </span>
+              ))}
               {k === 0 ? c.finderBest : c.finderAlso}
             </p>
             <TripSteps lang={lang} trip={t} destName={dest.name} />
             <div className={b.sheetActions}>
-              <Link
-                className={s.action}
-                href={routes.busMap(lang, t.slug)}
-                onClick={() => stashTrip({ dest, from, key: tripKey(t) })}
-              >
-                {c.finderSeeMap}
-              </Link>
+              {tripMapSlug(t) ? (
+                <Link
+                  className={s.action}
+                  href={routes.busMap(lang, tripMapSlug(t)!)}
+                  onClick={() => stashTrip({ dest, from, key: tripKey(t) })}
+                >
+                  {c.finderSeeMap}
+                </Link>
+              ) : null}
               <ShareTrip
                 lang={lang}
                 link={{

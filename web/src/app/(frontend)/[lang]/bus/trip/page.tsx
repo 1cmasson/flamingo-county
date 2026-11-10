@@ -6,7 +6,7 @@ import { isLang, type Lang } from '../../../../../i18n'
 import { routes } from '../../../../../lib/routes'
 import { openGraph } from '../../../../../lib/site'
 import { busCopy } from '../../../../../lib/busCopy'
-import { countyNetwork } from '../../../../../lib/busNetwork'
+import { serverNetwork } from '../../../../../lib/busNetwork'
 import {
   hubDestQuery,
   readTripAsk,
@@ -106,7 +106,7 @@ export default async function SharedTripPage({ params, searchParams }: Props) {
   const link = readTripLink(q)
   const ask = link ? null : readTripAsk(q)
   const failed = ask ? await followAsk(lang, ask) : null
-  const plan = link ? planTrips(countyNetwork(), link.from.at, link.to.at) : null
+  const plan = link ? planTrips(serverNetwork(), link.from.at, link.to.at) : null
   const why = (end: AskedEnd | null, r: Resolved | null) =>
     end && r && r.kind !== 'found'
       ? r.kind === 'down'

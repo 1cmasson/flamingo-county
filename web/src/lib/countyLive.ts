@@ -1,5 +1,6 @@
 import GtfsRealtimeBindings from 'gtfs-realtime-bindings'
-import { COUNTY, getCountyRoute } from './county'
+import { getCountyRoute } from './county'
+import { ROUTE_ID_SLUGS, serverNetwork } from './busNetwork'
 import type { LatLng } from './transitMath'
 
 /**
@@ -29,8 +30,11 @@ export const STALE_S = 300
 /** A feed whose header is older than this is stuck: don't quote it as live. */
 export const FEED_STALE_S = 120
 
-/** The feed's route ids for our routes. They change with the county's feed edition (see `transit:county`). */
-const ROUTE_IDS = new Map(COUNTY.routes.filter((r) => r.routeId).map((r) => [r.routeId!, r.slug]))
+/**
+ * The feed's route ids for every route the planner knows (lib/busNetwork.ts).
+ * They change with the county's feed edition (see `transit:network`).
+ */
+const ROUTE_IDS = ROUTE_ID_SLUGS
 
 export type CountyVehicle = {
   id: string
@@ -207,10 +211,15 @@ export function stopDepartures(
   return { asOf: feed.headerTs, departures, canceled: feed.canceled.get(`${slug}|${dir}`) ?? 0 }
 }
 
-/** Is `stopId` one of the route's stops in direction `dir`? The API only answers for those. */
+/**
+ * Is `stopId` one of the route's stops in direction `dir` (the feed's
+ * direction, any of its patterns)? The API only answers for those.
+ */
 export function isRouteStop(slug: string, dir: string, stopId: string): boolean {
-  const route = getCountyRoute(slug)
-  return !!route?.directions.find((d) => d.id === dir)?.stations.some((s) => s.id === stopId)
+  const route = serverNetwork().routes.find((r) => r.slug === slug && r.live === 'county')
+  return !!route?.directions.some(
+    (d) => (d.dir ?? d.id) === dir && d.stations.some((s) => s.id === stopId),
+  )
 }
 
 export type RouteBus = {

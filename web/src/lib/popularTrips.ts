@@ -1,5 +1,5 @@
 import type { Lang } from '../i18n'
-import { countyNetwork } from './busNetwork'
+import { serverNetwork } from './busNetwork'
 import { busCopy } from './busCopy'
 import type { LatLng } from './transitMath'
 import type { TripLink } from './tripLink'
@@ -11,11 +11,10 @@ import { planTrips, type Plan, type Trip } from './tripPlan'
  * found: the question in the title, the answer in a sentence, the steps.
  * The same planner plans them as any trip link, on the county's schedule.
  *
- * Picked from places across the four areas the bus pages cover, and kept to
- * those the planner connects (Nov 4, 2026): the airport and Dadeland are
- * outside the routes it knows. It knows buses, not Metrorail, so a trip the
- * train does better (Hialeah or Westland to Jackson: the Green Line) isn't one. The points are where each place is
- * (OpenStreetMap, via the planner's own search).
+ * Picked from places across the four areas the bus pages cover (Nov 4,
+ * 2026). Since Nov 2026 the planner plans with every route in the county,
+ * Metrorail included, so the answers can be a train and a bus. The points
+ * are where each place is (OpenStreetMap, via the planner's own search).
  */
 
 type End = { name: Record<Lang, string>; at: LatLng }
@@ -77,12 +76,23 @@ export const POPULAR_TRIPS: PopularTrip[] = [
 
 export const getPopularTrip = (slug: string) => POPULAR_TRIPS.find((t) => t.slug === slug) ?? null
 
+/**
+ * The moment these pages plan for: a weekday at midday, whatever the clock
+ * says when the server first builds them. They answer "which bus?", not
+ * "which bus right now?", so a page built at 3 AM or on a Sunday mustn't
+ * leave out the routes that don't run then.
+ */
+function planDate(): Date {
+  // Wednesday, Nov 4 2026, 12:00 in Miami (17:00 UTC). Only its weekday and hour matter.
+  return new Date(Date.UTC(2026, 10, 4, 17, 0))
+}
+
 /** A plan only changes with the schedule, which comes with a new build: each is made once per server. */
 const plans = new Map<string, Plan>()
 export function popularPlan(t: PopularTrip): Plan {
   let p = plans.get(t.slug)
   if (!p) {
-    p = planTrips(countyNetwork(), t.from.at, t.to.at)
+    p = planTrips(serverNetwork(), t.from.at, t.to.at, 3, planDate())
     plans.set(t.slug, p)
   }
   return p
@@ -100,16 +110,15 @@ export function popularLink(t: PopularTrip, lang: Lang): TripLink {
 /** The popular trips that ride a route, for its page. */
 export const popularTripsOn = (route: string) =>
   POPULAR_TRIPS.filter((t) =>
-    popularPlan(t).trips.some((x) => x.slug === route || x.then?.slug === route),
+    popularPlan(t).trips.some((x) => x.legs.some((l) => l.slug === route)),
   )
 
 /** The answer in a sentence: which bus, toward where, from which stop, and how long. */
 export function tripAnswer(lang: Lang, trip: Trip | undefined, t: PopularTrip): string {
   const c = busCopy(lang)
   if (!trip) return c.popularNoBus(t.from.name[lang], t.to.name[lang])
-  const first = c.popularFirst(c.tripRouteInline(trip.number), trip.toward, trip.board.name)
-  const then = trip.then
-    ? c.popularThen(c.tripRouteInline(trip.then.number), trip.then.toward, trip.then.board.name)
-    : ''
+  const [one, ...rest] = trip.legs
+  const first = c.popularFirst(c.tripRouteInline(one), one.toward, one.board.name)
+  const then = rest.map((l) => c.popularThen(c.tripRouteInline(l), l.toward, l.board.name)).join('')
   return `${first}${then} ${c.popularTotal(trip.total)}`
 }

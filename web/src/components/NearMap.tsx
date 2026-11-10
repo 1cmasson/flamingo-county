@@ -121,7 +121,10 @@ export function NearMap({
       return (route?.directions ?? []).map((d) => ({
         type: 'Feature' as const,
         properties: { color: NEAR_COLORS[k % NEAR_COLORS.length] },
-        geometry: { type: 'LineString' as const, coordinates: d.path.map(lngLat) },
+        geometry: {
+          type: 'LineString' as const,
+          coordinates: (d.path ?? d.stations.map((x) => x.at)).map(lngLat),
+        },
       }))
     })
     ;(m.getSource('near-lines') as ML.GeoJSONSource | undefined)?.setData({

@@ -32,13 +32,7 @@ export function RouteBullet({ route, size = 28 }: { route: CountyRoute; size?: n
   )
 }
 
-/**
- * Free or not, on every route in a list: «GRATIS» stands out in yellow; a
- * county route says it's Metrobus and that a fare is paid, never how much.
- */
-export function FareChip({ free, label }: { free: boolean; label: string }) {
-  return <span className={free ? b.fareFree : b.farePaid}>{label}</span>
-}
+export { FareChip } from './FareChip'
 
 /** Other lines at a stop, the site's own linked: Metrorail first, then ours, then the rest. */
 function Transfers({
