@@ -11,7 +11,6 @@ import { formatClock, meters, miamiClock, walkMinutes, type LatLng } from '../li
 import {
   expandNetwork,
   planTrips,
-  transitDirectionsHref,
   tripProgress,
   type Leg,
   type Network,
@@ -580,7 +579,6 @@ export function TripPanel({
 }) {
   const c = busCopy(lang)
   const trip = plan?.trips[pick] ?? null
-  const google = transitDirectionsHref(dest.at)
 
   return (
     <>
@@ -658,14 +656,6 @@ export function TripPanel({
             {c.mapPlaceOpen}
           </Link>
         ) : null}
-        <a
-          className={`${s.action} ${s.actionAlt}`}
-          href={google}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          {c.tripGoogle}
-        </a>
       </div>
       <div className={b.sheetActions}>
         <button type="button" className={b.textBtn} onClick={onChange}>

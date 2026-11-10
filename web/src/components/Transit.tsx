@@ -1,4 +1,5 @@
 import type * as React from 'react'
+import { APPLE_DEVICE, appleWalkHref } from '../lib/walkLink'
 import Link from 'next/link'
 import { headers } from 'next/headers'
 import type { Lang } from '../i18n'
@@ -331,14 +332,16 @@ export async function FreeRidePanel({ listing, lang, t }: { listing: Listing; la
             has an answer, so the panel never waits on it. */}
         <NextBus stops={main.etaIds} route={route.slug} copy={nextBusCopy(t)} />
 
-        <a
-          href={walkHref}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ alignSelf: 'flex-start', fontWeight: 800, fontSize: 13, textDecoration: 'underline' }}
-        >
-          {t('Walking directions to the stop ↗')}
-        </a>
+        {walkHref ? (
+          <a
+            href={walkHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ alignSelf: 'flex-start', fontWeight: 800, fontSize: 13, textDecoration: 'underline' }}
+          >
+            {t('Walking directions to the stop ↗')}
+          </a>
+        ) : null}
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, marginTop: 2 }}>
           <PrimaryButton href={stopHref}>{t('SEE THE ROUTE →')}</PrimaryButton>
@@ -669,13 +672,10 @@ export function routeHrefs(lang: Lang): Record<string, string> {
   return Object.fromEntries(TRANSIT.routes.map((r) => [r.slug, routes.freeRoute(lang, r.slug)]))
 }
 
-/** Walking directions to a stop from wherever the phone is — no location needed here. */
-export async function directionsHref(to: [number, number]): Promise<string> {
+/** Walking directions to a stop in Apple Maps, on an Apple device only; never Google Maps (lib/walkLink). */
+export async function directionsHref(to: [number, number]): Promise<string | null> {
   const ua = (await headers()).get('user-agent') ?? ''
-  const d = to.join(',')
-  return /iphone|ipad|ipod|macintosh/i.test(ua)
-    ? `https://maps.apple.com/?daddr=${d}&dirflg=w`
-    : `https://www.google.com/maps/dir/?api=1&destination=${d}&travelmode=walking`
+  return APPLE_DEVICE.test(ua) ? appleWalkHref(to) : null
 }
 
 /* ------------------------------------------------------------ live copy */

@@ -463,7 +463,7 @@ export default async function EventPage({
               </p>
             ) : null}
             {/* The address, and directions to it. */}
-            <EventDirections ev={ev} t={t} />
+            <EventDirections ev={ev} t={t} lang={lang} />
             {/* Where the event comes from, so a reader can check it with whoever puts it on. */}
             <EventSource ev={ev} lang={lang as Lang} t={t} />
             <EventActions

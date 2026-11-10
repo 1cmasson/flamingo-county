@@ -4,7 +4,6 @@ import {
   planTrips,
   tripProgress,
   slicePath,
-  transitDirectionsHref,
   type Network,
 } from '@/lib/tripPlan'
 
@@ -80,10 +79,6 @@ describe('bus trip planner', () => {
       [1, 0],
       [1.1, 0],
     ])
-  })
-
-  it('never puts the visitor’s location in the Google link', () => {
-    expect(transitDirectionsHref([25.8, -80.3])).not.toContain('origin')
   })
 
   it('lists the routes within a walk, nearest first, with a stop each way', () => {

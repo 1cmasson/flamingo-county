@@ -10,7 +10,6 @@ import { walkMinutes, meters, type LatLng } from '../lib/transitMath'
 import {
   nearbyRoutes,
   planTrips,
-  transitDirectionsHref,
   type Network,
   type NearbyRoute,
   type Trip,
@@ -403,16 +402,6 @@ function FinderTrips({
             ? c.tripJustWalk(plan.walkOnly)
             : c.tripNoBus}
         </p>
-        <div className={b.sheetActions}>
-          <a
-            className={`${s.action} ${s.actionAlt}`}
-            href={transitDirectionsHref(dest.at)}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            {c.tripGoogle}
-          </a>
-        </div>
       </>
     )
   return (

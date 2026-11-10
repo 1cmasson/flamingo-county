@@ -328,7 +328,7 @@ export function LeaveTimes({
   poles: Record<number, { at: LatLng; name: string }>
   lang: 'en' | 'es'
   copy: LeaveCopy
-  walkHref: (to: LatLng) => string
+  walkHref: (to: LatLng) => string | null
   onShowBus?: (id: string) => void
   /** Told the first live bus a rider could catch, so the map can point at it. */
   onFirstLive?: (id: string | null) => void
@@ -375,9 +375,11 @@ export function LeaveTimes({
       {oneWay.other && otherWay ? (
         <span>
           {fill(copy.otherStop, { place: towardName(route, otherWay, copy.places), stop: oneWay.other.name, n: oneWay.other.walk })}{' '}
-          <a href={walkHref(oneWay.other.at)} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 800, textDecoration: 'underline', whiteSpace: 'nowrap' }}>
-            {copy.walkThere}
-          </a>
+          {walkHref(oneWay.other.at) ? (
+            <a href={walkHref(oneWay.other.at)!} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 800, textDecoration: 'underline', whiteSpace: 'nowrap' }}>
+              {copy.walkThere}
+            </a>
+          ) : null}
         </span>
       ) : null}
       <span style={{ color: '#3d4248' }}>{copy.loopBack}</span>
@@ -440,9 +442,11 @@ export function LeaveTimes({
             {across ? (
               <div style={{ fontSize: 15, fontWeight: 600, lineHeight: 1.4 }}>
                 {fill(copy.otherSide, { stop: pole.name })}{' '}
-                <a href={walkHref(pole.at)} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 800, textDecoration: 'underline', whiteSpace: 'nowrap' }}>
-                  {copy.walkThere}
-                </a>
+                {walkHref(pole.at) ? (
+                  <a href={walkHref(pole.at)!} target="_blank" rel="noopener noreferrer" style={{ fontWeight: 800, textDecoration: 'underline', whiteSpace: 'nowrap' }}>
+                    {copy.walkThere}
+                  </a>
+                ) : null}
               </div>
             ) : null}
             {show.live && show.vehicleId && onShowBus ? (

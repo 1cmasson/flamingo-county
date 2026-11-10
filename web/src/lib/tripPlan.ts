@@ -512,19 +512,7 @@ export function slicePath(path: LatLng[], a: LatLng, b: LatLng): LatLng[] {
   return [a, ...part, b]
 }
 
-/**
- * Google Maps transit directions to a point, for places none of these routes
- * reach. No origin in the link: Google starts from the phone's own location,
- * and the visitor's never goes into a URL.
- */
-export function transitDirectionsHref(to: LatLng): string {
-  const q = new URLSearchParams({
-    api: '1',
-    destination: `${to[0]},${to[1]}`,
-    travelmode: 'transit',
-  })
-  return `https://www.google.com/maps/dir/?${q}`
-}
+
 
 export type NearbyRoute = {
   slug: string

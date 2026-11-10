@@ -1,12 +1,13 @@
 import type { Event } from '../payload-types'
+import type { Lang } from '../i18n'
 import { eventDirections } from '../lib/eventVenue'
 import { DirectionsLink } from './DirectionsLink'
 import s from './chrome.module.css'
 
 /**
  * Where the event is and how to get there: the street address in text, then
- * one directions button that opens the phone's own map with the venue as the
- * destination (`eventDirections`, `DirectionsLink`).
+ * one directions button: Apple Maps on an Apple device, our trip planner to the
+ * venue everywhere else (`eventDirections`, `DirectionsLink`).
  *
  * The address is written out on the page, not only inside the map link: it is
  * what a search for the venue matches, and it is the same address the
@@ -14,7 +15,7 @@ import s from './chrome.module.css'
  * button, searched by the venue's name and city. Nothing when the event names
  * no venue at all.
  */
-export function EventDirections({ ev, t }: { ev: Event; t: (s: string) => string }) {
+export function EventDirections({ ev, t, lang }: { ev: Event; t: (s: string) => string; lang: Lang }) {
   const directions = eventDirections(ev)
   if (!directions) return null
   return (
@@ -25,7 +26,7 @@ export function EventDirections({ ev, t }: { ev: Event; t: (s: string) => string
         </p>
       ) : null}
       <DirectionsLink
-        google={directions.google}
+        other={`/${lang}${directions.plan}`}
         apple={directions.apple}
         className={s.chipLift}
         style={{
