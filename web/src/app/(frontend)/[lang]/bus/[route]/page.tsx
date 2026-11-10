@@ -18,6 +18,7 @@ import {
   routeNameInline,
   routeTimes,
   routeVia,
+  routesMeeting,
   scheduleCurrent,
   typicalHeadway,
   type CountyRoute,
@@ -39,11 +40,12 @@ import b from '../../../../../components/bus.module.css'
 
 type Props = { params: Promise<{ lang: string; route: string }> }
 
-/** The county's own page for the route: its timetable PDF and service alerts. */
+/** The operator's own page for the route: its timetable and service alerts. */
 function countyHref(route: CountyRoute): string {
-  return route.number
-    ? `https://www.miamidade.gov/transportation-publicworks/routes_detail.asp?route=${route.number}`
-    : LINKS.miamiTrolley
+  if (route.number)
+    return `https://www.miamidade.gov/transportation-publicworks/routes_detail.asp?route=${route.number}`
+  if (route.kind === 'trolley' && route.fare === 'free') return LINKS.miamiTrolley
+  return 'https://www.miamidade.gov/transit'
 }
 
 /** Every stop of both directions, counted once per corner name. */
@@ -62,7 +64,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const c = busCopy(lang)
   const name = routeName(route, lang)
   const [a, z] = routeEnds(route)
-  const title = route.number ? c.metaTitle(name, a, z) : c.metaTitleTrolley(name)
+  const title = route.number
+    ? c.metaTitle(name, a, z)
+    : route.fare === 'free'
+      ? c.metaTitleTrolley(name)
+      : c.metaTitleLine(name)
   const weekday = route.directions[0]?.schedule.weekday
   const midday = scheduleCurrent(route) && weekday ? weekday.headway.midday : null
   const description = c.metaDescription(
@@ -125,7 +131,7 @@ export default async function BusRoute({ params }: Props) {
     : c.answerNoTimes(inline, routeVia(route, lang), a, z)
 
   const places = (await placesOnRoute(route, lang)).slice(0, 9)
-  const others = COUNTY.routes.filter((r) => r.slug !== route.slug)
+  const others = routesMeeting(route)
 
   return (
     <PageShell>
@@ -139,17 +145,18 @@ export default async function BusRoute({ params }: Props) {
         <Breadcrumbs items={crumbs} label={c.breadcrumb} />
 
         <header className={`${s.hero} ${b.routeHero}`}>
-          <span className={s.kicker}>{route.number ? c.kickerBus : c.kickerTrolley}</span>
+          <span className={s.kicker}>{c.kicker(route)}</span>
           <div className={b.heroTop}>
             <RouteBullet route={route} size={38} />
             <h1 className={s.title}>{name}</h1>
           </div>
           <p className={s.sub}>
-            {a} ⇄ {z} · {routeVia(route, lang)}
+            {a} ⇄ {z}
+            {route.via ? ` · ${routeVia(route, lang)}` : ''}
           </p>
           <div className={`${b.chips} ${b.heroChips}`}>
-            <span className={`${b.chip} ${route.number ? '' : b.chipFree}`}>
-              {route.number ? c.fare : c.free}
+            <span className={`${b.chip} ${route.fare === 'free' ? b.chipFree : ''}`}>
+              {route.fare === 'free' ? c.free : route.fare === 'paid' ? c.fare : c.fareAsk}
             </span>
             <span className={b.chip}>{c.ride(minutes)}</span>
             <span className={b.chip}>{c.stopsCount(stopCount(route))}</span>
@@ -281,6 +288,9 @@ export default async function BusRoute({ params }: Props) {
               )
             })}
           </ul>
+          <p className={s.note}>
+            <Link href={`${routes.bus(lang)}#todas`}>{c.allRoutesLink} →</Link>
+          </p>
         </nav>
       </main>
     </PageShell>

@@ -4,10 +4,12 @@ import { routes } from './routes'
 import { formatClock, meters, type LatLng } from './transitMath'
 import type { DayKind, RouteTimes, Run } from './busTime'
 import data from '../data/transit/county.json'
+import { busCopy } from './busCopy'
 
 /**
- * Miami-Dade Transit routes with a page of their own (/[lang]/bus/[route]):
- * a pilot of ten through the cities the directory covers.
+ * Every Miami-Dade Transit route, each with a page of their own
+ * (/[lang]/bus/[route]): Metrobus, Metrorail, Metromover and the cities'
+ * trolleys. The `featured` ones run through the cities the directory covers.
  *
  * Unlike Hialeah's free lines (lib/transit.ts), every fact here is the
  * county's own schedule, reduced by `pnpm transit:county` into
@@ -59,12 +61,18 @@ export type CountyRoute = {
   short: string
   /** The feed's route id, which the live data (lib/countyLive.ts) carries; it changes with each feed edition. */
   routeId?: string
-  kind: 'bus' | 'trolley'
-  /** "54" for a Metrobus route; null for a city trolley. */
+  kind: 'bus' | 'trolley' | 'rail' | 'mover'
+  /** "54" for a Metrobus route; null for the rest. */
   number: string | null
+  /** What a rider calls a route without a number ("Metrorail", "Miami Wynwood Trolley"). */
+  name: string | null
+  /** Free or paid by its operator; null when the site hasn't checked (other cities' trolleys). */
+  fare: 'free' | 'paid' | null
+  /** One of the routes through the cities the directory covers. */
+  featured: boolean
   countyName: string
-  /** The street a rider knows the route by. */
-  via: string
+  /** The street a rider knows the route by; null when it isn't one street. */
+  via: string | null
   /** The directory's city slugs the route runs through. */
   cities: string[]
   color: string
@@ -98,32 +106,55 @@ export function scheduleCurrent(route: CountyRoute, now: Date = new Date()): boo
   return !route.serviceEnds || todayISO(now) <= route.serviceEnds
 }
 
-/**
- * Whether riding it costs anything. Of the routes here, the numbered ones are
- * Metrobus (a fare) and the one trolley is the City of Miami's, which is free.
- */
+/** Free by its operator (Metromover, the MIA Mover, the City of Miami's trolleys). */
 export function isFree(route: CountyRoute): boolean {
-  return !route.number
+  return route.fare === 'free'
 }
 
-/** "Route 54" / "Ruta 54"; a trolley by its name. */
+/** "Route 54" / "Ruta 54"; the rest by name ("Metrorail", «Trolley de Wynwood»). */
 export function routeName(route: CountyRoute, lang: Lang): string {
-  if (route.number) return lang === 'es' ? `Ruta ${route.number}` : `Route ${route.number}`
-  return lang === 'es' ? 'Trolley de la Pequeña Habana' : 'Little Havana Trolley'
+  return busCopy(lang).tripRouteName(route)
 }
 
 /** The street a rider knows the route by. Street names stay as the signs print them; a neighborhood is translated. */
-export function routeVia(route: CountyRoute, lang: Lang): string {
+export function routeVia(route: CountyRoute, lang: Lang): string | null {
+  if (!route.via) return null
   return lang === 'es'
-    ? route.via.replace('Little Havana', 'la Pequeña Habana').replace(/ and /g, ' y ')
+    ? route.via
+        .replace('Little Havana', 'la Pequeña Habana')
+        .replace('the Venetian Causeway', 'el Venetian Causeway')
+        .replace(/ and /g, ' y ')
     : route.via
 }
 
 /** The name inside a sentence: Spanish gives it its article («la Ruta 54», «el Trolley…»). */
 export function routeNameInline(route: CountyRoute, lang: Lang): string {
-  const name = routeName(route, lang)
-  if (lang === 'en') return name
-  return route.number ? `la ${name}` : `el ${name}`
+  return busCopy(lang).tripRouteInline(route)
+}
+
+/** The hub's sections: what's free, the train, the county's buses, other cities' trolleys. */
+export type RouteGroup = 'free' | 'rail' | 'bus' | 'city'
+export function routeGroup(route: CountyRoute): RouteGroup {
+  if (route.fare === 'free') return 'free'
+  if (route.kind === 'rail') return 'rail'
+  if (route.kind === 'bus') return 'bus'
+  return 'city'
+}
+
+/** Numbered routes in number order, the rest by name. */
+export function byRouteOrder(a: CountyRoute, b: CountyRoute): number {
+  if (a.number && b.number) return Number(a.number) - Number(b.number)
+  if (a.number || b.number) return a.number ? -1 : 1
+  return (a.name ?? a.short).localeCompare(b.name ?? b.short)
+}
+
+/** The routes a rider can change to along this one, the directory's own first: for "other routes". */
+export function routesMeeting(route: CountyRoute, max = 12): CountyRoute[] {
+  const shorts = new Set(route.directions.flatMap((d) => d.stations.flatMap((s) => s.transfers)))
+  return COUNTY.routes
+    .filter((r) => r.slug !== route.slug && shorts.has(r.short))
+    .sort((a, b) => Number(b.featured) - Number(a.featured) || byRouteOrder(a, b))
+    .slice(0, max)
 }
 
 /** The trolleys' own names, by short name, for a transfer that mentions one. */
@@ -205,10 +236,19 @@ export function routeTimes(route: CountyRoute): RouteTimes {
   }
 }
 
-/** Each direction's head sign, in the order the feed numbers them: the route's two ends. */
+/**
+ * The route's two ends, from each way's head sign. Metrorail's two lines are
+ * two directions each way: "Palmetto Station / Airport Station ⇄ Dadeland South".
+ */
 export function routeEnds(route: CountyRoute): [string, string] {
-  const [a, b] = route.directions
-  return [b?.toward ?? a.toward, a.toward]
+  const way = (dir: string) => {
+    const signs = route.directions
+      .filter((d) => d.id.split('-')[0] === dir)
+      .map((d) => d.toward.replace(/\s*\((Green|Orange) Line\)$/, ''))
+    return [...new Set(signs)].join(' / ')
+  }
+  const z = way('0') || route.directions[0].toward
+  return [way('1') || z, z]
 }
 
 /** How far a stop can be from a business and still count as "a short walk". */

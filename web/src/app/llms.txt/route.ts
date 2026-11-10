@@ -108,14 +108,14 @@ export async function GET() {
       (r) =>
         `- [${r.name} free bus line](${absUrl(routes.freeRoute('en', r.slug))}): every stop on Hialeah’s free ${r.name} line, with ride times and the spots near each stop. Spanish: ${absUrl(routes.freeRoute('es', r.slug))}`,
     ),
-    `- [Bus routes](${absUrl(routes.bus('en'))}): «¿Qué guagua cojo?», one page for every bus: Hialeah's free Flamingo and Marlin lines (marked free) and the Miami-Dade Transit routes (Metrobus, a fare) through Hialeah, Miami Lakes, Little Havana and Miami Gardens, from the county’s schedule. Spanish: ${absUrl(routes.bus('es'))}`,
+    `- [Bus routes](${absUrl(routes.bus('en'))}): «¿Qué guagua cojo?», one page for every route in Miami-Dade, each marked free or paid: Hialeah's free Flamingo and Marlin, Metromover, the MIA Mover and the City of Miami's trolleys (free), Metrorail and every Metrobus route (a fare), and other cities' trolleys, from the county’s schedule. Spanish: ${absUrl(routes.bus('es'))}`,
     ...POPULAR_TRIPS.map((t) => {
       const plan = popularPlan(t)
       return `- [${busCopy('en').popularTitle(t.from.name.en, t.to.name.en)}](${absUrl(routes.busTrip('en', t.slug))}): ${tripAnswer('en', plan.trips[0], t)} Spanish: ${absUrl(routes.busTrip('es', t.slug))}`
     }),
     ...COUNTY.routes.map((r) => {
       const [a, z] = routeEnds(r)
-      return `- [${routeName(r, 'en')}](${absUrl(routes.busRoute('en', r.slug))}): ${a} to ${z} along ${r.via}: every stop both ways, the first and last bus, how often it comes, and the transfers. Spanish: ${absUrl(routes.busRoute('es', r.slug))}`
+      return `- [${routeName(r, 'en')}](${absUrl(routes.busRoute('en', r.slug))}): ${a} to ${z}${r.via ? ` along ${r.via}` : ''}: every stop both ways, the first and last bus, how often it comes, and the transfers. Spanish: ${absUrl(routes.busRoute('es', r.slug))}`
     }),
     '',
     '## Events',

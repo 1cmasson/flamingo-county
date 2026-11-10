@@ -76,8 +76,8 @@ export function networkWire(): WireNetwork {
   if (wire) return wire
   const raw = data as unknown as Omit<WireNetwork, 'routes'> & { routes: (WireRoute & { routeId?: string })[] }
   const stops = [...raw.stops]
-  // The routes the site keeps a page for (lib/county.ts) bring their street paths, so a
-  // trip on them is drawn along the street on their map; the rest through their stops.
+  // Every county route has a page (lib/county.ts); the featured ones bring their street
+  // paths, so a trip on them is drawn along the street; the rest through their stops.
   const pages = new Map(COUNTY.routes.map((r) => [r.slug, r]))
   const county = raw.routes.map(({ routeId: _id, ...r }) => {
     const own = pages.get(r.slug)
@@ -89,7 +89,11 @@ export function networkWire(): WireNetwork {
       patterns: r.patterns.map((p) => {
         const first = !seen.has(p.dir)
         seen.add(p.dir)
-        const path = first && !p.loop ? own?.directions.find((d) => d.id === p.dir)?.path : undefined
+        // Street paths for the featured routes only: all of them would double what a phone downloads.
+        const path =
+          first && !p.loop && own?.featured
+            ? own.directions.find((d) => d.id === p.dir)?.path
+            : undefined
         return path ? { ...p, path } : p
       }),
     }

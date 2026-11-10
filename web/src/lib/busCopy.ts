@@ -29,6 +29,9 @@ const trolleyEn = (name: string) => name.replace(/^Miami (.+) Trolley$/, '$1 Tro
 const towardEs = (place: string) =>
   place.replace('(Green Line)', '(Línea Verde)').replace('(Orange Line)', '(Línea Naranja)')
 
+/** What a route page's kicker reads from the route. */
+type KickerRef = { kind: string; fare: string | null; short: string }
+
 /** Hialeah's free lines are «la Flamingo», «la Marlin»: la guagua. */
 const FREE_LINES = new Set(['flamingo', 'marlin'])
 
@@ -53,16 +56,28 @@ const ES = {
   hub: 'Rutas de guagua',
   kickerBus: 'METROBUS · MIAMI-DADE TRANSIT',
   kickerTrolley: 'TROLLEY GRATIS · CIUDAD DE MIAMI',
+  kicker: (r: KickerRef): string =>
+    r.kind === 'bus'
+      ? 'METROBUS · MIAMI-DADE TRANSIT'
+      : r.kind === 'rail'
+        ? 'METRORAIL · MIAMI-DADE TRANSIT'
+        : r.kind === 'mover'
+          ? r.short === 'MIA'
+            ? 'GRATIS · AEROPUERTO DE MIAMI'
+            : 'METROMOVER GRATIS · MIAMI-DADE TRANSIT'
+          : r.fare === 'free'
+            ? 'TROLLEY GRATIS · CIUDAD DE MIAMI'
+            : 'TROLLEY DE LA CIUDAD',
   hubTitle: 'Rutas de guagua',
   hubSub:
-    'Las guaguas del condado que pasan por Hialeah, Miami Lakes, la Pequeña Habana y Miami Gardens: todas las paradas, la primera y la última guagua, y cada cuánto pasan.',
+    'Todas las guaguas de Miami-Dade, las gratis y las que se pagan: Metrobus, Metrorail, Metromover y los trolleys, con todas las paradas, la primera y la última guagua, y cada cuánto pasan.',
   hubMetaTitle:
-    'Guaguas en Hialeah, Miami Lakes, la Pequeña Habana y Miami Gardens: las gratis y las del condado',
+    'Guaguas de Miami-Dade: todas las rutas, las gratis y las que se pagan',
   hubMetaDescription:
-    '¿Qué guagua cojo? Las guaguas gratis de Hialeah (Flamingo y Marlin) y las rutas de Metrobus que pasan por Hialeah, Miami Lakes, la Pequeña Habana y Miami Gardens: cada parada, cuándo pasan y cuáles son gratis.',
-  hubQuestion: '¿Qué guaguas pasan por Hialeah, Miami Lakes, la Pequeña Habana y Miami Gardens?',
+    '¿Qué guagua cojo? Planea tu viaje con todas las rutas de Miami-Dade: Metrobus, Metrorail, Metromover, los trolleys y las guaguas gratis de Hialeah (Flamingo y Marlin). Cada parada, cuándo pasan y cuáles son gratis.',
+  hubQuestion: '¿Qué guaguas hay en Miami-Dade y cuáles son gratis?',
   hubAnswer: (count: number) =>
-    `«¿Qué guagua cojo?» planea tu viaje con todas las rutas de Miami-Dade juntas: Metrobus, Metrorail, Metromover, los trolleys y las guaguas gratis de Hialeah, la Flamingo y la Marlin, con cambios si hace falta. Aquí abajo, ${n(count, 'ruta', 'rutas')} del condado que cruzan esas ciudades, con todas sus paradas y su horario.`,
+    `«¿Qué guagua cojo?» planea tu viaje con todas las rutas de Miami-Dade juntas: Metrobus, Metrorail, Metromover, los trolleys y las guaguas gratis de Hialeah, la Flamingo y la Marlin, con cambios si hace falta. Aquí abajo, primero las que pasan por Hialeah, Miami Lakes, la Pequeña Habana y Miami Gardens, y después las ${count} rutas de Miami-Dade: las gratis, el Metrorail, el Metrobus y los trolleys de otras ciudades, cada una con todas sus paradas y su horario.`,
   cityHeading: (city: string) => `PASAN POR ${city.toUpperCase()}`,
   freeLines: 'Las guaguas gratis de Hialeah: Flamingo y Marlin →',
   fareFree: 'GRATIS',
@@ -71,31 +86,43 @@ const ES = {
   metaTitle: (name: string, a: string, b: string) =>
     `${name} de Metrobus: paradas y horario, ${a} ⇄ ${b}`,
   metaTitleTrolley: (name: string) => `${name}: paradas y horario (gratis)`,
-  metaDescription: (name: string, via: string, stops: number, every: string | null) =>
+  metaTitleLine: (name: string) => `${name}: paradas y horario`,
+  metaDescription: (name: string, via: string | null, stops: number, every: string | null) =>
     del(
-      `Todas las ${stops} paradas de ${name} por ${via}, en los dos sentidos, con la primera y la última guagua${every ? ` y cada cuánto pasa (${every} al mediodía entre semana)` : ''}. Según el horario de Miami-Dade Transit.`,
+      `Todas las ${stops} paradas de ${name}${via ? ` por ${via}` : ''}, en los dos sentidos, con la primera y la última guagua${every ? ` y cada cuánto pasa (${every} al mediodía entre semana)` : ''}. Según el horario de Miami-Dade Transit.`,
     ),
   question: (name: string) => `¿Por dónde pasa ${name} y a qué hora?`,
   answer: (
     name: string,
-    via: string,
+    via: string | null,
     a: string,
     b: string,
     minutes: number,
     weekday: string | null,
     sunday: string | null,
   ) =>
-    `${cap(name)} va de ${a} a ${b} por ${via}, en unos ${minutes} minutos de punta a punta.` +
+    `${cap(name)} va de ${a} a ${b}${via ? ` por ${via}` : ''}, en unos ${minutes} minutos de punta a punta.` +
     (weekday ? ` Entre semana ${weekday}.` : '') +
     (sunday ? ` Los domingos ${sunday}.` : ' Los domingos no pasa.'),
-  answerNoTimes: (name: string, via: string, a: string, b: string) =>
-    `${cap(name)} va de ${a} a ${b} por ${via}. El condado está cambiando su horario: confirma la hora en GO Miami-Dade Transit antes de salir.`,
+  answerNoTimes: (name: string, via: string | null, a: string, b: string) =>
+    `${cap(name)} va de ${a} a ${b}${via ? ` por ${via}` : ''}. El condado está cambiando su horario: confirma la hora en GO Miami-Dade Transit antes de salir.`,
   dayLine: (first: string, last: string, every: string | null) =>
     every ? `pasa de ${first} a ${last}, ${every}` : `pasa de ${first} a ${last}`,
   dayLineAllNight: (every: string | null) =>
     every ? `pasa toda la noche, ${every}` : 'pasa toda la noche',
   free: 'GRATIS',
   fare: 'Pasaje del condado',
+  fareAsk: 'Pasaje: confírmalo con la ciudad',
+  fareRail: 'METRORAIL · SE PAGA',
+  groupFree: 'GRATIS: METROMOVER, TROLLEYS Y MÁS',
+  groupFreeNote:
+    'No pagas nada: las guaguas gratis de Hialeah, el Metromover, el MIA Mover del aeropuerto y los trolleys de la Ciudad de Miami.',
+  groupRail: 'METRORAIL',
+  groupBus: 'METROBUS: TODAS LAS RUTAS',
+  groupBusNote: 'Las guaguas del condado, por número. Se paga el pasaje al subir.',
+  groupCity: 'TROLLEYS DE OTRAS CIUDADES',
+  groupCityNote:
+    'Los trolleys de Doral, Coral Gables, North Miami y otras ciudades. Cada ciudad pone sus reglas: confirma el pasaje con la ciudad.',
   ride: (m: number) => `${m} min de punta a punta`,
   stopsCount: (k: number) => n(k, 'parada', 'paradas'),
   schedule: 'HORARIO',
@@ -116,9 +143,9 @@ const ES = {
     `Según el horario de Miami-Dade Transit, vigente hasta el ${date}. Las horas son de salida del principio de la ruta; en cada parada la guagua pasa más tarde.`,
   stale:
     'El horario que teníamos del condado ya venció. Confirma las horas en GO Miami-Dade Transit.',
-  toward: (place: string) => `HACIA ${place.toUpperCase()}`,
+  toward: (place: string) => `HACIA ${towardEs(place).toUpperCase()}`,
   alsoEnds: (places: string) => `Algunas guaguas terminan antes, en ${places}.`,
-  stopList: (place: string) => `Paradas hacia ${place}`,
+  stopList: (place: string) => `Paradas hacia ${towardEs(place)}`,
   minutes: (m: number) => `${m} min`,
   transfer: 'Cambia a',
   more: (k: number) => `+${k}`,
@@ -329,7 +356,8 @@ const ES = {
   liveSourceLine:
     'Horas en vivo: Miami-Dade Transit, datos en tiempo real de Swiftly, Inc., tal cual y sin garantía.',
   liveTerms: 'Condiciones de uso',
-  otherRoutes: 'OTRAS RUTAS',
+  otherRoutes: 'RUTAS QUE CRUZA',
+  allRoutesLink: 'Todas las rutas de Miami-Dade',
   freeRides: 'Guaguas gratis en Hialeah',
 }
 
@@ -341,16 +369,28 @@ const EN: BusCopy = {
   hub: 'Bus routes',
   kickerBus: 'METROBUS · MIAMI-DADE TRANSIT',
   kickerTrolley: 'FREE TROLLEY · CITY OF MIAMI',
+  kicker: (r: KickerRef): string =>
+    r.kind === 'bus'
+      ? 'METROBUS · MIAMI-DADE TRANSIT'
+      : r.kind === 'rail'
+        ? 'METRORAIL · MIAMI-DADE TRANSIT'
+        : r.kind === 'mover'
+          ? r.short === 'MIA'
+            ? 'FREE · MIAMI INTERNATIONAL AIRPORT'
+            : 'FREE METROMOVER · MIAMI-DADE TRANSIT'
+          : r.fare === 'free'
+            ? 'FREE TROLLEY · CITY OF MIAMI'
+            : 'CITY TROLLEY',
   hubTitle: 'Bus routes',
   hubSub:
-    'The county buses through Hialeah, Miami Lakes, Little Havana and Miami Gardens: every stop, the first and last bus, and how often they come.',
+    'Every bus in Miami-Dade, free and paid: Metrobus, Metrorail, Metromover and the trolleys, with every stop, the first and last bus, and how often they come.',
   hubMetaTitle:
-    'Buses in Hialeah, Miami Lakes, Little Havana and Miami Gardens: free lines and county routes',
+    'Miami-Dade buses: every route, free and paid',
   hubMetaDescription:
-    'Which bus do I take? Hialeah’s free buses (Flamingo and Marlin) and the Metrobus routes through Hialeah, Miami Lakes, Little Havana and Miami Gardens: every stop, when they come, and which ones are free.',
-  hubQuestion: 'Which buses run through Hialeah, Miami Lakes, Little Havana and Miami Gardens?',
+    'Which bus do I take? Plan your trip with every route in Miami-Dade: Metrobus, Metrorail, Metromover, the trolleys and Hialeah’s free buses (Flamingo and Marlin). Every stop, when they come, and which ones are free.',
+  hubQuestion: 'Which buses are there in Miami-Dade, and which ones are free?',
   hubAnswer: (count: number) =>
-    `“Which bus do I take?” plans your trip with every route in Miami-Dade together: Metrobus, Metrorail, Metromover, the trolleys and Hialeah’s free Flamingo and Marlin, with changes when it takes them. Below, ${n(count, 'county route', 'county routes')} that cross those cities, with every stop and the schedule.`,
+    `“Which bus do I take?” plans your trip with every route in Miami-Dade together: Metrobus, Metrorail, Metromover, the trolleys and Hialeah’s free Flamingo and Marlin, with changes when it takes them. Below, first the routes through Hialeah, Miami Lakes, Little Havana and Miami Gardens, then all ${count} routes in Miami-Dade: the free ones, Metrorail, Metrobus and other cities’ trolleys, each with every stop and the schedule.`,
   cityHeading: (city: string) => `THROUGH ${city.toUpperCase()}`,
   freeLines: 'Hialeah’s free buses: Flamingo and Marlin →',
   fareFree: 'FREE',
@@ -359,29 +399,41 @@ const EN: BusCopy = {
   metaTitle: (name: string, a: string, b: string) =>
     `Metrobus ${name}: stops and schedule, ${a} ⇄ ${b}`,
   metaTitleTrolley: (name: string) => `${name}: stops and schedule (free)`,
-  metaDescription: (name: string, via: string, stops: number, every: string | null) =>
-    `All ${stops} stops on ${name} along ${via}, both directions, with the first and last bus${every ? ` and how often it comes (${every} on a weekday midday)` : ''}. From Miami-Dade Transit’s schedule.`,
+  metaTitleLine: (name: string) => `${name}: stops and schedule`,
+  metaDescription: (name: string, via: string | null, stops: number, every: string | null) =>
+    `All ${stops} stops on ${name}${via ? ` along ${via}` : ''}, both directions, with the first and last bus${every ? ` and how often it comes (${every} on a weekday midday)` : ''}. From Miami-Dade Transit’s schedule.`,
   question: (name: string) => `Where does ${name} go, and when does it run?`,
   answer: (
     name: string,
-    via: string,
+    via: string | null,
     a: string,
     b: string,
     minutes: number,
     weekday: string | null,
     sunday: string | null,
   ) =>
-    `${name} runs between ${a} and ${b} along ${via}, about ${minutes} minutes end to end.` +
+    `${cap(name)} runs between ${a} and ${b}${via ? ` along ${via}` : ''}, about ${minutes} minutes end to end.` +
     (weekday ? ` On weekdays it ${weekday}.` : '') +
     (sunday ? ` On Sundays it ${sunday}.` : ' It doesn’t run on Sundays.'),
-  answerNoTimes: (name: string, via: string, a: string, b: string) =>
-    `${name} runs between ${a} and ${b} along ${via}. The county is changing its schedule: check the time in GO Miami-Dade Transit before you leave.`,
+  answerNoTimes: (name: string, via: string | null, a: string, b: string) =>
+    `${cap(name)} runs between ${a} and ${b}${via ? ` along ${via}` : ''}. The county is changing its schedule: check the time in GO Miami-Dade Transit before you leave.`,
   dayLine: (first: string, last: string, every: string | null) =>
     every ? `runs from ${first} to ${last}, ${every}` : `runs from ${first} to ${last}`,
   dayLineAllNight: (every: string | null) =>
     every ? `runs all night, ${every}` : 'runs all night',
   free: 'FREE',
   fare: 'County fare',
+  fareAsk: 'Fare: check with the city',
+  fareRail: 'METRORAIL · FARE',
+  groupFree: 'FREE: METROMOVER, TROLLEYS AND MORE',
+  groupFreeNote:
+    'You pay nothing: Hialeah’s free buses, Metromover, the airport’s MIA Mover and the City of Miami’s trolleys.',
+  groupRail: 'METRORAIL',
+  groupBus: 'METROBUS: EVERY ROUTE',
+  groupBusNote: 'The county’s buses, by number. You pay the fare when you get on.',
+  groupCity: 'OTHER CITIES’ TROLLEYS',
+  groupCityNote:
+    'The trolleys run by Doral, Coral Gables, North Miami and other cities. Each city sets its own rules: check the fare with the city.',
   ride: (m: number) => `${m} min end to end`,
   stopsCount: (k: number) => n(k, 'stop', 'stops'),
   schedule: 'SCHEDULE',
@@ -610,7 +662,8 @@ const EN: BusCopy = {
   liveSourceLine:
     'Live times: Miami-Dade Transit, real-time data from Swiftly, Inc., as is and with no warranty.',
   liveTerms: 'Terms of use',
-  otherRoutes: 'OTHER ROUTES',
+  otherRoutes: 'ROUTES IT MEETS',
+  allRoutesLink: 'Every route in Miami-Dade',
   freeRides: 'Free buses in Hialeah',
 }
 
