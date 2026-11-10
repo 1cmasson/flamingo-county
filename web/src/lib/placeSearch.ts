@@ -84,7 +84,7 @@ export const fold = (s: string) =>
 
 const cache = new Map<string, { at: number; result: Promise<PlacePoint[] | null> }>()
 
-type Feature = {
+export type Feature = {
   geometry: { coordinates: [number, number] }
   properties: {
     osm_id?: number
@@ -96,6 +96,47 @@ type Feature = {
     city?: string
     district?: string
   }
+}
+
+/**
+ * Photon's features as places to go, at most `limit`, in Photon's order.
+ *
+ * The same place often comes twice: as a point and as its outline (a shop and
+ * its building, a park and its grounds). Only one is kept, and it's the
+ * outline's: a lone point is often an old import dropped in the wrong spot.
+ * "Milander Park" was one, a pin among the houses on W 30 St, about 2 km
+ * south of the park at 4700 Palm Ave, so the planner sent riders to the
+ * wrong stop. An outline is drawn where the thing is.
+ */
+export function toPlaces(features: Feature[], limit: number): PlacePoint[] {
+  const out: (PlacePoint & { area: boolean })[] = []
+  const at = new Map<string, number>()
+  for (const f of features) {
+    const p = f.properties
+    if (!p.name || (p.osm_key && SKIP_KEYS.has(p.osm_key))) continue
+    const street = [p.housenumber, p.street].filter(Boolean).join(' ')
+    const sub = [street, p.city ?? p.district].filter(Boolean).join(', ')
+    const area = p.osm_type === 'W' || p.osm_type === 'R'
+    const [lng, lat] = f.geometry.coordinates
+    const place = {
+      id: `o${p.osm_type ?? ''}${p.osm_id ?? out.length}`,
+      name: p.name,
+      sub,
+      at: [lat, lng] as LatLng,
+      area,
+    }
+    const dedupe = `${fold(p.name)}|${fold(sub)}`
+    const seen = at.get(dedupe)
+    if (seen !== undefined) {
+      // The outline takes the point's place in the list.
+      if (area && !out[seen].area) out[seen] = place
+      continue
+    }
+    if (out.length >= limit) continue
+    at.set(dedupe, out.length)
+    out.push(place)
+  }
+  return out.map(({ area: _area, ...p }) => p)
 }
 
 /**
@@ -132,27 +173,7 @@ export function searchPlaces(q: string, limit = 8, near?: LatLng): Promise<Place
     })
     if (!res.ok) throw new Error(`photon ${res.status}`)
     const json = (await res.json()) as { features?: Feature[] }
-    const seen = new Set<string>()
-    const out: PlacePoint[] = []
-    for (const f of json.features ?? []) {
-      const p = f.properties
-      if (!p.name || (p.osm_key && SKIP_KEYS.has(p.osm_key))) continue
-      const street = [p.housenumber, p.street].filter(Boolean).join(' ')
-      const sub = [street, p.city ?? p.district].filter(Boolean).join(', ')
-      // The same shop as a node and a building, or twice under two tags: once.
-      const dedupe = `${fold(p.name)}|${fold(sub)}`
-      if (seen.has(dedupe)) continue
-      seen.add(dedupe)
-      const [lng, lat] = f.geometry.coordinates
-      out.push({
-        id: `o${p.osm_type ?? ''}${p.osm_id ?? out.length}`,
-        name: p.name,
-        sub,
-        at: [lat, lng],
-      })
-      if (out.length >= limit) break
-    }
-    return out
+    return toPlaces(json.features ?? [], limit)
   })().catch(() => {
     // A failure isn't an answer: forget it soon, and say so, so nobody keeps it as "none".
     setTimeout(() => cache.delete(key), 60 * 1000).unref?.()
