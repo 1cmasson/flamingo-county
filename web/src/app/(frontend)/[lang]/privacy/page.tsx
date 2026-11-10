@@ -15,7 +15,7 @@ import { PageShell } from '../../../../components/PageShell'
  * If you add a form, a cookie, an analytics script or a new provider, update
  * this page and bump UPDATED.
  */
-const UPDATED = { en: '4 November 2026', es: '4 de noviembre de 2026' }
+const UPDATED = { en: '10 November 2026', es: '10 de noviembre de 2026' }
 const CONTACT = 'hola@flamingocounty.com'
 
 type Section = { h: string; p: (string | { list: string[] })[] }
@@ -90,6 +90,7 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
             list: [
               'a language cookie, set only when you use the EN/ES switch',
               'sign-in cookies, only if you sign in — they keep you signed in and protect the sign-in step',
+              'a vote cookie, only if you vote in our weekly story vote — it holds just the story you picked, so you vote once, and expires a month after the vote closes',
             ],
           },
           'No advertising or analytics cookies.',
@@ -214,6 +215,7 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
             list: [
               'una cookie de idioma, solo cuando usas el botón EN/ES',
               'cookies de inicio de sesión, solo si inicias sesión — te mantienen conectado y protegen el paso de inicio de sesión',
+              'una cookie de voto, solo si votas en la votación semanal de historias — guarda solo la historia que escogiste, para que votes una vez, y se borra un mes después de que cierra la votación',
             ],
           },
           'Nada de cookies de publicidad ni de analítica.',

@@ -157,9 +157,11 @@ export function votedFor(poll: Pick<StoryPoll, 'id' | 'options'>, cookieHeader: 
 }
 
 const PER_MINUTE = 600
-// Per address, per poll, per Miami day: room for a household on one Wi-Fi, or
-// phones behind one carrier address, not for one person to stuff the poll.
-const PER_ADDRESS_PER_DAY = 8
+// Per address, per poll, per Miami day. The cookie is what keeps it to one
+// vote per browser; this is only the backstop for a cleared cookie. Higher
+// than the rankings' 8 because the reel's DM sends everyone at once, and
+// phones on one carrier often share an address (as does a household's Wi-Fi).
+const PER_ADDRESS_PER_DAY = 30
 
 let minuteStart = 0
 let inMinute = 0

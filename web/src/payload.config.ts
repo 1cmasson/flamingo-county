@@ -304,7 +304,7 @@ export default buildConfig({
         'story-polls': {
           enabled: { find: true, create: true, update: true },
           description:
-            'The weekly story vote, lib/storyPolls.ts. Page /es/vota/<slug>; /es/vota always goes to the poll open now (the link in the reel’s DM). title/question/intro and options[].title/teaser are per language (locale es or en); options[].key (lowercase-with-dashes), image, story and commentVotes are shared. opensAt/closesAt are ISO times (Miami). commentVotes = votes counted by hand from the Instagram comments, added to the site’s. To add or edit the other language, read the poll first (draft: true) and send options with the SAME row ids, or the other language’s text is lost. Never change a key once voting opens. Save with draft: true; publish with hqRequestPublish.',
+            'The weekly story vote, lib/storyPolls.ts. Page /es/vota/<slug>; /es/vota always goes to the poll open now (the link in the reel’s DM). title/question/intro and options[].title/teaser are per language (locale es or en); options[].key (lowercase-with-dashes), image, story and commentVotes are shared. opensAt/closesAt are ISO 8601 with the Miami offset (-05:00 in November), e.g. 2026-11-15T23:59:00-05:00; without an offset they are read as UTC. commentVotes = votes counted by hand from the Instagram comments, added to the site’s. To add or edit the other language, read the poll first (draft: true) and send options with the SAME row ids, or the other language’s text is lost. Never change a key once voting opens. Save with draft: true; publish with hqRequestPublish.',
         },
         'story-poll-suggestions': {
           enabled: { find: true },

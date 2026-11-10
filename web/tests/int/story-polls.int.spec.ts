@@ -1,6 +1,6 @@
 // @vitest-environment node
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
-import { getPayload, type Payload } from 'payload'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { createLocalReq, getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
 
 import {
@@ -16,6 +16,7 @@ import {
 } from '@/lib/storyPolls'
 import { cleanSuggestion, resetSuggestionLimits, suggestStory } from '@/lib/storySuggestions'
 import { POST as voteRoute } from '@/app/api/story-polls/vote/route'
+import { decidePublish, requestPublish } from '@/lib/publishRequests'
 
 /**
  * The weekly story vote (lib/storyPolls.ts): moved along by its own dates,
@@ -151,8 +152,8 @@ describe('voting', () => {
   it('caps one address per poll per day', async () => {
     const from = browser({ 'cf-connecting-ip': '203.0.113.9' })
     const results = []
-    for (let i = 0; i < 10; i++) results.push(await castPollVote(payload, { slug, pick: 'jack-tigertail' }, from, during))
-    expect(results.filter((r) => r.ok)).toHaveLength(8)
+    for (let i = 0; i < 32; i++) results.push(await castPollVote(payload, { slug, pick: 'jack-tigertail' }, from, during))
+    expect(results.filter((r) => r.ok)).toHaveLength(30)
     expect(results.at(-1)).toMatchObject({ ok: false, reason: 'busy' })
     // The next Miami day starts a new count.
     expect(await castPollVote(payload, { slug, pick: 'jack-tigertail' }, from, during + 86_400_000 - 1)).toMatchObject({ ok: true })
@@ -283,4 +284,93 @@ describe('the current poll', () => {
     expect(await currentPollSlug(payload, T('2031-03-13T12:00:00Z'))).toBe(`${tag}-this-week`)
     expect(await currentPollSlug(payload, T('2031-04-01T12:00:00Z'))).toBe(`${tag}-next-week`)
   })
+})
+
+describe('the owner’s path: a draft over MCP, both languages, then the Publish tap', () => {
+  let payload: Payload
+  let pollId = 0
+  let userId = 0
+  const slug = `story-poll-publish-${Date.now()}`
+
+  beforeAll(async () => {
+    payload = await getPayload({ config: await config })
+    process.env.TELEGRAM_BOT_TOKEN = 'test-token'
+    process.env.TELEGRAM_OWNER_CHAT_ID = '1001'
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({ ok: true, result: { message_id: 1 } })),
+    )
+  })
+
+  afterAll(async () => {
+    vi.unstubAllGlobals()
+    delete process.env.TELEGRAM_BOT_TOKEN
+    delete process.env.TELEGRAM_OWNER_CHAT_ID
+    if (!payload) return
+    await payload.delete({ collection: 'hq-publish-requests', where: { collection: { equals: 'story-polls' } }, overrideAccess: true })
+    if (pollId) await payload.delete({ collection: 'story-polls', id: pollId, overrideAccess: true }).catch(() => undefined)
+    if (userId) await payload.delete({ collection: 'users', id: userId, overrideAccess: true }).catch(() => undefined)
+  })
+
+  it('takes only drafts over MCP, keeps each language through the other’s update, and goes live on the tap', async () => {
+    const user = await payload.create({
+      collection: 'users',
+      data: { email: `poll-publish-${Date.now()}@example.com`, password: 'not-a-real-password-1' },
+      overrideAccess: true,
+    })
+    userId = user.id
+    const req = await createLocalReq({ user: { ...user, collection: 'users' } }, payload)
+    req.payloadAPI = 'MCP'
+    const data = {
+      slug,
+      title: 'Tú escoges la historia del miércoles',
+      question: '¿Qué historia contamos?',
+      opensAt: '2031-05-05T00:00:00-05:00',
+      closesAt: '2031-05-10T23:59:00-05:00',
+      options: four.map((o) => ({ key: o.key, title: `${o.title} (es)` })),
+    }
+    await expect(payload.create({ collection: 'story-polls', data, locale: 'es', req })).rejects.toThrow(/draft: true/)
+    // Even asking for published, an MCP save stays a draft.
+    const draft = await payload.create({ collection: 'story-polls', data: { ...data, _status: 'published' }, locale: 'es', draft: true, req })
+    pollId = draft.id
+    expect(draft._status).toBe('draft')
+
+    // The other language: the same row ids, or the Spanish titles would be lost.
+    const saved = await payload.findByID({ collection: 'story-polls', id: draft.id, draft: true, locale: 'es', overrideAccess: true })
+    await payload.update({
+      collection: 'story-polls',
+      id: draft.id,
+      locale: 'en',
+      draft: true,
+      data: {
+        title: 'You pick Wednesday’s story',
+        question: 'Which story?',
+        options: (saved.options ?? []).map((o, i) => ({ id: o.id, key: o.key, title: `${four[i].title} (en)`, commentVotes: i === 0 ? 2 : null })),
+      },
+      req,
+    })
+    expect(await getPublished()).toBeNull()
+
+    const { requestId } = await requestPublish(payload, { collection: 'story-polls', id: draft.id })
+    expect(await decidePublish(payload, requestId, 'publish')).toMatch(/Published/i)
+
+    const es = await getPublished('es')
+    const en = await getPublished('en')
+    expect(es?._status).toBe('published')
+    expect(es?.options?.map((o) => o.title)).toEqual(four.map((o) => `${o.title} (es)`))
+    expect(en?.options?.map((o) => o.title)).toEqual(four.map((o) => `${o.title} (en)`))
+    expect(es?.options?.[0].commentVotes).toBe(2)
+    expect(es?.closesAt).toBe('2031-05-11T04:59:00.000Z')
+    expect(await currentPollSlug(payload, T('2031-05-07T12:00:00Z'))).toBe(slug)
+  })
+
+  async function getPublished(locale: 'es' | 'en' = 'es') {
+    const { docs } = await payload.find({
+      collection: 'story-polls',
+      where: { and: [{ slug: { equals: slug } }, { _status: { equals: 'published' } }] },
+      locale,
+      overrideAccess: true,
+    })
+    return docs[0] ?? null
+  }
 })
