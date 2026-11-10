@@ -66,6 +66,14 @@ export const routes = {
   promo: (lang: Lang, slug: string) => `/${lang}/promo/${slug}`,
   /** A neighbors' vote: nominations, the bracket, then the results (lib/rankings.ts). */
   ranking: (lang: Lang, slug: string) => `/${lang}/rankings/${slug}`,
+  /**
+   * The weekly story vote (lib/storyPolls.ts). A Spanish slug on purpose, in
+   * both languages (the owner chose /es/vota): `/vote` is the elections page.
+   * `storyPollCurrent` always forwards to the poll open now, so the link in
+   * the reel's DM never changes.
+   */
+  storyPollCurrent: (lang: Lang) => `/${lang}/vota`,
+  storyPoll: (lang: Lang, slug: string) => `/${lang}/vota/${slug}`,
   /** One visitor's coupon: the code is the only key to it. Never indexed or counted by code. */
   coupon: (lang: Lang, slug: string, code: string) => `/${lang}/promo/${slug}/c/${code}`,
   /** A partner business's private coupon dashboard. */
