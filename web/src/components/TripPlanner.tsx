@@ -5,10 +5,11 @@ import type React from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import type { Lang } from '../i18n'
 import { busCopy } from '../lib/busCopy'
-import { mergeDepartures, type Departure } from '../lib/busTime'
+import { mergeDepartures, type Departure, type Upcoming } from '../lib/busTime'
 import { routes } from '../lib/routes'
-import { formatClock, meters, walkMinutes, type LatLng } from '../lib/transitMath'
+import { formatClock, meters, miamiClock, walkMinutes, type LatLng } from '../lib/transitMath'
 import {
+  expandNetwork,
   planTrips,
   transitDirectionsHref,
   tripProgress,
@@ -16,7 +17,9 @@ import {
   type Network,
   type Plan,
   type Trip,
+  type WireNetwork,
 } from '../lib/tripPlan'
+import { FareChip } from './FareChip'
 import { DIR_COLORS, type MapTrip } from './BusMap'
 import { ShareTrip, shareStart } from './TripShare'
 import { tripBuses } from '../lib/tripLink'
@@ -25,7 +28,7 @@ import s from './vote.module.css'
 
 /**
  * "Where are you going?" on the full bus map: a search over the directory and
- * the county's addresses, then the trip there by one bus, worked out in the
+ * the county's addresses, then the trip there with every route, worked out in the
  * browser (lib/tripPlan.ts) from where the visitor is. The location never
  * leaves the phone; only the typed text is searched on the server.
  */
@@ -34,10 +37,19 @@ export type Destination = { name: string; sub: string; at: LatLng; href: string 
 
 /* ---------------------------------------------------------- the network */
 
+/**
+ * The network's shape on the wire. Browsers keep /api/transit/network for an
+ * hour, so a change of shape gets a new address: a phone holding the old one
+ * must not feed it to the new planner.
+ */
+const NETWORK_SHAPE = 2
+
 let network: Promise<Network | null> | null = null
-function loadNetwork(): Promise<Network | null> {
-  network ??= fetch('/api/transit/network')
-    .then((r) => (r.ok ? (r.json() as Promise<Network>) : null))
+/** Every route, fetched once per page and shared by the planner and the hub. */
+export function loadNetwork(): Promise<Network | null> {
+  network ??= fetch(`/api/transit/network?v=${NETWORK_SHAPE}`)
+    .then((r) => (r.ok ? (r.json() as Promise<WireNetwork>) : null))
+    .then((w) => (w ? expandNetwork(w) : null))
     .catch(() => {
       network = null
       return null
@@ -185,17 +197,55 @@ type StopTimes = { live: { departures: { at: number }[] } | null; scheduled: Dep
 
 /** The next buses at one stop: live, then the schedule. Refreshed every 30 s; null until known. */
 export function useStopNext(slug: string | null, dir: string, stop: string) {
-  const key = slug ? `${slug}|${dir}|${stop}` : null
-  const [state, setState] = useState<{ key: string; times: StopTimes } | null>(null)
+  return useLegNext(slug ? { slug, live: 'county', feedDir: dir, board: { id: stop } } : null)
+}
+
+type LegLiveKey = Pick<Leg, 'slug' | 'live' | 'feedDir'> & { board: { id: string; eta?: number[] } }
+
+/**
+ * The next buses where a ride is boarded, from wherever its live times come
+ * from: the county's feed (any of its routes; the schedule after it on the
+ * routes the site keeps a timetable for), or the City of Hialeah's ETA SPOT
+ * for the free lines. Null until known, or when the route has neither.
+ */
+export function useLegNext(leg: LegLiveKey | null) {
+  const key = leg ? `${leg.slug}|${leg.feedDir}|${leg.board.id}` : null
+  const [state, setState] = useState<{ key: string; next: Upcoming[] } | null>(null)
   useEffect(() => {
-    if (!slug || !key) return
+    if (!leg || !key || !leg.live) return
     let alive = true
     const read = () => {
       if (document.visibilityState !== 'visible') return
-      const q = new URLSearchParams({ route: slug, dir, stop })
+      if (leg.live === 'eta') {
+        const stops = (leg.board.eta ?? []).join(',')
+        if (!stops) return
+        // Pattern "1" runs toward the end of the free line's strip, "0" toward its start.
+        const way = leg.feedDir === '1' ? 'end' : 'start'
+        fetch(`/api/transit/arrivals?${new URLSearchParams({ stops, route: leg.slug })}`)
+          .then((r) => (r.ok ? r.json() : null))
+          .then((j: { arrivals: { minutes: number; live: boolean; toward: string | null }[] } | null) => {
+            if (!alive || !j) return
+            const { min } = miamiClock(new Date())
+            const next = j.arrivals
+              .filter((x) => !x.toward || x.toward === way)
+              .slice(0, 3)
+              .map((x) => ({ at: min + x.minutes, wait: x.minutes, live: x.live }))
+            setState({ key, next })
+          })
+          .catch(() => {})
+        return
+      }
+      const q = new URLSearchParams({ route: leg.slug, dir: leg.feedDir, stop: leg.board.id })
       fetch(`/api/transit/county-arrivals?${q}`)
         .then((r) => (r.ok ? r.json() : null))
-        .then((j: StopTimes | null) => alive && j && setState({ key, times: j }))
+        .then((j: StopTimes | null) => {
+          if (!alive || !j) return
+          const { live, scheduled } = j
+          setState({
+            key,
+            next: mergeDepartures(live ? live.departures.map((x) => x.at) : [], scheduled ?? [], new Date()),
+          })
+        })
         .catch(() => {})
     }
     read()
@@ -208,8 +258,7 @@ export function useStopNext(slug: string | null, dir: string, stop: string) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key])
   if (!state || state.key !== key) return null
-  const { live, scheduled } = state.times
-  return mergeDepartures(live ? live.departures.map((x) => x.at) : [], scheduled ?? [], new Date())
+  return state.next
 }
 
 /* ------------------------------------------------- handing a trip to a map */
@@ -274,7 +323,24 @@ export function Soon({
   )
 }
 
-/** A trip as numbered steps, with its total and the next bus at the stop to board. */
+/** What a ride's badge says: its number, or a short mark for the train, the Mover, a line. */
+export function legBadge(leg: Pick<Leg, 'number' | 'kind' | 'name' | 'slug'>): string {
+  if (leg.number) return leg.number
+  if (leg.kind === 'rail') return 'MR'
+  if (leg.kind === 'mover') return 'MM'
+  if (leg.slug === 'flamingo' || leg.slug === 'marlin') return leg.slug[0].toUpperCase()
+  return 'T'
+}
+
+/** The colours rides take on the map and in the steps, in order. */
+const RIDE_COLORS = [...DIR_COLORS, '#ffd23f']
+const RIDE_FG = ['#fff6e5', '#0c0f14', '#0c0f14']
+
+/**
+ * A trip as numbered steps: walk, then for each ride take it (with the next
+ * one live and whether it's free) and get off, a change between rides, and
+ * the walk to the door. With the visitor followed, the steps behind them fade.
+ */
 export function TripSteps({
   lang,
   trip,
@@ -291,39 +357,33 @@ export function TripSteps({
   here?: LatLng | null
 }) {
   const c = busCopy(lang)
-  const second = trip.then ?? null
-  const next = useStopNext(trip.slug, trip.dir, trip.board.id)
-  const next2 = useStopNext(second ? second.slug : null, second?.dir ?? '', second?.board.id ?? '')
+  const legs = trip.legs
+  const first = legs[0]
+  const last = legs[legs.length - 1]
+  const next = useLegNext(first)
   const soon = next?.[0] ?? null
   const soonWait = soon && soon.wait <= 60 ? soon.wait : null
   const progress = here ? tripProgress(trip, here) : null
   // Still walking to the stop: the minutes count down as they go.
   const walkNow =
     here && !progress
-      ? Math.min(trip.board.walk, walkMinutes(meters(here, trip.board.at)))
-      : trip.board.walk
-  // Steps already behind the visitor fade. One bus: walk, board, get off, walk (1–4). With a
-  // change: walk, board, get off, change, board, get off, walk (1–7).
-  const done = !progress
-    ? 0
-    : progress.leg === 1
-      ? progress.kind === 'atStop'
-        ? 1
-        : 2
-      : progress.kind === 'atStop'
-        ? 4
-        : 5
-  const last = second ?? trip
-  const banner = !progress
+      ? Math.min(first.board.walk, walkMinutes(meters(here, first.board.at)))
+      : first.board.walk
+  // Step numbers: 1 is the walk, then each ride is take (2 + 3k) and get off (3 + 3k),
+  // with the change before it (1 + 3k). Steps before where the visitor is fade.
+  const done = !progress ? 0 : 1 + 3 * (progress.leg - 1) + (progress.kind === 'atStop' ? 0 : 1)
+  const ride = progress ? legs[progress.leg - 1] : null
+  const after = progress ? legs[progress.leg] : null
+  const banner = !progress || !ride
     ? null
     : progress.kind === 'atStop'
-      ? progress.leg === 2 && second
-        ? c.tripAtChange(c.tripRouteInline(second.number))
+      ? progress.leg > 1
+        ? c.tripAtChange(c.tripRouteInline(ride))
         : c.tripAtStop
       : progress.kind === 'riding'
-        ? c.tripRiding(progress.left, (progress.leg === 2 && second ? second : trip).alight.name)
-        : progress.leg === 1 && second
-          ? c.tripGetOffChange(trip.alight.name, c.tripRouteInline(second.number))
+        ? c.tripRiding(progress.left, ride.alight.name)
+        : after
+          ? c.tripGetOffChange(ride.alight.name, c.tripRouteInline(after))
           : c.tripGetOffNow(last.alight.name)
   return (
     <>
@@ -336,51 +396,75 @@ export function TripSteps({
         {/* A wait past an hour is tomorrow's first bus, not part of the trip. */}
         {c.tripAbout(trip.total + (soonWait ?? 0))}{' '}
         <span className={b.tripTotalNote}>
-          {second ? c.tripAboutChange : c.tripAboutNote(soonWait !== null)}
+          {legs.length > 1 ? c.tripAboutChanges(legs.length - 1) : c.tripAboutNote(soonWait !== null)}
         </span>
       </p>
       <ol className={b.tripSteps}>
         <li data-done={done >= 1 || undefined}>
           {startsAtStop && !here
-            ? c.tripStartAt(trip.board.name)
-            : c.tripWalkTo(walkNow, trip.board.name)}
+            ? c.tripStartAt(first.board.name)
+            : c.tripWalkTo(walkNow, first.board.name)}
         </li>
-        <li data-done={done >= 2 || undefined} className={b.stepTake}>
-          <TakeLabel lang={lang} leg={trip} color={0} />
-          <Soon lang={lang} next={next} />
-        </li>
-        <li data-done={done >= 3 || undefined}>
-          {c.tripGetOff(trip.alight.name, trip.stops, trip.ride)}
-        </li>
-        {second ? (
-          <>
-            <li data-done={done >= 4 || undefined}>
-              {trip.alight.id === second.board.id
-                ? c.tripChangeSame(c.tripRouteInline(second.number))
-                : c.tripChangeWalk(
-                    second.board.walk,
-                    second.board.name,
-                    c.tripRouteInline(second.number),
-                  )}
-            </li>
-            <li data-done={done >= 5 || undefined} className={b.stepTake}>
-              <TakeLabel lang={lang} leg={second} color={1} />
-              <Soon lang={lang} next={next2} />
-            </li>
-            <li>{c.tripGetOff(second.alight.name, second.stops, second.ride)}</li>
-          </>
-        ) : null}
+        {legs.map((leg, k) => (
+          <RideSteps key={`${leg.slug}|${leg.board.id}`} lang={lang} legs={legs} k={k} done={done} next={k === 0 ? next : undefined} />
+        ))}
         <li>{c.tripWalkFrom(last.alight.walk, destName)}</li>
       </ol>
     </>
   )
 }
 
+/** One ride's steps: the change to it (after the first), take it, get off. */
+function RideSteps({
+  lang,
+  legs,
+  k,
+  done,
+  next,
+}: {
+  lang: Lang
+  legs: Leg[]
+  k: number
+  done: number
+  /** The first ride's next buses, already being read by the steps. */
+  next?: ReturnType<typeof useLegNext>
+}) {
+  const c = busCopy(lang)
+  const leg = legs[k]
+  const prev = k > 0 ? legs[k - 1] : null
+  const own = useLegNext(next === undefined ? leg : null)
+  const times = next === undefined ? own : next
+  const base = 3 * k
+  return (
+    <>
+      {prev ? (
+        <li data-done={done >= base + 1 || undefined}>
+          {prev.alight.id === leg.board.id || leg.board.walk === 0
+            ? c.tripChangeSame(c.tripRouteInline(leg))
+            : c.tripChangeWalk(leg.board.walk, leg.board.name, c.tripRouteInline(leg))}
+        </li>
+      ) : null}
+      <li data-done={done >= base + 2 || undefined} className={b.stepTake}>
+        <TakeLabel lang={lang} leg={leg} color={k} />
+        {times && times.length ? (
+          <Soon lang={lang} next={times} />
+        ) : leg.headway && (times !== null || !leg.live) ? (
+          <span>{c.tripEvery(leg.headway)}</span>
+        ) : (
+          <Soon lang={lang} next={times} />
+        )}
+      </li>
+      <li data-done={done >= base + 3 || undefined}>{c.tripGetOff(leg.alight.name, leg.stops, leg.ride)}</li>
+    </>
+  )
+}
+
 /**
- * "Take Route 37 toward South Miami Station", made easy to spot: the route's
- * badge in the colour its ride has on the map, and the direction in bold.
+ * "Take Route 37 toward South Miami Station", made easy to spot: the ride's
+ * badge in the colour it has on the map, the direction in bold, and whether
+ * it's free or a fare.
  */
-function TakeLabel({ lang, leg, color }: { lang: Lang; leg: Leg; color: 0 | 1 }) {
+function TakeLabel({ lang, leg, color }: { lang: Lang; leg: Leg; color: number }) {
   const c = busCopy(lang)
   return (
     <span className={b.takeLine}>
@@ -388,16 +472,21 @@ function TakeLabel({ lang, leg, color }: { lang: Lang; leg: Leg; color: 0 | 1 })
         className={b.takeBadge}
         style={
           {
-            '--c': DIR_COLORS[color],
-            '--fg': color === 0 ? '#fff6e5' : '#0c0f14',
+            '--c': RIDE_COLORS[color % RIDE_COLORS.length],
+            '--fg': RIDE_FG[color % RIDE_FG.length],
           } as React.CSSProperties
         }
         aria-hidden="true"
       >
-        {leg.number ?? 'T'}
+        {legBadge(leg)}
       </span>
       <span className={b.takeText}>
-        <span className={b.takeRoute}>{c.tripTakeRoute(c.tripRouteInline(leg.number))}</span>
+        <span className={b.takeRoute}>
+          {c.tripTakeRoute(c.tripRouteInline(leg))}{' '}
+          {leg.fare ? (
+            <FareChip free={leg.fare === 'free'} label={leg.fare === 'free' ? c.fareFree : c.farePaidShort} />
+          ) : null}
+        </span>
         <span className={b.takeToward}>
           <span aria-hidden="true">→</span> {c.tripTakeToward(leg.toward)}
         </span>
@@ -406,50 +495,49 @@ function TakeLabel({ lang, leg, color }: { lang: Lang; leg: Leg; color: 0 | 1 })
   )
 }
 
-/** What the map draws of a trip: the walks dotted, each bus in its own colour. */
+/** What the map draws of a trip: the walks dotted, each ride in its own colour. */
 export function mapTrip(trip: Trip, from: LatLng, dest: Destination, label: string): MapTrip {
-  const second = trip.then ?? null
-  const last = second ?? trip
+  const legs = trip.legs
+  const last = legs[legs.length - 1]
   // At a stop or on a bus, the walk to the first stop is behind them.
   const along = tripProgress(trip, from) !== null
   const walks: LatLng[][] = []
-  if (!along) walks.push([from, trip.board.at])
-  if (second && trip.alight.id !== second.board.id) walks.push([trip.alight.at, second.board.at])
+  if (!along) walks.push([from, legs[0].board.at])
+  legs.slice(1).forEach((leg, k) => {
+    if (legs[k].alight.id !== leg.board.id) walks.push([legs[k].alight.at, leg.board.at])
+  })
   walks.push([last.alight.at, dest.at])
   return {
     key: `${tripKey(trip)}|${dest.at.join(',')}`,
     walks,
-    rides: [
-      { path: trip.path, color: DIR_COLORS[0], number: trip.number, toward: trip.toward },
-      ...(second
-        ? [
-            {
-              path: second.path,
-              color: DIR_COLORS[1],
-              number: second.number,
-              toward: second.toward,
-            },
-          ]
-        : []),
-    ],
-    stops: second
-      ? [trip.board.at, trip.alight.at, second.board.at, second.alight.at]
-      : [trip.board.at, trip.alight.at],
+    rides: legs.map((leg, k) => ({
+      path: leg.path,
+      color: RIDE_COLORS[k % RIDE_COLORS.length],
+      number: legBadge(leg),
+      toward: leg.toward,
+    })),
+    stops: legs.flatMap((leg) => [leg.board.at, leg.alight.at]),
     dest: { at: dest.at, label },
   }
 }
 
-/** A trip's identity: its buses and stops. */
-export function tripKey(t: Trip): string {
-  const one = (l: Leg) => `${l.slug}|${l.dir}|${l.board.id}|${l.alight.id}`
-  return t.then ? `${one(t)}>${one(t.then)}` : one(t)
+/**
+ * The route map a trip opens on: the first of its rides the site keeps a map
+ * for (the map plans the same trip and draws all of it). Null when none has one.
+ */
+export function tripMapSlug(t: Trip): string | null {
+  return t.legs.find((l) => l.page === 'bus')?.slug ?? null
 }
 
-/** "Ruta 37" or "Ruta 37 → 54", for a choice between trips. */
+/** A trip's identity: its rides and stops. */
+export function tripKey(t: Trip): string {
+  return t.legs.map((l) => `${l.slug}|${l.dir}|${l.board.id}|${l.alight.id}`).join('>')
+}
+
+/** "Ruta 37", "Ruta 37 → 54" or "Flamingo → MR", for a choice between trips. */
 export function tripName(c: ReturnType<typeof busCopy>, t: Trip): string {
-  return t.then
-    ? `${c.tripRouteName(t.number)} → ${t.then.number ?? 'T'}`
-    : c.tripRouteName(t.number)
+  const [first, ...rest] = t.legs
+  return [c.tripRouteName(first), ...rest.map(legBadge)].join(' → ')
 }
 
 export function TripPanel({
@@ -529,7 +617,7 @@ export function TripPanel({
             trip={trip}
             destName={dest.name}
             here={from ? null : here}
-            startsAtStop={!!from && meters(from.at, trip.board.at) < 40}
+            startsAtStop={!!from && meters(from.at, trip.legs[0].board.at) < 40}
           />
           <div className={b.sheetActions}>
             <ShareTrip
@@ -541,13 +629,13 @@ export function TripPanel({
               }}
             />
           </div>
-          {trip.slug !== pageSlug ? (
+          {tripMapSlug(trip) && !trip.legs.some((l) => l.slug === pageSlug) ? (
             <p className={b.meta}>
               <Link
-                href={routes.busMap(lang, trip.slug)}
+                href={routes.busMap(lang, tripMapSlug(trip)!)}
                 onClick={() => stashTrip({ dest, from: from ?? null })}
               >
-                {c.tripOtherMap(c.tripRouteName(trip.number))}
+                {c.tripOtherMap(c.tripRouteName(trip.legs.find((l) => l.page === 'bus')!))}
               </Link>
             </p>
           ) : null}

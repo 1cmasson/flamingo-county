@@ -11,7 +11,41 @@ const n = (x: number, one: string, many: string) => `${x} ${x === 1 ? one : many
 
 /** Spanish names carry their article ("la Ruta 54", "el Trolley…"): "de el" is "del". */
 const del = (s: string) => s.replace(/\bde el\b/g, 'del')
+/** …and "a el" is "al": «Cambia al Metrorail». */
+const al = (s: string) => s.replace(/\ba el\b/g, 'al')
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
+
+/** A route as a trip names it: a number, or a name ("Metrorail", "Flamingo", a city's trolley). */
+export type RouteRef = { number: string | null; name?: string | null; kind?: string; slug?: string }
+
+/** A trolley's name in Spanish: "Miami Wynwood Trolley" → "Trolley de Wynwood". */
+const trolleyEs = (name: string) =>
+  name
+    .replace(/^Miami (.+) Trolley$/, 'Trolley de $1')
+    .replace('Little Havana', 'la Pequeña Habana')
+const trolleyEn = (name: string) => name.replace(/^Miami (.+) Trolley$/, '$1 Trolley')
+
+/** Metrorail's lines in Spanish, inside a direction ("Dadeland South (Green Line)"). */
+const towardEs = (place: string) =>
+  place.replace('(Green Line)', '(Línea Verde)').replace('(Orange Line)', '(Línea Naranja)')
+
+/** Hialeah's free lines are «la Flamingo», «la Marlin»: la guagua. */
+const FREE_LINES = new Set(['flamingo', 'marlin'])
+
+function routeEs(r: RouteRef, inline: boolean): string {
+  if (r.number) return inline ? `la Ruta ${r.number}` : `Ruta ${r.number}`
+  const name = r.name ?? 'Trolley de la Pequeña Habana'
+  if (r.slug && FREE_LINES.has(r.slug)) return inline ? `la ${name}` : name
+  const own = r.kind === 'trolley' ? trolleyEs(name) : name
+  return inline ? `el ${own}` : own
+}
+function routeEn(r: RouteRef, inline: boolean): string {
+  if (r.number) return `Route ${r.number}`
+  const name = r.name ?? 'Little Havana Trolley'
+  const own = r.kind === 'trolley' ? trolleyEn(name) : name
+  if (r.slug && FREE_LINES.has(r.slug)) return own
+  return inline && /Trolley|Mover|Metro/.test(own) ? `the ${own}` : own
+}
 
 const ES = {
   breadcrumb: 'Ruta de navegación',
@@ -28,7 +62,7 @@ const ES = {
     '¿Qué guagua cojo? Las guaguas gratis de Hialeah (Flamingo y Marlin) y las rutas de Metrobus que pasan por Hialeah, Miami Lakes, la Pequeña Habana y Miami Gardens: cada parada, cuándo pasan y cuáles son gratis.',
   hubQuestion: '¿Qué guaguas pasan por Hialeah, Miami Lakes, la Pequeña Habana y Miami Gardens?',
   hubAnswer: (count: number) =>
-    `Aquí hay ${n(count, 'ruta', 'rutas')} del condado que cruzan esas ciudades, con todas sus paradas y su horario. En Hialeah también hay dos guaguas gratis de la ciudad, la Flamingo y la Marlin.`,
+    `«¿Qué guagua cojo?» planea tu viaje con todas las rutas de Miami-Dade juntas: Metrobus, Metrorail, Metromover, los trolleys y las guaguas gratis de Hialeah, la Flamingo y la Marlin, con cambios si hace falta. Aquí abajo, ${n(count, 'ruta', 'rutas')} del condado que cruzan esas ciudades, con todas sus paradas y su horario.`,
   cityHeading: (city: string) => `PASAN POR ${city.toUpperCase()}`,
   freeLines: 'Las guaguas gratis de Hialeah: Flamingo y Marlin →',
   fareFree: 'GRATIS',
@@ -180,12 +214,12 @@ const ES = {
   popularMetaDescription: (a: string, b: string) =>
     `Qué guagua coger de ${a} a ${b} en Miami-Dade: la ruta, la parada, cuánto se demora y la próxima guagua en vivo.`,
   popularFirst: (route: string, toward: string, stop: string) =>
-    `Toma ${route} hacia ${toward} en la parada ${stop}.`,
+    `Toma ${route} hacia ${towardEs(toward)} en la parada ${stop}.`,
   popularThen: (route: string, toward: string, stop: string) =>
-    ` Cámbiate a ${route} hacia ${toward} en ${stop}.`,
+    al(` Cámbiate a ${route} hacia ${towardEs(toward)} en ${stop}.`),
   popularTotal: (m: number) => `Son unos ${m} min caminando y en guagua, más la espera.`,
   popularNoBus: (a: string, b: string) =>
-    `Ninguna de las rutas que tenemos conecta ${a} con ${b} con un solo cambio de guagua.`,
+    `No encontramos un viaje en guagua de ${a} a ${b}, ni con cambios.`,
   popularQuestion: (a: string, b: string) => `¿Qué guagua cojo de ${a} a ${b}?`,
   popularHeading: 'VIAJES QUE LA GENTE BUSCA',
   popularOnRoute: 'VIAJES CON ESTA RUTA',
@@ -196,13 +230,13 @@ const ES = {
   tripWhere: '¿A dónde vas?',
   tripAtStop: 'Ya estás en la parada.',
   tripTakeRoute: (route: string) => `Toma ${route}`,
-  tripTakeToward: (place: string) => `hacia ${place}`,
+  tripTakeToward: (place: string) => `hacia ${towardEs(place)}`,
   tripAtChange: (route: string) => `Ya estás en la parada: aquí coges ${route}.`,
   tripGetOffChange: (stop: string, route: string) =>
-    `Bájate aquí, en ${stop}, y cambia a ${route}.`,
+    al(`Bájate aquí, en ${stop}, y cambia a ${route}.`),
   tripChangeWalk: (m: number, stop: string, route: string) =>
-    `Cambia a ${route}: camina ${m} min hasta la parada ${stop}.`,
-  tripChangeSame: (route: string) => `Cambia a ${route} en esa misma parada.`,
+    al(`Cambia a ${route}: camina ${m} min hasta la parada ${stop}.`),
+  tripChangeSame: (route: string) => al(`Cambia a ${route} en esa misma parada.`),
   tripAboutChange: 'con un cambio de guagua',
   tripRiding: (left: number, stop: string) =>
     `Vas en la guagua: ${left === 1 ? 'te falta 1 parada' : `te faltan ${left} paradas`} para bajarte en ${stop}.`,
@@ -225,10 +259,11 @@ const ES = {
     m < 60 ? `Unos ${m} min` : `Unas ${Math.floor(m / 60)} h ${m % 60} min`,
   tripAboutNote: (wait: boolean): string =>
     wait ? 'caminando, esperando y en guagua' : 'caminando y en guagua',
-  tripRouteInline: (number: string | null) =>
-    number ? `la Ruta ${number}` : 'el Trolley de la Pequeña Habana',
-  tripRouteName: (number: string | null) =>
-    number ? `Ruta ${number}` : 'Trolley de la Pequeña Habana',
+  tripRouteInline: (r: RouteRef) => routeEs(r, true),
+  tripRouteName: (r: RouteRef) => routeEs(r, false),
+  tripAboutChanges: (k: number) => (k === 1 ? 'con un cambio' : `con ${k} cambios`),
+  tripEvery: (m: number) => `Pasa cada ~${m} min.`,
+  farePaidShort: 'SE PAGA',
   tripWalkTo: (m: number, stop: string) => `Camina ${m} min hasta la parada ${stop}.`,
   tripTake: (route: string, toward: string) => `Toma ${route} hacia ${toward}.`,
   tripGetOff: (stop: string, k: number, m: number) =>
@@ -239,7 +274,7 @@ const ES = {
   tripSoonNone: 'Ahora mismo no hay más guaguas en el horario de hoy.',
   tripJustWalk: (m: number) => `Te queda a ${m} min caminando: no vale la pena esperar la guagua.`,
   tripNoBus:
-    'Ninguna de nuestras rutas te lleva directo hasta allí. Google Maps te busca un viaje con cambio de guagua.',
+    'No encontramos un viaje en guagua hasta allí ahora mismo. Google Maps te busca otro camino.',
   tripGoogle: 'Ver el viaje en Google Maps ↗',
   tripOtherMap: (route: string) => `Abrir el mapa de ${route} →`,
   tripHowBus: 'Cómo llegar en guagua',
@@ -315,7 +350,7 @@ const EN: BusCopy = {
     'Which bus do I take? Hialeah’s free buses (Flamingo and Marlin) and the Metrobus routes through Hialeah, Miami Lakes, Little Havana and Miami Gardens: every stop, when they come, and which ones are free.',
   hubQuestion: 'Which buses run through Hialeah, Miami Lakes, Little Havana and Miami Gardens?',
   hubAnswer: (count: number) =>
-    `Here are ${n(count, 'county route', 'county routes')} that cross those cities, with every stop and the schedule. Hialeah also runs two free buses of its own, the Flamingo and the Marlin.`,
+    `“Which bus do I take?” plans your trip with every route in Miami-Dade together: Metrobus, Metrorail, Metromover, the trolleys and Hialeah’s free Flamingo and Marlin, with changes when it takes them. Below, ${n(count, 'county route', 'county routes')} that cross those cities, with every stop and the schedule.`,
   cityHeading: (city: string) => `THROUGH ${city.toUpperCase()}`,
   freeLines: 'Hialeah’s free buses: Flamingo and Marlin →',
   fareFree: 'FREE',
@@ -467,7 +502,7 @@ const EN: BusCopy = {
     ` Change to ${route} toward ${toward} at ${stop}.`,
   popularTotal: (m: number) => `It’s about ${m} min of walking and riding, plus the wait.`,
   popularNoBus: (a: string, b: string) =>
-    `None of the routes we have connects ${a} and ${b} with one change of bus.`,
+    `We couldn’t find a bus trip from ${a} to ${b}, even with changes.`,
   popularQuestion: (a: string, b: string) => `Which bus goes from ${a} to ${b}?`,
   popularHeading: 'TRIPS PEOPLE LOOK FOR',
   popularOnRoute: 'TRIPS ON THIS ROUTE',
@@ -507,9 +542,11 @@ const EN: BusCopy = {
     m < 60 ? `About ${m} min` : `About ${Math.floor(m / 60)} h ${m % 60} min`,
   tripAboutNote: (wait: boolean): string =>
     wait ? 'walking, waiting and on the bus' : 'walking and on the bus',
-  tripRouteInline: (number: string | null) =>
-    number ? `Route ${number}` : 'the Little Havana Trolley',
-  tripRouteName: (number: string | null) => (number ? `Route ${number}` : 'Little Havana Trolley'),
+  tripRouteInline: (r: RouteRef) => routeEn(r, true),
+  tripRouteName: (r: RouteRef) => routeEn(r, false),
+  tripAboutChanges: (k: number) => (k === 1 ? 'with one change' : `with ${k} changes`),
+  tripEvery: (m: number) => `Comes every ~${m} min.`,
+  farePaidShort: 'FARE',
   tripWalkTo: (m: number, stop: string) => `Walk ${m} min to the ${stop} stop.`,
   tripTake: (route: string, toward: string) => `Take ${route} toward ${toward}.`,
   tripGetOff: (stop: string, k: number, m: number) =>
@@ -520,7 +557,7 @@ const EN: BusCopy = {
   tripSoonNone: 'There are no more buses on today’s schedule.',
   tripJustWalk: (m: number) => `It’s a ${m} min walk: not worth waiting for the bus.`,
   tripNoBus:
-    'None of our routes goes straight there. Google Maps can find you a trip with a change of bus.',
+    'We couldn’t find a bus trip there right now. Google Maps can look for another way.',
   tripGoogle: 'See the trip in Google Maps ↗',
   tripOtherMap: (route: string) => `Open the ${route} map →`,
   tripHowBus: 'Get there by bus',

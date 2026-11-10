@@ -27,6 +27,7 @@
     "gen:dictionary": "cross-env NODE_OPTIONS=--no-deprecation tsx src/i18n/generate.ts",
     "transit:sync": "tsx scripts/transit/sync.ts",
     "transit:county": "tsx scripts/transit/county.ts",
+    "transit:network": "tsx scripts/transit/network.ts",
     "transit:basemap": "tsx scripts/transit/basemap.ts",
     "civic:sync": "tsx scripts/civic/sync.ts"
   },

@@ -37,7 +37,7 @@ describe('trip links', () => {
   })
 
   it('picks the trip the link chose, or the first', () => {
-    const trips = [{ slug: '54' }, { slug: '37', then: { slug: '54' } }]
+    const trips = [{ legs: [{ slug: '54' }] }, { legs: [{ slug: '37' }, { slug: '54' }] }]
     expect(pickByBuses(trips, ['37', '54'])).toBe(1)
     expect(pickByBuses(trips, ['8'])).toBe(0)
     expect(pickByBuses(trips, [])).toBe(0)

@@ -15,7 +15,7 @@ import {
   type TripLink,
 } from '../lib/tripLink'
 import { transitDirectionsHref, type Plan, type Trip } from '../lib/tripPlan'
-import { TripSteps, tripKey, tripName } from './TripPlanner'
+import { TripSteps, tripKey, tripMapSlug, tripName } from './TripPlanner'
 import b from './bus.module.css'
 import s from './vote.module.css'
 
@@ -26,7 +26,7 @@ import s from './vote.module.css'
 
 /** Where a shared trip starts: a start the visitor typed, or else the stop they'd board at. */
 export function shareStart(trip: Trip, typed: TripEnd | null): TripEnd {
-  return typed ?? { name: trip.board.name, at: trip.board.at }
+  return typed ?? { name: trip.legs[0].board.name, at: trip.legs[0].board.at }
 }
 
 /** The phone's share sheet where there is one; elsewhere the link is copied. */
@@ -106,15 +106,17 @@ export function SharedTrip({ lang, link, plan }: { lang: Lang; link: TripLink; p
         lang={lang}
         trip={trip}
         destName={link.to.name}
-        startsAtStop={meters(link.from.at, trip.board.at) < 40}
+        startsAtStop={meters(link.from.at, trip.legs[0].board.at) < 40}
       />
       <div className={b.sheetActions}>
-        <Link
-          className={s.action}
-          href={`${routes.busMap(lang, trip.slug)}?${tripLinkQuery(chosen)}`}
-        >
-          {c.finderSeeMap}
-        </Link>
+        {tripMapSlug(trip) ? (
+          <Link
+            className={s.action}
+            href={`${routes.busMap(lang, tripMapSlug(trip)!)}?${tripLinkQuery(chosen)}`}
+          >
+            {c.finderSeeMap}
+          </Link>
+        ) : null}
         <ShareTrip lang={lang} link={chosen} />
       </div>
       <div className={b.sheetActions}>

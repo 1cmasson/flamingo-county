@@ -177,3 +177,84 @@ export async function eachStopTime(dir: string, fn: (row: Row) => void): Promise
     fn(Object.fromEntries(head.map((h, i) => [h, (cells[i] ?? '').trim()])))
   }
 }
+
+/* --- Shared by the county reducers (county.ts, network.ts) --- */
+
+/** Ends a head sign shortens past reading: "M. GARDENS NW 207 ST" → "Miami Gardens NW 207 St". */
+const PLACE_WORDS: [RegExp, string][] = [
+  [/\bM\. ?GARDENS\b/g, 'MIAMI GARDENS'],
+  [/\bH\. ?GARDENS\b/g, 'HIALEAH GARDENS'],
+  [/\bMIA GARDENS\b/g, 'MIAMI GARDENS'],
+]
+
+/** The county's abbreviations that read as words once title-cased: "Fiu" is FIU. */
+export function tidy(name: string): string {
+  return name
+    .replace(/\bFiu\b/g, 'FIU')
+    .replace(/\bMdc\b/g, 'MDC')
+    .replace(/\b(\d+)st\b/g, '$1 St')
+    .replace(/\bTe\b/g, 'Ter')
+}
+
+/** "54A - H. GARDENS NW 87 CT/114 ST" → "Hialeah Gardens NW 87 Ct/114 St". */
+export function cleanHeadsign(raw: string): string {
+  let s = raw.toUpperCase().replace(/^\s*[0-9A-Z]+\s*-\s*/, '')
+  for (const [re, to] of PLACE_WORDS) s = s.replace(re, to)
+  return tidy(cleanStopName(s)).replace(/ Via /g, ' via ')
+}
+
+export type DayKind = 'weekday' | 'saturday' | 'sunday'
+
+export const iso = (d: string) => `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`
+export const ymd = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, '')
+
+/** YYYYMMDD of the next date on or after `from` with this day of the week. */
+export function nextDow(from: Date, dow: number): string {
+  const d = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate()))
+  while (d.getUTCDay() !== dow) d.setUTCDate(d.getUTCDate() + 1)
+  return ymd(d)
+}
+
+const DOW_FIELD = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
+
+/** The service ids running on a date: the weekly calendar, then that date's exceptions. */
+export function servicesOn(date: string, calendar: Row[], exceptions: Row[]): Set<string> {
+  const y = Number(date.slice(0, 4))
+  const dow = new Date(
+    Date.UTC(y, Number(date.slice(4, 6)) - 1, Number(date.slice(6, 8))),
+  ).getUTCDay()
+  const on = new Set(
+    calendar
+      .filter((c) => c[DOW_FIELD[dow]] === '1' && c.start_date <= date && date <= c.end_date)
+      .map((c) => c.service_id),
+  )
+  for (const x of exceptions) {
+    if (x.date !== date) continue
+    if (x.exception_type === '1') on.add(x.service_id)
+    else on.delete(x.service_id)
+  }
+  return on
+}
+
+/**
+ * Buses closer together than this are one wait to a rider: two branches of a
+ * route meeting on the trunk (route 8's buses reach Calle Ocho in pairs four
+ * minutes apart, every half hour). Counted apart, the median gap came out at
+ * "every 5 min".
+ */
+const BUNCH_MINUTES = 7
+
+/** Typical minutes between buses in a window of the day, or null when fewer than three buses pass. */
+export function headwayIn(times: number[], from: number, to: number): number | null {
+  const inside: number[] = []
+  for (const t of times) {
+    if (t < from || t >= to) continue
+    if (inside.length && t - inside[inside.length - 1] < BUNCH_MINUTES) continue
+    inside.push(t)
+  }
+  if (inside.length < 3) return null
+  const gaps = inside.slice(1).map((t, i) => t - inside[i])
+  const m = median(gaps)
+  return m === null ? null : Math.round(m)
+}
+

@@ -67,7 +67,7 @@ const readBuses = (q: Query) =>
     .split(',')
     .map((s) => s.trim().toLowerCase())
     .filter((s) => /^[a-z0-9-]{1,40}$/.test(s))
-    .slice(0, 2)
+    .slice(0, 3)
 
 /** A trip link's ends, or null when it isn't one (or points outside Miami-Dade). */
 export function readTripLink(q: Query): TripLink | null {
@@ -115,12 +115,11 @@ export function hubDestQuery(to: TripEnd): string {
   return new URLSearchParams({ a: to.name.slice(0, NAME_MAX), ac: point(to.at) }).toString()
 }
 
-/** The buses of a trip, as a link names them: "37" or "37,54". */
-export const tripBuses = (t: { slug: string; then?: { slug: string } }) =>
-  t.then ? [t.slug, t.then.slug] : [t.slug]
+/** The rides of a trip, as a link names them: "37", "37,54" or "flamingo,metrorail". */
+export const tripBuses = (t: { legs: { slug: string }[] }) => t.legs.map((l) => l.slug)
 
-/** Which of the trips a link chose (by its buses), or the first. */
-export function pickByBuses(trips: { slug: string; then?: { slug: string } }[], buses: string[]) {
+/** Which of the trips a link chose (by its rides), or the first. */
+export function pickByBuses(trips: { legs: { slug: string }[] }[], buses: string[]) {
   if (!buses.length) return 0
   const k = trips.findIndex((t) => tripBuses(t).join(',') === buses.join(','))
   return Math.max(0, k)
