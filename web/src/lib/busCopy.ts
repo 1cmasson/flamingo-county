@@ -11,6 +11,8 @@ const n = (x: number, one: string, many: string) => `${x} ${x === 1 ? one : many
 
 /** Spanish names carry their article ("la Ruta 54", "el Trolley…"): "de el" is "del". */
 const del = (s: string) => s.replace(/\bde el\b/g, 'del')
+/** …and "a el" is "al": «Cambia al Metrorail». */
+const al = (s: string) => s.replace(/\ba el\b/g, 'al')
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1)
 
 /** A route as a trip names it: a number, or a name ("Metrorail", "Flamingo", a city's trolley). */
@@ -214,7 +216,7 @@ const ES = {
   popularFirst: (route: string, toward: string, stop: string) =>
     `Toma ${route} hacia ${towardEs(toward)} en la parada ${stop}.`,
   popularThen: (route: string, toward: string, stop: string) =>
-    ` Cámbiate a ${route} hacia ${towardEs(toward)} en ${stop}.`,
+    al(` Cámbiate a ${route} hacia ${towardEs(toward)} en ${stop}.`),
   popularTotal: (m: number) => `Son unos ${m} min caminando y en guagua, más la espera.`,
   popularNoBus: (a: string, b: string) =>
     `No encontramos un viaje en guagua de ${a} a ${b}, ni con cambios.`,
@@ -231,10 +233,10 @@ const ES = {
   tripTakeToward: (place: string) => `hacia ${towardEs(place)}`,
   tripAtChange: (route: string) => `Ya estás en la parada: aquí coges ${route}.`,
   tripGetOffChange: (stop: string, route: string) =>
-    `Bájate aquí, en ${stop}, y cambia a ${route}.`,
+    al(`Bájate aquí, en ${stop}, y cambia a ${route}.`),
   tripChangeWalk: (m: number, stop: string, route: string) =>
-    `Cambia a ${route}: camina ${m} min hasta la parada ${stop}.`,
-  tripChangeSame: (route: string) => `Cambia a ${route} en esa misma parada.`,
+    al(`Cambia a ${route}: camina ${m} min hasta la parada ${stop}.`),
+  tripChangeSame: (route: string) => al(`Cambia a ${route} en esa misma parada.`),
   tripAboutChange: 'con un cambio de guagua',
   tripRiding: (left: number, stop: string) =>
     `Vas en la guagua: ${left === 1 ? 'te falta 1 parada' : `te faltan ${left} paradas`} para bajarte en ${stop}.`,

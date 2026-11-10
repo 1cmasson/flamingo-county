@@ -2,6 +2,7 @@ import { gzipSync } from 'node:zlib'
 import { describe, expect, it } from 'vitest'
 import { networkWire, serverNetwork } from '@/lib/busNetwork'
 import { planTrips } from '@/lib/tripPlan'
+import { arrivalsFrom } from '@/lib/live'
 
 /**
  * The trip planner on the real network: every county route plus Hialeah's
@@ -58,6 +59,21 @@ describe('the bus network', () => {
       const { trips } = planTrips(serverNetwork(), a, b, 3, SUNDAY_NOON)
       for (const t of trips)
         expect(t.legs.some((l) => l.slug === 'flamingo' || l.slug === 'marlin')).toBe(false)
+    }
+  })
+
+  it('matches the free lines’ live arrivals to the way each pattern runs', () => {
+    // Pattern "1" runs toward the end of the city's strip, "0" toward its start: the
+    // planner's steps keep only arrivals whose `toward` says the same (TripPlanner.useLegNext).
+    const flamingo = serverNetwork().routes.find((r) => r.slug === 'flamingo')!
+    const wednesday10 = new Date('2026-11-11T15:00:00Z')
+    for (const d of flamingo.directions) {
+      const way = d.id === '1' ? 'end' : 'start'
+      // A stop in the middle of the pattern, served this way.
+      const st = d.stations[Math.floor(d.stations.length / 2)]
+      const got = arrivalsFrom(null, st.eta ?? [], wednesday10, 8, 'flamingo')
+      expect(got.length, `${d.id} ${st.name}`).toBeGreaterThan(0)
+      expect(got.some((a) => a.toward === way), `${d.id} ${st.name}`).toBe(true)
     }
   })
 })

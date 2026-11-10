@@ -1,5 +1,5 @@
 import data from '../data/transit/network.json'
-import { COUNTY_SLUGS } from './county'
+import { COUNTY } from './county'
 import { CITY_HOURS, TRANSIT, etaIdsFor, lineEnds, type TransitRoute } from './transit'
 import { expandNetwork, type Network, type WireNetwork, type WireRoute } from './tripPlan'
 
@@ -76,12 +76,24 @@ export function networkWire(): WireNetwork {
   if (wire) return wire
   const raw = data as unknown as Omit<WireNetwork, 'routes'> & { routes: (WireRoute & { routeId?: string })[] }
   const stops = [...raw.stops]
-  const pages = new Set(COUNTY_SLUGS)
-  const county = raw.routes.map(({ routeId: _id, ...r }) => ({
-    ...r,
-    live: 'county' as const,
-    page: pages.has(r.slug) ? ('bus' as const) : null,
-  }))
+  // The routes the site keeps a page for (lib/county.ts) bring their street paths, so a
+  // trip on them is drawn along the street on their map; the rest through their stops.
+  const pages = new Map(COUNTY.routes.map((r) => [r.slug, r]))
+  const county = raw.routes.map(({ routeId: _id, ...r }) => {
+    const own = pages.get(r.slug)
+    const seen = new Set<string>()
+    return {
+      ...r,
+      live: 'county' as const,
+      page: own ? ('bus' as const) : null,
+      patterns: r.patterns.map((p) => {
+        const first = !seen.has(p.dir)
+        seen.add(p.dir)
+        const path = first && !p.loop ? own?.directions.find((d) => d.id === p.dir)?.path : undefined
+        return path ? { ...p, path } : p
+      }),
+    }
+  })
   wire = {
     source: { fetchedAt: raw.source.fetchedAt, serviceEnds: raw.source.serviceEnds },
     stops,
