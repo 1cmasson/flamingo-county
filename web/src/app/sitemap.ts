@@ -65,7 +65,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...seasonEntries,
     ...both(routes.about, undefined, 0.4),
     ...both(routes.listYourSpot, undefined, 0.4),
-    ...both(routes.freeRides, undefined, 0.7),
     ...ROUTE_SLUGS.flatMap((r) => both((l) => routes.freeRoute(l, r), undefined, 0.6)),
     // The county bus routes, dated by the day their schedule was read.
     ...both(routes.bus, COUNTY.source.fetchedAt, 0.7),

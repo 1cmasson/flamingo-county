@@ -1,11 +1,7 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
-import type { Metadata } from 'next'
-import { isLang, translator, type Lang } from '../../../../i18n'
-import { routes } from '../../../../lib/routes'
-import { openGraph, twitterCard } from '../../../../lib/site'
-import { FREE_RIDES_CARD_SIZE, freeRidesCardUrl } from '../../../../lib/freeRidesCardUrl'
-import { placesOnLines } from '../../../../lib/rides'
+import { translator, type Lang } from '../i18n'
+import { routes } from '../lib/routes'
+import { placesOnLines } from '../lib/rides'
 import {
   CITY_TRANSIT_PHONE,
   LINKS,
@@ -15,73 +11,40 @@ import {
   formatHeadway,
   walkMinutes,
   type TransitRoute,
-} from '../../../../lib/transit'
-import { PageShell } from '../../../../components/PageShell'
+} from '../lib/transit'
 import {
   HoursLines,
   LineBullet,
   serviceStatusText,
-  nearMeCopy,
-  leaveCopy,
-  rideMapCopy,
   busWordsCopy,
   busesNowCopy,
-  nearMePlaces,
-  routeHrefs,
   PrimaryButton,
   SecondaryButton,
   ServiceStatusChip,
   Tag,
   ends,
   fill,
-} from '../../../../components/Transit'
-import { NearMe } from '../../../../components/NearMe'
-import { BusesNow } from '../../../../components/LiveTransit'
-import { CityMap } from '../../../../components/CityMap'
-import { cityMap } from '../../../../lib/citymap'
-import tr from '../../../../components/transit.module.css'
-import fr from '../../../../components/freerides.module.css'
-
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ lang: string }>
-}): Promise<Metadata> {
-  const { lang } = await params
-  if (!isLang(lang)) return {}
-  const t = translator(lang)
-  const title = t('Free buses in Hialeah: the Flamingo and Marlin lines')
-  const description = t(
-    'Where Hialeah’s two free bus lines go, when they run, and the local spots a short walk from a stop. No fare, no card.',
-  )
-  // The drawn city map with the hero's headline, so a shared link shows the lines.
-  const image = freeRidesCardUrl(lang)
-  return {
-    title,
-    description,
-    openGraph: openGraph(lang, {
-      title,
-      description,
-      url: routes.freeRides(lang),
-      image,
-      imageSize: FREE_RIDES_CARD_SIZE,
-      imageAlt: t('Map of Hialeah with the Flamingo and Marlin free bus lines'),
-    }),
-    twitter: twitterCard(image),
-    alternates: {
-      canonical: routes.freeRides(lang),
-      languages: { en: routes.freeRides('en'), es: routes.freeRides('es') },
-    },
-  }
-}
+} from './Transit'
+import { BusesNow } from './LiveTransit'
+import { CityMap } from './CityMap'
+import { cityMap } from '../lib/citymap'
+import tr from './transit.module.css'
+import fr from './freerides.module.css'
 
 /** Spots shown before "See all": enough to show what's there, not a wall of cards. */
 const SPOTS_SHOWN = 6
 
-export default async function FreeRidesPage({ params }: { params: Promise<{ lang: string }> }) {
-  const { lang } = await params
-  if (!isLang(lang)) notFound()
-  const t = translator(lang as Lang)
+/**
+ * Hialeah's free lines on the bus hub (/[lang]/bus#gratis): what was the
+ * /free-rides page until Nov 2026, now one section of the one place for every
+ * bus. The free lines are their own routes (/bus/flamingo, /bus/marlin);
+ * this is where they're introduced, with the drawn map, the hours, where the
+ * buses are, the spots near a free stop and the other free ways around.
+ * Finding a trip from where the visitor is belongs to the planner at the top
+ * of the hub, so this section doesn't ask again.
+ */
+export async function FreeRidesSection({ lang }: { lang: Lang }) {
+  const t = translator(lang)
   const places = await placesOnLines(lang)
   const status = serviceStatusText(lang, t)
 
@@ -118,17 +81,16 @@ export default async function FreeRidesPage({ params }: { params: Promise<{ lang
   )
 
   return (
-    <PageShell>
-      <main
-        style={{
-          maxWidth: 1180,
-          margin: '0 auto',
-          padding: 'clamp(16px,4vw,26px) clamp(12px,3.5vw,22px) 70px',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 'clamp(18px,3vw,26px)',
-        }}
-      >
+    <section
+      id="gratis"
+      aria-labelledby="gratis-h"
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 'clamp(18px,3vw,26px)',
+        scrollMarginTop: 100,
+      }}
+    >
         <div className={fr.top}>
           {/* --- Hero --- */}
           <header className={fr.hero}>
@@ -145,7 +107,8 @@ export default async function FreeRidesPage({ params }: { params: Promise<{ lang
             >
               {t('HIALEAH · FREE TRANSIT')}
             </div>
-            <h1
+            <h2
+              id="gratis-h"
               style={{
                 margin: 0,
                 fontFamily: 'var(--display)',
@@ -158,7 +121,7 @@ export default async function FreeRidesPage({ params }: { params: Promise<{ lang
               {t('RIDE THE CITY')}
               <br />
               <span style={{ color: 'var(--yellow)' }}>{t('FOR FREE.')}</span>
-            </h1>
+            </h2>
             <p style={{ margin: 0, maxWidth: '56ch', fontSize: 'clamp(17px,4vw,19px)', fontWeight: 600, lineHeight: 1.5, textWrap: 'pretty' }}>
               {t('Two free bus lines cross Hialeah, both directions, six days a week. No fare, no card — just get on.')}{' '}
               <span className={fr.heroMore}>{t('Here is where they go and what is a short walk from each stop.')}</span>
@@ -167,19 +130,6 @@ export default async function FreeRidesPage({ params }: { params: Promise<{ lang
               <ServiceStatusChip lang={lang} t={t} />
             </div>
           </header>
-
-          {/* --- From wherever the visitor is: first thing on a phone --- */}
-          <div className={fr.near}>
-            <NearMe
-              copy={nearMeCopy(t)}
-              leave={leaveCopy(t)}
-              mapCopy={rideMapCopy(t)}
-              busWords={busWordsCopy(t)}
-              lang={lang}
-              places={nearMePlaces(places, lang)}
-              routeHref={routeHrefs(lang)}
-            />
-          </div>
 
           {/* --- The drawn city map, live buses on it --- */}
           <div className={fr.map}>
@@ -248,7 +198,7 @@ export default async function FreeRidesPage({ params }: { params: Promise<{ lang
               gap: 14,
             }}
           >
-            <h2
+            <h3
               id="hours"
               style={{
                 margin: 0,
@@ -259,7 +209,7 @@ export default async function FreeRidesPage({ params }: { params: Promise<{ lang
               }}
             >
               {t('WHEN THEY RUN')}
-            </h2>
+            </h3>
             <HoursLines lang={lang} t={t} />
             <p style={{ margin: 0, fontSize: 15, fontWeight: 600, lineHeight: 1.5, color: '#c9ced4' }}>
               {t('Both lines, both directions. Hours are the City of Hialeah’s.')}
@@ -303,12 +253,12 @@ export default async function FreeRidesPage({ params }: { params: Promise<{ lang
               scrollMarginTop: 120,
             }}
           >
-            <h2
+            <h3
               id="live-h"
               style={{ margin: 0, fontFamily: 'var(--display)', fontWeight: 400, fontSize: 24 }}
             >
               {t('WHERE IS MY BUS?')}
-            </h2>
+            </h3>
             <BusesNow copy={busesNowCopy(t)} />
             <p style={{ margin: 0, fontSize: 15, fontWeight: 600, lineHeight: 1.5, textWrap: 'pretty' }}>
               {t('Prefer an app? The city’s free ETA SPOT app shows the same buses: pick “Hialeah Transit System”, then your line.')}
@@ -470,8 +420,7 @@ export default async function FreeRidesPage({ params }: { params: Promise<{ lang
             hialeahfl.gov
           </a>
         </p>
-      </main>
-    </PageShell>
+    </section>
   )
 }
 
@@ -517,7 +466,7 @@ function LineCard({
           <div style={{ fontWeight: 800, fontSize: 12, letterSpacing: '1.6px' }}>
             {t('FREE BUS LINE')}
           </div>
-          <h2
+          <h3
             style={{
               margin: '6px 0 0',
               fontFamily: 'var(--display)',
@@ -527,7 +476,7 @@ function LineCard({
             }}
           >
             {route.name.toUpperCase()}
-          </h2>
+          </h3>
         </div>
       </div>
 

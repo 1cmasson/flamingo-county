@@ -208,10 +208,6 @@ export async function Nav({ lang }: { lang: Lang }) {
                 label: t('STORIES'),
               },
               {
-                href: routes.freeRides(lang),
-                label: t('FREE RIDES'),
-              },
-              {
                 href: routes.bus(lang),
                 label: t('BUS ROUTES'),
               },

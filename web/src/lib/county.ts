@@ -98,6 +98,14 @@ export function scheduleCurrent(route: CountyRoute, now: Date = new Date()): boo
   return !route.serviceEnds || todayISO(now) <= route.serviceEnds
 }
 
+/**
+ * Whether riding it costs anything. Of the routes here, the numbered ones are
+ * Metrobus (a fare) and the one trolley is the City of Miami's, which is free.
+ */
+export function isFree(route: CountyRoute): boolean {
+  return !route.number
+}
+
 /** "Route 54" / "Ruta 54"; a trolley by its name. */
 export function routeName(route: CountyRoute, lang: Lang): string {
   if (route.number) return lang === 'es' ? `Ruta ${route.number}` : `Route ${route.number}`

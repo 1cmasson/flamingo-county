@@ -4,7 +4,8 @@ import type { Metadata } from 'next'
 import { isLang } from '../../../../../i18n'
 import { routes } from '../../../../../lib/routes'
 import { openGraph } from '../../../../../lib/site'
-import { LINKS } from '../../../../../lib/transit'
+import { LINKS, getRoute } from '../../../../../lib/transit'
+import { FreeRoutePage, freeRouteMetadata } from '../../../../../components/FreeRoutePage'
 import { busCopy } from '../../../../../lib/busCopy'
 import { longDay } from '../../../../../lib/voteCopy'
 import {
@@ -52,8 +53,12 @@ function stopCount(route: CountyRoute): number {
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { lang, route: slug } = await params
+  if (!isLang(lang)) return {}
+  // Hialeah's free lines, Flamingo and Marlin, have their own page here too.
+  const free = getRoute(slug)
+  if (free) return freeRouteMetadata(lang, free)
   const route = getCountyRoute(slug)
-  if (!isLang(lang) || !route) return {}
+  if (!route) return {}
   const c = busCopy(lang)
   const name = routeName(route, lang)
   const [a, z] = routeEnds(route)
@@ -80,6 +85,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function BusRoute({ params }: Props) {
   const { lang, route: slug } = await params
   if (!isLang(lang)) notFound()
+  const free = getRoute(slug)
+  if (free) return <FreeRoutePage lang={lang} route={free} />
   const route = getCountyRoute(slug)
   if (!route) notFound()
   const c = busCopy(lang)

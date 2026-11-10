@@ -161,7 +161,7 @@ export const ES_OVERRIDES: Record<string, string> = {
   'DONE FOR TODAY · back tomorrow at {time}': 'TERMINÓ POR HOY · vuelve mañana a las {time}',
   'DONE FOR THE WEEKEND · back Monday at {time}': 'TERMINÓ EL FIN DE SEMANA · vuelve el lunes a las {time}',
   'NO SERVICE ON SUNDAYS · back tomorrow at {time}': 'LOS DOMINGOS NO PASA · vuelve mañana a las {time}',
-  '← ALL FREE RIDES': '← TODAS LAS RUTAS GRATIS',
+  '← ALL BUS ROUTES': '← TODAS LAS GUAGUAS',
   '{name} free bus: every stop, Hialeah': 'Guagua gratis {name}: todas las paradas, Hialeah',
   'Every stop on Hialeah’s free {name} line, {from} to {to}, with ride times and the spots near each stop.':
     'Todas las paradas de la ruta gratis {name} de Hialeah, de {from} a {to}, con tiempos de viaje y los lugares cerca de cada parada.',

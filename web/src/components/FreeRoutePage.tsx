@@ -1,13 +1,20 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
 import type { Metadata } from 'next'
-import { isLang, translator, type Lang } from '../../../../../i18n'
-import { routes } from '../../../../../lib/routes'
-import { openGraph, twitterCard } from '../../../../../lib/site'
-import { FREE_RIDES_CARD_SIZE, freeRidesCardUrl } from '../../../../../lib/freeRidesCardUrl'
-import { placesOnLines } from '../../../../../lib/rides'
-import { LINKS, ROUTE_STYLE, TRANSIT, formatHeadway, getRoute, headwayToday, walkMinutes } from '../../../../../lib/transit'
-import { PageShell } from '../../../../../components/PageShell'
+import { translator, type Lang } from '../i18n'
+import { routes } from '../lib/routes'
+import { openGraph, twitterCard } from '../lib/site'
+import { FREE_RIDES_CARD_SIZE, freeRidesCardUrl } from '../lib/freeRidesCardUrl'
+import { placesOnLines } from '../lib/rides'
+import {
+  LINKS,
+  ROUTE_STYLE,
+  TRANSIT,
+  formatHeadway,
+  headwayToday,
+  walkMinutes,
+  type TransitRoute,
+} from '../lib/transit'
+import { PageShell } from './PageShell'
 import {
   HoursLines,
   LineBullet,
@@ -24,21 +31,20 @@ import {
   nearMePlaces,
   routeHrefs,
   trackLiveHref,
-} from '../../../../../components/Transit'
-import { NearMe } from '../../../../../components/NearMe'
-import { StripLive } from '../../../../../components/LiveTransit'
-import { StopHighlight } from '../../../../../components/StopHighlight'
-import tr from '../../../../../components/transit.module.css'
-import s from '../../../../../components/chrome.module.css'
+} from './Transit'
+import { NearMe } from './NearMe'
+import { StripLive } from './LiveTransit'
+import { StopHighlight } from './StopHighlight'
+import tr from './transit.module.css'
+import s from './chrome.module.css'
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ lang: string; route: string }>
-}): Promise<Metadata> {
-  const { lang, route: slug } = await params
-  const route = getRoute(slug)
-  if (!isLang(lang) || !route) return {}
+/**
+ * A free line's own page, /[lang]/bus/flamingo and /bus/marlin: Hialeah's free
+ * lines sit next to the county's routes under /bus (they were /free-rides
+ * until Nov 2026; the old addresses forward here, src/proxy.ts).
+ */
+export function freeRouteMetadata(lang: Lang, route: TransitRoute): Metadata {
+  const slug = route.slug
   const t = translator(lang)
   const [from, to] = ends(route, t)
   const title = fill(t('{name} free bus: every stop, Hialeah'), { name: route.name })
@@ -68,12 +74,8 @@ export async function generateMetadata({
   }
 }
 
-export default async function FreeRoutePage({ params }: { params: Promise<{ lang: string; route: string }> }) {
-  const { lang, route: slug } = await params
-  if (!isLang(lang)) notFound()
-  const route = getRoute(slug)
-  if (!route) notFound()
-  const t = translator(lang as Lang)
+export async function FreeRoutePage({ lang, route }: { lang: Lang; route: TransitRoute }) {
+  const t = translator(lang)
 
   const [places, live] = await Promise.all([placesOnLines(lang), trackLiveHref(lang, route)])
   const mine = places.filter((p) => p.stop.route.slug === route.slug)
@@ -98,7 +100,7 @@ export default async function FreeRoutePage({ params }: { params: Promise<{ lang
         }}
       >
         <Link
-          href={routes.freeRides(lang)}
+          href={routes.bus(lang)}
           className={s.chip}
           style={{
             alignSelf: 'flex-start',
@@ -113,7 +115,7 @@ export default async function FreeRoutePage({ params }: { params: Promise<{ lang
             boxShadow: '4px 4px 0 var(--ink)',
           }}
         >
-          {t('← ALL FREE RIDES')}
+          {t('← ALL BUS ROUTES')}
         </Link>
 
         {/* --- Masthead in the line's colour --- */}

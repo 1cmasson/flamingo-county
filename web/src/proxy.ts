@@ -100,7 +100,17 @@ export function proxy(req: NextRequest) {
 
   const { pathname, searchParams } = req.nextUrl
 
-  const first = pathname.split('/')[1]
+  const [, first, second, ...rest] = pathname.split('/')
+  // Hialeah's free lines moved in with the county's routes under /bus
+  // (Nov 2026): the old /free-rides addresses, indexed and shared, forward
+  // there for good. The hub to its «Gratis» section, a line to its own page.
+  if (isLang(first) && second === 'free-rides') {
+    const url = req.nextUrl.clone()
+    const line = rest.filter(Boolean)
+    url.pathname = line.length ? `/${first}/bus/${line.join('/')}` : `/${first}/bus`
+    if (!line.length) url.hash = 'gratis'
+    return NextResponse.redirect(url, 308)
+  }
   if (isLang(first)) {
     if (CIVIC_PATH.test(pathname) && !civicCurrent()) return notReady()
     const res = NextResponse.next()

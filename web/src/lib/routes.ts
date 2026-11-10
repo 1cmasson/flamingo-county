@@ -34,8 +34,13 @@ export const routes = {
   /** The link-in-bio page; each bio adds its platform, `?from=ig` (lib/links.ts). */
   links: (lang: Lang) => `/${lang}/links`,
   privacy: (lang: Lang) => `/${lang}/privacy`,
-  freeRides: (lang: Lang) => `/${lang}/free-rides`,
-  freeRoute: (lang: Lang, route: string) => `/${lang}/free-rides/${route}`,
+  /**
+   * Hialeah's free lines live with the county's routes under /bus since Nov
+   * 2026: the hub's «Gratis» section, and /es/bus/flamingo. The old
+   * /free-rides addresses forward there (src/proxy.ts).
+   */
+  freeRides: (lang: Lang) => `/${lang}/bus#gratis`,
+  freeRoute: (lang: Lang, route: string) => `/${lang}/bus/${route}`,
   /** Miami-Dade Transit's routes through the directory's cities: the hub, and `/es/bus/54` (lib/county.ts). */
   bus: (lang: Lang) => `/${lang}/bus`,
   busRoute: (lang: Lang, route: string) => `/${lang}/bus/${route}`,
