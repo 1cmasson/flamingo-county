@@ -21,4 +21,10 @@ describe('no Google Maps links', () => {
     )
     expect(hits).toEqual([])
   })
+
+  it('never tells a visitor to use Google Maps', () => {
+    // The words a visitor reads: the bus copy, both languages.
+    const copy = readFileSync(join(import.meta.dirname, '../../src/lib/busCopy.ts'), 'utf8')
+    expect(copy).not.toMatch(/google maps/i)
+  })
 })
