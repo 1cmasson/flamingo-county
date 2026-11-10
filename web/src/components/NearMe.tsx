@@ -214,7 +214,7 @@ export function NearMe({
   const [error, setError] = useState<'denied' | 'unavailable' | 'noNumber' | 'notFound' | null>(null)
   const [locating, setLocating] = useState(false)
   const [searching, startSearch] = useTransition()
-  // Apple Maps on iPhone, Google Maps everywhere else. False on the server.
+  // Apple Maps on an Apple device; no map link elsewhere. False on the server.
   const ios = useSyncExternalStore(noop, () => APPLE_DEVICE.test(navigator.userAgent), () => false)
   const inputRef = useRef<HTMLInputElement>(null)
   const resultsRef = useRef<HTMLDivElement>(null)

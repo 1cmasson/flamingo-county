@@ -210,7 +210,7 @@ const ES = {
   finderTypeFromBtn: 'Escribir de dónde salgo',
   finderLocatingYou: 'Buscando dónde estás…',
   finderNoneNear: (m: number) =>
-    `Ninguna de nuestras rutas te pasa cerca: la parada más cerca queda a ${m} min caminando. Pon a dónde vas y te buscamos el viaje en Google Maps.`,
+    `Ninguna de nuestras rutas te pasa cerca: la parada más cerca queda a ${m} min caminando. Pon a dónde vas y te buscamos el viaje.`,
   finderNearTitle: 'LAS GUAGUAS CERCA DE TI',
   finderWalk: (m: number) => `a ${m} min caminando`,
   finderToward: (place: string) => `Hacia ${place} —`,
@@ -301,7 +301,7 @@ const ES = {
   tripSoonNone: 'Ahora mismo no hay más guaguas en el horario de hoy.',
   tripJustWalk: (m: number) => `Te queda a ${m} min caminando: no vale la pena esperar la guagua.`,
   tripNoBus:
-    'No encontramos un viaje en guagua hasta allí ahora mismo. Google Maps te busca otro camino.',
+    'No encontramos un viaje en guagua hasta allí ahora mismo.',
   tripOtherMap: (route: string) => `Abrir el mapa de ${route} →`,
   tripHowBus: 'Cómo llegar en guagua',
   tripOption: (route: string, m: number) => `${route} · ${m} min`,
@@ -517,7 +517,7 @@ const EN: BusCopy = {
   finderTypeFromBtn: 'Type where I’m starting',
   finderLocatingYou: 'Finding where you are…',
   finderNoneNear: (m: number) =>
-    `None of our routes passes near you: the nearest stop is a ${m} min walk. Add where you’re going and we’ll find the trip in Google Maps.`,
+    `None of our routes passes near you: the nearest stop is a ${m} min walk. Add where you’re going and we’ll find the trip.`,
   finderNearTitle: 'BUSES NEAR YOU',
   finderWalk: (m: number) => `${m} min walk`,
   finderToward: (place: string) => `Toward ${place} —`,
@@ -608,7 +608,7 @@ const EN: BusCopy = {
   tripSoonNone: 'There are no more buses on today’s schedule.',
   tripJustWalk: (m: number) => `It’s a ${m} min walk: not worth waiting for the bus.`,
   tripNoBus:
-    'We couldn’t find a bus trip there right now. Google Maps can look for another way.',
+    'We couldn’t find a bus trip there right now.',
   tripOtherMap: (route: string) => `Open the ${route} map →`,
   tripHowBus: 'Get there by bus',
   tripOption: (route: string, m: number) => `${route} · ${m} min`,
