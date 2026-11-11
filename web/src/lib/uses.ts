@@ -30,7 +30,8 @@ export { USE_ACTIONS, USE_BROWSERS, USE_NETWORKS, USE_SECTIONS, USE_TOOLS, type 
  * stuck in Instagram's browser and copied the link out. On a business: called,
  * asked for directions, opened its website or Instagram. On an event: going,
  * saved, calendar. A story read to the end; a search and whether it found
- * anything; taps out of the site from anywhere else. One `hq-uses` row each.
+ * anything; the weekly vote's WhatsApp opt-in; taps out of the site from
+ * anywhere else. One `hq-uses` row each.
  *
  * The same rules as the visit counter (lib/visits.ts): no IP, no user agent,
  * no cookie, no visitor id, and never an address: only its municipality
@@ -107,7 +108,7 @@ export function normalizeUse(raw: unknown): UseInput | null {
   }
 }
 
-const TARGET_COLLECTION = { listing: 'listings', event: 'events', story: 'stories' } as const
+const TARGET_COLLECTION = { listing: 'listings', event: 'events', story: 'stories', poll: 'story-polls' } as const
 
 /** Answers for a few minutes, so a busy page costs one query per target, not one per tap. */
 const TTL = 10 * 60_000
@@ -318,6 +319,11 @@ export async function toolUseReport(payload: Payload, days: number, now: Date = 
       total: searches.length,
       foundNothing: searches.filter((r) => r.action === 'no_match').length,
       topTerms: count(searches.filter((r) => r.term).map((r) => r.term as string)),
+    },
+    polls: {
+      note: 'The weekly story vote (/vota/<slug>). whatsapp_optin = after voting, tapped the small "or message us on WhatsApp" link; WhatsApp opens with the message written, so a tap is not a sent message. Numbers left in the form are in vote-whatsapp-optins, not here.',
+      actions: count(on('poll').map((r) => r.action)),
+      top: byTarget(on('poll'), 10),
     },
     elsewhere: { actions: count(on('page').map((r) => r.action)) },
     socialNetworks: count(rows.filter((r) => r.network).map((r) => r.network as string)),

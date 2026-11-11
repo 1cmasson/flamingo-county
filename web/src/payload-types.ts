@@ -87,6 +87,7 @@ export interface Config {
     'ranking-nominations': RankingNomination;
     'story-polls': StoryPoll;
     'story-poll-votes': StoryPollVote;
+    'vote-whatsapp-optins': VoteWhatsappOptin;
     'story-poll-suggestions': StoryPollSuggestion;
     subscribers: Subscriber;
     'listing-requests': ListingRequest;
@@ -137,6 +138,7 @@ export interface Config {
     'ranking-nominations': RankingNominationsSelect<false> | RankingNominationsSelect<true>;
     'story-polls': StoryPollsSelect<false> | StoryPollsSelect<true>;
     'story-poll-votes': StoryPollVotesSelect<false> | StoryPollVotesSelect<true>;
+    'vote-whatsapp-optins': VoteWhatsappOptinsSelect<false> | VoteWhatsappOptinsSelect<true>;
     'story-poll-suggestions': StoryPollSuggestionsSelect<false> | StoryPollSuggestionsSelect<true>;
     subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
     'listing-requests': ListingRequestsSelect<false> | ListingRequestsSelect<true>;
@@ -1461,6 +1463,40 @@ export interface StoryPollVote {
   createdAt: string;
 }
 /**
+ * WhatsApp numbers that opted in to the weekly vote message, with their consent. One message a week; BAJA/STOP = set to unsubscribed. "Test" = signed up from a staff or owner device.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "vote-whatsapp-optins".
+ */
+export interface VoteWhatsappOptin {
+  id: number;
+  /**
+   * E.164, e.g. +17865551234.
+   */
+  phone: string;
+  lang: 'es' | 'en';
+  /**
+   * Set to unsubscribed when they write BAJA or STOP. Never message an unsubscribed number.
+   */
+  status: 'active' | 'unsubscribed';
+  /**
+   * The vote they signed up from (the latest one).
+   */
+  poll?: (number | null) | StoryPoll;
+  /**
+   * The exact checkbox sentence they ticked.
+   */
+  consentText: string;
+  consentAt: string;
+  /**
+   * instagram, facebook, google, direct…
+   */
+  source?: string | null;
+  test?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * Stories fans asked for under the weekly vote. Unchecked text: never shown publicly. Ideas for next week’s options. "Test" = from a staff or owner device.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2087,7 +2123,7 @@ export interface HqVisit {
  */
 export interface Hqus {
   id: number;
-  tool: 'address' | 'listing' | 'event' | 'story' | 'route' | 'search' | 'page';
+  tool: 'address' | 'listing' | 'event' | 'story' | 'route' | 'search' | 'poll' | 'page';
   action:
     | 'lookup'
     | 'not_found'
@@ -2107,7 +2143,8 @@ export interface Hqus {
     | 'save'
     | 'read_end'
     | 'search'
-    | 'no_match';
+    | 'no_match'
+    | 'whatsapp_optin';
   /**
    * For "link": which card of the report.
    */
@@ -2956,6 +2993,10 @@ export interface PayloadLockedDocument {
         value: number | StoryPollVote;
       } | null)
     | ({
+        relationTo: 'vote-whatsapp-optins';
+        value: number | VoteWhatsappOptin;
+      } | null)
+    | ({
         relationTo: 'story-poll-suggestions';
         value: number | StoryPollSuggestion;
       } | null)
@@ -3734,6 +3775,22 @@ export interface StoryPollVotesSelect<T extends boolean = true> {
   option?: T;
   source?: T;
   lang?: T;
+  test?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "vote-whatsapp-optins_select".
+ */
+export interface VoteWhatsappOptinsSelect<T extends boolean = true> {
+  phone?: T;
+  lang?: T;
+  status?: T;
+  poll?: T;
+  consentText?: T;
+  consentAt?: T;
+  source?: T;
   test?: T;
   updatedAt?: T;
   createdAt?: T;

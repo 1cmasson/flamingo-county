@@ -16,6 +16,8 @@ export const USE_TOOLS = [
   'route',
   /** The search on the home and city pages. */
   'search',
+  /** The weekly story vote (/vota/<slug>). */
+  'poll',
   /** Anywhere else. */
   'page',
 ] as const
@@ -56,6 +58,8 @@ export const USE_ACTIONS = [
   /** A search that found something, and one that found nothing. */
   'search',
   'no_match',
+  /** After voting: the "or message us on WhatsApp" link under the weekly-vote opt-in (the visitor sends the message). */
+  'whatsapp_optin',
 ] as const
 export type UseAction = (typeof USE_ACTIONS)[number]
 
@@ -67,6 +71,7 @@ export const TOOL_ACTIONS: Record<UseTool, readonly UseAction[]> = {
   story: ['read_end', 'call', 'email', 'directions', 'website', 'social'],
   route: ['call', 'email', 'directions', 'website', 'social'],
   search: ['search', 'no_match'],
+  poll: ['whatsapp_optin'],
   page: ['call', 'email', 'directions', 'website', 'social'],
 }
 

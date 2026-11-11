@@ -80,6 +80,7 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
         p: [
           'Newsletter: your email address and the language you signed up in, so we can send it to you.',
           'List your spot: the business name, your name, phone number and email, the city and category, and anything you tell us about the place — so we can review it and get back to you.',
+          'Weekly story vote on WhatsApp: if you leave your WhatsApp number after voting, we keep it, with your language and the moment you agreed, only to send you the weekly vote. Reply STOP or BAJA and we stop; ask us and we delete it.',
         ],
       },
       {
@@ -205,6 +206,7 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
         p: [
           'Boletín: tu correo electrónico y el idioma en que te suscribiste, para poder enviártelo.',
           'Pon tu negocio: el nombre del negocio, tu nombre, teléfono y correo, la ciudad y la categoría, y lo que nos cuentes del lugar — para revisarlo y responderte.',
+          'Votación semanal por WhatsApp: si nos dejas tu número de WhatsApp después de votar, lo guardamos, con tu idioma y el momento en que aceptaste, solo para mandarte la votación de cada semana. Escribe BAJA o STOP y dejamos de escribirte; pídenoslo y lo borramos.',
         ],
       },
       {

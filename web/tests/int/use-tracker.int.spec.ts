@@ -119,6 +119,17 @@ describe('clickUse (the site-wide listener)', () => {
     expect(clickUse(getByTestId('local'), own)).toBeNull()
   })
 
+  it('names the weekly vote\'s WhatsApp opt-in, with the poll as its target', () => {
+    const { getByTestId } = render(
+      createElement(
+        'div',
+        { 'data-use-tool': 'poll', 'data-use-target': 'vota-1' },
+        createElement('a', { href: 'https://wa.me/17869774602?text=x', 'data-use': 'whatsapp_optin', 'data-testid': 'wa' }, 'wa'),
+      ),
+    )
+    expect(clickUse(getByTestId('wa'), own)).toEqual({ tool: 'poll', target: 'vota-1', action: 'whatsapp_optin' })
+  })
+
   it('is "page" where the page says nothing', () => {
     const { container } = render(createElement('a', { href: 'https://maps.apple.com/?daddr=x' }, 'go'))
     expect(clickUse(container.querySelector('a'), own)).toEqual({ tool: 'page', target: undefined, action: 'directions' })
