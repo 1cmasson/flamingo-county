@@ -1,7 +1,10 @@
-import type { Payload } from 'payload'
+import type { Payload, Where } from 'payload'
 
+import { addDays, miamiInstant } from './dates'
+import { promoCopy } from './promoCopy'
 import { storyPollCopy } from './storyPollCopy'
 import { clientAddress, getPublishedPoll, miamiDay, pollPhase } from './storyPolls'
+import { esc, sendMessage, telegramConfigured } from './telegram'
 import { isBot, isSourceSlug } from './tracking'
 import { classifySource, isStaff, normalizeHost } from './visits'
 
@@ -9,8 +12,9 @@ import { classifySource, isStaff, normalizeHost } from './visits'
  * "Want to vote every week?": after voting, a visitor can leave their WhatsApp
  * number so we can tell them when the next vote opens and who won. One row
  * per number in `vote-whatsapp-optins`, with the exact consent sentence they
- * ticked and when. Nothing is sent from here: the rows wait for the WhatsApp
- * API. Staff-only, and off MCP.
+ * ticked and when. Nothing is sent to the number from here: the rows wait for
+ * the WhatsApp API. The owner gets a Telegram line for each new real sign-up
+ * (`pingOwnerOptin`). Staff-only, and off MCP.
  *
  * Same guards as a vote (lib/storyPolls.ts): no bots, same-origin only, the
  * poll must be open, and a per-address cap held in memory (the address is
@@ -141,12 +145,14 @@ export async function saveVoteOptin(
       overrideAccess: true,
       depth: 0,
     })
+    if (again && !test && !existing.test) firePing(payload, { kind: 'again', phone, lang, source: existing.source, now })
     return { ok: true, created: false }
   }
 
   const utm = typeof input.utm === 'string' && isSourceSlug(input.utm.toLowerCase()) ? input.utm.toLowerCase() : null
   const ref = normalizeHost(input.ref)
   const own = normalizeHost(headers.get('x-forwarded-host') ?? headers.get('host'))
+  const source = classifySource(ref && ref !== own ? ref : null, utm)
   try {
     await payload.create({
       collection: 'vote-whatsapp-optins',
@@ -156,7 +162,7 @@ export async function saveVoteOptin(
         poll: poll.id,
         consentText,
         consentAt: at,
-        source: classifySource(ref && ref !== own ? ref : null, utm),
+        source,
         status: 'active',
         test,
       },
@@ -169,5 +175,54 @@ export async function saveVoteOptin(
     if (dupe.totalDocs > 0) return { ok: true, created: false }
     throw err
   }
+  if (!test) firePing(payload, { kind: 'new', phone, lang, source, now })
   return { ok: true, created: true }
+}
+
+export type OptinPing = { kind: 'new' | 'again'; phone: string; lang: 'es' | 'en'; source?: string | null; now: number }
+
+const ACTIVE_REAL: Where = { and: [{ status: { equals: 'active' } }, { or: [{ test: { equals: false } }, { test: { exists: false } }] }] }
+
+/**
+ * The owner's Telegram line for one real sign-up: who it is only by the last
+ * four digits, and how many active, non-test numbers there are today (Miami)
+ * and in all. Skips quietly when the bot isn't configured; a failed send
+ * throws to `firePing`, which logs it.
+ *
+ *   🦩 Nuevo WhatsApp para la votación · ES · desde Instagram · termina en …0199
+ *   Hoy: 7 · Total: 23
+ */
+export async function pingOwnerOptin(payload: Payload, ping: OptinPing): Promise<void> {
+  if (!telegramConfigured()) return
+  const day = miamiDay(ping.now)
+  const from = miamiInstant(day, '00:00').toISOString()
+  const to = miamiInstant(addDays(day, 1), '00:00').toISOString()
+  const [today, total] = await Promise.all([
+    payload.count({
+      collection: 'vote-whatsapp-optins',
+      where: { and: [ACTIVE_REAL, { consentAt: { greater_than_equal: from } }, { consentAt: { less_than: to } }] },
+      overrideAccess: true,
+    }),
+    payload.count({ collection: 'vote-whatsapp-optins', where: ACTIVE_REAL, overrideAccess: true }),
+  ])
+  const lead = ping.kind === 'new' ? 'Nuevo WhatsApp para la votación' : 'Volvió a suscribirse a la votación'
+  const parts = [`🦩 ${lead}`, ping.lang.toUpperCase()]
+  if (ping.source) parts.push(`desde ${esc(promoCopy('es').source(ping.source))}`)
+  parts.push(`termina en …${ping.phone.slice(-4)}`)
+  await sendMessage(`${parts.join(' · ')}\nHoy: ${today.totalDocs} · Total: ${total.totalDocs}`)
+}
+
+const pending = new Set<Promise<void>>()
+
+/** After the row is saved, and never in the visitor's way: not awaited, and a failure is only logged. */
+function firePing(payload: Payload, ping: OptinPing) {
+  const p = pingOwnerOptin(payload, ping)
+    .catch((err) => console.error('[vote-optin telegram]', err instanceof Error ? err.message : err))
+    .finally(() => pending.delete(p))
+  pending.add(p)
+}
+
+/** Waits for the pings already started. For tests. */
+export async function settleOptinPings(): Promise<void> {
+  await Promise.all([...pending])
 }
