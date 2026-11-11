@@ -173,7 +173,45 @@ describe('updateStoryPolls over MCP', () => {
       [jack.id, 'Jack Tigertail EN', 'The last chief.'],
       [carol.id, 'Carol City EN', 'The neighborhood.'],
     ])
-    // Shared fields left out of the rows: say what happens to them.
+    // A shared field left out of the row keeps its value.
     expect(afterEs.options![0].commentVotes).toBe(3)
+  })
+
+  it('on a published poll, saves English as a draft and leaves the live Spanish alone', async () => {
+    const live = await payload.create({
+      collection: 'story-polls',
+      locale: 'es',
+      data: {
+        slug: `mcp-rows-live-${Date.now()}`,
+        title: 'Tú escoges',
+        question: '¿Cuál?',
+        opensAt: '2026-11-11T05:00:00.000Z',
+        closesAt: '2026-11-16T04:59:00.000Z',
+        options: [
+          { key: 'jack-tigertail', title: 'Jack ES' },
+          { key: 'carol-city', title: 'Carol ES' },
+        ],
+        _status: 'published',
+      },
+      overrideAccess: true,
+    })
+    try {
+      const rows = (await payload.findByID({ collection: 'story-polls', id: live.id, locale: 'es', draft: true, overrideAccess: true })).options!
+      await call({
+        id: live.id,
+        locale: 'en',
+        draft: true,
+        options: rows.map((o) => ({ id: o.id, key: o.key, title: `${o.key} EN` })),
+      })
+      const read = (locale: 'es' | 'en', draft: boolean) =>
+        payload.findByID({ collection: 'story-polls', id: live.id, locale, fallbackLocale: false, draft, overrideAccess: true }) as Promise<StoryPoll>
+      expect((await read('es', true)).options!.map((o) => o.title)).toEqual(['Jack ES', 'Carol ES'])
+      expect((await read('en', true)).options!.map((o) => o.title)).toEqual(['jack-tigertail EN', 'carol-city EN'])
+      const published = await read('es', false)
+      expect(published._status).toBe('published')
+      expect(published.options!.map((o) => o.title)).toEqual(['Jack ES', 'Carol ES'])
+    } finally {
+      await payload.delete({ collection: 'story-polls', id: live.id, overrideAccess: true }).catch(() => undefined)
+    }
   })
 })
