@@ -1,10 +1,12 @@
 // @vitest-environment node
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
 
-import { normalizePhone, resetOptinLimits, saveVoteOptin } from '@/lib/voteOptins'
+import { normalizePhone, resetOptinLimits, saveVoteOptin, settleOptinPings } from '@/lib/voteOptins'
 import { storyPollCopy } from '@/lib/storyPollCopy'
+import { miamiDay } from '@/lib/storyPolls'
+import { sendMessage, telegramConfigured } from '@/lib/telegram'
 import { POST as optinRoute } from '@/app/api/story-polls/whatsapp-optin/route'
 
 /**
@@ -17,6 +19,19 @@ const IPHONE =
   'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1'
 const browser = (extra: Record<string, string> = {}) =>
   new Headers({ 'user-agent': IPHONE, 'sec-fetch-site': 'same-origin', host: 'flamingocounty.com', ...extra })
+
+// The owner's Telegram line for each new sign-up: the bot is mocked, and "configured".
+vi.mock('@/lib/telegram', async (orig) => ({
+  ...(await orig<typeof import('@/lib/telegram')>()),
+  telegramConfigured: vi.fn(() => true),
+  sendMessage: vi.fn(async () => ({ message_id: 1 })),
+}))
+const sent = vi.mocked(sendMessage)
+/** The texts sent to the owner since the last `beforeEach`, once every ping has landed. */
+const pings = async () => {
+  await settleOptinPings()
+  return sent.mock.calls.map(([text]) => text)
+}
 
 const T = (iso: string) => new Date(iso).getTime()
 const opensAt = '2026-11-11T05:00:00.000Z'
@@ -53,7 +68,7 @@ describe('saving an opt-in', () => {
   let payload: Payload
   let pollId: number
   const slug = `vote-optin-test-${Date.now()}`
-  const phones = ['+17865550101', '+17865550102', '+17865550103', '+5351234567']
+  const phones = ['+17865550101', '+17865550102', '+17865550103', '+17865550104', '+17865550105', '+5351234567']
 
   beforeAll(async () => {
     payload = await getPayload({ config: await config })
@@ -76,7 +91,12 @@ describe('saving an opt-in', () => {
     })
     pollId = poll.id
   })
-  beforeEach(() => resetOptinLimits())
+  beforeEach(() => {
+    resetOptinLimits()
+    sent.mockReset()
+    sent.mockResolvedValue({ message_id: 1 })
+    vi.mocked(telegramConfigured).mockReturnValue(true)
+  })
 
   afterAll(async () => {
     if (!payload) return
@@ -86,6 +106,17 @@ describe('saving an opt-in', () => {
 
   const rows = async (phone: string) =>
     (await payload.find({ collection: 'vote-whatsapp-optins', where: { phone: { equals: phone } }, overrideAccess: true, depth: 0 })).docs
+
+  /** Hoy and Total as the owner should see them, counted here row by row rather than by the site's query. */
+  const expectedCounts = async (now: number) => {
+    const { docs } = await payload.find({ collection: 'vote-whatsapp-optins', pagination: false, overrideAccess: true, depth: 0 })
+    const real = docs.filter((d) => d.status === 'active' && !d.test)
+    return { today: real.filter((d) => miamiDay(new Date(d.consentAt).getTime()) === miamiDay(now)).length, total: real.length }
+  }
+  const countsIn = (text: string) => {
+    const m = text.match(/\nHoy: (\d+) · Total: (\d+)$/)
+    return m ? { today: Number(m[1]), total: Number(m[2]) } : null
+  }
 
   it('keeps the number in E.164 with the site’s own consent sentence, its source and when', async () => {
     const out = await saveVoteOptin(
@@ -106,6 +137,15 @@ describe('saving an opt-in', () => {
       test: false,
     })
     expect(new Date(row.consentAt).getTime()).toBe(during)
+
+    const [text, ...more] = await pings()
+    expect(more).toHaveLength(0)
+    expect(text.split('\n')[0]).toBe('🦩 Nuevo WhatsApp para la votación · ES · desde Instagram · termina en …0101')
+    expect(text).not.toContain('7865550101')
+    expect(text).not.toContain('+1786')
+    const counts = countsIn(text)
+    expect(counts).toEqual(await expectedCounts(during))
+    expect(counts!.today).toBeGreaterThanOrEqual(1)
   })
 
   it('never adds a second row for the same number: it updates the language and keeps the first consent', async () => {
@@ -118,6 +158,8 @@ describe('saving an opt-in', () => {
     expect(found).toHaveLength(1)
     expect(found[0]).toMatchObject({ lang: 'en', consentText: storyPollCopy('es').optinConsent })
     expect(new Date(found[0].consentAt).getTime()).toBe(during)
+    // Already on the list: nothing new for the owner.
+    expect(await pings()).toEqual([])
   })
 
   it('makes an unsubscribed number active again, from its new consent', async () => {
@@ -128,6 +170,11 @@ describe('saving an opt-in', () => {
     const [now] = await rows('+17865550101')
     expect(now).toMatchObject({ status: 'active', consentText: storyPollCopy('en').optinConsent })
     expect(new Date(now.consentAt).getTime()).toBe(again)
+
+    const texts = await pings()
+    expect(texts).toHaveLength(1)
+    expect(texts[0].split('\n')[0]).toBe('🦩 Volvió a suscribirse a la votación · EN · desde Instagram · termina en …0101')
+    expect(countsIn(texts[0])).toEqual(await expectedCounts(again))
   })
 
   it('needs the box ticked and a real number', async () => {
@@ -150,6 +197,35 @@ describe('saving an opt-in', () => {
   it('marks a staff device’s sign-up as a test', async () => {
     await saveVoteOptin(payload, { slug, phone: '+53 5 123 4567', consent: true }, browser({ cookie: 'fc-self=1' }), during)
     expect((await rows('+5351234567'))[0]).toMatchObject({ test: true, lang: 'es' })
+    expect(await pings()).toEqual([])
+  })
+
+  it('tells the owner nothing when a test number comes back, even from a visitor’s phone', async () => {
+    const [row] = await rows('+5351234567')
+    await payload.update({ collection: 'vote-whatsapp-optins', id: row.id, data: { status: 'unsubscribed' }, overrideAccess: true })
+    expect(await saveVoteOptin(payload, { slug, phone: '+53 5 123 4567', consent: true }, browser(), during)).toEqual({ ok: true, created: false })
+    expect((await rows('+5351234567'))[0]).toMatchObject({ status: 'active', test: true })
+    expect(await pings()).toEqual([])
+  })
+
+  it('saves the sign-up even when Telegram fails, and only logs it', async () => {
+    sent.mockRejectedValue(new Error('Telegram sendMessage failed: Bad Gateway'))
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    try {
+      expect(await saveVoteOptin(payload, { slug, phone: '7865550104', consent: true }, browser(), during)).toEqual({ ok: true, created: true })
+      await settleOptinPings()
+      expect(sent).toHaveBeenCalledTimes(1)
+      expect(logged).toHaveBeenCalledWith('[vote-optin telegram]', 'Telegram sendMessage failed: Bad Gateway')
+      expect(await rows('+17865550104')).toHaveLength(1)
+    } finally {
+      logged.mockRestore()
+    }
+  })
+
+  it('sends nothing when the bot isn’t set up', async () => {
+    vi.mocked(telegramConfigured).mockReturnValue(false)
+    expect(await saveVoteOptin(payload, { slug, phone: '7865550105', consent: true, lang: 'en' }, browser(), during)).toEqual({ ok: true, created: true })
+    expect(await pings()).toEqual([])
   })
 
   it('caps one address per day, without writing the address down', async () => {
@@ -159,6 +235,10 @@ describe('saving an opt-in', () => {
     expect(results.filter(Boolean)).toHaveLength(10)
     expect(await saveVoteOptin(payload, { slug, phone: '7865550103', consent: true }, h, during)).toEqual({ ok: false, reason: 'busy' })
     expect(JSON.stringify(await rows('+17865550103'))).not.toMatch(/203\.0\.113/)
+    // One number, one ping: the other nine taps were the same person again.
+    const texts = await pings()
+    expect(texts).toHaveLength(1)
+    expect(texts[0]).toContain('termina en …0103')
   })
 
   it('answers a refusal over the route with a 4xx and no caching', async () => {
