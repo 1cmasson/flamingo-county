@@ -56,6 +56,7 @@ import { reviewReminder } from './jobs/reviewReminder'
 import { socialStats } from './jobs/socialStats'
 import { weeklyRoundup } from './jobs/weeklyRoundup'
 import { hqMcpTools } from './lib/mcpTools'
+import { keepArrayRowIds } from './lib/mcpArrayRowIds'
 
 import { SiteSettings } from './globals/SiteSettings'
 import { AboutPage } from './globals/AboutPage'
@@ -172,6 +173,12 @@ export default buildConfig({
         if (Array.isArray(drafts?.required)) drafts.required = drafts.required.filter((f) => f !== 'status')
         return jsonSchema
       },
+      /**
+       * Array rows keep their `id` in the MCP tools, so a localized field in a
+       * row (a story-poll option's title) can be written in the other language
+       * without the array being rebuilt. See lib/mcpArrayRowIds.ts.
+       */
+      ({ jsonSchema }) => keepArrayRowIds(jsonSchema),
     ],
   },
   db: sqliteAdapter({
