@@ -2,6 +2,13 @@
 export const SITE_URL = 'https://flamingocounty.com'
 export const SITE_NAME = 'Flamingo County'
 
+/**
+ * Flamingo County's WhatsApp Business number (+1 786 977 4602), digits only
+ * for wa.me links: "Save to WhatsApp" on a coupon, and the weekly vote's
+ * opt-in. People write to it from their own WhatsApp; nothing sends from it.
+ */
+export const WHATSAPP_NUMBER = '17869774602'
+
 /** Used as og:image wherever a page has no photograph of its own. */
 export const DEFAULT_OG_IMAGE = '/uploads/flamingo-city-favicon-512.png'
 

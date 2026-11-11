@@ -42,8 +42,8 @@ const CODE = new RegExp(`^[${ALPHABET}]{${CODE_LENGTH}}$`)
 
 export const MAX_PIN_FAILS = 5
 
-/** Flamingo County's WhatsApp Business number, where "Save to WhatsApp" sends the coupon. */
-export const WHATSAPP_NUMBER = '17869774602'
+/** Where "Save to WhatsApp" sends the coupon: the site's one number (lib/site.ts). */
+export { WHATSAPP_NUMBER } from './site'
 
 export function newCode(): string {
   let code = ''

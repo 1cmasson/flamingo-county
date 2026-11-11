@@ -125,3 +125,53 @@ button.option:focus-visible {
 .won {
   background: var(--yellow);
 }
+
+/* After voting, while the poll is open: the weekly WhatsApp opt-in (StoryPollOptin). */
+.optin {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 4px;
+  padding: 16px 14px;
+  color: var(--ink);
+  background: var(--cream);
+  border: 4px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+.optinText {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.45;
+  font-weight: 600;
+}
+.consent {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: start;
+  gap: 10px;
+  font-size: 14px;
+  line-height: 1.45;
+  font-weight: 600;
+  cursor: pointer;
+}
+.consent input {
+  width: 24px;
+  height: 24px;
+  margin: 0;
+  accent-color: var(--magenta);
+  cursor: pointer;
+}
+.consent input:focus-visible {
+  outline: 3px solid var(--magenta);
+  outline-offset: 2px;
+}
+.optinLink {
+  align-self: center;
+  padding: 6px 4px;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}

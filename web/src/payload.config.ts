@@ -25,6 +25,7 @@ import { RankingVotes } from './collections/RankingVotes'
 import { RankingNominations } from './collections/RankingNominations'
 import { StoryPolls } from './collections/StoryPolls'
 import { StoryPollVotes } from './collections/StoryPollVotes'
+import { VoteWhatsappOptins } from './collections/VoteWhatsappOptins'
 import { StoryPollSuggestions } from './collections/StoryPollSuggestions'
 import { Subscribers } from './collections/Subscribers'
 import { ListingRequests } from './collections/ListingRequests'
@@ -109,6 +110,7 @@ export default buildConfig({
     RankingNominations,
     StoryPolls,
     StoryPollVotes,
+    VoteWhatsappOptins,
     StoryPollSuggestions,
     Subscribers,
     ListingRequests,
@@ -301,6 +303,7 @@ export default buildConfig({
             'Places neighbors named on a ranking’s page (read-only). Unchecked text, never shown publicly. Tally with where ranking = id and test != true; the same place typed different ways counts together (lib/rankingNominations.ts foldPlace). The most-named become the ranking’s entrants.',
         },
         // story-poll-votes stays off MCP, like ranking-votes: rows only visitors create.
+        // vote-whatsapp-optins too: people's phone numbers never go through MCP.
         'story-polls': {
           enabled: { find: true, create: true, update: true },
           description:

@@ -55,6 +55,17 @@ describe('normalizeUse', () => {
     expect(normalizeUse({ tool: 'page', action: 'social', network: 'instagram' })?.network).toBe('instagram')
   })
 
+  it('takes the weekly vote\'s WhatsApp opt-in, and nothing else on the poll', () => {
+    expect(normalizeUse({ tool: 'poll', action: 'whatsapp_optin', target: 'vota-1', path: '/es/vota/vota-1' })).toMatchObject({
+      tool: 'poll',
+      action: 'whatsapp_optin',
+      target: 'vota-1',
+      lang: 'es',
+    })
+    expect(normalizeUse({ tool: 'poll', action: 'call' })).toBeNull()
+    expect(normalizeUse({ tool: 'listing', action: 'whatsapp_optin' })).toBeNull()
+  })
+
   it('keeps a slug-shaped target and a site path, and takes the language from the path', () => {
     const u = normalizeUse({ tool: 'event', action: 'save', target: 'Not A Slug!', path: '/es/events/x?a=5410-w' })
     expect(u).toMatchObject({ target: undefined, path: '/es/events/x', lang: 'es' })
@@ -168,7 +179,9 @@ describe('address tool uses', () => {
       const c = vi.spyOn(payload, 'count').mockImplementation((async (args: Parameters<Payload['count']>[0]) =>
         args.collection === 'listings'
           ? { totalDocs: JSON.stringify(args.where).includes('"el-gallo"') ? 1 : 0 }
-          : count(args)) as never)
+          : args.collection === 'story-polls'
+            ? { totalDocs: JSON.stringify(args.where).includes('"vota-1"') ? 1 : 0 }
+            : count(args)) as never)
       const f = vi.spyOn(payload, 'find').mockImplementation((async (args: Parameters<Payload['find']>[0]) =>
         args.collection === 'listings'
           ? { docs: [{ name: 'El Gallo', hood: 'Palm Springs', category: { label: 'Cafetería' }, research: { cuisine: ['Cuban'], signatureItems: ['Croqueta preparada'] } }] }
@@ -185,6 +198,15 @@ describe('address tool uses', () => {
       expect(await recordUse(payload, { tool: 'listing', action: 'directions', target: 'el-gallo', path: '/es/hialeah/el-gallo' }, browser())).toBe(true)
       expect(await latest()).toMatchObject({ tool: 'listing', action: 'directions', target: 'el-gallo', path: '/es/hialeah/el-gallo', lang: 'es' })
       expect(await recordUse(payload, { tool: 'listing', action: 'call', target: 'no-such-place' }, browser())).toBe(false)
+    })
+
+    it('stores a WhatsApp opt-in on a published poll, and refuses a made-up one', async () => {
+      expect(await recordUse(payload, { tool: 'poll', action: 'whatsapp_optin', target: 'vota-1', path: '/en/vota/vota-1' }, browser())).toBe(true)
+      expect(await latest()).toMatchObject({ tool: 'poll', action: 'whatsapp_optin', target: 'vota-1', path: '/en/vota/vota-1', lang: 'en' })
+      expect(await recordUse(payload, { tool: 'poll', action: 'whatsapp_optin', target: 'no-such-poll' }, browser())).toBe(false)
+      expect(await recordUse(payload, { tool: 'poll', action: 'whatsapp_optin', target: 'vota-1' }, browser({ cookie: 'fc-self=1' }))).toBe(false)
+      const r = await toolUseReport(payload, 28)
+      expect(r.polls.top.find((t) => t.target === 'vota-1')?.actions).toMatchObject({ whatsapp_optin: 1 })
     })
 
     it('knows the free-ride lines without asking the database', async () => {

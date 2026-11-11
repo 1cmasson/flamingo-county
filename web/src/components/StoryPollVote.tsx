@@ -4,6 +4,7 @@ import { useState } from 'react'
 import type { Lang } from '../i18n'
 import { storyPollCopy } from '../lib/storyPollCopy'
 import type { PollPhase, PollTally } from '../lib/storyPolls'
+import { StoryPollOptin } from './StoryPollOptin'
 import p from './promo.module.css'
 import s from './storyPoll.module.css'
 
@@ -13,6 +14,9 @@ import s from './storyPoll.module.css'
  * one button and no numbers show, so the split doesn't sway the pick; one
  * tap votes, then every story shows its share. The page passes the split
  * only once this browser has voted (its cookie) or the poll has closed.
+ *
+ * Once this browser has voted and while the poll is still open, a small box
+ * asks them to vote every week by WhatsApp (StoryPollOptin).
  */
 export type PollOptionView = {
   key: string
@@ -149,6 +153,7 @@ export function StoryPollVote({
       {showSplit && result ? (
         <p className={p.meta}>{result.total ? (closed ? c.finalTotal(result.total) : c.total(result.total)) : closed ? c.noVotes : c.total(0)}</p>
       ) : null}
+      {phase === 'open' && result ? <StoryPollOptin slug={slug} lang={lang} preview={preview} /> : null}
       {pending ? <p className={p.note}>{c.sending}</p> : null}
       {error ? <p className={p.error}>{error}</p> : null}
     </div>

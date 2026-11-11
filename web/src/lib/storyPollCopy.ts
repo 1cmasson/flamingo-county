@@ -1,4 +1,5 @@
 import type { Lang } from '../i18n'
+import { WHATSAPP_NUMBER } from './site'
 
 /**
  * The words on the weekly story vote (lib/storyPolls.ts). The title,
@@ -9,6 +10,14 @@ export type StoryPollCopy = typeof EN
 
 export function storyPollCopy(lang: Lang): StoryPollCopy {
   return lang === 'es' ? ES : EN
+}
+
+/**
+ * The opt-in's secondary link: WhatsApp opens on a chat with our number and
+ * the message already written, and the visitor sends it themselves.
+ */
+export function pollOptinWhatsApp(lang: Lang): string {
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(storyPollCopy(lang).optinMessage)}`
 }
 
 const EN = {
@@ -37,6 +46,16 @@ const EN = {
   busy: 'Too many votes from this connection today. Try again tomorrow.',
   closedNow: 'Voting has closed.',
   failed: 'That didn’t go through. Try again.',
+  optinTitle: 'Want to vote every week?',
+  optinText: 'Leave your WhatsApp and we’ll let you know when the new vote opens and who won.',
+  optinPhone: 'Your WhatsApp number',
+  optinConsent: 'I agree to get one message a week from Flamingo County on WhatsApp. Reply STOP to opt out.',
+  optinButton: 'Notify me',
+  optinDone: 'Done! We’ll message you on WhatsApp 🦩',
+  optinBadPhone: 'Check the number. If it’s not a US number, start with + and the country code.',
+  optinNeedConsent: 'Tick the box so we can message you.',
+  optinLink: 'or message us on WhatsApp',
+  optinMessage: 'I want to vote every week 🦩',
   readStory: 'Read the story',
   igVote: 'You can also vote in the Instagram comments',
   igSee: 'See the reel on Instagram',
@@ -81,6 +100,16 @@ const ES: StoryPollCopy = {
   busy: 'Demasiados votos desde esta conexión hoy. Prueba mañana.',
   closedNow: 'La votación ya cerró.',
   failed: 'No se pudo enviar. Prueba otra vez.',
+  optinTitle: '¿Quieres votar cada semana?',
+  optinText: 'Déjanos tu WhatsApp y te avisamos cuando salga la nueva votación y quién ganó.',
+  optinPhone: 'Tu número de WhatsApp',
+  optinConsent: 'Acepto recibir un mensaje a la semana de Flamingo County por WhatsApp. Escribe BAJA para salirme.',
+  optinButton: 'Avísame',
+  optinDone: '¡Listo! Te avisamos por WhatsApp 🦩',
+  optinBadPhone: 'Revisa el número. Si no es de EE. UU., empieza con + y el código del país.',
+  optinNeedConsent: 'Marca la casilla para que podamos escribirte.',
+  optinLink: 'o escríbenos por WhatsApp',
+  optinMessage: 'Quiero votar cada semana 🦩',
   readStory: 'Lee la historia',
   igVote: 'También puedes votar en los comentarios de Instagram',
   igSee: 'Mira el reel en Instagram',
