@@ -19,8 +19,15 @@ import { REEL_CHECKPOINTS, reelRatios } from './reelStats'
  * growth review and Carlos (story-rules section 6).
  *
  * Nothing happens without data: a draft whose reels have no 3d reading is not
- * reviewed, whatever its age. Without META_GRAPH_TOKEN there are no reel rows,
- * so the job finds nothing to do.
+ * reviewed, whatever its age.
+ *
+ * Two sources (2026-11-04). Meta Graph `reel` rows (lib/reelStats.ts) carry
+ * watch time, skip rate and Facebook retention, but they stopped on Nov 2 when
+ * the Facebook lock broke META_GRAPH_TOKEN. Postiz `post` rows (lib/socialStats.ts,
+ * 24h/3d/7d) keep coming through Postiz Cloud for Instagram and TikTok: views,
+ * reach (Instagram only), likes, comments, shares, saves. A cut uses its Graph
+ * row when there is one and its Postiz row otherwise; what Postiz lacks stays
+ * null. TikTok has no reach, so its ratios are per view and say so.
  *
  * Not here yet (stations 2 and 3): the reel card and the locked forecast. The
  * review says so rather than inventing either; when they exist they join here.
@@ -127,6 +134,57 @@ export function cutMetrics(platform: string, metrics: Record<string, number>, du
   }
 }
 
+type Summary = Record<string, { latest?: number; sum?: number } | number>
+
+/** A Postiz label's latest value, matched loosely (labels differ by platform and may change). */
+function pick(summary: Summary, re: RegExp): number | null {
+  for (const [label, v] of Object.entries(summary ?? {})) {
+    if (!re.test(label)) continue
+    const n = typeof v === 'number' ? v : (v?.latest ?? null)
+    if (typeof n === 'number' && Number.isFinite(n)) return n
+  }
+  return null
+}
+
+/**
+ * One cut's numbers from a Postiz `post` row (lib/socialStats.ts `summarizeMetrics`).
+ * Instagram gives Views, Reach, Likes, Comments, Shares, Saves (checked against the
+ * Graph rows of the same reels, 2026-11-04: same values). TikTok has no reach, so
+ * its ratios divide by views instead. Postiz has no watch time or skip rate: null.
+ */
+export function postizCutMetrics(platform: string, summary: Summary): CutMetrics {
+  const views = pick(summary, /^(views?|video views|plays)$/i)
+  const reach = platform === 'tiktok' ? null : pick(summary, /^reach$/i)
+  const base = reach ?? (platform === 'tiktok' ? views : null)
+  return {
+    views,
+    reach,
+    avgWatchSec: null,
+    avgWatchPct: null,
+    skipRate: null,
+    sharesPerReach: per(pick(summary, /shares?$/i), base),
+    savesPerReach: per(pick(summary, /^(saves|saved)$/i), base),
+    likesPerReach: per(pick(summary, /likes$/i), base),
+  }
+}
+
+/** A row's numbers, whichever source it came from. */
+function rowMetrics(r: StatRow, length: number | null): CutMetrics {
+  return r.src === 'postiz'
+    ? postizCutMetrics(r.platform, r.metrics as Summary)
+    : cutMetrics(r.platform, r.metrics as Record<string, number>, r.durationSec ?? length)
+}
+
+/**
+ * Graph and Postiz rows together, one per draft, platform and checkpoint:
+ * the Graph row when both exist (it has watch time and skip rate).
+ */
+export function preferGraph(rows: StatRow[]): StatRow[] {
+  const key = (r: StatRow) => `${idOf(r.draft)}|${r.platform}|${r.checkpoint}`
+  const graph = new Set(rows.filter((r) => r.src !== 'postiz').map(key))
+  return rows.filter((r) => r.src !== 'postiz' || !graph.has(key(r)))
+}
+
 /**
  * The middle value. Reel numbers are heavy-tailed — one Bezos-sized hit would
  * drag a mean for months — so every comparison here is against a median, and
@@ -222,15 +280,21 @@ export function retentionSummary(curve: unknown, durationSec: number | null): Re
 /* Pairing                                                                  */
 /* ------------------------------------------------------------------------ */
 
-export type PairDraft = Pick<HqSocialDraft, 'id' | 'status' | 'pillar' | 'language' | 'createdAt' | 'publishAt'>
+export type PairDraft = Pick<HqSocialDraft, 'id' | 'status' | 'pillar' | 'language' | 'createdAt' | 'publishAt'> &
+  Partial<Pick<HqSocialDraft, 'platforms' | 'media'>>
 
 const ms = (d: string | null | undefined) => (d ? new Date(d).getTime() : NaN)
+
+/** Same platforms: an Instagram draft never pairs with a TikTok one drafted in the same batch. */
+const samePlatforms = (a: PairDraft, b: PairDraft) =>
+  [...(a.platforms ?? [])].sort().join() === [...(b.platforms ?? [])].sort().join()
 
 function twins(d: PairDraft, all: PairDraft[]): PairDraft[] {
   if (!d.pillar || !LIVE.includes(d.status ?? '') || (d.language !== 'es' && d.language !== 'en')) return []
   return all.filter(
     (o) =>
       o.id !== d.id &&
+      samePlatforms(o, d) &&
       LIVE.includes(o.status ?? '') &&
       o.pillar === d.pillar &&
       (o.language === 'es' || o.language === 'en') &&
@@ -260,8 +324,8 @@ export function pairDrafts(drafts: PairDraft[]): PairDraft[][] {
 /* The review                                                               */
 /* ------------------------------------------------------------------------ */
 
-type Platform = 'instagram' | 'facebook'
-const PLATFORM_ORDER: Platform[] = ['instagram', 'facebook']
+type Platform = 'instagram' | 'tiktok' | 'facebook'
+const PLATFORM_ORDER: Platform[] = ['instagram', 'tiktok', 'facebook']
 
 export type Cut = {
   draft: number
@@ -277,10 +341,12 @@ export type Cut = {
 type StatRow = Pick<
   HqSocialStat,
   'id' | 'platform' | 'checkpoint' | 'ageMinutes' | 'draft' | 'permalink' | 'mediaPublishedAt' | 'durationSec' | 'metrics' | 'retention'
->
+> & { src?: 'graph' | 'postiz' }
 
-const idOf = (v: unknown): number | null => (v && typeof v === 'object' ? (v as { id: number }).id : ((v as number) ?? null))
-const isPlatform = (p: string): p is Platform => p === 'instagram' || p === 'facebook'
+function idOf(v: unknown): number | null {
+  return v && typeof v === 'object' ? (v as { id: number }).id : ((v as number) ?? null)
+}
+const isPlatform = (p: string): p is Platform => p === 'instagram' || p === 'tiktok' || p === 'facebook'
 
 /** A draft's reel length, from any of its Facebook rows. */
 function lengthOf(rows: StatRow[]): number | null {
@@ -365,7 +431,10 @@ function show(m: ScoreMetric, v: number | null): string {
 }
 
 const clock = (sec: number) => `${Math.floor(sec / 60)}:${String(Math.round(sec % 60)).padStart(2, '0')}`
-const name = (p: string) => (p === 'facebook' ? 'Facebook' : 'Instagram')
+const name = (p: string) => (p === 'facebook' ? 'Facebook' : p === 'tiktok' ? 'TikTok' : 'Instagram')
+/** TikTok's ratios are per view (it has no reach). */
+const labelFor = (m: ScoreMetric, platform: string) =>
+  platform === 'tiktok' && m.endsWith('PerReach') ? LABEL[m].replace('/reach', '/view') : LABEL[m]
 
 export type ReviewText = {
   title: string
@@ -376,13 +445,15 @@ export type ReviewText = {
   retention: { draft: number; language: string | null; summary: RetentionSummary }[]
   complete: boolean
   missing: string[]
+  /** The same video on other platforms (shared HQ media), one line each. */
+  sameVideo?: string[]
 }
 
 /** The post-mortem as text, in the shape of topics/lukumi-hialeah/RETENTION-NOTES.md: the numbers, the pair, where they left. */
 export function reviewSummary(r: ReviewText): string {
   const lines: string[] = [
     r.title,
-    `72-hour reading (3d). Baseline: the median of the account's previous ${r.pillar ?? 'unlabelled'} reels at 3d on the same platform (up to ${BASELINE_REELS}); 2.0x is twice the median, 0.5x half; for skip rate, lower is better.`,
+    `72-hour reading (3d). Baseline: the median of the account's previous ${r.pillar ?? 'unlabelled'} reels at 3d on the same platform (up to ${BASELINE_REELS}); 2.0x is twice the median, 0.5x half; for skip rate, lower is better. Numbers from Meta Graph where it still reads, otherwise Postiz (no watch time or skip rate).`,
     '',
   ]
   for (const c of r.cuts) {
@@ -390,7 +461,7 @@ export function reviewSummary(r: ReviewText): string {
     const n = Math.max(0, ...SCORE_METRICS.map((m) => c.vsMedian[m].n))
     const parts = SCORE_METRICS.filter((m) => c.metrics[m] !== null).map((m) => {
       const v = c.vsMedian[m]
-      return `${LABEL[m]} ${show(m, c.metrics[m])}${v.ratio !== null ? ` (${v.ratio}x)` : ''}`
+      return `${labelFor(m, c.platform)} ${show(m, c.metrics[m])}${v.ratio !== null ? ` (${v.ratio}x)` : ''}`
     })
     lines.push(`  ${parts.join(' · ') || 'no numbers'}${n ? ` — baseline n=${n}` : ' — no baseline yet'}`)
   }
@@ -399,7 +470,7 @@ export function reviewSummary(r: ReviewText): string {
     for (const p of PLATFORM_ORDER) {
       const cmp = r.pair[p]
       if (!cmp) continue
-      const parts = SCORE_METRICS.filter((m) => cmp[m]?.esOverEn != null).map((m) => `${LABEL[m]} ${cmp[m]!.esOverEn}x`)
+      const parts = SCORE_METRICS.filter((m) => cmp[m]?.esOverEn != null).map((m) => `${labelFor(m, p)} ${cmp[m]!.esOverEn}x`)
       lines.push(`  ${name(p)}: ${parts.join(' · ') || 'nothing comparable'}`)
     }
   }
@@ -416,6 +487,7 @@ export function reviewSummary(r: ReviewText): string {
       `Where they left (Facebook ${(t.language ?? '?').toUpperCase()} #${t.draft}): ${[bits.join(', '), drop].filter(Boolean).join('; ')}.`,
     )
   }
+  if (r.sameVideo?.length) lines.push('', 'The same video on another platform (3d):', ...r.sameVideo.map((l) => `  ${l}`))
   if (!r.complete && r.missing.length) lines.push('', `Incomplete, scored after the 3d window closed: ${r.missing.join('; ')}.`)
   lines.push('', 'No reel card or forecast in HQ yet: rules followed or broken, and forecast vs reality, are for the growth review.')
   return lines.join('\n')
@@ -445,6 +517,28 @@ const REEL_SELECT = {
   retention: true,
 } as const
 
+const POST_SELECT = { platform: true, checkpoint: true, draft: true, metrics: true } as const
+
+/** Graph `reel` rows and Postiz `post` rows matching `where`, as one list (Graph preferred per cut). */
+async function loadRows(payload: Payload, where: Record<string, unknown>[]): Promise<StatRow[]> {
+  const [graph, postiz] = await Promise.all(
+    (['reel', 'post'] as const).map((kind) =>
+      payload.find({
+        collection: 'hq-social-stats',
+        where: { and: [{ kind: { equals: kind } }, ...where] } as never,
+        select: kind === 'reel' ? REEL_SELECT : POST_SELECT,
+        limit: 5000,
+        depth: 0,
+        overrideAccess: true,
+      }),
+    ),
+  )
+  return preferGraph([
+    ...(graph.docs as StatRow[]).map((r) => ({ ...r, src: 'graph' as const })),
+    ...(postiz.docs as StatRow[]).map((r) => ({ ...r, src: 'postiz' as const })),
+  ])
+}
+
 /** The marker that makes appending to an experiment happen once, whatever retries. */
 export const experimentMarker = (key: string) => `[${key}]`
 
@@ -463,7 +557,7 @@ export async function scoreReels(payload: Payload, now: Date = new Date()) {
         { publishAt: { less_than_equal: now.toISOString() } },
       ],
     },
-    select: { status: true, pillar: true, language: true, createdAt: true, publishAt: true },
+    select: { status: true, pillar: true, language: true, createdAt: true, publishAt: true, platforms: true, media: true },
     limit: 500,
     depth: 0,
     overrideAccess: true,
@@ -474,15 +568,8 @@ export async function scoreReels(payload: Payload, now: Date = new Date()) {
   if (!groups.length) return { reviewed: 0, experiments: 0 }
 
   const ids = groups.flat().map((d) => d.id)
-  const [rowsRes, done] = await Promise.all([
-    payload.find({
-      collection: 'hq-social-stats',
-      where: { and: [{ kind: { equals: 'reel' } }, { draft: { in: ids } }] },
-      select: REEL_SELECT,
-      limit: 5000,
-      depth: 0,
-      overrideAccess: true,
-    }),
+  const [rows, done] = await Promise.all([
+    loadRows(payload, [{ draft: { in: ids } }]),
     payload.find({
       collection: 'hq-reel-reviews',
       where: { drafts: { in: ids } },
@@ -493,7 +580,6 @@ export async function scoreReels(payload: Payload, now: Date = new Date()) {
     }),
   ])
   const reviewed = new Set(done.docs.flatMap((r) => (r.drafts ?? []).map(idOf)))
-  const rows = rowsRes.docs as StatRow[]
 
   let written = 0
   let appended = 0
@@ -515,44 +601,79 @@ export async function scoreReels(payload: Payload, now: Date = new Date()) {
 
 /** The previous reels of `pillar` at 3d, per platform, newest first, before `before`. */
 async function baseline(payload: Payload, pillar: string | null, before: Date, exclude: number[]) {
-  const out: Record<Platform, CutMetrics[]> = { instagram: [], facebook: [] }
+  const out: Record<Platform, CutMetrics[]> = { instagram: [], tiktok: [], facebook: [] }
   if (!pillar) return out
-  const res = await payload.find({
-    collection: 'hq-social-stats',
-    where: {
-      and: [
-        { kind: { equals: 'reel' } },
-        { draft: { exists: true } },
-        { mediaPublishedAt: { less_than: before.toISOString() } },
-        { mediaPublishedAt: { greater_than: new Date(before.getTime() - BASELINE_DAYS * DAY).toISOString() } },
-      ],
-    },
-    select: REEL_SELECT,
-    sort: '-mediaPublishedAt',
-    limit: 5000,
-    depth: 0,
-    overrideAccess: true,
-  })
-  const rows = (res.docs as StatRow[]).filter((r) => !exclude.includes(idOf(r.draft) ?? -1))
-  const draftIds = [...new Set(rows.map((r) => idOf(r.draft)).filter((d): d is number => d !== null))]
-  if (!draftIds.length) return out
+  // The drafts of this pillar that went out in the window, newest first; then their 3d rows from either source.
   const drafts = await payload.find({
     collection: 'hq-social-drafts',
-    where: { id: { in: draftIds } },
-    select: { pillar: true },
-    limit: draftIds.length,
+    where: {
+      and: [
+        { pillar: { equals: pillar } },
+        { status: { in: LIVE } },
+        { publishAt: { less_than: before.toISOString() } },
+        { publishAt: { greater_than: new Date(before.getTime() - BASELINE_DAYS * DAY).toISOString() } },
+      ],
+    },
+    select: { publishAt: true },
+    sort: '-publishAt',
+    limit: 500,
     depth: 0,
     overrideAccess: true,
   })
-  const same = new Set(drafts.docs.filter((d) => d.pillar === pillar).map((d) => d.id))
-  for (const r of rows) {
-    const d = idOf(r.draft)
-    if (r.checkpoint !== SCORED_CHECKPOINT || d === null || !same.has(d) || !isPlatform(r.platform)) continue
-    if (out[r.platform].length >= BASELINE_REELS) continue
-    const length = lengthOf(rows.filter((o) => idOf(o.draft) === d))
-    out[r.platform].push(cutMetrics(r.platform, r.metrics as Record<string, number>, r.durationSec ?? length))
+  const order = drafts.docs.map((d) => d.id).filter((id) => !exclude.includes(id))
+  if (!order.length) return out
+  const rows = await loadRows(payload, [{ draft: { in: order } }])
+  for (const d of order) {
+    const mine = rows.filter((r) => idOf(r.draft) === d)
+    const length = lengthOf(mine)
+    for (const r of mine) {
+      if (r.checkpoint !== SCORED_CHECKPOINT || !isPlatform(r.platform)) continue
+      if (out[r.platform].length >= BASELINE_REELS) continue
+      out[r.platform].push(rowMetrics(r, length))
+    }
   }
   return out
+}
+
+/**
+ * The same video posted elsewhere: other live drafts that share a draft's
+ * first HQ media (a reel goes to Instagram and TikTok as separate drafts, and
+ * the TikTok back catalog reuses the Instagram videos). One line each, with
+ * its 3d numbers when it has them. This is how a reel's TikTok and Instagram
+ * results get compared, whatever their dates.
+ */
+async function sameVideoLines(payload: Payload, group: PairDraft[]): Promise<string[]> {
+  const lines: string[] = []
+  for (const d of group) {
+    const media = idOf((d.media ?? [])[0])
+    if (media === null) continue
+    const others = await payload.find({
+      collection: 'hq-social-drafts',
+      where: { and: [{ media: { contains: media } }, { status: { in: LIVE } }, { id: { not_in: group.map((g) => g.id) } }] },
+      select: { platforms: true, language: true, publishAt: true },
+      limit: 10,
+      depth: 0,
+      overrideAccess: true,
+    })
+    for (const o of others.docs) {
+      if (samePlatforms(o as PairDraft, d)) continue
+      const rows = (await loadRows(payload, [{ draft: { equals: o.id } }])).filter((r) => r.checkpoint === SCORED_CHECKPOINT)
+      const when = o.publishAt ? miamiTime(o.publishAt) : 'not out yet'
+      const head = `#${d.id} ↔ #${o.id} (${(o.platforms ?? []).map(name).join(', ')}, ${(o.language ?? '?').toUpperCase()}, ${when})`
+      if (!rows.length) {
+        lines.push(`${head}: no 3d reading`)
+        continue
+      }
+      for (const r of rows) {
+        const m = rowMetrics(r, null)
+        const bits = (['views', 'sharesPerReach', 'likesPerReach'] as ScoreMetric[])
+          .filter((k) => m[k] !== null)
+          .map((k) => `${labelFor(k, r.platform)} ${show(k, m[k])}`)
+        lines.push(`${head} ${name(r.platform)}: ${bits.join(' · ') || 'no numbers'}`)
+      }
+    }
+  }
+  return lines
 }
 
 async function writeReview(payload: Payload, group: PairDraft[], rows: StatRow[], state: ReadyState, now: Date) {
@@ -569,7 +690,7 @@ async function writeReview(payload: Payload, group: PairDraft[], rows: StatRow[]
     for (const p of PLATFORM_ORDER) {
       const r = mine.find((x) => x.platform === p && x.checkpoint === SCORED_CHECKPOINT)
       if (!r) continue
-      const metrics = cutMetrics(p, r.metrics as Record<string, number>, r.durationSec ?? length)
+      const metrics = rowMetrics(r, length)
       cuts.push({
         draft: d.id,
         language: d.language ?? null,
@@ -589,6 +710,7 @@ async function writeReview(payload: Payload, group: PairDraft[], rows: StatRow[]
     }
   }
 
+  const sameVideo = await sameVideoLines(payload, group)
   const label = group.map((d) => `#${d.id} ${d.language ?? '?'}`).join(' + ')
   const title = `${label} · ${pillar ?? 'no pillar'} · ${miamiTime(firstOut)}`
   const pair = group.length === 2 ? comparePair(cuts) : null
@@ -601,6 +723,7 @@ async function writeReview(payload: Payload, group: PairDraft[], rows: StatRow[]
     retention,
     complete: state.complete,
     missing: state.missing,
+    sameVideo,
   })
 
   // Experiments first, the review last: the marker keeps a retried append from
