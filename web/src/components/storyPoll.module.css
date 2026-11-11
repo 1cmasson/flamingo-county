@@ -1,0 +1,127 @@
+/*
+ * The weekly story vote (lib/storyPolls.ts). Shares the coupon pages' card,
+ * button and heading look (promo.module.css) and the rankings' form fields
+ * (ranking.module.css); this adds the story rows. Opened mostly inside
+ * Instagram's browser from a DM: one column, each story one big tap target,
+ * all four on one phone screen.
+ */
+.poll {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.options {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.option {
+  display: grid;
+  grid-template-columns: 30px 76px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 100px;
+  padding: 10px 12px 10px 10px;
+  font: inherit;
+  text-align: left;
+  color: var(--ink);
+  background: var(--cream);
+  border: 4px solid var(--ink);
+  border-radius: 14px;
+  box-shadow: 4px 4px 0 var(--ink);
+}
+button.option {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+button.option:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+button.option:disabled {
+  cursor: progress;
+  opacity: 0.7;
+}
+button.option:focus-visible {
+  outline: 3px solid var(--magenta);
+  outline-offset: 3px;
+}
+.num {
+  font-family: var(--display);
+  font-size: 34px;
+  line-height: 1;
+  text-align: center;
+}
+.thumb {
+  display: block;
+  width: 76px;
+  height: 76px;
+  object-fit: cover;
+  border: 3px solid var(--ink);
+  border-radius: 10px;
+  background: var(--yellow);
+}
+.text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+.title {
+  font-weight: 800;
+  font-size: 17px;
+  line-height: 1.2;
+}
+.teaser {
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.tag {
+  align-self: flex-start;
+  padding: 2px 8px 1px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--cream);
+  background: var(--ink);
+  border-radius: 999px;
+}
+
+/* After voting, and once the poll closes: each story's share. */
+.meter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.track {
+  flex: 1;
+  height: 12px;
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+  background: var(--cream);
+  overflow: hidden;
+}
+.fill {
+  display: block;
+  height: 100%;
+  background: var(--magenta);
+}
+.pct {
+  font-family: var(--display);
+  font-size: 20px;
+  line-height: 1;
+  white-space: nowrap;
+}
+.picked {
+  outline: 3px solid var(--magenta);
+  outline-offset: 3px;
+}
+.won {
+  background: var(--yellow);
+}

@@ -23,6 +23,9 @@ import { PromoCoupons } from './collections/PromoCoupons'
 import { Rankings } from './collections/Rankings'
 import { RankingVotes } from './collections/RankingVotes'
 import { RankingNominations } from './collections/RankingNominations'
+import { StoryPolls } from './collections/StoryPolls'
+import { StoryPollVotes } from './collections/StoryPollVotes'
+import { StoryPollSuggestions } from './collections/StoryPollSuggestions'
 import { Subscribers } from './collections/Subscribers'
 import { ListingRequests } from './collections/ListingRequests'
 import { Members } from './collections/Members'
@@ -104,6 +107,9 @@ export default buildConfig({
     Rankings,
     RankingVotes,
     RankingNominations,
+    StoryPolls,
+    StoryPollVotes,
+    StoryPollSuggestions,
     Subscribers,
     ListingRequests,
     Members,
@@ -293,6 +299,17 @@ export default buildConfig({
           enabled: { find: true },
           description:
             'Places neighbors named on a ranking’s page (read-only). Unchecked text, never shown publicly. Tally with where ranking = id and test != true; the same place typed different ways counts together (lib/rankingNominations.ts foldPlace). The most-named become the ranking’s entrants.',
+        },
+        // story-poll-votes stays off MCP, like ranking-votes: rows only visitors create.
+        'story-polls': {
+          enabled: { find: true, create: true, update: true },
+          description:
+            'The weekly story vote, lib/storyPolls.ts. Page /es/vota/<slug>; /es/vota always goes to the poll open now (the link in the reel’s DM). title/question/intro and options[].title/teaser are per language (locale es or en); options[].key (lowercase-with-dashes), image, story and commentVotes are shared. opensAt/closesAt are ISO 8601 with the Miami offset (-05:00 in November), e.g. 2026-11-15T23:59:00-05:00; without an offset they are read as UTC. commentVotes = votes counted by hand from the Instagram comments, added to the site’s. To add or edit the other language, read the poll first (draft: true) and send options with the SAME row ids, or the other language’s text is lost. Never change a key once voting opens. Save with draft: true; publish with hqRequestPublish.',
+        },
+        'story-poll-suggestions': {
+          enabled: { find: true },
+          description:
+            'Stories fans asked for under the weekly vote (read-only). Unchecked text, never shown publicly. Filter with where poll = id and test != true. Ideas for next week’s options.',
         },
         cities: { enabled: { find: true } },
         categories: { enabled: { find: true } },

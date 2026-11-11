@@ -85,6 +85,9 @@ export interface Config {
     rankings: Ranking;
     'ranking-votes': RankingVote;
     'ranking-nominations': RankingNomination;
+    'story-polls': StoryPoll;
+    'story-poll-votes': StoryPollVote;
+    'story-poll-suggestions': StoryPollSuggestion;
     subscribers: Subscriber;
     'listing-requests': ListingRequest;
     members: Member;
@@ -132,6 +135,9 @@ export interface Config {
     rankings: RankingsSelect<false> | RankingsSelect<true>;
     'ranking-votes': RankingVotesSelect<false> | RankingVotesSelect<true>;
     'ranking-nominations': RankingNominationsSelect<false> | RankingNominationsSelect<true>;
+    'story-polls': StoryPollsSelect<false> | StoryPollsSelect<true>;
+    'story-poll-votes': StoryPollVotesSelect<false> | StoryPollVotesSelect<true>;
+    'story-poll-suggestions': StoryPollSuggestionsSelect<false> | StoryPollSuggestionsSelect<true>;
     subscribers: SubscribersSelect<false> | SubscribersSelect<true>;
     'listing-requests': ListingRequestsSelect<false> | ListingRequestsSelect<true>;
     members: MembersSelect<false> | MembersSelect<true>;
@@ -1359,6 +1365,124 @@ export interface RankingNomination {
   createdAt: string;
 }
 /**
+ * The weekly story vote. The page is /es/vota/<slug>; /es/vota always goes to the poll open now. The winner is the most votes (site + counted comments).
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "story-polls".
+ */
+export interface StoryPoll {
+  id: number;
+  /**
+   * URL identifier. Changing it breaks existing links.
+   */
+  slug: string;
+  /**
+   * The page’s headline, e.g. "Tú escoges la historia del miércoles".
+   */
+  title: string;
+  /**
+   * The question, e.g. "¿Qué historia de Miami contamos esta semana?"
+   */
+  question: string;
+  intro?: string | null;
+  /**
+   * Optional: the link preview (a DM or a share). Without it, the first option’s image is used.
+   */
+  image?: (number | null) | Media;
+  /**
+   * Voting opens (Miami time).
+   */
+  opensAt: string;
+  /**
+   * Voting closes (Miami time); the page then shows the winner.
+   */
+  closesAt: string;
+  /**
+   * Optional: the day the winning story is posted (a Wednesday). Shown on the page.
+   */
+  winnerPostsOn?: string | null;
+  /**
+   * Optional: the Instagram reel where people also vote in the comments.
+   */
+  igPostUrl?: string | null;
+  /**
+   * The stories to pick from, in the order shown (usually 4). A tie goes to the one listed first. Never change a key once voting opens.
+   */
+  options?:
+    | {
+        /**
+         * Votes are stored under this. Never change it once voting opens.
+         */
+        key: string;
+        title: string;
+        /**
+         * One or two sourced lines that make you want to hear it. Don’t give the ending away.
+         */
+        teaser?: string | null;
+        /**
+         * Our own artwork for this story.
+         */
+        image?: (number | null) | Media;
+        /**
+         * Once the winner is published: its story page, linked from the results.
+         */
+        story?: (number | null) | Story;
+        /**
+         * Votes counted by hand from the Instagram comments ("1", "2"…). Added to the site’s votes.
+         */
+        commentVotes?: number | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+  _status?: ('draft' | 'published') | null;
+}
+/**
+ * Votes in the weekly story vote. No name, IP or cookie stored. "Test" = cast on a staff or owner device; left out of the counts.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "story-poll-votes".
+ */
+export interface StoryPollVote {
+  id: number;
+  poll: number | StoryPoll;
+  /**
+   * The story’s key in the poll.
+   */
+  option: string;
+  /**
+   * instagram, facebook, google, direct…
+   */
+  source?: string | null;
+  lang?: ('es' | 'en') | null;
+  test?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Stories fans asked for under the weekly vote. Unchecked text: never shown publicly. Ideas for next week’s options. "Test" = from a staff or owner device.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "story-poll-suggestions".
+ */
+export interface StoryPollSuggestion {
+  id: number;
+  poll: number | StoryPoll;
+  /**
+   * The story, as the fan typed it.
+   */
+  text: string;
+  /**
+   * instagram, facebook, google, direct…
+   */
+  source?: string | null;
+  lang?: ('es' | 'en') | null;
+  test?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "subscribers".
  */
@@ -2444,6 +2568,26 @@ export interface PayloadMcpApiKey {
      */
     find?: boolean | null;
   };
+  storyPolls?: {
+    /**
+     * Allow clients to find story-polls.
+     */
+    find?: boolean | null;
+    /**
+     * Allow clients to create story-polls.
+     */
+    create?: boolean | null;
+    /**
+     * Allow clients to update story-polls.
+     */
+    update?: boolean | null;
+  };
+  storyPollSuggestions?: {
+    /**
+     * Allow clients to find story-poll-suggestions.
+     */
+    find?: boolean | null;
+  };
   cities?: {
     /**
      * Allow clients to find cities.
@@ -2554,7 +2698,7 @@ export interface PayloadMcpApiKey {
      */
     hqMoveDraftToCloud?: boolean | null;
     /**
-     * Ask the owner to publish the current draft of a site document (events, weekly-events, stories, spotlights, listings, promotions, rankings) or of the link page (link-page, no id). Save the draft first with the create/update tool and draft: true — drafts are never visible on the site. The owner sees exactly what changes against the live page in Telegram and taps Publish or Reject. If you edit the draft again before they tap, they are shown the new version instead. Publishes nothing by itself.
+     * Ask the owner to publish the current draft of a site document (events, weekly-events, stories, spotlights, listings, promotions, rankings, story-polls) or of the link page (link-page, no id). Save the draft first with the create/update tool and draft: true — drafts are never visible on the site. The owner sees exactly what changes against the live page in Telegram and taps Publish or Reject. If you edit the draft again before they tap, they are shown the new version instead. Publishes nothing by itself.
      */
     hqRequestPublish?: boolean | null;
     /**
@@ -2802,6 +2946,18 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'ranking-nominations';
         value: number | RankingNomination;
+      } | null)
+    | ({
+        relationTo: 'story-polls';
+        value: number | StoryPoll;
+      } | null)
+    | ({
+        relationTo: 'story-poll-votes';
+        value: number | StoryPollVote;
+      } | null)
+    | ({
+        relationTo: 'story-poll-suggestions';
+        value: number | StoryPollSuggestion;
       } | null)
     | ({
         relationTo: 'subscribers';
@@ -3542,6 +3698,61 @@ export interface RankingNominationsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "story-polls_select".
+ */
+export interface StoryPollsSelect<T extends boolean = true> {
+  slug?: T;
+  title?: T;
+  question?: T;
+  intro?: T;
+  image?: T;
+  opensAt?: T;
+  closesAt?: T;
+  winnerPostsOn?: T;
+  igPostUrl?: T;
+  options?:
+    | T
+    | {
+        key?: T;
+        title?: T;
+        teaser?: T;
+        image?: T;
+        story?: T;
+        commentVotes?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+  _status?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "story-poll-votes_select".
+ */
+export interface StoryPollVotesSelect<T extends boolean = true> {
+  poll?: T;
+  option?: T;
+  source?: T;
+  lang?: T;
+  test?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "story-poll-suggestions_select".
+ */
+export interface StoryPollSuggestionsSelect<T extends boolean = true> {
+  poll?: T;
+  text?: T;
+  source?: T;
+  lang?: T;
+  test?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "subscribers_select".
  */
 export interface SubscribersSelect<T extends boolean = true> {
@@ -4067,6 +4278,18 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         update?: T;
       };
   rankingNominations?:
+    | T
+    | {
+        find?: T;
+      };
+  storyPolls?:
+    | T
+    | {
+        find?: T;
+        create?: T;
+        update?: T;
+      };
+  storyPollSuggestions?:
     | T
     | {
         find?: T;
