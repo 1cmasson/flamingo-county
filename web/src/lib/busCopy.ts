@@ -71,8 +71,7 @@ const ES = {
   hubTitle: 'Rutas de guagua',
   hubSub:
     'Todas las guaguas de Miami-Dade, las gratis y las que se pagan: Metrobus, Metrorail, Metromover y los trolleys, con todas las paradas, la primera y la última guagua, y cada cuánto pasan.',
-  hubMetaTitle:
-    'Guaguas de Miami-Dade: todas las rutas, las gratis y las que se pagan',
+  hubMetaTitle: 'Guaguas de Miami-Dade: todas las rutas, las gratis y las que se pagan',
   hubMetaDescription:
     '¿Qué guagua cojo? Planea tu viaje con todas las rutas de Miami-Dade: Metrobus, Metrorail, Metromover, los trolleys y las guaguas gratis de Hialeah (Flamingo y Marlin). Cada parada, cuándo pasan y cuáles son gratis.',
   hubQuestion: '¿Qué guaguas hay en Miami-Dade y cuáles son gratis?',
@@ -83,13 +82,21 @@ const ES = {
   fareFree: 'GRATIS',
   farePaid: 'METROBUS · SE PAGA',
   fareLegend: 'GRATIS: no pagas nada. METROBUS: la guagua del condado, se paga el pasaje al subir.',
-  metaTitle: (name: string, a: string, b: string) =>
-    `${name} de Metrobus: paradas y horario, ${a} ⇄ ${b}`,
-  metaTitleTrolley: (name: string) => `${name}: paradas y horario (gratis)`,
-  metaTitleLine: (name: string) => `${name}: paradas y horario`,
-  metaDescription: (name: string, via: string | null, stops: number, every: string | null) =>
+  // Titles lead with what people search ("horario bus 37") and stay under ~60 characters
+  // with the site name, so Google shows them whole; the route's two ends go in the description.
+  metaTitle: (name: string) => `${name} de Metrobus: horario, paradas y guagua en vivo`,
+  metaTitleTrolley: (name: string) => `${name}: horario y paradas (gratis)`,
+  metaTitleLine: (name: string) => `${name}: horario y paradas`,
+  metaDescription: (
+    name: string,
+    ends: [string, string] | null,
+    via: string | null,
+    stops: number,
+    every: string | null,
+    live: boolean,
+  ) =>
     del(
-      `Todas las ${stops} paradas de ${name}${via ? ` por ${via}` : ''}, en los dos sentidos, con la primera y la última guagua${every ? ` y cada cuánto pasa (${every} al mediodía entre semana)` : ''}. Según el horario de Miami-Dade Transit.`,
+      `${ends ? `${cap(name)} va de ${ends[0]} a ${ends[1]}${via ? ` por ${via}` : ''}. ` : ''}${live ? 'Mira dónde viene la guagua ahora, la próxima en tu parada, ' : 'Mira '}las ${stops} paradas${ends ? '' : ` de ${name}${via ? ` por ${via}` : ''}`}, la primera y la última ${live ? 'guagua' : 'salida'}${every ? ` y cada cuánto pasa (${every} al mediodía entre semana)` : ''}. Según el horario de Miami-Dade Transit.`,
     ),
   question: (name: string) => `¿Por dónde pasa ${name} y a qué hora?`,
   answer: (
@@ -300,8 +307,7 @@ const ES = {
   tripSoonScheduled: (time: string, wait: string) => `Según el horario: ${time}, ${wait}.`,
   tripSoonNone: 'Ahora mismo no hay más guaguas en el horario de hoy.',
   tripJustWalk: (m: number) => `Te queda a ${m} min caminando: no vale la pena esperar la guagua.`,
-  tripNoBus:
-    'No encontramos un viaje en guagua hasta allí ahora mismo.',
+  tripNoBus: 'No encontramos un viaje en guagua hasta allí ahora mismo.',
   tripOtherMap: (route: string) => `Abrir el mapa de ${route} →`,
   tripHowBus: 'Cómo llegar en guagua',
   tripOption: (route: string, m: number) => `${route} · ${m} min`,
@@ -383,8 +389,7 @@ const EN: BusCopy = {
   hubTitle: 'Bus routes',
   hubSub:
     'Every bus in Miami-Dade, free and paid: Metrobus, Metrorail, Metromover and the trolleys, with every stop, the first and last bus, and how often they come.',
-  hubMetaTitle:
-    'Miami-Dade buses: every route, free and paid',
+  hubMetaTitle: 'Miami-Dade buses: every route, free and paid',
   hubMetaDescription:
     'Which bus do I take? Plan your trip with every route in Miami-Dade: Metrobus, Metrorail, Metromover, the trolleys and Hialeah’s free buses (Flamingo and Marlin). Every stop, when they come, and which ones are free.',
   hubQuestion: 'Which buses are there in Miami-Dade, and which ones are free?',
@@ -395,12 +400,20 @@ const EN: BusCopy = {
   fareFree: 'FREE',
   farePaid: 'METROBUS · FARE',
   fareLegend: 'FREE: you pay nothing. METROBUS: the county bus, you pay the fare when you get on.',
-  metaTitle: (name: string, a: string, b: string) =>
-    `Metrobus ${name}: stops and schedule, ${a} ⇄ ${b}`,
-  metaTitleTrolley: (name: string) => `${name}: stops and schedule (free)`,
-  metaTitleLine: (name: string) => `${name}: stops and schedule`,
-  metaDescription: (name: string, via: string | null, stops: number, every: string | null) =>
-    `All ${stops} stops on ${name}${via ? ` along ${via}` : ''}, both directions, with the first and last bus${every ? ` and how often it comes (${every} on a weekday midday)` : ''}. From Miami-Dade Transit’s schedule.`,
+  // Titles lead with what people search ("183 bus schedule") and stay under ~60 characters
+  // with the site name, so Google shows them whole; the route's two ends go in the description.
+  metaTitle: (name: string) => `${name} Bus Schedule, Stops & Live Tracker`,
+  metaTitleTrolley: (name: string) => `${name}: Schedule & Stops (Free)`,
+  metaTitleLine: (name: string) => `${name}: Schedule & Stops`,
+  metaDescription: (
+    name: string,
+    ends: [string, string] | null,
+    via: string | null,
+    stops: number,
+    every: string | null,
+    live: boolean,
+  ) =>
+    `${ends ? `${name} runs ${ends[0]} ⇄ ${ends[1]}${via ? ` along ${via}` : ''}. ` : ''}${live ? 'See where the bus is now, the next bus at your stop, ' : 'See '}all ${stops} stops${ends ? '' : ` on ${name}${via ? ` along ${via}` : ''}`}, the first and last ${live ? 'bus' : 'run'}${every ? ` and how often it comes (${every} on a weekday midday)` : ''}. From Miami-Dade Transit’s schedule.`,
   question: (name: string) => `Where does ${name} go, and when does it run?`,
   answer: (
     name: string,
@@ -607,8 +620,7 @@ const EN: BusCopy = {
   tripSoonScheduled: (time: string, wait: string) => `By the schedule: ${time}, ${wait}.`,
   tripSoonNone: 'There are no more buses on today’s schedule.',
   tripJustWalk: (m: number) => `It’s a ${m} min walk: not worth waiting for the bus.`,
-  tripNoBus:
-    'We couldn’t find a bus trip there right now.',
+  tripNoBus: 'We couldn’t find a bus trip there right now.',
   tripOtherMap: (route: string) => `Open the ${route} map →`,
   tripHowBus: 'Get there by bus',
   tripOption: (route: string, m: number) => `${route} · ${m} min`,
