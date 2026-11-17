@@ -520,6 +520,31 @@ County" for our own photo), wherever the photo credit appears: under an event
 hero, on the board and the cards, and on the auto-drafted social post's last
 line. The media record keeps `origin` and the localized `basedOn`.
 
+## Fan-vote winner
+
+When a weekly story vote closes (Tuesday at noon), the `pollWinner` job
+(`src/jobs/pollWinner.ts`, `src/lib/pollWinnerNotice.ts`) tells you who won.
+It runs hourly at :05, so a noon close arrives at 12:05:
+
+> 🗳️ **Vote closed: You pick Wednesday's story**
+> 🏆 **The Banana Wars**: 3 of 4 votes (75%)
+> Posts Wednesday, Nov 25.
+>
+> • The man on the Hialeah sign: 1 (25%) · …
+
+- **The winner** is the site's own (`pollWinner` in `lib/storyPolls.ts`):
+  site votes plus counted comments, with a tie going to the option listed
+  first. The message only announces it. Nothing is drafted or posted.
+- **A task for Claude** is filed with it: "Build the fan-vote winner: …". The
+  next session builds that Wednesday's episode, shows you the cut, and opens
+  the next vote.
+- **Once per poll.** An `hq-events` row, `poll.closed`, with the poll id as
+  `refId`, is logged before the send. Later runs find it and stop. A failed
+  send removes the row, so the next hour tries again. Polls that closed more
+  than 3 days ago are skipped, so a deploy never announces old votes. The row
+  is bookkeeping and stays out of the brief and the wrap.
+- **Off** with `HQ_POLL_WINNER=off`.
+
 ## Growth review
 
 The goal is traffic: more people from Miami-Dade reading the site. The growth
