@@ -64,18 +64,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const c = busCopy(lang)
   const name = routeName(route, lang)
   const [a, z] = routeEnds(route)
-  const title = route.number
-    ? c.metaTitle(name, a, z)
-    : route.fare === 'free'
-      ? c.metaTitleTrolley(name)
-      : c.metaTitleLine(name)
+  // The live map and «Próxima guagua» run on county buses only (the same test the page uses).
+  const live = route.kind === 'bus'
+  const title =
+    live && route.number
+      ? c.metaTitle(name)
+      : route.fare === 'free'
+        ? c.metaTitleTrolley(name)
+        : c.metaTitleLine(name)
   const weekday = route.directions[0]?.schedule.weekday
   const midday = scheduleCurrent(route) && weekday ? weekday.headway.midday : null
   const description = c.metaDescription(
     routeNameInline(route, lang),
+    route.number ? [a, z] : null,
     routeVia(route, lang),
     stopCount(route),
     midday ? c.every(midday) : null,
+    live,
   )
   return {
     title,
