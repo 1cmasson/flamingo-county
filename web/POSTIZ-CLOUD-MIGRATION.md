@@ -113,6 +113,14 @@ queued, and FB drafts #236, #238 and #292 are pending.
   - `milestone_watch.py` SSHes to Hetzner for the IG count over the FB-linked token, which is dead. Switch it to Cloud `GET /analytics/<instagram-standalone id>`.
   - Update CLAUDE.md and docs that say Hetzner is the posting path.
 - **Meta Graph telemetry** (`metaGraph.ts`, `hqReelNow`) needs the FB Page token. With FB gone it stays dead.
+  - **Confirmed dead Nov 2, ~9 PM ET.** Server log: "META_GRAPH_TOKEN reaches no single Facebook Page… account telemetry is off".
+  - Fix (owner, Nov 4: "set it up for Postiz Cloud"): the 72 h reel scorer (`reelScore.ts`) now reads Postiz `post` rows (24h/3d/7d) when there is no Graph row.
+    - It covers Instagram and TikTok, pairs ES/EN only on the same platform, and divides TikTok by views (no reach).
+    - It links the same video across platforms by shared HQ media.
+    - Lost: watch time, skip rate, FB retention.
+  - Still to do:
+    - Verify a real TikTok post reading from Cloud (Postiz returns `[]` until the TikTok release id links).
+    - Rebuild the growth-review account KPIs (follows/week, Miami-Dade share, best hours) on Cloud channel analytics. Cloud IG "Follower Count" looks like daily gains, not a total, so check it before use.
   - IG numbers come from Cloud analytics.
   - Check which KPIs ([[official-kpis]]) lose data.
 - **MCP connectors:** retire `postiz-flamingo-county` (Hetzner) in ~/.claude.json. The claude.ai Postiz connector = Cloud, for **reads only**.
