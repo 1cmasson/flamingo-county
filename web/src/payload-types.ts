@@ -2252,7 +2252,10 @@ export interface HqReelReview {
    * Every cut had its 3d reading on every platform it was measured on. Unticked: scored after the window closed with what there was.
    */
   complete?: boolean | null;
-  drafts: (number | HqSocialDraft)[];
+  /**
+   * The drafts reviewed. For a reel no draft was matched to: the drafts out within ten minutes of it, which may be none.
+   */
+  drafts?: (number | HqSocialDraft)[] | null;
   /**
    * [{ draft, language, platform, permalink }]
    */

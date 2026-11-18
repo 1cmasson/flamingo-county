@@ -7,6 +7,9 @@ import { weeklyReviewContext } from '@/lib/mcpTools'
 import {
   cutMetrics,
   experimentMarker,
+  groupLoose,
+  looseKey,
+  looseReadiness,
   median,
   pairDrafts,
   readiness,
@@ -14,6 +17,7 @@ import {
   scoreReels,
   vsMedian,
   type Cut,
+  type LooseReel,
   type PairDraft,
 } from '@/lib/reelScore'
 import type { HqSocialDraft, HqSocialStat } from '@/payload-types'
@@ -402,5 +406,178 @@ describe('the scorer against the database', () => {
     expect(mine).toMatchObject({ pillar: 'story', complete: true, experiments: [experiment] })
     expect(mine.cuts[0].vsMedian.views).toEqual({ ratio: 3, n: 4 })
     expect(mine.summary).toContain('Spanish vs English')
+  })
+})
+
+/* ------------------------------------------------------------------------ */
+/* Reels no draft was matched to                                            */
+/* ------------------------------------------------------------------------ */
+
+describe('reels no draft was matched to', () => {
+  const t0 = Date.parse('2032-06-10T21:00:00.000Z')
+  const loose = (mediaId: string, minutes: number, caption = 'Why is 49th Street', checkpoints = ['3d']): LooseReel => ({
+    mediaId,
+    platform: 'instagram',
+    caption,
+    publishedAt: t0 + minutes * MIN,
+    rows: checkpoints.map((checkpoint) => ({ checkpoint }) as LooseReel['rows'][number]),
+  })
+
+  it('groups the reels of one post: same caption, out within two hours', () => {
+    const groups = groupLoose([loose('b', 3), loose('c', 61, 'Por qué la calle 49'), loose('a', 0), loose('d', 62, 'Por qué la calle 49'), loose('e', 5 * 60)])
+    expect(groups.map((g) => g.map((r) => r.mediaId))).toEqual([['a', 'b'], ['c', 'd'], ['e']])
+  })
+
+  it('is ready when every reel is 72 hours old and has its 3d reading, or its window closed', () => {
+    const group = [loose('a', 0), loose('b', 3, undefined, ['24h'])]
+    const at = (hours: number) => new Date(t0 + hours * HOUR)
+    expect(looseReadiness(group, at(71)).ready).toBe(false)
+    expect(looseReadiness(group, at(73)).ready).toBe(false) // b may still get its reading
+    const late = looseReadiness(group, at(24 * 9))
+    expect(late).toMatchObject({ ready: true, complete: false })
+    expect(late.missing).toEqual(['reel b: no 3d reading'])
+    expect(looseReadiness([loose('a', 0), loose('b', 3)], at(73))).toMatchObject({ ready: true, complete: true })
+    // Nothing to score at all: never.
+    expect(looseReadiness([loose('a', 0, undefined, ['24h'])], at(24 * 9)).ready).toBe(false)
+  })
+})
+
+describe('the scorer on reels with no draft', () => {
+  let payload: Payload
+  const out = new Date('2032-06-10T21:00:00.000Z')
+  const after = (hours: number) => new Date(out.getTime() + hours * HOUR)
+  const made: { collection: 'hq-social-drafts' | 'hq-social-stats' | 'hq-experiments'; id: number }[] = []
+  let armA: number
+  let armB: number
+  let experiment: number
+
+  const reel = async (mediaId: string, publishedAt: Date, caption: string, checkpoint: string, metrics: Record<string, number>) => {
+    const doc = await payload.create({
+      collection: 'hq-social-stats',
+      data: {
+        kind: 'reel',
+        source: 'graph',
+        platform: 'instagram',
+        checkpoint: checkpoint as HqSocialStat['checkpoint'],
+        ageMinutes: 72 * 60 + 5,
+        mediaId,
+        caption,
+        permalink: `https://example.test/reel/${mediaId}`,
+        mediaPublishedAt: publishedAt.toISOString(),
+        metrics,
+      },
+      overrideAccess: true,
+    })
+    made.push({ collection: 'hq-social-stats', id: doc.id })
+  }
+
+  const draft = async (publishAt: Date) => {
+    const doc = await payload.create({
+      collection: 'hq-social-drafts',
+      data: {
+        caption: 'RS-LOOSE trial arm',
+        platforms: ['instagram'],
+        scheduledFor: publishAt.toISOString(),
+        pillar: 'story',
+        language: 'en',
+        status: 'published',
+        publishAt: publishAt.toISOString(),
+      } as HqSocialDraft,
+      overrideAccess: true,
+      context: { hqInternal: true },
+    })
+    made.push({ collection: 'hq-social-drafts', id: doc.id })
+    return doc.id
+  }
+
+  const reviews = async () =>
+    (
+      await payload.find({
+        collection: 'hq-reel-reviews',
+        where: { key: { like: 'reel-review:media:rs-loose-' } },
+        sort: 'publishedAt',
+        depth: 0,
+        limit: 20,
+        overrideAccess: true,
+      })
+    ).docs
+
+  beforeAll(async () => {
+    payload = await getPayload({ config: await config })
+    // Earlier reels nobody matched, older than the 30-day lookback: baseline only. Median views 200.
+    for (const [i, views] of [100, 200, 9000].entries()) {
+      await reel(`rs-loose-old-${i}`, new Date(out.getTime() - (40 + i) * 24 * HOUR), `RS-LOOSE old ${i}`, '3d', { views, reach: views, shares: 2 })
+    }
+    // A hook test: two arms out three minutes apart, so neither reel could be tied to its draft.
+    armA = await draft(out)
+    armB = await draft(new Date(out.getTime() + 3 * MIN))
+    await reel('rs-loose-a', new Date(out.getTime() + 40_000), 'RS-LOOSE Why is 49th Street', '3d', { views: 5000, reach: 4000, shares: 300, reels_skip_rate: 30 })
+    await reel('rs-loose-a', new Date(out.getTime() + 40_000), 'RS-LOOSE Why is 49th Street', '24h', { views: 900, reach: 800 })
+    await reel('rs-loose-b', new Date(out.getTime() + 3 * MIN + 20_000), 'RS-LOOSE Why is 49th Street', '3d', { views: 800, reach: 700, shares: 10, reels_skip_rate: 55 })
+    // A reel posted by hand a day later: no draft anywhere near it.
+    await reel('rs-loose-solo', new Date(out.getTime() + 24 * HOUR), 'RS-LOOSE posted by hand', '3d', { views: 400, reach: 300, shares: 4 })
+
+    const x = await payload.create({
+      collection: 'hq-experiments',
+      data: { title: 'RS-LOOSE hook test', status: 'running', hypothesis: 'h', metric: 'skip rate', result: 'Before.', drafts: [armA, armB] },
+      overrideAccess: true,
+    })
+    experiment = x.id
+    made.push({ collection: 'hq-experiments', id: x.id })
+  })
+
+  afterAll(async () => {
+    if (!payload) return
+    for (const r of await reviews()) await payload.delete({ collection: 'hq-reel-reviews', id: r.id, overrideAccess: true })
+    for (const m of made.reverse()) {
+      await payload.delete({ collection: m.collection, id: m.id, overrideAccess: true }).catch(() => undefined)
+    }
+  })
+
+  it('writes nothing before 72 hours', async () => {
+    expect(await scoreReels(payload, after(71))).toEqual({ reviewed: 0, experiments: 0 })
+    expect(await reviews()).toHaveLength(0)
+  })
+
+  it('reviews both arms together and puts the numbers on their experiment', async () => {
+    expect(await scoreReels(payload, after(74))).toEqual({ reviewed: 1, experiments: 1 })
+    const [review] = await reviews()
+    expect(review).toMatchObject({ key: looseKey('rs-loose-a'), pillar: 'story', checkpoint: '3d', complete: true })
+    expect([...(review.drafts as number[])].sort((a, b) => a - b)).toEqual([armA, armB])
+    const cuts = review.cuts as Cut[]
+    expect(cuts.map((c) => [c.draft, c.mediaId, c.language, c.metrics.views])).toEqual([
+      [null, 'rs-loose-a', 'en', 5000],
+      [null, 'rs-loose-b', 'en', 800],
+    ])
+    expect(review.summary).toContain('reel rs-loose-a')
+    expect(review.summary).toContain(`#${armA}, #${armB}`)
+    const x = await payload.findByID({ collection: 'hq-experiments', id: experiment, overrideAccess: true })
+    expect(x.result!.startsWith('Before.\n\n')).toBe(true)
+    expect(x.result).toContain('reel rs-loose-b')
+    expect(x.verdict ?? null).toBeNull()
+  })
+
+  it('reviews a reel with no draft near it against every earlier reel, once', async () => {
+    expect(await scoreReels(payload, after(24 + 73))).toEqual({ reviewed: 1, experiments: 0 })
+    const all = await reviews()
+    expect(all).toHaveLength(2)
+    const solo = all.find((r) => r.key === looseKey('rs-loose-solo'))!
+    expect(solo.pillar ?? null).toBeNull()
+    expect(solo.drafts ?? []).toEqual([])
+    const [cut] = solo.cuts as Cut[]
+    // Earlier reels: 100, 200, 9000 and the two arms (5000, 800). Median 800.
+    expect(cut.vsMedian.views).toEqual({ value: 400, median: 800, n: 5, ratio: 0.5 })
+    expect(solo.summary).toContain('every earlier reel on the account')
+
+    expect(await scoreReels(payload, after(24 + 80))).toEqual({ reviewed: 0, experiments: 0 })
+    expect(await reviews()).toHaveLength(2)
+    const x = await payload.findByID({ collection: 'hq-experiments', id: experiment, overrideAccess: true })
+    expect(x.result!.split(experimentMarker(looseKey('rs-loose-a')))).toHaveLength(2)
+  })
+
+  it('shows up in the weekly review context', async () => {
+    const ctx = await weeklyReviewContext(payload, after(24 + 80))
+    const mine = ctx.reelReviews.find((r) => r.cuts.some((c) => c.mediaId === 'rs-loose-a'))
+    expect(mine).toBeTruthy()
   })
 })

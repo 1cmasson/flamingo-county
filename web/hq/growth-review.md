@@ -4,12 +4,19 @@ You are running Flamingo County's growth review. flamingocounty.com is a
 bilingual directory of Miami-Dade: Hialeah, Miami Lakes, Little Havana. Its
 audience is Spanish-first. Read this whole file before you call anything.
 
-**When it runs:** only when the owner asks. They send `/review` to the HQ bot,
+**When it runs:** every Monday at 7 AM by itself, and whenever the owner asks.
+The Monday run is a job on the owner's Mac (`hq/weekly-review/`, asked for by
+the owner on 2026-11-18): it follows this file except step 6, makes no drafts,
+reads every reel review written since the last run, closes the experiments
+that are due, and keeps a standing lessons file and a journal in
+`~/.flamingo-review/`. Read `~/.flamingo-review/LESSONS.md` before making a reel.
+
+The owner can also ask at any time. They send `/review` to the HQ bot,
 which files an `hq-tasks` row for Claude whose title starts with
 "Growth review (asked". The **▶️ Run the review** button on the Monday 8 AM
 reminder files the same task. The next Claude session on Flamingo County runs
-it before anything else. Nothing runs it without that ask: the Monday message
-only reminds, and files nothing by itself. If you find such a task open, this
+it before anything else. The Monday 8 AM message only reminds, and files
+nothing by itself. If you find such a task open, this
 file is your job. A task that is only *about* the review, such as building it,
 is not a request for one.
 

@@ -18,6 +18,13 @@ import { REEL_CHECKPOINTS, reelRatios } from './reelStats'
  * with `verdict` and `status` left alone: judging a rule stays with the
  * growth review and Carlos (story-rules section 6).
  *
+ * Every reel is reviewed, not only the ones matched to a draft. A reel the
+ * collector could not tie to one draft (a trial reel and its main post go out
+ * minutes apart, so `matchDraft` refuses to guess; so does a reel scheduled
+ * straight in Postiz) gets its own review, keyed by its media id — see
+ * *Reels no draft was matched to* below. Before this, the account's biggest
+ * reel (49th Street, Nov 8) had no review at all.
+ *
  * Nothing happens without data: a draft whose reels have no 3d reading is not
  * reviewed, whatever its age. Without META_GRAPH_TOKEN there are no reel rows,
  * so the job finds nothing to do.
@@ -39,6 +46,10 @@ const READY_MS = WINDOW.from * MINUTE
 const CLOSED_MS = WINDOW.until * MINUTE
 /** Drafts older than this are not looked at: past the window, plus slack for a stopped server. */
 const LOOKBACK_MS = 14 * DAY
+/** Reels with no draft are looked at for longer, so the first run reaches back over the ones nobody reviewed. */
+const LOOSE_LOOKBACK_MS = 30 * DAY
+/** The same ten minutes `matchDraft` uses (lib/reelStats.ts): a draft this close to a reel may be its draft. */
+const NEAR_DRAFT_MS = 10 * MINUTE
 
 /**
  * The baseline: the account's previous reels of the same pillar, read at the
@@ -264,7 +275,10 @@ type Platform = 'instagram' | 'facebook'
 const PLATFORM_ORDER: Platform[] = ['instagram', 'facebook']
 
 export type Cut = {
-  draft: number
+  /** The draft the reel was matched to; null for a reel no single draft was matched to. */
+  draft: number | null
+  /** Set on a reel with no draft, where it is the only thing that names the cut. */
+  mediaId?: string | null
   language: string | null
   platform: Platform
   permalink: string | null
@@ -373,20 +387,28 @@ export type ReviewText = {
   publishedAt: string | null
   cuts: Cut[]
   pair: PairComparison | null
-  retention: { draft: number; language: string | null; summary: RetentionSummary }[]
+  retention: { draft: number | null; language: string | null; summary: RetentionSummary }[]
   complete: boolean
   missing: string[]
+  /** Said in place of the pillar baseline line, when the baseline is something else. */
+  baseline?: string
+  /** One more line under the header, e.g. what a group of unmatched reels is. */
+  note?: string
 }
+
+/** How a cut is named in the text: its draft, or its place among reels with none. */
+const cutName = (c: Pick<Cut, 'draft' | 'mediaId'>) => (c.draft !== null ? `#${c.draft}` : `reel ${c.mediaId ?? '?'}`)
 
 /** The post-mortem as text, in the shape of topics/lukumi-hialeah/RETENTION-NOTES.md: the numbers, the pair, where they left. */
 export function reviewSummary(r: ReviewText): string {
   const lines: string[] = [
     r.title,
-    `72-hour reading (3d). Baseline: the median of the account's previous ${r.pillar ?? 'unlabelled'} reels at 3d on the same platform (up to ${BASELINE_REELS}); 2.0x is twice the median, 0.5x half; for skip rate, lower is better.`,
+    `72-hour reading (3d). Baseline: the median of ${r.baseline ?? `the account's previous ${r.pillar ?? 'unlabelled'} reels`} at 3d on the same platform (up to ${BASELINE_REELS}); 2.0x is twice the median, 0.5x half; for skip rate, lower is better.`,
+    ...(r.note ? [r.note] : []),
     '',
   ]
   for (const c of r.cuts) {
-    lines.push(`${name(c.platform)} · ${(c.language ?? '?').toUpperCase()} #${c.draft}${c.permalink ? ` · ${c.permalink}` : ''}`)
+    lines.push(`${name(c.platform)} · ${(c.language ?? '?').toUpperCase()} ${cutName(c)}${c.permalink ? ` · ${c.permalink}` : ''}`)
     const n = Math.max(0, ...SCORE_METRICS.map((m) => c.vsMedian[m].n))
     const parts = SCORE_METRICS.filter((m) => c.metrics[m] !== null).map((m) => {
       const v = c.vsMedian[m]
@@ -413,7 +435,7 @@ export function reviewSummary(r: ReviewText): string {
     const drop = s.steepestDrop ? describeDrop(s.steepestDrop) : null
     lines.push(
       '',
-      `Where they left (Facebook ${(t.language ?? '?').toUpperCase()} #${t.draft}): ${[bits.join(', '), drop].filter(Boolean).join('; ')}.`,
+      `Where they left (Facebook ${(t.language ?? '?').toUpperCase()}${t.draft !== null ? ` #${t.draft}` : ''}): ${[bits.join(', '), drop].filter(Boolean).join('; ')}.`,
     )
   }
   if (!r.complete && r.missing.length) lines.push('', `Incomplete, scored after the 3d window closed: ${r.missing.join('; ')}.`)
@@ -449,11 +471,18 @@ const REEL_SELECT = {
 export const experimentMarker = (key: string) => `[${key}]`
 
 /**
- * Review every story whose cuts are ready (see `readiness`) and not yet
- * reviewed. Returns how many reviews were written and how many experiment
- * results were appended to.
+ * Review every reel that is ready and not yet reviewed: the stories matched
+ * to drafts, then the reels no draft was matched to. Returns how many reviews
+ * were written and how many experiment results were appended to.
  */
 export async function scoreReels(payload: Payload, now: Date = new Date()) {
+  const matched = await scoreMatched(payload, now)
+  const loose = await scoreLoose(payload, now)
+  return { reviewed: matched.reviewed + loose.reviewed, experiments: matched.experiments + loose.experiments }
+}
+
+/** Every story whose cuts are ready (see `readiness`) and not yet reviewed. */
+async function scoreMatched(payload: Payload, now: Date) {
   const recent = await payload.find({
     collection: 'hq-social-drafts',
     where: {
@@ -555,6 +584,31 @@ async function baseline(payload: Payload, pillar: string | null, before: Date, e
   return out
 }
 
+/** Append a review's numbers to every experiment that names one of `draftIds`. Once per review key; verdict and status untouched. */
+async function appendToExperiments(payload: Payload, draftIds: number[], key: string, summary: string, now: Date): Promise<number[]> {
+  if (!draftIds.length) return []
+  const experiments = await payload.find({
+    collection: 'hq-experiments',
+    where: { drafts: { in: draftIds } },
+    limit: 50,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const touched: number[] = []
+  for (const x of experiments.docs as HqExperiment[]) {
+    touched.push(x.id)
+    if ((x.result ?? '').includes(experimentMarker(key))) continue
+    const block = `${experimentMarker(key)} 72-hour numbers, added by the reel scorer ${miamiTime(now)}. Verdict left to the review.\n${summary}`
+    await payload.update({
+      collection: 'hq-experiments',
+      id: x.id,
+      data: { result: x.result?.trim() ? `${x.result.trimEnd()}\n\n${block}` : block },
+      overrideAccess: true,
+    })
+  }
+  return touched
+}
+
 async function writeReview(payload: Payload, group: PairDraft[], rows: StatRow[], state: ReadyState, now: Date) {
   const key = `reel-review:${group[0].id}`
   const pillar = group[0].pillar ?? null
@@ -605,25 +659,7 @@ async function writeReview(payload: Payload, group: PairDraft[], rows: StatRow[]
 
   // Experiments first, the review last: the marker keeps a retried append from
   // landing twice, and a review row only exists once its appends are done.
-  const experiments = await payload.find({
-    collection: 'hq-experiments',
-    where: { drafts: { in: group.map((d) => d.id) } },
-    limit: 50,
-    depth: 0,
-    overrideAccess: true,
-  })
-  const touched: number[] = []
-  for (const x of experiments.docs as HqExperiment[]) {
-    touched.push(x.id)
-    if ((x.result ?? '').includes(experimentMarker(key))) continue
-    const block = `${experimentMarker(key)} 72-hour numbers, added by the reel scorer ${miamiTime(now)}. Verdict left to the review.\n${summary}`
-    await payload.update({
-      collection: 'hq-experiments',
-      id: x.id,
-      data: { result: x.result?.trim() ? `${x.result.trimEnd()}\n\n${block}` : block },
-      overrideAccess: true,
-    })
-  }
+  const touched = await appendToExperiments(payload, group.map((d) => d.id), key, summary, now)
 
   await payload.create({
     collection: 'hq-reel-reviews',
@@ -638,6 +674,251 @@ async function writeReview(payload: Payload, group: PairDraft[], rows: StatRow[]
       permalinks: cuts.map((c) => ({ draft: c.draft, language: c.language, platform: c.platform, permalink: c.permalink })),
       cuts: cuts as never,
       pair: (pair ?? undefined) as never,
+      retention: (retention.length ? retention : undefined) as never,
+      summary,
+      experiments: touched,
+    },
+    overrideAccess: true,
+  })
+  return touched.length
+}
+
+/* ------------------------------------------------------------------------ */
+/* Reels no draft was matched to                                            */
+/* ------------------------------------------------------------------------ */
+
+type LooseRow = StatRow & Pick<HqSocialStat, 'mediaId' | 'caption'>
+
+/** One reel on one platform, with every reading saved for it. */
+export type LooseReel = { mediaId: string; platform: Platform; caption: string; publishedAt: number; rows: LooseRow[] }
+
+/**
+ * Reels that are one post: the same platform, the same caption, out within
+ * `PAIR_PUBLISH_MS` of the first. That is a trial reel beside its main post,
+ * or the two arms of a hook test, which is exactly why the collector could
+ * not tell their drafts apart. They are reviewed together, so the arms sit
+ * side by side. Sorted by time out; a reel with another caption stands alone.
+ */
+export function groupLoose(reels: LooseReel[]): LooseReel[][] {
+  const groups: LooseReel[][] = []
+  for (const r of [...reels].sort((a, b) => a.publishedAt - b.publishedAt || a.mediaId.localeCompare(b.mediaId))) {
+    const home = groups.find(
+      (g) => g[0].platform === r.platform && g[0].caption === r.caption && r.publishedAt - g[0].publishedAt <= PAIR_PUBLISH_MS,
+    )
+    if (home) home.push(r)
+    else groups.push([r])
+  }
+  return groups
+}
+
+/** As `readiness`, for reels with no draft: every reel 72 hours old, and its 3d reading in or its window closed. */
+export function looseReadiness(group: LooseReel[], now: Date): ReadyState {
+  const missing: string[] = []
+  let ready = true
+  if (!group.some((r) => r.rows.some((x) => x.checkpoint === SCORED_CHECKPOINT))) return { ready: false, complete: false, missing }
+  for (const r of group) {
+    const age = now.getTime() - r.publishedAt
+    if (!(age >= READY_MS)) return { ready: false, complete: false, missing }
+    if (r.rows.some((x) => x.checkpoint === SCORED_CHECKPOINT)) continue
+    missing.push(`reel ${r.mediaId}: no 3d reading`)
+    if (age < CLOSED_MS) ready = false
+  }
+  return { ready, complete: ready && !missing.length, missing }
+}
+
+export const looseKey = (mediaId: string) => `reel-review:media:${mediaId}`
+
+type NearDraft = Pick<HqSocialDraft, 'id' | 'status' | 'pillar' | 'language' | 'platforms' | 'publishAt'>
+
+/** The one value every item has, or null: two drafts with different pillars do not make a pillar. */
+const shared = <T,>(values: (T | null | undefined)[]): T | null =>
+  values.length && values.every((v) => v != null && v === values[0]) ? (values[0] as T) : null
+
+/** Every reel on `platform` with a 3d reading before `before`, matched to a draft or not, newest first. */
+async function accountBaseline(payload: Payload, platform: Platform, before: Date, excludeMedia: string[]): Promise<CutMetrics[]> {
+  const res = await payload.find({
+    collection: 'hq-social-stats',
+    where: {
+      and: [
+        { kind: { equals: 'reel' } },
+        { platform: { equals: platform } },
+        { checkpoint: { equals: SCORED_CHECKPOINT } },
+        { mediaPublishedAt: { less_than: before.toISOString() } },
+        { mediaPublishedAt: { greater_than: new Date(before.getTime() - BASELINE_DAYS * DAY).toISOString() } },
+      ],
+    },
+    select: { ...REEL_SELECT, mediaId: true },
+    sort: '-mediaPublishedAt',
+    limit: 500,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const out: CutMetrics[] = []
+  const seen = new Set<string>()
+  for (const r of res.docs as LooseRow[]) {
+    if (!r.mediaId || seen.has(r.mediaId) || excludeMedia.includes(r.mediaId)) continue
+    seen.add(r.mediaId)
+    if (out.length >= BASELINE_REELS) break
+    out.push(cutMetrics(platform, r.metrics as Record<string, number>, r.durationSec ?? null))
+  }
+  return out
+}
+
+/**
+ * Review the reels the collector tied to no draft. One review per post (see
+ * `groupLoose`), keyed by its first reel's media id, so a retry or the next
+ * hour finds it and stops.
+ *
+ * The drafts that *could* be theirs (out within ten minutes, on that platform)
+ * are named on the review and get its numbers on their experiments: a hook
+ * test's trial arms are such drafts, and their experiment is where the result
+ * is wanted. When those drafts agree on a pillar the baseline is that pillar's
+ * reels, as for any story; otherwise it is every reel on the platform.
+ */
+async function scoreLoose(payload: Payload, now: Date) {
+  const res = await payload.find({
+    collection: 'hq-social-stats',
+    where: {
+      and: [
+        { kind: { equals: 'reel' } },
+        { draft: { exists: false } },
+        { mediaPublishedAt: { greater_than: new Date(now.getTime() - LOOSE_LOOKBACK_MS).toISOString() } },
+        { mediaPublishedAt: { less_than_equal: new Date(now.getTime() - READY_MS).toISOString() } },
+      ],
+    },
+    select: { ...REEL_SELECT, mediaId: true, caption: true },
+    limit: 5000,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const byReel = new Map<string, LooseReel>()
+  for (const r of res.docs as LooseRow[]) {
+    if (!r.mediaId || !isPlatform(r.platform) || !r.mediaPublishedAt) continue
+    const k = `${r.platform}:${r.mediaId}`
+    const reel = byReel.get(k) ?? { mediaId: r.mediaId, platform: r.platform, caption: r.caption ?? '', publishedAt: ms(r.mediaPublishedAt), rows: [] }
+    reel.rows.push(r)
+    byReel.set(k, reel)
+  }
+  const groups = groupLoose([...byReel.values()]).filter((g) => looseReadiness(g, now).ready)
+  if (!groups.length) return { reviewed: 0, experiments: 0 }
+
+  const done = await payload.find({
+    collection: 'hq-reel-reviews',
+    where: { key: { in: groups.flat().map((r) => looseKey(r.mediaId)) } },
+    select: { key: true },
+    limit: 500,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const reviewed = new Set(done.docs.map((r) => r.key))
+
+  let written = 0
+  let appended = 0
+  for (const group of groups) {
+    if (group.some((r) => reviewed.has(looseKey(r.mediaId)))) continue
+    try {
+      appended += await writeLooseReview(payload, group, looseReadiness(group, now), now)
+      written += 1
+    } catch (err) {
+      console.error(`[hq] reel review for reel ${group.map((r) => r.mediaId).join('/')} failed:`, err instanceof Error ? err.message : err)
+    }
+  }
+  return { reviewed: written, experiments: appended }
+}
+
+async function writeLooseReview(payload: Payload, group: LooseReel[], state: ReadyState, now: Date) {
+  const platform = group[0].platform
+  const key = looseKey(group[0].mediaId)
+  const firstOut = new Date(group[0].publishedAt)
+  const lastOut = group[group.length - 1].publishedAt
+
+  const near = await payload.find({
+    collection: 'hq-social-drafts',
+    where: {
+      and: [
+        { status: { in: LIVE } },
+        { publishAt: { greater_than_equal: new Date(firstOut.getTime() - NEAR_DRAFT_MS).toISOString() } },
+        { publishAt: { less_than_equal: new Date(lastOut + NEAR_DRAFT_MS).toISOString() } },
+      ],
+    },
+    select: { status: true, pillar: true, language: true, platforms: true, publishAt: true },
+    limit: 20,
+    depth: 0,
+    overrideAccess: true,
+  })
+  const drafts = (near.docs as NearDraft[]).filter(
+    (d) =>
+      (d.platforms ?? []).includes(platform) &&
+      group.some((r) => Math.abs(ms(d.publishAt) - r.publishedAt) <= NEAR_DRAFT_MS),
+  )
+  const draftIds = drafts.map((d) => d.id).sort((a, b) => a - b)
+  const pillar = shared(drafts.map((d) => d.pillar))
+  const language = shared(drafts.map((d) => d.language))
+
+  const base = pillar
+    ? (await baseline(payload, pillar, firstOut, draftIds))[platform]
+    : await accountBaseline(payload, platform, firstOut, group.map((r) => r.mediaId))
+
+  const cuts: Cut[] = []
+  const retention: ReviewText['retention'] = []
+  for (const r of group) {
+    const row = r.rows.find((x) => x.checkpoint === SCORED_CHECKPOINT)
+    if (!row) continue
+    const length = row.durationSec ?? lengthOf(r.rows)
+    const metrics = cutMetrics(platform, row.metrics as Record<string, number>, length)
+    cuts.push({
+      draft: null,
+      mediaId: r.mediaId,
+      language,
+      platform,
+      permalink: row.permalink ?? r.rows.find((x) => x.permalink)?.permalink ?? null,
+      ageMinutes: row.ageMinutes ?? null,
+      durationSec: length,
+      metrics,
+      vsMedian: Object.fromEntries(SCORE_METRICS.map((m) => [m, vsMedian(metrics[m], base.map((b) => b[m]))])) as Record<ScoreMetric, VsMedian>,
+    })
+    if (platform === 'facebook') {
+      const summary = retentionSummary(row.retention, length)
+      if (summary) retention.push({ draft: null, language, summary })
+    }
+  }
+
+  const caption = group[0].caption.replace(/\s+/g, ' ').trim()
+  const what = caption.length > 70 ? `${caption.slice(0, 69)}…` : caption || 'no caption'
+  const title = `No draft matched · ${what} · ${miamiTime(firstOut)}`
+  const noteParts = [
+    group.length > 1
+      ? `${group.length} reels with this caption went out within ${Math.max(1, Math.round((lastOut - firstOut.getTime()) / MINUTE))} minutes: a trial reel beside its main post, or the arms of a hook test. They are listed in the order they went out.`
+      : 'The collector tied this reel to no single draft.',
+    draftIds.length ? `Drafts out within ten minutes of it: ${draftIds.map((d) => `#${d}`).join(', ')}.` : 'No HQ draft went out within ten minutes of it.',
+  ]
+  const summary = reviewSummary({
+    title,
+    pillar,
+    publishedAt: firstOut.toISOString(),
+    cuts,
+    pair: null,
+    retention,
+    complete: state.complete,
+    missing: state.missing,
+    baseline: pillar ? undefined : `every earlier reel on the account, matched to a draft or not,`,
+    note: noteParts.join(' '),
+  })
+
+  const touched = await appendToExperiments(payload, draftIds, key, summary, now)
+
+  await payload.create({
+    collection: 'hq-reel-reviews',
+    data: {
+      key,
+      title,
+      pillar: pillar ?? undefined,
+      checkpoint: SCORED_CHECKPOINT,
+      publishedAt: firstOut.toISOString(),
+      complete: state.complete,
+      drafts: draftIds,
+      permalinks: cuts.map((c) => ({ draft: null, mediaId: c.mediaId, language: c.language, platform: c.platform, permalink: c.permalink })),
+      cuts: cuts as never,
       retention: (retention.length ? retention : undefined) as never,
       summary,
       experiments: touched,
@@ -669,6 +950,7 @@ export async function recentReelReviews(payload: Payload, days: number, now: Dat
     drafts: (r.drafts ?? []).map(idOf),
     cuts: ((r.cuts as Cut[] | null) ?? []).map((c) => ({
       draft: c.draft,
+      mediaId: c.mediaId ?? null,
       language: c.language,
       platform: c.platform,
       permalink: c.permalink,

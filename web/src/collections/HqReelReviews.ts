@@ -43,7 +43,8 @@ export const HqReelReviews: CollectionConfig = {
   fields: [
     { name: 'title', type: 'text', required: true, access: humanOnly, admin: { readOnly: true } },
     {
-      // At most one review per story, held by the database: `reel-review:<lowest draft id>`.
+      // At most one review per story, held by the database: `reel-review:<lowest draft id>`, or
+      // `reel-review:media:<first media id>` for reels no draft was matched to.
       name: 'key',
       type: 'text',
       required: true,
@@ -86,10 +87,12 @@ export const HqReelReviews: CollectionConfig = {
       type: 'relationship',
       relationTo: 'hq-social-drafts',
       hasMany: true,
-      required: true,
       index: true,
       access: humanOnly,
-      admin: { readOnly: true },
+      admin: {
+        readOnly: true,
+        description: 'The drafts reviewed. For a reel no draft was matched to: the drafts out within ten minutes of it, which may be none.',
+      },
     },
     {
       name: 'permalinks',
