@@ -1083,3 +1083,24 @@ the draft `scheduled`. Published drafts keep getting their 24 h, 3 d and 7 d
 stats and still appear in the social report. Drafts older than about nine days
 are not looked at.
 
+## The weekly vote on WhatsApp
+
+Numbers that ticked "Want to vote every week?" (`vote-whatsapp-optins`) hear
+about the vote on WhatsApp from 786-460-4851, only through the
+Meta-approved Utility templates (`VOTE_TEMPLATES` in `src/lib/voteWhatsapp.ts`):
+
+- **Welcome.** Sent right after a sign-up, or a sign-up again after BAJA. It
+  answers what they just asked for, so it needs no tap. Test rows get it too.
+- **"The vote is open."** Never on its own. The hourly `voteBroadcast` job
+  (:10) sends you one Telegram message per open vote, with how many numbers
+  would get it, and **[📣 Enviar a N] [Saltar]**. Only your tap sends. Each
+  number gets it once per vote (`lastPollSentId`). A number that signed up
+  from this same vote (they've voted) and any unsubscribed number are left
+  out. If Twilio refuses some, a new button retries only those.
+- **The winner.** Not yet. The template is approved; its button comes with
+  the poll-winner message (PR #178).
+- BAJA/STOP (lib/whatsappInbound.ts) unsubscribes everywhere. Nobody outside
+  the table is ever messaged.
+- **Off** with `HQ_VOTE_BROADCAST=off` (the offer; the welcome stays on while
+  Twilio is configured).
+

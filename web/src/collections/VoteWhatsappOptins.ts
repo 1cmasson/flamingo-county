@@ -4,8 +4,10 @@ import { staffOnly } from '../fields/shared'
 /**
  * WhatsApp numbers that asked, after voting, to hear when the next weekly
  * story vote opens and who won (lib/voteOptins.ts). One row per number, with
- * the exact consent sentence they ticked and when. Nothing sends from here
- * yet. Staff-only and off MCP: these are people's phone numbers.
+ * the exact consent sentence they ticked and when. A welcome goes out when
+ * they sign up, and the weekly "the vote is open" only after the owner's tap
+ * in Telegram (lib/voteWhatsapp.ts). Staff-only and off MCP: these are
+ * people's phone numbers.
  */
 export const VoteWhatsappOptins: CollectionConfig = {
   slug: 'vote-whatsapp-optins',
@@ -47,5 +49,12 @@ export const VoteWhatsappOptins: CollectionConfig = {
     { name: 'consentAt', type: 'date', required: true, admin: { date: { pickerAppearance: 'dayAndTime' } } },
     { name: 'source', type: 'text', index: true, admin: { description: 'instagram, facebook, google, direct…' } },
     { name: 'test', type: 'checkbox', defaultValue: false, index: true },
+    {
+      name: 'lastPollSentId',
+      type: 'number',
+      index: true,
+      admin: { readOnly: true, description: 'The last vote whose "the vote is open" WhatsApp went to this number (lib/voteWhatsapp.ts). Never sent twice for one vote.' },
+    },
+    { name: 'lastPollSentAt', type: 'date', admin: { readOnly: true, date: { pickerAppearance: 'dayAndTime' } } },
   ],
 }

@@ -206,6 +206,7 @@ export interface Config {
       weeklyRoundup: TaskWeeklyRoundup;
       reviewReminder: TaskReviewReminder;
       pollWinner: TaskPollWinner;
+      voteBroadcast: TaskVoteBroadcast;
       inline: {
         input: unknown;
         output: unknown;
@@ -1496,6 +1497,11 @@ export interface VoteWhatsappOptin {
    */
   source?: string | null;
   test?: boolean | null;
+  /**
+   * The last vote whose "the vote is open" WhatsApp went to this number (lib/voteWhatsapp.ts). Never sent twice for one vote.
+   */
+  lastPollSentId?: number | null;
+  lastPollSentAt?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -2958,7 +2964,8 @@ export interface PayloadJob {
           | 'eveningWrap'
           | 'weeklyRoundup'
           | 'reviewReminder'
-          | 'pollWinner';
+          | 'pollWinner'
+          | 'voteBroadcast';
         taskID: string;
         input?:
           | {
@@ -3003,6 +3010,7 @@ export interface PayloadJob {
         | 'weeklyRoundup'
         | 'reviewReminder'
         | 'pollWinner'
+        | 'voteBroadcast'
       )
     | null;
   queue?: string | null;
@@ -3907,6 +3915,8 @@ export interface VoteWhatsappOptinsSelect<T extends boolean = true> {
   consentAt?: T;
   source?: T;
   test?: T;
+  lastPollSentId?: T;
+  lastPollSentAt?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -5076,6 +5086,16 @@ export interface TaskPollWinner {
   input?: unknown;
   output: {
     announced?: number | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskVoteBroadcast".
+ */
+export interface TaskVoteBroadcast {
+  input?: unknown;
+  output: {
+    offered?: number | null;
   };
 }
 /**
