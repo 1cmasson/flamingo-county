@@ -205,6 +205,7 @@ export interface Config {
       eveningWrap: TaskEveningWrap;
       weeklyRoundup: TaskWeeklyRoundup;
       reviewReminder: TaskReviewReminder;
+      pollWinner: TaskPollWinner;
       inline: {
         input: unknown;
         output: unknown;
@@ -2956,7 +2957,8 @@ export interface PayloadJob {
           | 'graphTelemetry'
           | 'eveningWrap'
           | 'weeklyRoundup'
-          | 'reviewReminder';
+          | 'reviewReminder'
+          | 'pollWinner';
         taskID: string;
         input?:
           | {
@@ -3000,6 +3002,7 @@ export interface PayloadJob {
         | 'eveningWrap'
         | 'weeklyRoundup'
         | 'reviewReminder'
+        | 'pollWinner'
       )
     | null;
   queue?: string | null;
@@ -5063,6 +5066,16 @@ export interface TaskReviewReminder {
   input?: unknown;
   output: {
     sent?: boolean | null;
+  };
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TaskPollWinner".
+ */
+export interface TaskPollWinner {
+  input?: unknown;
+  output: {
+    announced?: number | null;
   };
 }
 /**
