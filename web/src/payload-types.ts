@@ -2730,6 +2730,10 @@ export interface PayloadMcpApiKey {
      */
     hqAddDraftMediaFromUpload?: boolean | null;
     /**
+     * Free space on the server's 5 GB volume (it also holds the database) by deleting old reel videos from hq-media. Only after confirming each video has an identical copy on the owner's computer (exact byte size). Videos only; refuses anything newer than 7 days, used by a pending/approved draft, by a scheduled draft whose time is in the future or within the last 2 days, or attached to an email awaiting the owner. dryRun defaults to true: run it once to see what would go, then again with dryRun false. At most 100 ids per call.
+     */
+    hqPurgeDraftVideos?: boolean | null;
+    /**
      * Cancel a social draft that is scheduled but has not gone out: removes it from the Postiz calendar and marks the draft rejected. A pending draft is just rejected. Refuses a post whose time has passed. Use when the owner says to pull a post.
      */
     hqCancelDraft?: boolean | null;
@@ -4403,6 +4407,7 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         hqSiteArtworkUploadChunk?: T;
         hqFinishSiteArtworkUpload?: T;
         hqAddDraftMediaFromUpload?: T;
+        hqPurgeDraftVideos?: T;
         hqCancelDraft?: T;
         hqMoveDraftToCloud?: T;
         hqRequestPublish?: T;

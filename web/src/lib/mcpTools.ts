@@ -16,6 +16,7 @@ import { buildBrief } from './brief'
 import { trafficReport } from './growth'
 import { addDays, dateOnly, eventEndDay, todayISO } from './dates'
 import { cancelDraft, miamiTime, moveDraftToCloud } from './hq'
+import { purgeDraftVideos } from './hqMediaPurge'
 import { isRunningCount, type MetricSummary } from './postiz'
 import { recentReelReviews } from './reelScore'
 import { reelsNow } from './reelNow'
@@ -1299,6 +1300,20 @@ export const hqMcpTools: McpTool[] = [
           ),
         ),
       ),
+  },
+  {
+    name: 'hqPurgeDraftVideos',
+    description:
+      "Free space on the server's 5 GB volume (it also holds the database) by deleting old reel videos from hq-media. Only after confirming each video has an identical copy on the owner's computer (exact byte size). Videos only; refuses anything newer than 7 days, used by a pending/approved draft, by a scheduled draft whose time is in the future or within the last 2 days, or attached to an email awaiting the owner. dryRun defaults to true: run it once to see what would go, then again with dryRun false. At most 100 ids per call.",
+    parameters: {
+      ids: z.array(z.number().int().positive()).min(1).max(100).describe('hq-media ids to delete'),
+      dryRun: z.boolean().optional().describe('Default true: only report what would be deleted'),
+    },
+    handler: (args: Record<string, unknown>, req: PayloadRequest) =>
+      guard(async () => {
+        const r = await purgeDraftVideos(req.payload, (args.ids as number[]) ?? [], { dryRun: args.dryRun !== false })
+        return text(JSON.stringify(r))
+      }),
   },
   {
     name: 'hqCancelDraft',
