@@ -13,6 +13,7 @@ import {
   type Guide,
   type GuideSpot,
 } from '../lib/guides'
+import { EVENT_CARD_SIZES, guideCardUrl } from '../lib/eventCardUrl'
 import { breadcrumbJsonLd, itemListJsonLd, webPageJsonLd } from '../lib/jsonld'
 import { routes, withQuery } from '../lib/routes'
 import { absUrl, openGraph, twitterCard } from '../lib/site'
@@ -39,11 +40,19 @@ export function guideMetadata(guide: Guide, lang: Lang, filter?: string): Metada
   const path = (l: Lang) => routes.guide(l, guide.path)
   const title = guide.metaTitle[lang]
   const description = guide.description[lang]
+  const image = guideCardUrl(guide.key, lang, 'link')
   return {
     title,
     description,
-    openGraph: openGraph(lang, { title, description, url: absUrl(path(lang)) }),
-    twitter: twitterCard(),
+    openGraph: openGraph(lang, {
+      title,
+      description,
+      url: absUrl(path(lang)),
+      image,
+      imageSize: EVENT_CARD_SIZES.link,
+      imageAlt: guide.title[lang],
+    }),
+    twitter: twitterCard(image),
     alternates: {
       canonical: path(lang),
       languages: { en: path('en'), es: path('es') },

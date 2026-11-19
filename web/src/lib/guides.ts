@@ -1,4 +1,5 @@
 import type { Lang } from '../i18n'
+import type { SeasonCardTheme } from './seasons'
 
 /**
  * Food guides: one page per guide (/es/lechon, /en/lechon), a short list of
@@ -85,6 +86,22 @@ export type Guide = {
   spots: GuideSpot[]
   tipsTitle: Copy
   tips: { lead: Copy; text: Copy }[]
+  /**
+   * The guide's share card (og:image), drawn by lib/eventCard.tsx in a season
+   * palette, like a seasonal guide's: `/api/og/guide/<key>`. Short copy, since
+   * it is read at link-preview size.
+   */
+  card: {
+    theme: SeasonCardTheme
+    /** The mascot in the arch, by city slug (src/assets/og/mascots). */
+    mascot: string
+    city: { slug: string; name: string }
+    title: Copy
+    chip: Copy
+    /** On the ticket: the occasion's day. */
+    ticket: Copy
+    line: Copy
+  }
   /** The day the places were last checked, YYYY-MM-DD. Printed at the foot and in the structured data. */
   checkedOn: string
   footer: Copy
@@ -133,6 +150,19 @@ const LECHON: Guide = {
   answer: {
     en: 'Las Viñas Barbeque, Mesa’s BBQ, Molina’s Ranch, Puerquito Asado, Puerquito Relleno, Maruchi and Sedano’s all sell roast pork in Hialeah, and Matadero Cabrera sells whole pigs for the caja china. None had posted 2026 Thanksgiving hours or preorder deadlines when we checked on November 19, so call ahead.',
     es: 'Las Viñas Barbeque, Mesa’s BBQ, Molina’s Ranch, Puerquito Asado, Puerquito Relleno, Maruchi y Sedano’s venden puerco asado en Hialeah, y Matadero Cabrera vende puercos enteros para la caja china. Ninguno había publicado su horario de Thanksgiving 2026 ni la fecha límite para encargar cuando revisamos el 19 de noviembre, así que llama antes.',
+  },
+  card: {
+    // Hialeah pink with the orange ticket: the page hero's pink, and orange reads as roast pork and Thanksgiving.
+    theme: 'pumpkin',
+    mascot: 'hialeah',
+    city: { slug: 'hialeah', name: 'HIALEAH' },
+    title: { es: 'LECHÓN EN HIALEAH', en: 'LECHÓN IN HIALEAH' },
+    chip: { es: 'GUÍA DE THANKSGIVING', en: 'THANKSGIVING GUIDE' },
+    ticket: { es: 'JUE 26 NOV', en: 'THU NOV 26' },
+    line: {
+      es: '8 lugares para encargar, y uno en Doral · llama antes',
+      en: '8 places to order from, plus one in Doral · call ahead',
+    },
   },
   callTitle: { en: 'Llama antes', es: 'Llama antes' },
   callWhy: {
@@ -338,7 +368,7 @@ const LECHON: Guide = {
 export const GUIDES: Record<GuideKey, Guide> = { lechon: LECHON }
 
 export function getGuide(key: string): Guide | null {
-  return (GUIDES as Record<string, Guide>)[key] ?? null
+  return Object.hasOwn(GUIDES, key) ? (GUIDES as Record<string, Guide>)[key] : null
 }
 
 export function allGuides(): Guide[] {

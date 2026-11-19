@@ -1,14 +1,17 @@
 // @vitest-environment node
 import { existsSync } from 'node:fs'
+import { NextRequest } from 'next/server'
 import { join } from 'node:path'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { getPayload, type Payload } from 'payload'
 import config from '@/payload.config'
 
+import { GET as guideCard } from '@/app/api/og/guide/[key]/route'
 import sitemap from '@/app/sitemap'
 import { FoodGuide, guideMetadata } from '@/components/FoodGuide'
 import { noPrice } from '@/fields/shared'
+import { guideCardUrl } from '@/lib/eventCardUrl'
 import { allGuides, filterSpots, GUIDE_FILTERS, GUIDES, spotDirections, type Guide } from '@/lib/guides'
 
 const lechon = GUIDES.lechon as Guide
@@ -95,6 +98,53 @@ describe('food guides', () => {
     const filtered = guideMetadata(lechon, 'es', 'delivery')
     expect(filtered.robots).toEqual({ index: false, follow: true })
     expect(filtered.alternates?.canonical).toBe('/es/lechon')
+  })
+
+  it('shares as its own card, in each language', () => {
+    for (const lang of ['es', 'en'] as const) {
+      const meta = guideMetadata(lechon, lang)
+      const images = (meta.openGraph as { images: { url: string; width?: number; height?: number }[] }).images
+      expect(images[0]).toMatchObject({ url: guideCardUrl('lechon', lang, 'link'), width: 1200, height: 630 })
+      expect(meta.twitter).toMatchObject({ card: 'summary_large_image' })
+    }
+    expect(guideCardUrl('lechon', 'es', 'link')).toBe('/api/og/guide/lechon?lang=es&size=link&v=1')
+  })
+
+  it('keeps its card copy short and free of prices', () => {
+    for (const guide of allGuides()) {
+      for (const copy of [guide.card.title, guide.card.chip, guide.card.ticket, guide.card.line]) {
+        expect(copy.es).not.toBe('')
+        expect(copy.en).not.toBe('')
+      }
+      expect(guide.card.title.es.length).toBeLessThanOrEqual(24)
+      expect(guide.card.title.en.length).toBeLessThanOrEqual(24)
+    }
+  })
+})
+
+describe('the guide card route', () => {
+  const get = (key: string, query: string) =>
+    guideCard(new NextRequest(`http://localhost/api/og/guide/${key}?${query}`), { params: Promise.resolve({ key }) })
+  const pngSize = (buf: ArrayBuffer) => {
+    const b = Buffer.from(buf)
+    expect(b.subarray(1, 4).toString()).toBe('PNG')
+    return { width: b.readUInt32BE(16), height: b.readUInt32BE(20) }
+  }
+
+  it('draws the lechón card for link previews in both languages, as a long-cached PNG', async () => {
+    for (const lang of ['es', 'en']) {
+      const res = await get('lechon', `lang=${lang}&size=link`)
+      expect(res.status).toBe(200)
+      expect(res.headers.get('Content-Type')).toBe('image/png')
+      expect(res.headers.get('Cache-Control')).toMatch(/max-age=86400/)
+      expect(pngSize(await res.arrayBuffer())).toEqual({ width: 1200, height: 630 })
+    }
+    expect(pngSize(await (await get('lechon', 'lang=es&size=social')).arrayBuffer())).toEqual({ width: 1080, height: 1350 })
+  })
+
+  it('is a 404 for a guide that does not exist', async () => {
+    expect((await get('pavo', 'lang=es')).status).toBe(404)
+    expect((await get('constructor', 'lang=es')).status).toBe(404)
   })
 })
 

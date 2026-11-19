@@ -13,6 +13,7 @@ import { EVENT_SETTINGS, eventSetting, type EventSetting } from './eventSetting'
 import { eventVenue } from './eventVenue'
 import { renderOgPng } from './ogImage'
 import { getSeason, sceneCreditText, type Season, type SeasonCardTheme } from './seasons'
+import type { Guide } from './guides'
 
 /**
  * The event card: the picture an event with no photo gets, drawn from its own
@@ -1411,4 +1412,27 @@ export async function renderSeasonCard(
 ): Promise<ArrayBuffer> {
   const picture = opts.scene === false ? null : seasonCardPicture(season, lang)
   return drawCard(seasonCardData(season, lang, year), size, SEASON_THEMES[theme], theme, season.card.mascot, null, { picture })
+}
+
+/**
+ * A food guide's card (lib/guides.ts): its og:image. The season card's layout
+ * in a season palette, with the guide's own short copy and the occasion's day
+ * on the ticket. No scene: the city's mascot in the arch.
+ */
+export function guideCardData(guide: Guide, lang: Lang): EventCardData {
+  const c = guide.card
+  return {
+    title: c.title[lang],
+    city: c.city.name,
+    citySlug: c.city.slug,
+    bg: CITY_BG[c.city.slug] ?? PINK,
+    kind: c.chip[lang],
+    status: '',
+    dateLine: c.ticket[lang],
+    meta: c.line[lang],
+  }
+}
+
+export async function renderGuideCard(guide: Guide, lang: Lang, size: EventCardSize): Promise<ArrayBuffer> {
+  return drawCard(guideCardData(guide, lang), size, SEASON_THEMES[guide.card.theme], guide.card.theme, guide.card.mascot)
 }
