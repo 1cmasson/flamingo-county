@@ -50,6 +50,7 @@ import * as migration_20261105_004815_trial_reels from './20261105_004815_trial_
 import * as migration_20261110_033146_story_polls from './20261110_033146_story_polls';
 import * as migration_20261111_201408_vote_whatsapp_optins from './20261111_201408_vote_whatsapp_optins';
 import * as migration_20261119_044518_hq_media_purge from './20261119_044518_hq_media_purge';
+import * as migration_20261119_160245_whatsapp_leads from './20261119_160245_whatsapp_leads';
 
 export const migrations = [
   {
@@ -310,6 +311,11 @@ export const migrations = [
   {
     up: migration_20261119_044518_hq_media_purge.up,
     down: migration_20261119_044518_hq_media_purge.down,
-    name: '20261119_044518_hq_media_purge'
+    name: '20261119_044518_hq_media_purge',
+  },
+  {
+    up: migration_20261119_160245_whatsapp_leads.up,
+    down: migration_20261119_160245_whatsapp_leads.down,
+    name: '20261119_160245_whatsapp_leads'
   },
 ];

@@ -44,6 +44,14 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
         ],
       },
       {
+        h: 'Visits and calls for a business, on WhatsApp',
+        p: [
+          'For some businesses (like a medical clinic) our WhatsApp helps set up a visit or a call back. When you write to it, we keep your WhatsApp number, the name on your WhatsApp profile, the link that sent you, what you picked on the buttons (which location, when, how you’ll get there) and the conversation, so a person can pick it up.',
+          'We never ask about your health, your insurance or your Medicare. Those questions are for the business itself. If you share your location to get bus directions, we use it to find the route and don’t keep it.',
+          'We pass your name, your number and what you picked to the business only if you tap yes when we ask, and only so they can call or write to you about it. Reply BAJA or STOP and we stop; ask us and we delete it.',
+        ],
+      },
+      {
         h: 'Signing in with Google',
         p: [
           'Saving events to My Week and saying you’re going need you to sign in — with Google, or with an emailed code (below). That’s what lets your week follow you between devices. When you sign in with Google, Google shares with us only the basics you approve on its screen:',
@@ -167,6 +175,14 @@ const COPY: Record<Lang, { title: string; intro: string; sections: Section[] }> 
           'Si tocas «Guárdalo en WhatsApp», WhatsApp abre un mensaje a nuestro número con el enlace de tu cupón, y tú decides si lo mandas. Si lo mandas, vemos tu número como en cualquier mensaje de WhatsApp; no lo añadimos al cupón.',
           'Algunas promociones son una por persona, y esas se piden por WhatsApp: nos mandas un mensaje y te contestamos con tu cupón. En esas guardamos, junto al cupón, el número de WhatsApp que lo pidió y el nombre de tu perfil de WhatsApp, para que cada número reciba un solo cupón y sepamos que la promoción llegó a gente de verdad. Solo los usamos para ese cupón, y no te escribimos de otra cosa a menos que nos lo pidas.',
           'El negocio ve cuántos cupones se tomaron y se usaron, el código y la hora de los usados, y quién de su personal marcó cada uno. En los cupones de WhatsApp también ve tu primer nombre y los últimos cuatro dígitos de tu número, nunca el número completo.',
+        ],
+      },
+      {
+        h: 'Visitas y llamadas para un negocio, por WhatsApp',
+        p: [
+          'Para algunos negocios (como una clínica médica), nuestro WhatsApp ayuda a pedir una visita o que te llamen. Cuando nos escribes, guardamos tu número de WhatsApp, el nombre de tu perfil, el enlace que te trajo, lo que escogiste en los botones (qué local, cuándo, cómo vas a llegar) y la conversación, para que una persona la pueda seguir.',
+          'Nunca te preguntamos por tu salud, tu seguro ni tu Medicare: esas preguntas son del propio negocio. Si compartes tu ubicación para saber qué guagua tomar, la usamos para buscar la ruta y no la guardamos.',
+          'Le pasamos tu nombre, tu número y lo que escogiste al negocio solo si tocas que sí cuando te lo preguntamos, y solo para que te llamen o te escriban sobre eso. Escribe BAJA o STOP y dejamos de escribirte; pídenoslo y lo borramos.',
         ],
       },
       {
