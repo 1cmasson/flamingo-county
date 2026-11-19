@@ -4,6 +4,7 @@ import { routes } from '../../lib/routes'
 import { absUrl, SITE_NAME } from '../../lib/site'
 import type { City } from '../../payload-types'
 import { allSeasons, seasonWindow } from '../../lib/seasons'
+import { allGuides } from '../../lib/guides'
 import { todayISO } from '../../lib/dates'
 import { TRANSIT } from '../../lib/transit'
 import { COUNTY, routeEnds, routeName } from '../../lib/county'
@@ -125,6 +126,12 @@ export async function GET() {
       return `- [${s.title('en', year)}](${absUrl(routes.season('en', s.path))}): ${s.description('en', year)} Spanish: ${absUrl(routes.season('es', s.path))}`
     }),
     ...events.map((e) => `- [${e.title}](${absUrl(routes.event('en', e.slug))}): ${e.date.slice(0, 10)}`),
+    '',
+    '## Food guides',
+    ...allGuides().map(
+      (g) =>
+        `- [${g.title.en}](${absUrl(routes.guide('en', g.path))}): ${g.description.en} Places checked ${g.checkedOn}. Spanish: ${absUrl(routes.guide('es', g.path))}`,
+    ),
     '',
   ]
   return new Response(lines.join('\n'), {

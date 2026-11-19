@@ -1,0 +1,177 @@
+/*
+ * A food guide (lib/guides.ts). Shares the coupon and ranking pages' card,
+ * kicker, heading and warning looks (promo.module.css); this adds the filter
+ * chips and the place cards. Opened mostly from Instagram's link in bio, so
+ * one column, big tap targets.
+ */
+.when {
+  align-self: flex-start;
+  margin: 0;
+  background: var(--yellow);
+  border: 3px solid var(--ink);
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: 0.8px;
+  padding: 5px 10px 4px;
+}
+
+.ask {
+  margin: 0;
+  padding-left: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.4;
+}
+
+/* The filter chips: links, so a filtered list is a URL that can be shared. */
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.filterLabel {
+  font-family: var(--display);
+  font-size: 15px;
+  margin-right: 2px;
+}
+.chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 13px 6px;
+  font-weight: 800;
+  font-size: 14px;
+  color: var(--ink);
+  text-decoration: none;
+  background: var(--cream);
+  border: 3px solid var(--ink);
+  border-radius: 999px;
+  box-shadow: 3px 3px 0 var(--ink);
+}
+.chip[aria-current='true'] {
+  background: var(--ink);
+  color: var(--yellow);
+}
+
+.list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+.spot {
+  scroll-margin-top: 90px;
+}
+.bonus {
+  border-style: dashed;
+}
+.head {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 4px 12px;
+  align-items: baseline;
+}
+.num {
+  font-family: var(--display);
+  font-size: 34px;
+  line-height: 1;
+  color: var(--magenta);
+}
+.bonusTag {
+  font-family: var(--display);
+  font-size: 15px;
+  line-height: 1;
+  background: var(--magenta);
+  color: var(--cream);
+  padding: 5px 8px 3px;
+}
+.name {
+  margin: 0;
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(24px, 6.5vw, 30px);
+  line-height: 1.05;
+  text-wrap: balance;
+}
+.name a {
+  color: inherit;
+}
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.tag {
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.4px;
+  padding: 4px 8px 3px;
+  background: var(--ink);
+  color: var(--cream);
+}
+.addr {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.addrRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.addrText {
+  margin: 0;
+  font-weight: 700;
+  font-size: 15px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.go {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 8px 14px;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 1.2px;
+  color: var(--ink);
+  text-decoration: none;
+  background: var(--yellow);
+  border: 3px solid var(--ink);
+}
+.confirm {
+  margin: 0;
+  background: var(--yellow);
+  border-left: 6px solid var(--ink);
+  padding: 9px 12px 8px;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.4;
+}
+.more {
+  align-self: flex-start;
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.tips {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 16px;
+  line-height: 1.5;
+  font-weight: 600;
+}
+.tips strong {
+  font-weight: 800;
+}
