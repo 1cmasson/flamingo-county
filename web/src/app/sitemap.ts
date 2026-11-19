@@ -5,6 +5,7 @@ import { getCities, getEvents, getListings, getRankings, getStories, rel } from 
 import { absUrl } from '../lib/site'
 import { isStillOn, todayISO } from '../lib/dates'
 import { allSeasons, seasonEvents } from '../lib/seasons'
+import { allGuides } from '../lib/guides'
 import { ROUTE_SLUGS } from '../lib/transit'
 import { COUNTY, COUNTY_SLUGS } from '../lib/county'
 import { POPULAR_TRIPS } from '../lib/popularTrips'
@@ -63,6 +64,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...both(routes.thisWeek, undefined, 0.8),
     ...both(routes.stories, undefined, 0.7),
     ...seasonEntries,
+    // A food guide is dated by the day its places were last checked.
+    ...allGuides().flatMap((g) => both((l) => routes.guide(l, g.path), g.checkedOn, 0.7)),
     ...both(routes.about, undefined, 0.4),
     ...both(routes.listYourSpot, undefined, 0.4),
     ...ROUTE_SLUGS.flatMap((r) => both((l) => routes.freeRoute(l, r), undefined, 0.6)),

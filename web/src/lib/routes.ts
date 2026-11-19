@@ -24,6 +24,8 @@ export const routes = {
   story: (lang: Lang, slug: string) => `/${lang}/stories/${slug}`,
   /** A seasonal guide, by its `path` in lib/seasons.ts: /es/halloween. */
   season: (lang: Lang, path: string) => `/${lang}/${path}`,
+  /** A food guide, by its `path` in lib/guides.ts: /es/lechon. */
+  guide: (lang: Lang, path: string) => `/${lang}/${path}`,
   myWeek: (lang: Lang) => `/${lang}/my-week`,
   /** This week's events, Monday to Sunday: the page the Monday roundup post links to (lib/weeklyRoundup.ts). */
   thisWeek: (lang: Lang) => `/${lang}/this-week`,
