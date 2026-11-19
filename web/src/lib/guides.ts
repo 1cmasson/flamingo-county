@@ -101,6 +101,13 @@ export type Guide = {
     /** On the ticket: the occasion's day. */
     ticket: Copy
     line: Copy
+    /**
+     * A drawn scene behind the link-preview card, under src/assets/og/ (JPEG:
+     * Satori reads no WebP). Drawn for the site, so it carries no credit; its
+     * SVG source sits beside it. The text sits on a dark fade at the left, so
+     * the art keeps its subject on the right.
+     */
+    scene?: string
   }
   /** The day the places were last checked, YYYY-MM-DD. Printed at the foot and in the structured data. */
   checkedOn: string
@@ -163,6 +170,9 @@ const LECHON: Guide = {
       es: '8 lugares para encargar, y uno en Doral · llama antes',
       en: '8 places to order from, plus one in Doral · call ahead',
     },
+    // A backyard at sunset under string lights: the lechón on a platter on
+    // banana leaves, maduros and moros, Hialeah's rooftops and palms behind.
+    scene: 'guides/lechon-scene.jpg',
   },
   callTitle: { en: 'Llama antes', es: 'Llama antes' },
   callWhy: {
