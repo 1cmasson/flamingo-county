@@ -1434,7 +1434,7 @@ export function guideCardData(guide: Guide, lang: Lang): EventCardData {
 }
 
 /**
- * The guide's scene card (`link` and `page`): the drawn scene full bleed, a
+ * The guide's scene card (`link` and `page`): the guide's scene full bleed, a
  * dark fade from the left under the text, and the guide's chips, title,
  * ticket and line in the card's type. The sizes without a scene-shaped slot
  * (`card`, `social`) keep the flat season layout.

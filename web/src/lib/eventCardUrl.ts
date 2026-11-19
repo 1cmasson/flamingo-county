@@ -69,7 +69,7 @@ export function seasonCardUrl(key: string, lang: Lang, size: EventCardSize, year
 }
 
 /** Bump when a food guide's card changes design or copy (`card` in lib/guides.ts). */
-export const GUIDE_CARD_VERSION = '2'
+export const GUIDE_CARD_VERSION = '3'
 
 /** A food guide's card (lib/guides.ts): `/api/og/guide/<key>`, drawn by the same renderer. */
 export function guideCardUrl(key: string, lang: Lang, size: EventCardSize): string {

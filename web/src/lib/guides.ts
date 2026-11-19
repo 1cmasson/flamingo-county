@@ -102,10 +102,10 @@ export type Guide = {
     ticket: Copy
     line: Copy
     /**
-     * A drawn scene behind the link-preview card, under src/assets/og/ (JPEG:
-     * Satori reads no WebP). Drawn for the site, so it carries no credit; its
-     * SVG source sits beside it. The text sits on a dark fade at the left, so
-     * the art keeps its subject on the right.
+     * A scene behind the link-preview card, under src/assets/og/ (JPEG: Satori
+     * reads no WebP). Generated for the site (photo style, not a real photo),
+     * so it carries no credit. The text sits on a dark fade at the left, so
+     * the picture keeps its subject on the right.
      */
     scene?: string
   }
@@ -170,8 +170,9 @@ const LECHON: Guide = {
       es: '8 lugares para encargar, y uno en Doral · llama antes',
       en: '8 places to order from, plus one in Doral · call ahead',
     },
-    // A backyard at sunset under string lights: the lechón on a platter on
-    // banana leaves, maduros and moros, Hialeah's rooftops and palms behind.
+    // Photo-style, generated: a Hialeah backyard at dusk under string lights,
+    // the lechón on banana leaves on a wooden table at the right, maduros,
+    // moros and yuca beside it, palms and stucco roofs behind.
     scene: 'guides/lechon-scene.jpg',
   },
   callTitle: { en: 'Llama antes', es: 'Llama antes' },

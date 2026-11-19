@@ -107,7 +107,7 @@ describe('food guides', () => {
       expect(images[0]).toMatchObject({ url: guideCardUrl('lechon', lang, 'link'), width: 1200, height: 630 })
       expect(meta.twitter).toMatchObject({ card: 'summary_large_image' })
     }
-    expect(guideCardUrl('lechon', 'es', 'link')).toBe('/api/og/guide/lechon?lang=es&size=link&v=2')
+    expect(guideCardUrl('lechon', 'es', 'link')).toBe('/api/og/guide/lechon?lang=es&size=link&v=3')
   })
 
   it('keeps its card copy short and free of prices', () => {
