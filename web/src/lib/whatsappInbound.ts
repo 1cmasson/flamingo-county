@@ -10,7 +10,8 @@ import { absUrl } from './site'
 import { esc, notifyOwner } from './telegram'
 import type { LatLng } from './transitMath'
 import type { Out } from './whatsapp'
-import { alertOwner, log, masked, type LeadMessage } from './whatsappLeads'
+import { asksForStats, isOwnerWhatsapp, ownerStatsOuts } from './hqStats'
+import { alertOwner, leadsReport, log, masked, type LeadMessage } from './whatsappLeads'
 
 /**
  * Everything Flamingo County's WhatsApp sender receives, in one place
@@ -18,8 +19,9 @@ import { alertOwner, log, masked, type LeadMessage } from './whatsappLeads'
  *
  *   1. BAJA / STOP → unsubscribed everywhere (vote alerts and every line)
  *   2. an emergency → "call 911" and a ping to the owner, nothing else
- *   3. a ref for a line (#la-capital …), or a number already talking to one → that line
- *   4. anything else → where to vote, and the owner sees it on Telegram
+ *   3. the owner's own number (OWNER_WHATSAPP) asking for "stats" → his numbers
+ *   4. a ref for a line (#la-capital …), or a number already talking to one → that line
+ *   5. anything else → where to vote, and the owner sees it on Telegram
  *
  * Returns what to send; the route delivers it (lib/whatsapp.ts `deliver`).
  */
@@ -203,6 +205,18 @@ async function laCapitalTurn(payload: Payload, msg: Incoming, ask: ReturnType<ty
   return t.outs
 }
 
+/** Telegram HTML as WhatsApp text: tags out, entities back. Italic lines are Telegram how-tos (/wa…), so they go. */
+const plainText = (html: string) =>
+  html
+    .replace(/\n*<i>[\s\S]*?<\/i>/g, '')
+    .replace(/<\/?b>/g, '*')
+    .replace(/<[^>]+>/g, '')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&amp;/g, '&')
+
 /* ------------------------------------------------------------------ main */
 
 export async function answerInbound(payload: Payload, msg: Incoming, now: Date = new Date()): Promise<Out[]> {
@@ -218,6 +232,10 @@ export async function answerInbound(payload: Payload, msg: Incoming, now: Date =
   if (!msg.button && isEmergency(msg.body)) {
     await notifyOwner(`🚨 <b>WhatsApp: may be an emergency</b>\n${esc(msg.name ?? 'sin nombre')} · <code>${esc(msg.phone)}</code>\n“${esc(msg.body.slice(0, 500))}”\n\nThey were told to call 911.`)
     return [{ text: `${COPY.emergency.es}\n${COPY.emergency.en}` }]
+  }
+
+  if (isOwnerWhatsapp(msg.phone) && asksForStats(msg.body, msg.button)) {
+    return ownerStatsOuts(payload, msg.button, async () => plainText(await leadsReport(payload)), now)
   }
 
   const ask = parseAsk(msg.body)
