@@ -13,6 +13,7 @@ import { EVENT_SETTINGS, eventSetting, type EventSetting } from './eventSetting'
 import { eventVenue } from './eventVenue'
 import { renderOgPng } from './ogImage'
 import { getSeason, sceneCreditText, type Season, type SeasonCardTheme } from './seasons'
+import type { Guide } from './guides'
 
 /**
  * The event card: the picture an event with no photo gets, drawn from its own
@@ -1411,4 +1412,115 @@ export async function renderSeasonCard(
 ): Promise<ArrayBuffer> {
   const picture = opts.scene === false ? null : seasonCardPicture(season, lang)
   return drawCard(seasonCardData(season, lang, year), size, SEASON_THEMES[theme], theme, season.card.mascot, null, { picture })
+}
+
+/**
+ * A food guide's card (lib/guides.ts): its og:image. The season card's layout
+ * in a season palette, with the guide's own short copy and the occasion's day
+ * on the ticket. No scene: the city's mascot in the arch.
+ */
+export function guideCardData(guide: Guide, lang: Lang): EventCardData {
+  const c = guide.card
+  return {
+    title: c.title[lang],
+    city: c.city.name,
+    citySlug: c.city.slug,
+    bg: CITY_BG[c.city.slug] ?? PINK,
+    kind: c.chip[lang],
+    status: '',
+    dateLine: c.ticket[lang],
+    meta: c.line[lang],
+  }
+}
+
+/**
+ * The guide's scene card (`link` and `page`): the guide's scene full bleed, a
+ * dark fade from the left under the text, and the guide's chips, title,
+ * ticket and line in the card's type. The sizes without a scene-shaped slot
+ * (`card`, `social`) keep the flat season layout.
+ */
+function GuideSceneCard({ d, scene, brand }: { d: EventCardData; scene: string; brand: boolean }) {
+  const W = EVENT_CARD_SIZES.link.width
+  const H = EVENT_CARD_SIZES.link.height
+  const NIGHT = '20,6,26'
+  return (
+    <div style={{ width: W, height: H, display: 'flex', position: 'relative', overflow: 'hidden', backgroundColor: INK, fontFamily: 'Archivo' }}>
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img src={scene} width={W} height={H} alt="" style={{ position: 'absolute', left: 0, top: 0 }} />
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          width: W,
+          height: H,
+          display: 'flex',
+          backgroundImage: `linear-gradient(90deg, rgba(${NIGHT},0.94) 0%, rgba(${NIGHT},0.86) 40%, rgba(${NIGHT},0.35) 56%, rgba(${NIGHT},0) 66%)`,
+        }}
+      />
+      <div style={{ position: 'absolute', left: 56, top: 92, width: 620, display: 'flex', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ display: 'flex', background: YELLOW, color: INK, fontWeight: 800, fontSize: 22, letterSpacing: '0.08em', padding: '7px 14px 5px', border: `3px solid ${INK}` }}>
+            {d.city}
+          </div>
+          <div style={{ display: 'flex', color: CREAM, fontWeight: 800, fontSize: 22, letterSpacing: '0.08em', padding: '7px 14px 5px', border: `3px solid ${CREAM}` }}>
+            {d.kind}
+          </div>
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            marginTop: 22,
+            fontFamily: 'Luckiest Guy',
+            fontSize: 104,
+            lineHeight: 0.98,
+            color: CREAM,
+            textShadow: `6px 6px 0 ${PINK}`,
+          }}
+        >
+          {d.title}
+        </div>
+        <div style={{ display: 'flex', marginTop: 30 }}>
+          <div style={{ display: 'flex', background: ORANGE, color: INK, fontFamily: 'Luckiest Guy', fontSize: 44, padding: '12px 22px 4px', border: `4px solid ${INK}`, boxShadow: `6px 6px 0 ${INK}` }}>
+            {d.dateLine}
+          </div>
+        </div>
+        {/* "what · call ahead": the call to action gets its own line, in yellow. */}
+        <div style={{ display: 'flex', flexDirection: 'column', marginTop: 24, maxWidth: 600, fontWeight: 800, fontSize: 27, lineHeight: 1.3 }}>
+          {d.meta.split(' · ').map((part, i) => (
+            <div key={i} style={{ display: 'flex', color: i === 0 ? CREAM : YELLOW }}>
+              {part}
+            </div>
+          ))}
+        </div>
+      </div>
+      {brand ? (
+        <div style={{ position: 'absolute', left: 56, bottom: 40, display: 'flex', color: CREAM, opacity: 0.85, fontWeight: 800, fontSize: 22, letterSpacing: '0.12em' }}>
+          FLAMINGOCOUNTY.COM
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+export async function renderGuideCard(guide: Guide, lang: Lang, size: EventCardSize): Promise<ArrayBuffer> {
+  const d = guideCardData(guide, lang)
+  const scene = guide.card.scene
+  if (!scene || (size !== 'link' && size !== 'page')) {
+    return drawCard(d, size, SEASON_THEMES[guide.card.theme], guide.card.theme, guide.card.mascot)
+  }
+  const key = `guide|${size}|${scene}|${JSON.stringify(d)}`
+  const hit = cache.get(key)
+  if (hit) return hit
+  const [a, src] = await Promise.all([loadAssets(), cropToBox(join(ASSET_DIR, scene), EVENT_CARD_SIZES.link.width, EVENT_CARD_SIZES.link.height, 72, 50)])
+  const png = await renderOgPng(<GuideSceneCard d={d} scene={src} brand={size === 'link'} />, {
+    ...EVENT_CARD_SIZES.link,
+    fonts: [
+      { name: 'Luckiest Guy', data: a.luckiest, weight: 400, style: 'normal' },
+      { name: 'Archivo', data: a.archivo, weight: 800, style: 'normal' },
+    ],
+  })
+  if (cache.size >= CACHE_MAX) cache.delete(cache.keys().next().value as string)
+  cache.set(key, png)
+  return png
 }

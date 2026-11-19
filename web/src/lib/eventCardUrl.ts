@@ -68,6 +68,14 @@ export function seasonCardUrl(key: string, lang: Lang, size: EventCardSize, year
   return `/api/og/season/${encodeURIComponent(key)}?lang=${lang}&size=${size}&v=${SEASON_CARD_VERSION}.${year}`
 }
 
+/** Bump when a food guide's card changes design or copy (`card` in lib/guides.ts). */
+export const GUIDE_CARD_VERSION = '3'
+
+/** A food guide's card (lib/guides.ts): `/api/og/guide/<key>`, drawn by the same renderer. */
+export function guideCardUrl(key: string, lang: Lang, size: EventCardSize): string {
+  return `/api/og/guide/${encodeURIComponent(key)}?lang=${lang}&size=${size}&v=${GUIDE_CARD_VERSION}`
+}
+
 /** Bump when the weekly roundup's cover (lib/weekCover.tsx) changes design. */
 export const WEEK_COVER_VERSION = '1'
 
