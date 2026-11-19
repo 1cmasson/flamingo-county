@@ -96,39 +96,21 @@ export async function FoodGuide({ guide, lang, filter }: { guide: Guide; lang: L
       <main className={p.page} style={{ maxWidth: 720 }}>
         <Breadcrumbs items={crumbs} label={c.crumbs} />
 
-        <article className={p.card}>
-          <div className={p.body}>
-            <p className={p.kicker}>{guide.kicker[lang]}</p>
-            <h1 className={p.title}>{title}</h1>
-            <p className={g.when}>{guide.when[lang]}</p>
-            {guide.intro.map((para) => (
-              <p key={para.en} className={p.details}>
-                {para[lang]}
-              </p>
-            ))}
-          </div>
-        </article>
-
-        <AnswerBlock
-          question={guide.question[lang]}
-          answer={guide.answer[lang]}
-          verified={{ text: c.checked(checkedLabel(guide.checkedOn, lang)), iso: guide.checkedOn }}
-        />
-
-        <aside className={`${p.card} ${p.body}`} aria-labelledby="llama-antes">
-          <h2 id="llama-antes" className={p.h2}>
-            {guide.callTitle[lang]}
-          </h2>
-          <p className={p.details}>{guide.callWhy[lang]}</p>
-          <ol className={g.ask}>
-            {guide.callAsk.map((q) => (
-              <li key={q.en}>{q[lang]}</li>
-            ))}
-          </ol>
-        </aside>
+        {/*
+         * The first screen on a phone: the title, one line, the filters and the
+         * first place. Everything people read rather than tap (the intro, the
+         * questions to ask, the tips) sits below the list.
+         */}
+        <header className={`${p.card} ${p.body} ${g.hero}`}>
+          <p className={g.when}>{guide.when[lang]}</p>
+          <h1 className={`${p.title} ${g.title}`}>{title}</h1>
+          <p className={g.hook}>{guide.hook[lang]}</p>
+          <p className={g.callShort}>
+            <span>{guide.callShort[lang]}</span> <a href="#llama-antes">{c.whatToAsk}</a>
+          </p>
+        </header>
 
         <nav className={g.filters} aria-label={c.filterLabel}>
-          <span className={g.filterLabel}>{c.filterLabel}</span>
           {[null, ...GUIDE_FILTERS].map((f) => (
             <Link
               key={f ?? 'all'}
@@ -140,10 +122,10 @@ export async function FoodGuide({ guide, lang, filter }: { guide: Guide; lang: L
               {c.filters[f ?? 'all']}
             </Link>
           ))}
+          <span className={g.count} aria-live="polite">
+            {c.count(shown.length)}
+          </span>
         </nav>
-        <p className={p.meta} aria-live="polite">
-          {c.count(shown.length)}
-        </p>
 
         {shown.length ? (
           <ol className={g.list}>
@@ -161,6 +143,24 @@ export async function FoodGuide({ guide, lang, filter }: { guide: Guide; lang: L
           <p className={p.warn}>{c.none}</p>
         )}
 
+        <aside className={`${p.card} ${p.body}`} aria-labelledby="llama-antes">
+          <h2 id="llama-antes" className={`${p.h2} ${g.anchor}`}>
+            {guide.callTitle[lang]}
+          </h2>
+          <p className={p.details}>{guide.callWhy[lang]}</p>
+          <ol className={g.ask}>
+            {guide.callAsk.map((q) => (
+              <li key={q.en}>{q[lang]}</li>
+            ))}
+          </ol>
+        </aside>
+
+        <AnswerBlock
+          question={guide.question[lang]}
+          answer={guide.answer[lang]}
+          verified={{ text: c.checked(checkedLabel(guide.checkedOn, lang)), iso: guide.checkedOn }}
+        />
+
         <section className={`${p.card} ${p.body}`}>
           <h2 className={p.h2}>{guide.tipsTitle[lang]}</h2>
           <ul className={g.tips}>
@@ -170,6 +170,16 @@ export async function FoodGuide({ guide, lang, filter }: { guide: Guide; lang: L
               </li>
             ))}
           </ul>
+        </section>
+
+        <section className={`${p.card} ${p.body}`}>
+          <p className={p.kicker}>{guide.kicker[lang]}</p>
+          <h2 className={p.h2}>{c.about}</h2>
+          {guide.intro.map((para) => (
+            <p key={para.en} className={p.details}>
+              {para[lang]}
+            </p>
+          ))}
         </section>
 
         <p className={p.warn}>
@@ -184,7 +194,7 @@ function Spot({ spot, lang, n, href }: { spot: GuideSpot; lang: Lang; n: number;
   const c = guideCopy(lang)
   return (
     <li id={spot.key} className={`${p.card} ${g.spot} ${spot.bonus ? g.bonus : ''}`}>
-      <div className={p.body}>
+      <div className={`${p.body} ${g.spotBody}`}>
         <div className={g.head}>
           {spot.bonus ? <span className={g.bonusTag}>{c.bonus}</span> : <span className={g.num}>{n}</span>}
           <h2 className={g.name}>{href ? <a href={href}>{spot.name}</a> : spot.name}</h2>
@@ -196,7 +206,6 @@ function Spot({ spot, lang, n, href }: { spot: GuideSpot; lang: Lang; n: number;
             </span>
           ))}
         </div>
-        <p className={p.details}>{spot.note[lang]}</p>
         <div className={g.addr}>
           {spot.addresses.map((address) => {
             const d = spotDirections(spot.name, address)
@@ -211,11 +220,15 @@ function Spot({ spot, lang, n, href }: { spot: GuideSpot; lang: Lang; n: number;
           })}
         </div>
         <p className={g.confirm}>{spot.ask[lang]}</p>
-        {href ? (
-          <a className={g.more} href={href}>
-            {c.listing}
-          </a>
-        ) : null}
+        <details className={g.story}>
+          <summary>{c.more}</summary>
+          <p className={p.details}>{spot.note[lang]}</p>
+          {href ? (
+            <a className={g.more} href={href}>
+              {c.listing}
+            </a>
+          ) : null}
+        </details>
       </div>
     </li>
   )

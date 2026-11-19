@@ -4,6 +4,60 @@
  * chips and the place cards. Opened mostly from Instagram's link in bio, so
  * one column, big tap targets.
  */
+/*
+ * The hero: one bold card, short. On a phone the title, the hook line, the
+ * filters and the first place fit the first screen.
+ */
+.hero {
+  position: relative;
+  background: var(--grad-pink);
+  gap: 10px;
+  padding-right: 74px;
+}
+.hero::after {
+  content: '🐖';
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  font-size: 46px;
+  line-height: 1;
+  transform: scaleX(-1);
+}
+.title {
+  color: var(--cream);
+  text-shadow: 3px 3px 0 var(--ink);
+}
+.hook {
+  margin: 0;
+  font-weight: 800;
+  font-size: 17px;
+  line-height: 1.35;
+  color: var(--ink);
+}
+.callShort {
+  margin: 0;
+  align-self: flex-start;
+  background: var(--cream);
+  border: 3px solid var(--ink);
+  padding: 7px 10px 6px;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.35;
+}
+.callShort a {
+  color: var(--ink);
+  font-weight: 800;
+  white-space: nowrap;
+}
+.anchor {
+  scroll-margin-top: 90px;
+}
+.count {
+  font-weight: 800;
+  font-size: 14px;
+  margin-left: 4px;
+}
+
 .when {
   align-self: flex-start;
   margin: 0;
@@ -32,11 +86,6 @@
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
-}
-.filterLabel {
-  font-family: var(--display);
-  font-size: 15px;
-  margin-right: 2px;
 }
 .chip {
   display: inline-flex;
@@ -67,6 +116,9 @@
 }
 .spot {
   scroll-margin-top: 90px;
+}
+.spotBody {
+  gap: 10px;
 }
 .bonus {
   border-style: dashed;
@@ -155,7 +207,22 @@
   font-size: 14px;
   line-height: 1.4;
 }
+.story summary {
+  cursor: pointer;
+  font-weight: 800;
+  font-size: 15px;
+  min-height: 32px;
+  display: flex;
+  align-items: center;
+}
+.story[open] summary {
+  margin-bottom: 8px;
+}
+.story > * + * {
+  margin-top: 8px;
+}
 .more {
+  display: inline-block;
   align-self: flex-start;
   font-weight: 800;
   font-size: 15px;
