@@ -49,6 +49,7 @@ import * as migration_20261104_020417_postiz_cloud from './20261104_020417_posti
 import * as migration_20261105_004815_trial_reels from './20261105_004815_trial_reels';
 import * as migration_20261110_033146_story_polls from './20261110_033146_story_polls';
 import * as migration_20261111_201408_vote_whatsapp_optins from './20261111_201408_vote_whatsapp_optins';
+import * as migration_20261119_044518_hq_media_purge from './20261119_044518_hq_media_purge';
 
 export const migrations = [
   {
@@ -304,6 +305,11 @@ export const migrations = [
   {
     up: migration_20261111_201408_vote_whatsapp_optins.up,
     down: migration_20261111_201408_vote_whatsapp_optins.down,
-    name: '20261111_201408_vote_whatsapp_optins'
+    name: '20261111_201408_vote_whatsapp_optins',
+  },
+  {
+    up: migration_20261119_044518_hq_media_purge.up,
+    down: migration_20261119_044518_hq_media_purge.down,
+    name: '20261119_044518_hq_media_purge'
   },
 ];
