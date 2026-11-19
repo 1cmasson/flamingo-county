@@ -35,7 +35,7 @@ describe('food guides', () => {
 
   it('are written in both languages', () => {
     for (const guide of allGuides()) {
-      for (const copy of [guide.title, guide.metaTitle, guide.description, guide.question, guide.answer, guide.when, ...guide.intro]) {
+      for (const copy of [guide.title, guide.metaTitle, guide.description, guide.question, guide.answer, guide.when, guide.hook, guide.callShort, ...guide.intro]) {
         expect(copy.en.trim()).not.toBe('')
         expect(copy.es.trim()).not.toBe('')
         expect(copy.es).not.toBe(copy.en)
@@ -44,6 +44,11 @@ describe('food guides', () => {
       expect(guide.metaTitle.es.length).toBeLessThanOrEqual(60)
       expect(guide.description.en.length).toBeLessThanOrEqual(160)
       expect(guide.description.es.length).toBeLessThanOrEqual(160)
+      // The hook and the call line are the whole first screen above the list: one line each on a phone, near enough.
+      for (const line of [guide.hook, guide.callShort]) {
+        expect(line.en.length).toBeLessThanOrEqual(100)
+        expect(line.es.length).toBeLessThanOrEqual(100)
+      }
     }
   })
 
@@ -139,6 +144,17 @@ describe('the lechón page', () => {
     // The directory listing is linked; places outside the directory are not.
     expect(html).toMatch(/href="\/es\/[a-z0-9-]+\/molinas-ranch"/)
     expect(html).toContain('"@type":"ItemList"')
+  })
+
+  it('puts the places first: the reading (intro, questions, tips) comes after the list', async () => {
+    const html = renderToStaticMarkup(await FoodGuide({ guide: lechon, lang: 'es' }))
+    const firstSpot = html.indexOf(`id="${lechon.spots[0].key}"`)
+    const lastSpot = html.indexOf(`id="${lechon.spots.at(-1)!.key}"`)
+    expect(html.indexOf(lechon.hook.es)).toBeLessThan(firstSpot)
+    expect(html.indexOf('href="#llama-antes"')).toBeLessThan(firstSpot)
+    expect(html.indexOf('id="llama-antes"')).toBeGreaterThan(lastSpot)
+    expect(html.indexOf(lechon.intro[0].es)).toBeGreaterThan(lastSpot)
+    expect(html.indexOf(lechon.tips[0].text.es)).toBeGreaterThan(lastSpot)
   })
 
   it('narrows the list with ?f=, as a link', async () => {

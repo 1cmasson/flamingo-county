@@ -69,6 +69,11 @@ export type Guide = {
   description: Copy
   /** The occasion's chip: "Thanksgiving · Thursday, Nov 26". */
   when: Copy
+  /** The one line under the title: what's on the page and what to do. The first screen on a phone is the title, this, the filters and the first place. */
+  hook: Copy
+  /** "Call first" in one line, above the list; the full box with the questions sits below it. */
+  callShort: Copy
+  /** The longer intro, printed below the list. */
   intro: Copy[]
   /** The question the page answers, as people search it, and its short answer. */
   question: Copy
@@ -103,6 +108,14 @@ const LECHON: Guide = {
     es: 'Dónde encargar lechón, pernil o un puerco entero para la caja china en Hialeah este Thanksgiving: 8 lugares y uno en Doral, y qué preguntar al llamar.',
   },
   when: { en: 'Thanksgiving · Thursday, Nov 26', es: 'Thanksgiving · jueves 26 de noviembre' },
+  hook: {
+    en: '8 spots for lechón, pernil or a whole pig, plus one in Doral. Tap one for directions.',
+    es: '8 lugares para lechón, pernil o puerco entero, y uno en Doral. Toca uno y llega.',
+  },
+  callShort: {
+    en: 'Holiday hours aren’t posted yet. Call before you go.',
+    es: 'Aún no han publicado horario de fiestas. Llama antes de ir.',
+  },
   intro: [
     {
       en: 'In Hialeah, Thanksgiving has a second star on the table, and it has crispy skin. Whether your familia goes full puerco asado or does turkey and pernil side by side, the move is the same: order early, pick up Wednesday if you can, and let somebody else deal with the caja china this year.',
@@ -374,6 +387,9 @@ const EN = {
   directions: 'GET DIRECTIONS ↗',
   listing: 'See it in the directory →',
   checked: (day: string) => `Checked ${day}.`,
+  whatToAsk: 'What to ask ↓',
+  more: 'Why we like it',
+  about: 'About this guide',
 }
 
 const ES: typeof EN = {
@@ -387,6 +403,9 @@ const ES: typeof EN = {
   directions: 'CÓMO LLEGAR ↗',
   listing: 'Míralo en el directorio →',
   checked: (day: string) => `Revisado el ${day}.`,
+  whatToAsk: 'Qué preguntar ↓',
+  more: 'Por qué nos gusta',
+  about: 'Sobre esta guía',
 }
 
 /** "November 19, 2026" / "19 de noviembre de 2026", read as a calendar day (no time zone shift). */
