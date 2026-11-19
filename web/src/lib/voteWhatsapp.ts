@@ -3,6 +3,7 @@ import type { Payload, Where } from 'payload'
 import { PUBLISHED } from '../fields/shared'
 import type { StoryPoll, VoteWhatsappOptin } from '../payload-types'
 import { routes } from './routes'
+import { pollTally, pollWinner, siteVotesFor } from './storyPolls'
 import { absUrl } from './site'
 import { esc, sendMessage, telegramConfigured, type InlineKeyboard } from './telegram'
 import { restConfigured, sendTemplate } from './whatsapp'
@@ -17,6 +18,10 @@ import { restConfigured, sendTemplate } from './whatsapp'
  *   - **"The vote is open."** Never on its own. The hourly `voteBroadcast`
  *     job sends the owner ONE Telegram message per open vote, with how many
  *     numbers would get it and [📣 Enviar a N] [Saltar]. Only his tap sends.
+ *   - **The winner.** When a vote closes, the owner's winner message
+ *     (lib/pollWinnerNotice.ts) carries [📣 Enviar ganador a N]. The
+ *     template says "the vote you took part in", so it goes only to numbers
+ *     that signed up from that vote or were sent its "vote is open".
  *
  * Every send is a Meta-approved Utility template (Twilio Content API), so it
  * may go out any time, not only within 24 hours of the person writing.
@@ -287,4 +292,91 @@ export async function decideVoteBroadcast(
   await markOffer(payload, pollId, { state: 'sent', at: now.toISOString(), sent, failed })
   if (!sent && !failed) return say('✅ Ya les había llegado a todos. No se envió nada nuevo.')
   return say(`📣 Enviado a ${sent}${failed ? ` · ❌ fallaron ${failed}. El botón de abajo reintenta solo esos.` : '.'}`, failed)
+}
+
+/* -------------------------------------------------------------- winner */
+
+/**
+ * Who gets the winner: active numbers tied to this vote (signed up from it,
+ * or sent its "vote is open"), not sent its winner yet.
+ */
+function resultAudienceWhere(pollId: number): Where {
+  return {
+    and: [
+      { status: { equals: 'active' } },
+      { or: [{ poll: { equals: pollId } }, { lastPollSentId: { equals: pollId } }] },
+      { or: [{ lastResultSentId: { not_equals: pollId } }, { lastResultSentId: { exists: false } }] },
+    ],
+  }
+}
+
+export async function resultAudienceCount(payload: Payload, pollId: number): Promise<number> {
+  const { totalDocs } = await payload.count({ collection: 'vote-whatsapp-optins', where: resultAudienceWhere(pollId), overrideAccess: true })
+  return totalDocs
+}
+
+export const resultKeyboard = (pollId: number, n: number): InlineKeyboard => ({
+  inline_keyboard: [[{ text: `📣 Enviar ganador a ${n}`, callback_data: `vr:s:${pollId}` }]],
+})
+
+export function parseVoteResultCallback(data: string | undefined): number | null {
+  const m = /^vr:s:(\d+)$/.exec(data ?? '')
+  return m ? Number(m[1]) : null
+}
+
+/** The winner's variables: its title in that language (the template's own sentence frames it), and the results page. */
+export function resultVars(lang: Lang, winner: string, slug: string): Record<string, string> {
+  return { '1': oneLine(winner), '2': voteLink(lang, slug) }
+}
+
+const sendingResult = new Set<number>()
+
+/**
+ * The owner's tap on [📣 Enviar ganador a N]: the result template to each
+ * number in the winner audience, one at a time, marked before its send and
+ * put back if Twilio refuses it (a second tap retries only those).
+ */
+export async function sendVoteResult(payload: Payload, pollId: number, now: Date = new Date()): Promise<{ text: string; retry: number }> {
+  const say = (text: string, retry = 0) => ({ text, retry })
+  if (!restConfigured()) return say('❌ WhatsApp no está configurado en el servidor (TWILIO_*). No se envió nada.')
+  if (sendingResult.has(pollId)) return say('⏳ Ya se está enviando.')
+  const p = await pollInBoth(payload, pollId)
+  if (!p) return say('❌ No encontré esa votación.')
+  if (!p.poll.closesAt || new Date(p.poll.closesAt).getTime() > now.getTime()) return say('⏳ Esa votación sigue abierta. No se envió nada.')
+  const win = pollWinner(p.poll, pollTally(p.poll, await siteVotesFor(payload, pollId)))
+  if (!win) return say('Sin votos, sin ganador. No se envió nada.')
+  const title = (lang: Lang) => p[lang].options?.find((o) => o.key === win.key)?.title ?? win.title
+
+  sendingResult.add(pollId)
+  let sent = 0
+  let failed = 0
+  try {
+    const { docs } = await payload.find({
+      collection: 'vote-whatsapp-optins',
+      where: resultAudienceWhere(pollId),
+      sort: 'createdAt',
+      limit: 5000,
+      depth: 0,
+      overrideAccess: true,
+    })
+    for (const row of docs) {
+      const fresh = await payload.findByID({ collection: 'vote-whatsapp-optins', id: row.id, depth: 0, overrideAccess: true }).catch(() => null)
+      if (!fresh || fresh.status !== 'active' || fresh.lastResultSentId === pollId) continue
+      const lang = langOf(fresh.lang)
+      const before = fresh.lastResultSentId ?? null
+      await payload.update({ collection: 'vote-whatsapp-optins', id: fresh.id, data: { lastResultSentId: pollId }, overrideAccess: true, depth: 0 })
+      try {
+        await sendTemplate(fresh.phone, VOTE_TEMPLATES.result[lang], resultVars(lang, title(lang), p.poll.slug))
+        sent++
+      } catch (err) {
+        failed++
+        console.error('[vote whatsapp] result failed for …' + fresh.phone.slice(-4) + ':', err instanceof Error ? err.message : err)
+        await payload.update({ collection: 'vote-whatsapp-optins', id: fresh.id, data: { lastResultSentId: before }, overrideAccess: true, depth: 0 }).catch(() => undefined)
+      }
+    }
+  } finally {
+    sendingResult.delete(pollId)
+  }
+  if (!sent && !failed) return say('✅ Ya les había llegado a todos. No se envió nada nuevo.')
+  return say(`📣 Ganador enviado a ${sent}${failed ? ` · ❌ fallaron ${failed}. El botón de abajo reintenta solo esos.` : '.'}`, failed)
 }

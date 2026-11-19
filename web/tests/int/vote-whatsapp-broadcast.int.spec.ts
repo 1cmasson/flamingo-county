@@ -11,8 +11,12 @@ import {
   offerVoteBroadcasts,
   openVars,
   parseVoteBroadcastCallback,
+  parseVoteResultCallback,
+  resultAudienceCount,
+  sendVoteResult,
   settleVoteWelcomes,
 } from '@/lib/voteWhatsapp'
+import { POLL_CLOSED_EVENT, POLL_TASK_PREFIX, announcePollWinners } from '@/lib/pollWinnerNotice'
 import { sendMessage, telegramConfigured } from '@/lib/telegram'
 
 /**
@@ -309,5 +313,63 @@ describe('the vote on WhatsApp', () => {
     const out = await decideVoteBroadcast(payload, pollId, 'send', DURING)
     expect(out.text).toContain('no está configurado')
     expect(calls).toHaveLength(0)
+  })
+  describe('the winner', () => {
+    const cleanup = async () => {
+      await payload.delete({ collection: 'story-poll-votes', where: { poll: { equals: pollId } }, overrideAccess: true })
+      await payload.delete({ collection: 'hq-events', where: { type: { equals: POLL_CLOSED_EVENT } }, overrideAccess: true })
+      await payload.delete({ collection: 'hq-tasks', where: { title: { contains: POLL_TASK_PREFIX } }, overrideAccess: true })
+    }
+    beforeEach(async () => {
+      await cleanup()
+      await payload.create({ collection: 'story-poll-votes', data: { poll: pollId, option: 'a' }, overrideAccess: true })
+    })
+    afterAll(cleanup)
+
+    it('reads its button', () => {
+      expect(parseVoteResultCallback('vr:s:12')).toBe(12)
+      expect(parseVoteResultCallback('vb:s:12')).toBeNull()
+    })
+
+    it('goes only to numbers tied to this vote, after it closes, once each', async () => {
+      fakeTwilio()
+      await decideVoteBroadcast(payload, pollId, 'send', DURING)
+      const early = fakeTwilio()
+      expect((await sendVoteResult(payload, pollId, DURING)).text).toContain('sigue abierta')
+      expect(early).toHaveLength(0)
+
+      expect(await resultAudienceCount(payload, pollId)).toBe(4)
+      const calls = fakeTwilio()
+      const out = await sendVoteResult(payload, pollId, AFTER)
+      const got = mine(calls)
+      expect(got.map((c) => c.to).sort()).toEqual([P.es, P.en, P.test, P.voted].sort())
+      expect(got.find((c) => c.to === P.es)).toEqual({
+        to: P.es,
+        sid: VOTE_TEMPLATES.result.es,
+        vars: { '1': 'La guerra de las bananas', '2': `https://flamingocounty.com/es/vota/${slug}?utm_source=whatsapp` },
+      })
+      expect(got.find((c) => c.to === P.en)?.sid).toBe(VOTE_TEMPLATES.result.en)
+      expect(out.text).toBe('📣 Ganador enviado a 4.')
+
+      const again = fakeTwilio()
+      expect((await sendVoteResult(payload, pollId, AFTER)).text).toContain('Ya les había llegado')
+      expect(mine(again)).toHaveLength(0)
+    })
+
+    it('a refused number is retried alone', async () => {
+      fakeTwilio([P.voted])
+      const out = await sendVoteResult(payload, pollId, AFTER)
+      expect(out.retry).toBe(1)
+      const retry = fakeTwilio()
+      await sendVoteResult(payload, pollId, AFTER)
+      expect(mine(retry).map((c) => c.to)).toEqual([P.voted])
+    })
+
+    it('the owner’s winner message carries the button with the count', async () => {
+      fakeTwilio()
+      expect(await announcePollWinners(payload, AFTER)).toBe(1)
+      const call = tg.mock.calls.find((c) => String(c[0]).includes('Vote closed'))
+      expect(call?.[1]).toEqual({ keyboard: { inline_keyboard: [[{ text: '📣 Enviar ganador a 1', callback_data: `vr:s:${pollId}` }]] } })
+    })
   })
 })

@@ -56,5 +56,11 @@ export const VoteWhatsappOptins: CollectionConfig = {
       admin: { readOnly: true, description: 'The last vote whose "the vote is open" WhatsApp went to this number (lib/voteWhatsapp.ts). Never sent twice for one vote.' },
     },
     { name: 'lastPollSentAt', type: 'date', admin: { readOnly: true, date: { pickerAppearance: 'dayAndTime' } } },
+    {
+      name: 'lastResultSentId',
+      type: 'number',
+      index: true,
+      admin: { readOnly: true, description: 'The last vote whose winner WhatsApp went to this number (lib/voteWhatsapp.ts). Never sent twice for one vote.' },
+    },
   ],
 }
