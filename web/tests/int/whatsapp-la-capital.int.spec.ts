@@ -188,6 +188,7 @@ describe('fixed answers', () => {
     expect(isUnsubscribe('Baja')).toBe(true)
     expect(isUnsubscribe('STOP')).toBe(true)
     expect(isUnsubscribe('quiero bajar de peso')).toBe(false)
+    expect(isUnsubscribe('stop')).toBe(true)
     expect(isEmergency('tengo un dolor de pecho fuerte')).toBe(true)
     expect(isEmergency('I think I’m having a heart attack')).toBe(true)
     expect(isEmergency('quiero visitar la clínica')).toBe(false)
@@ -302,7 +303,11 @@ describe('the webhook and the leads (database)', () => {
     expect(l.consentAt).toBeTruthy()
     const saved = JSON.stringify(l.messages)
     expect(saved).toContain('ubicación compartida')
+    expect(saved).toContain('indicaciones de guagua enviadas')
     expect(saved).not.toContain(String(SOMEWHERE[0]))
+    // Not even the stop they'd board at, which is near where they are.
+    expect(saved).not.toContain('dc=')
+    expect(saved).not.toMatch(/Camina \d+ min hasta la parada/)
     expect((await payload.count({ collection: 'hq-leads', where: { phone: { equals: phone } }, overrideAccess: true })).totalDocs).toBe(1)
   })
 

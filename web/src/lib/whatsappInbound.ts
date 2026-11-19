@@ -114,6 +114,8 @@ async function findLead(payload: Payload, flow: string, phone: string): Promise<
 
 /** How long a line keeps answering a number that wrote to it, without a new ref. */
 const LINE_MEMORY_DAYS = 60
+/** The longest reply Jev may read. */
+const JEV_MAX_CHARS = 60
 
 async function unsubscribe(payload: Payload, phone: string): Promise<void> {
   const ctx = { overrideAccess: true } as const
@@ -171,9 +173,11 @@ async function laCapitalTurn(payload: Payload, msg: Incoming, ask: ReturnType<ty
   const input: laCapital.Input = { button: msg.button, text: ask ? '' : msg.body, location: msg.location }
   const ctx: laCapital.TurnContext = { fresh: fresh || Boolean(ask), now }
 
-  // Only when the reply matched no button by number or words: ask Jev which one they meant.
+  // Only when a short reply matched no button by number or words: ask Jev which one they meant.
+  // Never on the location screen (a typed reply there is likely an address) and never a long message.
   const shown = laCapital.screen(state.step, state)
-  if (!ctx.fresh && !msg.button && !msg.location && msg.body && shown?.buttons && !laCapital.command(msg.body) && !laCapital.pick(shown, input)) {
+  const jevMay = state.step !== 'pin' && msg.body.trim().length > 0 && msg.body.length <= JEV_MAX_CHARS
+  if (!ctx.fresh && jevMay && !msg.button && !msg.location && shown?.buttons && !laCapital.command(msg.body) && !laCapital.pick(shown, input)) {
     ctx.jevPick = await jevPick(
       shown.text.slice(0, 400),
       msg.body,
@@ -182,7 +186,7 @@ async function laCapitalTurn(payload: Payload, msg: Incoming, ask: ReturnType<ty
   }
 
   const t = laCapital.turn(state, input, ctx)
-  const messages = log(lead, stamp(now, 'them', keptBody(msg)), ...t.outs.map((o) => stamp(now, 'bot', o.text)))
+  const messages = log(lead, stamp(now, 'them', keptBody(msg)), ...t.outs.map((o) => stamp(now, 'bot', o.logAs ?? o.text)))
   const updated = await payload.update({
     collection: 'hq-leads',
     id: lead.id,
@@ -208,7 +212,7 @@ export async function answerInbound(payload: Payload, msg: Incoming, now: Date =
   if (!msg.button && isUnsubscribe(msg.body)) {
     await unsubscribe(payload, msg.phone)
     await notifyOwner(`🚫 WhatsApp BAJA/STOP from ${esc(masked(msg.phone))}. Unsubscribed everywhere.`)
-    return [{ text: COPY.unsubscribed[lang] }]
+    return [{ text: COPY.unsubscribed[/^(stop|stop all|unsubscribe)$/.test(norm(msg.body)) ? 'en' : 'es'] }]
   }
 
   if (!msg.button && isEmergency(msg.body)) {

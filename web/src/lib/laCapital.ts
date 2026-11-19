@@ -207,6 +207,7 @@ const COPY = {
     es: 'Te paso con una persona del equipo; te escribe por aquí lo antes posible. Para volver a los botones, escribe MENÚ.',
     en: 'I’m passing you to a person on the team; they’ll write here as soon as they can. To go back to the buttons, type MENU.',
   },
+  busSent: { es: '🚌 (indicaciones de guagua enviadas)', en: '🚌 (bus directions sent)' },
   tapHint: { es: 'Toca uno de los botones 👇 (o responde con el número)', en: 'Tap one of the buttons 👇 (or reply with the number)' },
   tripTo: (lang: Lang, place: string) => (lang === 'en' ? `🚌 To get to ${place}:` : `🚌 Para llegar a ${place}:`),
   tripLink: { es: 'La ruta en el mapa, con las guaguas en vivo:', en: 'The route on the map, with live buses:' },
@@ -460,7 +461,8 @@ function onPick(s: LeadState, id: string, now: Date): Turn {
 /** A shared location: the bus answer to the clinic they picked, or the nearest one. */
 function onLocation(s: LeadState, at: LatLng, now: Date): Turn {
   const key = isPlace(s.place) ? s.place : nearestPlace(at)
-  const answer: Out = { text: busAnswer(s.lang, at, key, now) }
+  // The answer names a stop near them, so the lead's log keeps only that one was sent.
+  const answer: Out = { text: busAnswer(s.lang, at, key, now), logAs: t(s.lang, COPY.busSent) }
   if (s.step === 'pin' && s.intent === 'visit') return toConsent(s, { place: key }, [answer])
   if (s.step === 'handoff') return { set: {}, outs: [answer] }
   return go(s, 'after', { place: key, intent: s.intent ?? 'directions' }, [answer])

@@ -44,7 +44,12 @@ export const signedForInbound = (params: URLSearchParams, signature: string | nu
 /* ------------------------------------------------------------ messages */
 
 export type Button = { id: string; title: string }
-export type Out = { text: string; buttons?: Button[] }
+export type Out = {
+  text: string
+  buttons?: Button[]
+  /** What the lead's log keeps instead of `text`, when the text says something about where they are (a bus answer). */
+  logAs?: string
+}
 
 export const MAX_BUTTONS = 3
 export const TITLE_MAX = 20
