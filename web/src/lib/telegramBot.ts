@@ -10,6 +10,7 @@ import { decidePublish, parsePublishCallback } from './publishRequests'
 import { parseReviewCallback, runReviewFromButton } from './reviewReminder'
 import { decideSpend, parseSpendCallback } from './spendApprovals'
 import { leadFromText, leadsReport, parseLeadStatusCallback, sendToLead, setLeadStatus } from './whatsappLeads'
+import { decideVoteBroadcast, offerKeyboard, parseVoteBroadcastCallback } from './voteWhatsapp'
 
 /** The slice of a Telegram `Update` the bot reads. */
 export type TelegramUpdate = {
@@ -190,6 +191,17 @@ export async function handleUpdate(payload: Payload, update: TelegramUpdate): Pr
       const outcome = await setLeadStatus(payload, leadStatus.id, leadStatus.status)
       await answerCallback(cb.id, outcome.replace(/<[^>]+>/g, '').slice(0, 190))
       await sendMessage(outcome, { chatId: cb.message.chat.id })
+      return
+    }
+
+    // "The vote is open" to the WhatsApp subscribers: 📣 Send or Skip.
+    const vote = parseVoteBroadcastCallback(cb.data)
+    if (vote && cb.message) {
+      await answerCallback(cb.id, vote.action === 'send' ? 'Enviando…' : 'OK, no se envía')
+      const outcome = await decideVoteBroadcast(payload, vote.pollId, vote.action)
+      await resolveButtons(cb.message.chat.id, cb.message.message_id, outcome.text)
+      if (outcome.retry)
+        await sendMessage('Reintentar los que fallaron:', { chatId: cb.message.chat.id, keyboard: offerKeyboard(vote.pollId, outcome.retry) })
       return
     }
 

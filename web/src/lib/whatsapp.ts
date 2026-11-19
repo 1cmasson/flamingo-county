@@ -171,6 +171,25 @@ export async function sendOut(to: string, m: Out): Promise<void> {
 }
 
 /**
+ * Send one Meta-approved template (a ContentSid) with its variables. Unlike a
+ * free-form message, a template may go out at any time, not only within 24
+ * hours of the person's last message. Throws when Twilio refuses it.
+ */
+export async function sendTemplate(to: string, contentSid: string, vars?: Record<string, string>): Promise<void> {
+  const from = senderNumber()
+  if (!restConfigured() || !from) throw new Error('WhatsApp sending isn’t set up (TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, WHATSAPP_SENDER_NUMBER).')
+  const form = new URLSearchParams({ From: `whatsapp:${from}`, To: `whatsapp:${to}`, ContentSid: contentSid })
+  if (vars && Object.keys(vars).length) form.set('ContentVariables', JSON.stringify(vars))
+  const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${process.env.TWILIO_ACCOUNT_SID}/Messages.json`, {
+    method: 'POST',
+    headers: { Authorization: auth(), 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: form,
+    signal: AbortSignal.timeout(10_000),
+  })
+  if (!res.ok) throw await twilioError(res)
+}
+
+/**
  * Deliver a turn's messages in order. Whatever couldn't go on the REST API
  * (not set up, or Twilio refused) comes back as text for the webhook's TwiML,
  * so the person still gets every word.

@@ -7,13 +7,15 @@ import { clientAddress, getPublishedPoll, miamiDay, pollPhase } from './storyPol
 import { esc, sendMessage, telegramConfigured } from './telegram'
 import { isBot, isSourceSlug } from './tracking'
 import { classifySource, isStaff, normalizeHost } from './visits'
+import { sendVoteWelcome } from './voteWhatsapp'
 
 /**
  * "Want to vote every week?": after voting, a visitor can leave their WhatsApp
  * number so we can tell them when the next vote opens and who won. One row
  * per number in `vote-whatsapp-optins`, with the exact consent sentence they
- * ticked and when. Nothing is sent to the number from here: the rows wait for
- * the WhatsApp API. The owner gets a Telegram line for each new real sign-up
+ * ticked and when. A new (or returning) number gets the approved welcome on
+ * WhatsApp (lib/voteWhatsapp.ts `sendVoteWelcome`); the weekly message goes
+ * out only on the owner's tap. The owner gets a Telegram line for each new real sign-up
  * (`pingOwnerOptin`). Staff-only, and off MCP.
  *
  * Same guards as a vote (lib/storyPolls.ts): no bots, same-origin only, the
@@ -145,6 +147,7 @@ export async function saveVoteOptin(
       overrideAccess: true,
       depth: 0,
     })
+    if (again) sendVoteWelcome(phone, lang)
     if (again && !test && !existing.test) firePing(payload, { kind: 'again', phone, lang, source: existing.source, now })
     return { ok: true, created: false }
   }
@@ -175,6 +178,7 @@ export async function saveVoteOptin(
     if (dupe.totalDocs > 0) return { ok: true, created: false }
     throw err
   }
+  sendVoteWelcome(phone, lang)
   if (!test) firePing(payload, { kind: 'new', phone, lang, source, now })
   return { ok: true, created: true }
 }

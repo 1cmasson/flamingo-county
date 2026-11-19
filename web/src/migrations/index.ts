@@ -1,56 +1,57 @@
-import * as migration_20260820_183820_initial from './20260820_183820_initial';
-import * as migration_20260820_215710_remove_pricing from './20260820_215710_remove_pricing';
-import * as migration_20260901_204154_localize_event_time_label from './20260901_204154_localize_event_time_label';
-import * as migration_20260903_220604_add_listing_logo from './20260903_220604_add_listing_logo';
-import * as migration_20260903_221953_add_event_start_end_time from './20260903_221953_add_event_start_end_time';
-import * as migration_20260928_164435_add_members from './20260928_164435_add_members';
-import * as migration_20260930_194540_add_hq from './20260930_194540_add_hq';
-import * as migration_20261001_141616_add_hq_social_stats from './20261001_141616_add_hq_social_stats';
-import * as migration_20261001_152509_add_hq_mcp from './20261001_152509_add_hq_mcp';
-import * as migration_20261001_170211_add_site_drafts from './20261001_170211_add_site_drafts';
-import * as migration_20261001_182504_add_listing_hours_verified from './20261001_182504_add_listing_hours_verified';
-import * as migration_20261001_193056_add_event_facts from './20261001_193056_add_event_facts';
-import * as migration_20261001_220129_add_send_telegram_tool from './20261001_220129_add_send_telegram_tool';
-import * as migration_20261001_233149_add_social_draft_source from './20261001_233149_add_social_draft_source';
-import * as migration_20261002_004829_add_hq_chat_turns from './20261002_004829_add_hq_chat_turns';
-import * as migration_20261002_005459_add_hq_playbook from './20261002_005459_add_hq_playbook';
-import * as migration_20261002_020917_add_growth_loop from './20261002_020917_add_growth_loop';
-import * as migration_20261002_060000_replace_flamingo_mascot from './20261002_060000_replace_flamingo_mascot';
-import * as migration_20261005_145545_add_event_season from './20261005_145545_add_event_season';
-import * as migration_20261005_154532_add_venue_photos from './20261005_154532_add_venue_photos';
-import * as migration_20261005_165632_add_event_setting from './20261005_165632_add_event_setting';
-import * as migration_20261005_213633_add_upload_media_tool from './20261005_213633_add_upload_media_tool';
-import * as migration_20261006_002646_add_cancel_draft_tool from './20261006_002646_add_cancel_draft_tool';
-import * as migration_20261006_013746_add_listing_answer from './20261006_013746_add_listing_answer';
-import * as migration_20261006_145921_add_request_kinds from './20261006_145921_add_request_kinds';
-import * as migration_20261007_120000_add_gems_category from './20261007_120000_add_gems_category';
-import * as migration_20261007_125000_gem_label from './20261007_125000_gem_label';
-import * as migration_20261007_170624_add_site_artwork_tool from './20261007_170624_add_site_artwork_tool';
-import * as migration_20261007_183854_add_artwork_upload_links from './20261007_183854_add_artwork_upload_links';
-import * as migration_20261007_195724_add_story_videos from './20261007_195724_add_story_videos';
-import * as migration_20261007_202408_story_blog_blocks from './20261007_202408_story_blog_blocks';
-import * as migration_20261007_230730_story_card_hero from './20261007_230730_story_card_hero';
-import * as migration_20261009_191158_add_link_page from './20261009_191158_add_link_page';
-import * as migration_20261009_191159_seed_link_page from './20261009_191159_seed_link_page';
-import * as migration_20261009_193258_weekly_roundup from './20261009_193258_weekly_roundup';
-import * as migration_20261012_035142_event_story_format from './20261012_035142_event_story_format';
-import * as migration_20261017_203009_address_usage from './20261017_203009_address_usage';
-import * as migration_20261017_204939_site_usage from './20261017_204939_site_usage';
-import * as migration_20261020_184304_spend_approvals from './20261020_184304_spend_approvals';
-import * as migration_20261021_021048_graph_telemetry from './20261021_021048_graph_telemetry';
-import * as migration_20261021_032749_reel_reviews from './20261021_032749_reel_reviews';
-import * as migration_20261021_035949_graph_telemetry_2 from './20261021_035949_graph_telemetry_2';
-import * as migration_20261021_133014_reel_now from './20261021_133014_reel_now';
-import * as migration_20261021_162843_promo_coupons from './20261021_162843_promo_coupons';
-import * as migration_20261024_154336_email_approvals from './20261024_154336_email_approvals';
-import * as migration_20261102_171003_rankings from './20261102_171003_rankings';
-import * as migration_20261102_200129_ranking_nominations from './20261102_200129_ranking_nominations';
-import * as migration_20261104_020417_postiz_cloud from './20261104_020417_postiz_cloud';
-import * as migration_20261105_004815_trial_reels from './20261105_004815_trial_reels';
-import * as migration_20261110_033146_story_polls from './20261110_033146_story_polls';
-import * as migration_20261111_201408_vote_whatsapp_optins from './20261111_201408_vote_whatsapp_optins';
-import * as migration_20261119_044518_hq_media_purge from './20261119_044518_hq_media_purge';
-import * as migration_20261119_160245_whatsapp_leads from './20261119_160245_whatsapp_leads';
+import * as migration_20260820_183820_initial from './20260820_183820_initial'
+import * as migration_20260820_215710_remove_pricing from './20260820_215710_remove_pricing'
+import * as migration_20260901_204154_localize_event_time_label from './20260901_204154_localize_event_time_label'
+import * as migration_20260903_220604_add_listing_logo from './20260903_220604_add_listing_logo'
+import * as migration_20260903_221953_add_event_start_end_time from './20260903_221953_add_event_start_end_time'
+import * as migration_20260928_164435_add_members from './20260928_164435_add_members'
+import * as migration_20260930_194540_add_hq from './20260930_194540_add_hq'
+import * as migration_20261001_141616_add_hq_social_stats from './20261001_141616_add_hq_social_stats'
+import * as migration_20261001_152509_add_hq_mcp from './20261001_152509_add_hq_mcp'
+import * as migration_20261001_170211_add_site_drafts from './20261001_170211_add_site_drafts'
+import * as migration_20261001_182504_add_listing_hours_verified from './20261001_182504_add_listing_hours_verified'
+import * as migration_20261001_193056_add_event_facts from './20261001_193056_add_event_facts'
+import * as migration_20261001_220129_add_send_telegram_tool from './20261001_220129_add_send_telegram_tool'
+import * as migration_20261001_233149_add_social_draft_source from './20261001_233149_add_social_draft_source'
+import * as migration_20261002_004829_add_hq_chat_turns from './20261002_004829_add_hq_chat_turns'
+import * as migration_20261002_005459_add_hq_playbook from './20261002_005459_add_hq_playbook'
+import * as migration_20261002_020917_add_growth_loop from './20261002_020917_add_growth_loop'
+import * as migration_20261002_060000_replace_flamingo_mascot from './20261002_060000_replace_flamingo_mascot'
+import * as migration_20261005_145545_add_event_season from './20261005_145545_add_event_season'
+import * as migration_20261005_154532_add_venue_photos from './20261005_154532_add_venue_photos'
+import * as migration_20261005_165632_add_event_setting from './20261005_165632_add_event_setting'
+import * as migration_20261005_213633_add_upload_media_tool from './20261005_213633_add_upload_media_tool'
+import * as migration_20261006_002646_add_cancel_draft_tool from './20261006_002646_add_cancel_draft_tool'
+import * as migration_20261006_013746_add_listing_answer from './20261006_013746_add_listing_answer'
+import * as migration_20261006_145921_add_request_kinds from './20261006_145921_add_request_kinds'
+import * as migration_20261007_120000_add_gems_category from './20261007_120000_add_gems_category'
+import * as migration_20261007_125000_gem_label from './20261007_125000_gem_label'
+import * as migration_20261007_170624_add_site_artwork_tool from './20261007_170624_add_site_artwork_tool'
+import * as migration_20261007_183854_add_artwork_upload_links from './20261007_183854_add_artwork_upload_links'
+import * as migration_20261007_195724_add_story_videos from './20261007_195724_add_story_videos'
+import * as migration_20261007_202408_story_blog_blocks from './20261007_202408_story_blog_blocks'
+import * as migration_20261007_230730_story_card_hero from './20261007_230730_story_card_hero'
+import * as migration_20261009_191158_add_link_page from './20261009_191158_add_link_page'
+import * as migration_20261009_191159_seed_link_page from './20261009_191159_seed_link_page'
+import * as migration_20261009_193258_weekly_roundup from './20261009_193258_weekly_roundup'
+import * as migration_20261012_035142_event_story_format from './20261012_035142_event_story_format'
+import * as migration_20261017_203009_address_usage from './20261017_203009_address_usage'
+import * as migration_20261017_204939_site_usage from './20261017_204939_site_usage'
+import * as migration_20261020_184304_spend_approvals from './20261020_184304_spend_approvals'
+import * as migration_20261021_021048_graph_telemetry from './20261021_021048_graph_telemetry'
+import * as migration_20261021_032749_reel_reviews from './20261021_032749_reel_reviews'
+import * as migration_20261021_035949_graph_telemetry_2 from './20261021_035949_graph_telemetry_2'
+import * as migration_20261021_133014_reel_now from './20261021_133014_reel_now'
+import * as migration_20261021_162843_promo_coupons from './20261021_162843_promo_coupons'
+import * as migration_20261024_154336_email_approvals from './20261024_154336_email_approvals'
+import * as migration_20261102_171003_rankings from './20261102_171003_rankings'
+import * as migration_20261102_200129_ranking_nominations from './20261102_200129_ranking_nominations'
+import * as migration_20261104_020417_postiz_cloud from './20261104_020417_postiz_cloud'
+import * as migration_20261105_004815_trial_reels from './20261105_004815_trial_reels'
+import * as migration_20261110_033146_story_polls from './20261110_033146_story_polls'
+import * as migration_20261111_201408_vote_whatsapp_optins from './20261111_201408_vote_whatsapp_optins'
+import * as migration_20261119_044518_hq_media_purge from './20261119_044518_hq_media_purge'
+import * as migration_20261119_160245_whatsapp_leads from './20261119_160245_whatsapp_leads'
+import * as migration_20261119_181659_vote_whatsapp_broadcast from './20261119_181659_vote_whatsapp_broadcast'
 
 export const migrations = [
   {
@@ -316,6 +317,11 @@ export const migrations = [
   {
     up: migration_20261119_160245_whatsapp_leads.up,
     down: migration_20261119_160245_whatsapp_leads.down,
-    name: '20261119_160245_whatsapp_leads'
+    name: '20261119_160245_whatsapp_leads',
   },
-];
+  {
+    up: migration_20261119_181659_vote_whatsapp_broadcast.up,
+    down: migration_20261119_181659_vote_whatsapp_broadcast.down,
+    name: '20261119_181659_vote_whatsapp_broadcast',
+  },
+]

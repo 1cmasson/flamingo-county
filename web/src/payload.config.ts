@@ -56,6 +56,7 @@ import { reelScore } from './jobs/reelScore'
 import { reelStats } from './jobs/reelStats'
 import { pollWinner } from './jobs/pollWinner'
 import { reviewReminder } from './jobs/reviewReminder'
+import { voteBroadcast } from './jobs/voteBroadcast'
 import { socialStats } from './jobs/socialStats'
 import { weeklyRoundup } from './jobs/weeklyRoundup'
 import { hqMcpTools } from './lib/mcpTools'
@@ -386,7 +387,7 @@ export default buildConfig({
    * admin, and a quiet night would skip the brief.
    */
   jobs: {
-    tasks: [morningBrief, socialStats, reelStats, reelScore, graphTelemetry, eveningWrap, weeklyRoundup, reviewReminder, pollWinner],
+    tasks: [morningBrief, socialStats, reelStats, reelScore, graphTelemetry, eveningWrap, weeklyRoundup, reviewReminder, pollWinner, voteBroadcast],
     autoRun: [{ cron: '* * * * *', queue: 'hq' }],
     jobsCollectionOverrides: ({ defaultJobsCollection }) => ({
       ...defaultJobsCollection,
