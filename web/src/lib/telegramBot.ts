@@ -6,6 +6,7 @@ import { requestReview } from './growth'
 import { decideEmail, parseEmailCallback } from './emailApprovals'
 import { decideDraft, parseDraftCallback } from './hq'
 import { answerCallback, editMessage, esc, ownerChatId, resolveButtons, sendMessage } from './telegram'
+import { hqStats, statsText } from './hqStats'
 import { decidePublish, parsePublishCallback } from './publishRequests'
 import { parseReviewCallback, runReviewFromButton } from './reviewReminder'
 import { decideSpend, parseSpendCallback } from './spendApprovals'
@@ -37,6 +38,7 @@ export const HELP = [
   '/tasks — open tasks',
   '/task &lt;text&gt; — file a task for Claude',
   '/review — ask Claude for a growth review (traffic, what worked, next moves)',
+  '/stats — the last 7 days: votes, WhatsApp sign-ups, leads, coupons',
   '/leads — WhatsApp leads (La Capital…): who is waiting',
   '/wa &lt;id&gt; &lt;text&gt; — answer lead #L&lt;id&gt; on WhatsApp (or just reply to its alert)',
 ].join('\n')
@@ -137,6 +139,8 @@ async function command(payload: Payload, text: string): Promise<string> {
     }
     case '/review':
       return requestReview(payload)
+    case '/stats':
+      return statsText(await hqStats(payload), true)
     case '/leads':
       return leadsReport(payload)
     case '/wa': {
