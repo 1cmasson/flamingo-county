@@ -5,6 +5,8 @@ import type { StoryPoll } from '../payload-types'
 import { SITE_TZ } from './dates'
 import { pollTally, pollWinner, siteVotesFor } from './storyPolls'
 import { esc, sendMessage, telegramConfigured } from './telegram'
+import { resultAudienceCount, resultKeyboard, voteBroadcastEnabled } from './voteWhatsapp'
+import { restConfigured } from './whatsapp'
 
 /**
  * When a weekly story vote closes, tell the owner who won (owner, Nov 17:
@@ -105,7 +107,9 @@ export async function announcePollWinners(payload: Payload, now: Date = new Date
       overrideAccess: true,
     })
     try {
-      await sendMessage(winnerText(poll, counts, total))
+      // The WhatsApp subscribers tied to this vote get the winner only on his tap.
+      const n = win && voteBroadcastEnabled() && restConfigured() ? await resultAudienceCount(payload, poll.id) : 0
+      await sendMessage(winnerText(poll, counts, total), n ? { keyboard: resultKeyboard(poll.id, n) } : undefined)
     } catch (err) {
       await payload.delete({ collection: 'hq-events', id: claim.id, overrideAccess: true }).catch(() => undefined)
       throw err

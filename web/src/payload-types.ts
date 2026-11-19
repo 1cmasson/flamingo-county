@@ -1502,6 +1502,10 @@ export interface VoteWhatsappOptin {
    */
   lastPollSentId?: number | null;
   lastPollSentAt?: string | null;
+  /**
+   * The last vote whose winner WhatsApp went to this number (lib/voteWhatsapp.ts). Never sent twice for one vote.
+   */
+  lastResultSentId?: number | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -3917,6 +3921,7 @@ export interface VoteWhatsappOptinsSelect<T extends boolean = true> {
   test?: T;
   lastPollSentId?: T;
   lastPollSentAt?: T;
+  lastResultSentId?: T;
   updatedAt?: T;
   createdAt?: T;
 }
