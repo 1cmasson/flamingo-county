@@ -26,6 +26,7 @@ import { RankingNominations } from './collections/RankingNominations'
 import { StoryPolls } from './collections/StoryPolls'
 import { StoryPollVotes } from './collections/StoryPollVotes'
 import { VoteWhatsappOptins } from './collections/VoteWhatsappOptins'
+import { HqLeads } from './collections/HqLeads'
 import { StoryPollSuggestions } from './collections/StoryPollSuggestions'
 import { Subscribers } from './collections/Subscribers'
 import { ListingRequests } from './collections/ListingRequests'
@@ -128,6 +129,7 @@ export default buildConfig({
     HqPublishRequests,
     HqSpendApprovals,
     HqEmailApprovals,
+    HqLeads,
     HqChatTurns,
     HqVisits,
     HqUses,
@@ -257,6 +259,11 @@ export default buildConfig({
             'Public posts of the watchlist accounts (Business Discovery, daily): caption, likes (null if hidden), comments, views (reels only), followersAtFetch, snapshots at first/24h/7d ages, outlierScore = this post ÷ its account’s median at the same age bucket and basis (views for reels, likes+comments otherwise) over its last 30 posts, engagementPerFollower. No media files. hqGrowthContext lists the top outliers.',
         },
         'hq-clicks': { enabled: { find: true }, description: 'Clicks on /go/ tracking links.' },
+        'hq-leads': {
+          enabled: { find: true },
+          description:
+            'People who wrote to our WhatsApp for a client line (flow la-capital): status new/asking/handoff/ready/called/visited/no-show/closed, intent visit/callback/directions, place, when, timeOfDay, travel, source (where the link was tapped), the conversation. phone is hidden. Read-only: the owner sets status from Telegram. Never anything about health.',
+        },
         'hq-visits': {
           enabled: { find: true },
           description:

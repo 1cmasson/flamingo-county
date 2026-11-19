@@ -104,6 +104,7 @@ export interface Config {
     'hq-publish-requests': HqPublishRequest;
     'hq-spend-approvals': HqSpendApproval;
     'hq-email-approvals': HqEmailApproval;
+    'hq-leads': HqLead;
     'hq-chat-turns': HqChatTurn;
     'hq-visits': HqVisit;
     'hq-uses': Hqus;
@@ -155,6 +156,7 @@ export interface Config {
     'hq-publish-requests': HqPublishRequestsSelect<false> | HqPublishRequestsSelect<true>;
     'hq-spend-approvals': HqSpendApprovalsSelect<false> | HqSpendApprovalsSelect<true>;
     'hq-email-approvals': HqEmailApprovalsSelect<false> | HqEmailApprovalsSelect<true>;
+    'hq-leads': HqLeadsSelect<false> | HqLeadsSelect<true>;
     'hq-chat-turns': HqChatTurnsSelect<false> | HqChatTurnsSelect<true>;
     'hq-visits': HqVisitsSelect<false> | HqVisitsSelect<true>;
     'hq-uses': HqUsesSelect<false> | HqUsesSelect<true>;
@@ -2071,6 +2073,99 @@ export interface HqEmailApproval {
   createdAt: string;
 }
 /**
+ * People who wrote to our WhatsApp for a client (La Capital…). "Ready" = they asked to be called and said yes to sharing their number; set the rest from the Telegram buttons.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-leads".
+ */
+export interface HqLead {
+  id: number;
+  /**
+   * Which line: la-capital.
+   */
+  flow: string;
+  /**
+   * Their WhatsApp number (+13055551234). Never shown over MCP.
+   */
+  phone: string;
+  /**
+   * The name on their WhatsApp profile, as they set it.
+   */
+  whatsappName?: string | null;
+  lang?: ('es' | 'en') | null;
+  /**
+   * Where the link was tapped (instagram, story, listing…), from the ref in their first message.
+   */
+  source?: string | null;
+  status: 'new' | 'asking' | 'handoff' | 'ready' | 'called' | 'visited' | 'no-show' | 'closed';
+  /**
+   * Where the bot is in the conversation.
+   */
+  step?: string | null;
+  /**
+   * What they came for.
+   */
+  intent?: ('visit' | 'callback' | 'directions') | null;
+  /**
+   * Which location (the flow’s place key).
+   */
+  place?: string | null;
+  /**
+   * When they’d like to go (this week, next week, any).
+   */
+  when?: string | null;
+  /**
+   * Morning, afternoon or any.
+   */
+  timeOfDay?: string | null;
+  /**
+   * Car, bus or a ride from someone.
+   */
+  travel?: string | null;
+  /**
+   * When they tapped yes to their name and number going to the client.
+   */
+  consentAt?: string | null;
+  /**
+   * The exact question they said yes to.
+   */
+  consentText?: string | null;
+  /**
+   * They wrote BAJA/STOP. Never message them first.
+   */
+  optedOut?: boolean | null;
+  /**
+   * Replies in a row the bot didn’t understand. At 2 it hands over to a person.
+   */
+  misses?: number | null;
+  /**
+   * Their last message. Free-form replies are allowed for 24 hours after it.
+   */
+  lastInboundAt?: string | null;
+  /**
+   * The conversation, newest last: { at, from: them | bot | us, body }. The last 60 are kept.
+   */
+  messages?:
+    | {
+        [k: string]: unknown;
+      }
+    | unknown[]
+    | string
+    | number
+    | boolean
+    | null;
+  /**
+   * What the clinic said, when they came.
+   */
+  notes?: string | null;
+  /**
+   * Written from the owner’s or staff’s own number; left out of the counts.
+   */
+  test?: boolean | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
  * The Telegram chat's short memory. Redacted, and pruned after two days.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -2459,6 +2554,12 @@ export interface PayloadMcpApiKey {
   hqClicks?: {
     /**
      * Allow clients to find hq-clicks.
+     */
+    find?: boolean | null;
+  };
+  hqLeads?: {
+    /**
+     * Allow clients to find hq-leads.
      */
     find?: boolean | null;
   };
@@ -3066,6 +3167,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'hq-email-approvals';
         value: number | HqEmailApproval;
+      } | null)
+    | ({
+        relationTo: 'hq-leads';
+        value: number | HqLead;
       } | null)
     | ({
         relationTo: 'hq-chat-turns';
@@ -4100,6 +4205,34 @@ export interface HqEmailApprovalsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "hq-leads_select".
+ */
+export interface HqLeadsSelect<T extends boolean = true> {
+  flow?: T;
+  phone?: T;
+  whatsappName?: T;
+  lang?: T;
+  source?: T;
+  status?: T;
+  step?: T;
+  intent?: T;
+  place?: T;
+  when?: T;
+  timeOfDay?: T;
+  travel?: T;
+  consentAt?: T;
+  consentText?: T;
+  optedOut?: T;
+  misses?: T;
+  lastInboundAt?: T;
+  messages?: T;
+  notes?: T;
+  test?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "hq-chat-turns_select".
  */
 export interface HqChatTurnsSelect<T extends boolean = true> {
@@ -4260,6 +4393,11 @@ export interface PayloadMcpApiKeysSelect<T extends boolean = true> {
         find?: T;
       };
   hqClicks?:
+    | T
+    | {
+        find?: T;
+      };
+  hqLeads?:
     | T
     | {
         find?: T;
