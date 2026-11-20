@@ -53,6 +53,7 @@ import * as migration_20261119_044518_hq_media_purge from './20261119_044518_hq_
 import * as migration_20261119_160245_whatsapp_leads from './20261119_160245_whatsapp_leads';
 import * as migration_20261119_181659_vote_whatsapp_broadcast from './20261119_181659_vote_whatsapp_broadcast';
 import * as migration_20261119_194006_vote_whatsapp_result from './20261119_194006_vote_whatsapp_result';
+import * as migration_20261120_051023_la_capital_domino from './20261120_051023_la_capital_domino';
 
 export const migrations = [
   {
@@ -328,6 +329,11 @@ export const migrations = [
   {
     up: migration_20261119_194006_vote_whatsapp_result.up,
     down: migration_20261119_194006_vote_whatsapp_result.down,
-    name: '20261119_194006_vote_whatsapp_result'
+    name: '20261119_194006_vote_whatsapp_result',
+  },
+  {
+    up: migration_20261120_051023_la_capital_domino.up,
+    down: migration_20261120_051023_la_capital_domino.down,
+    name: '20261120_051023_la_capital_domino'
   },
 ];

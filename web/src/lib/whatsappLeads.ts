@@ -47,22 +47,25 @@ function lastFromThem(lead: Pick<HqLead, 'messages'>, n: number): string {
   return mine.map((m) => `“${esc(m.body.slice(0, 400))}”`).join('\n')
 }
 
-const INTENT: Record<string, string> = { visit: 'Visita', callback: 'Llamada', directions: 'Cómo llegar' }
+const INTENT: Record<string, string> = { visit: 'Visita', callback: 'Llamada', directions: 'Cómo llegar', domino: 'Torneo de dominó' }
 
 /** Who, what they asked for, and where they came from. */
 export function leadSummary(lead: HqLead): string {
-  const consented = Boolean(lead.consentAt)
+  // Either yes (the clinic's, or the tournament's) lets the clinic have the number.
+  const consented = Boolean(lead.consentAt || lead.dominoAt)
   const phone = consented ? `<code>${esc(lead.phone)}</code>` : esc(masked(lead.phone))
-  const place = lead.place && lead.place in PLACES ? PLACES[lead.place as keyof typeof PLACES].title.es : lead.place === 'any' ? 'cualquiera' : null
-  const what = [
-    lead.intent ? INTENT[lead.intent] : null,
-    place,
-    label(lead.when, 'es'),
-    label(lead.timeOfDay, 'es'),
-    label(lead.travel, 'es'),
-  ].filter(Boolean)
+  const placeTitle = (p: string | null | undefined) => (p && p in PLACES ? PLACES[p as keyof typeof PLACES].title.es : null)
+  const place = placeTitle(lead.place) ?? (lead.place === 'any' ? 'cualquiera' : null)
+  const what =
+    lead.intent === 'domino'
+      ? []
+      : [lead.intent ? INTENT[lead.intent] : null, place, label(lead.when, 'es'), label(lead.timeOfDay, 'es'), label(lead.travel, 'es')].filter(Boolean)
+  const domino = lead.dominoAt
+    ? `🎲 ${INTENT.domino} · ${lead.dominoParty === 2 ? '2 personas' : '1 persona'}${placeTitle(lead.dominoPlace) ? ` · ${placeTitle(lead.dominoPlace)}` : ''}${lead.dominoEvent ? ` · ${lead.dominoEvent.replace('T', ' ')}` : ''}`
+    : null
   return [
     `<b>${leadTag(lead.id)}</b> · ${esc(lead.whatsappName ?? 'sin nombre')} · ${phone}${lead.test ? ' · prueba' : ''}`,
+    domino ? esc(domino) : null,
     what.length ? `📍 ${esc(what.join(' · '))}` : null,
     `vino de ${esc(lead.source ?? 'whatsapp')} (${lead.lang})`,
   ]
@@ -70,10 +73,11 @@ export function leadSummary(lead: HqLead): string {
     .join('\n')
 }
 
-export type Alert = 'ready' | 'person' | 'message' | 'cancel'
+export type Alert = 'ready' | 'person' | 'message' | 'cancel' | 'domino'
 
 const HEAD: Record<Alert, string> = {
   ready: `🏥✅ <b>${CLINIC.name}: pedido nuevo</b>`,
+  domino: `🎲✅ <b>${CLINIC.name}: Torneo de dominó, se apuntó</b>`,
   person: '🏥🙋 <b>Quiere hablar con una persona</b>',
   message: '🏥💬 <b>Mensaje</b>',
   cancel: '🏥✖️ <b>Canceló su pedido</b>',
@@ -117,10 +121,13 @@ export async function setLeadStatus(payload: Payload, id: number, status: (typeo
 }
 
 export async function alertOwner(lead: HqLead, why: Alert): Promise<void> {
+  const at = (iso: string) => new Date(iso).toLocaleString('es-US', { timeZone: 'America/New_York', dateStyle: 'short', timeStyle: 'short' })
   const consent =
     why === 'ready' && lead.consentAt
-      ? `\n<i>Dijo que sí a pasar su nombre y número a la clínica (${new Date(lead.consentAt).toLocaleString('es-US', { timeZone: 'America/New_York', dateStyle: 'short', timeStyle: 'short' })}).</i>`
-      : ''
+      ? `\n<i>Dijo que sí a pasar su nombre y número a la clínica (${at(lead.consentAt)}).</i>`
+      : why === 'domino' && lead.dominoAt
+        ? `\n<i>Dijo que sí a pasar su nombre y número a la clínica solo para el torneo (${at(lead.dominoAt)}).</i>`
+        : ''
   const text = `${HEAD[why]}\n${leadSummary(lead)}${consent}\n\n${lastFromThem(lead, why === 'message' ? 1 : 3)}\n\n<i>${REPLY_HINT}</i>`
   if (why !== 'ready') {
     await notifyOwner(text)
@@ -180,7 +187,7 @@ export async function leadsReport(payload: Payload): Promise<string> {
   const count = (s: HqLead['status']) => docs.filter((d) => d.status === s).length
   const waiting = docs.filter((d) => d.status === 'handoff' || d.status === 'ready').slice(0, 12)
   const lines = [
-    `<b>WhatsApp leads</b> · ${docs.length} · ready ${count('ready')} · with a person ${count('handoff')} · called ${count('called')} · visited ${count('visited')} · no-show ${count('no-show')}`,
+    `<b>WhatsApp leads</b> · ${docs.length} · ready ${count('ready')} · with a person ${count('handoff')} · called ${count('called')} · visited ${count('visited')} · no-show ${count('no-show')} · domino ${docs.filter((d) => d.dominoAt).length}`,
     ...waiting.map((d) => `${leadTag(d.id)} ${esc(d.whatsappName ?? 'sin nombre')} · ${d.status}${d.intent ? ` · ${INTENT[d.intent]}` : ''}`),
   ]
   if (waiting.length) lines.push('', '<i>Reply to a lead’s alert to answer it, or /wa &lt;id&gt; &lt;text&gt;.</i>')

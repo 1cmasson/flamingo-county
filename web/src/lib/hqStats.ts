@@ -1,6 +1,7 @@
 import type { Payload, Where } from 'payload'
 
 import type { HqLead } from '../payload-types'
+import { dominoEvent } from './laCapital'
 import { currentPollSlug, getPublishedPoll, pollPhase, pollTally, siteVotesFor } from './storyPolls'
 import { esc } from './telegram'
 import type { Out } from './whatsapp'
@@ -9,7 +10,8 @@ import type { Out } from './whatsapp'
  * The owner's numbers in one answer (owner, Nov 19: "how do I know if promo
  * messages are coming in, or if anyone's voting, or if we're even tracking
  * numbers?"): the current vote, WhatsApp vote sign-ups, the WhatsApp line's
- * leads and the partner coupons, each for the last 7 days.
+ * leads, the domino tournament's sign-ups and the partner coupons, each for
+ * the last 7 days (the tournament: everyone signed up for the one set now).
  *
  * Read-only. Staff and test rows are left out everywhere, like every other
  * count in HQ. The same numbers go to Telegram (/stats, HTML) and to the
@@ -30,6 +32,8 @@ export type HqStats = {
   optins: { active: number; newThisWeek: number }
   leads: { total: number; newThisWeek: number; waiting: number; byStatus: Partial<Record<HqLead['status'], number>>; bySource: Record<string, number> }
   coupons: { takenThisWeek: number; usedThisWeek: number }
+  /** The domino tournament set in LA_CAPITAL_DOMINO (or, with none set, every sign-up kept). */
+  domino: { event: string | null; rsvps: number; people: number; alsoAsked: number }
 }
 
 const notTest: Where = { test: { not_equals: true } }
@@ -80,7 +84,7 @@ export async function hqStats(payload: Payload, now: Date = new Date()): Promise
     payload.find({
       collection: 'hq-leads',
       where: notTest,
-      select: { status: true, source: true, createdAt: true },
+      select: { status: true, source: true, createdAt: true, dominoAt: true, dominoEvent: true, dominoParty: true, consentAt: true },
       pagination: false,
       depth: 0,
       overrideAccess: true,
@@ -90,6 +94,8 @@ export async function hqStats(payload: Payload, now: Date = new Date()): Promise
   ])
   const leads = leadDocs.docs
   const fresh = leads.filter((l) => l.createdAt >= since)
+  const ev = dominoEvent(undefined, now)
+  const rsvps = leads.filter((l) => l.dominoAt && (!ev || l.dominoEvent === ev.key))
   return {
     poll,
     optins: { active, newThisWeek: newOptins },
@@ -101,6 +107,13 @@ export async function hqStats(payload: Payload, now: Date = new Date()): Promise
       bySource: tallyBy(fresh, (l) => l.source),
     },
     coupons: { takenThisWeek: taken, usedThisWeek: used },
+    domino: {
+      event: ev?.key ?? null,
+      rsvps: rsvps.length,
+      people: rsvps.reduce((n, l) => n + (l.dominoParty === 2 ? 2 : 1), 0),
+      // Signed up, and also said yes to a visit or a call from the clinic.
+      alsoAsked: rsvps.filter((l) => l.consentAt).length,
+    },
   }
 }
 
@@ -135,6 +148,13 @@ export function statsText(s: HqStats, html: boolean): string {
   )
   const vis = s.leads.byStatus
   if (s.leads.total) lines.push(`   llamados ${vis.called ?? 0} · vinieron ${vis.visited ?? 0} · no vinieron ${vis['no-show'] ?? 0}`)
+  if (s.domino.event || s.domino.rsvps) {
+    const d = s.domino
+    const day = d.event ? ` (${d.event.slice(5, 10).replace('-', '/')})` : ''
+    lines.push(
+      `🎲 Torneo de dominó${day}: ${d.rsvps} apuntado${d.rsvps === 1 ? '' : 's'} · ${d.people} persona${d.people === 1 ? '' : 's'} · ${d.alsoAsked} también pidi${d.alsoAsked === 1 ? 'ó' : 'eron'} visita o llamada`,
+    )
+  }
   lines.push(`🎟️ Cupones: ${s.coupons.takenThisWeek} sacado${s.coupons.takenThisWeek === 1 ? '' : 's'} · ${s.coupons.usedThisWeek} usado${s.coupons.usedThisWeek === 1 ? '' : 's'}`)
   return lines.join('\n')
 }

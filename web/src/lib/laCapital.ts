@@ -1,6 +1,7 @@
 import type { Lang } from '../i18n'
 import { busCopy } from './busCopy'
 import { serverNetwork } from './busNetwork'
+import { miamiInstant, SITE_TZ } from './dates'
 import { absUrl } from './site'
 import { hubDestQuery, tripBuses, tripLinkPath } from './tripLink'
 import { planTrips, WALK_ONLY_MIN } from './tripPlan'
@@ -13,7 +14,14 @@ import type { Button, Out } from './whatsapp'
  *
  *   menu ─ Visit ──── place → when → time of day → travel ─(bus)→ location → consent → done
  *        ├ Call me ── place → time of day → consent → done
- *        └ Get there  place → location → bus answer → after
+ *        ├ Get there  place → location → bus answer → after
+ *        └ Domino ─── sign me up → (place) → how many → RSVP consent → signed up ─┬ visit / call (own consent)
+ *                                                                                    └ how to get there
+ *
+ * The domino tournament shows only while LA_CAPITAL_DOMINO names one that
+ * hasn't started (`dominoEvent`). Its RSVP consent covers the tournament and
+ * nothing else; a visit or a call after it asks its own consent, and signing
+ * up never depends on that one.
  *
  * What it does: takes a visit or a call-back request, says how to get there
  * by bus from a shared location (lib/tripPlan.ts, the site's own planner),
@@ -57,8 +65,62 @@ const isPlace = (k: unknown): k is PlaceKey => typeof k === 'string' && k in PLA
 
 /* ----------------------------------------------------------------- state */
 
-export type Step = 'menu' | 'place' | 'when' | 'tod' | 'travel' | 'pin' | 'consent' | 'after' | 'done' | 'handoff'
-export type Intent = 'visit' | 'callback' | 'directions'
+export type Step =
+  | 'menu'
+  | 'place'
+  | 'when'
+  | 'tod'
+  | 'travel'
+  | 'pin'
+  | 'consent'
+  | 'after'
+  | 'done'
+  | 'handoff'
+  | 'dom'
+  | 'party'
+  | 'rsvp'
+  | 'rsvpDone'
+export type Intent = 'visit' | 'callback' | 'directions' | 'domino'
+
+/* ---------------------------------------------------- domino tournament */
+
+/** The tournament the line signs people up for, from LA_CAPITAL_DOMINO. */
+export type DominoEvent = {
+  /** The Miami wall-clock start, `2026-12-04T10:00`: which tournament an RSVP is for. */
+  key: string
+  at: Date
+  place: PlaceKey | 'any'
+  /** Not started yet: only then does the line offer it. */
+  active: boolean
+}
+
+/**
+ * LA_CAPITAL_DOMINO = `YYYY-MM-DDTHH:MM|calle8` (or `|hialeah`, or `|any` to let
+ * them pick), the start in Miami time. Unset or malformed is null; a start
+ * that has passed is `active: false`.
+ */
+export function dominoEvent(raw: string | undefined = process.env.LA_CAPITAL_DOMINO, now: Date = new Date()): DominoEvent | null {
+  const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2})\|(calle8|hialeah|any)$/.exec((raw ?? '').trim())
+  if (!m) return null
+  const [, day, hh, mm, place] = m
+  if (Number(hh) > 23 || Number(mm) > 59) return null
+  const check = new Date(`${day}T00:00:00Z`)
+  if (Number.isNaN(check.getTime()) || check.toISOString().slice(0, 10) !== day) return null
+  const at = miamiInstant(day, `${hh}:${mm}`)
+  if (Number.isNaN(at.getTime())) return null
+  return { key: `${day}T${hh}:${mm}`, at, place: place as DominoEvent['place'], active: at.getTime() > now.getTime() }
+}
+
+/** «viernes, 4 de diciembre, 10:00 a. m.» in Miami time. */
+export const dominoWhen = (ev: DominoEvent, lang: Lang) =>
+  new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'es-US', {
+    timeZone: SITE_TZ,
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(ev.at)
 
 export type LeadState = {
   step: Step
@@ -71,6 +133,12 @@ export type LeadState = {
   travel: string | null
   misses: number
   whatsappName: string | null
+  /** Domino RSVP: how many are coming (1 or 2), where, and when they said yes. */
+  dominoParty?: number | null
+  dominoPlace?: string | null
+  dominoAt?: string | null
+  /** The tournament on now (from `dominoEvent`). Read each turn, never saved. */
+  event?: DominoEvent | null
 }
 
 export type Input = {
@@ -82,10 +150,10 @@ export type Input = {
 }
 
 export type Turn = {
-  set: Partial<LeadState> & { consentAt?: string; consentText?: string }
+  set: Omit<Partial<LeadState>, 'event'> & { consentAt?: string; consentText?: string; dominoConsentText?: string | null; dominoEvent?: string | null }
   outs: Out[]
   /** What to tell the owner on Telegram, if anything. */
-  alert?: 'ready' | 'person' | 'message' | 'cancel'
+  alert?: 'ready' | 'person' | 'message' | 'cancel' | 'domino'
 }
 
 /* ------------------------------------------------------------------ copy */
@@ -110,6 +178,11 @@ const B = {
   yes: { es: 'Sí, que me llamen', en: 'Yes, call me' },
   no: { es: 'No, gracias', en: 'No, thanks' },
   done: { es: 'Listo, gracias', en: 'All set, thanks' },
+  dom: { es: 'Torneo de dominó', en: 'Domino tournament' },
+  signUp: { es: 'Apuntarme', en: 'Sign me up' },
+  one: { es: 'Solo yo', en: 'Just me' },
+  two: { es: 'Somos 2', en: 'Two of us' },
+  rsvpYes: { es: 'Sí, apúntame', en: 'Yes, sign me up' },
 } satisfies Record<string, Both>
 
 const LABEL: Record<string, Both> = {
@@ -145,11 +218,15 @@ const COPY = {
         ].join('\n')
   },
   menuFoot: { es: 'Para hablar con una persona, escribe PERSONA. English? Reply EN', en: 'To talk to a person, type PERSON. ¿Español? Responde ES' },
+  /** With the tournament on, «Cómo llegar» leaves the menu for the domino button; typing still works. */
+  menuDir: { es: 'Para saber cómo llegar, escribe GUAGUA.', en: 'For how to get there, type BUS.' },
   place: (lang: Lang, intent: Intent | null) =>
     [
       intent === 'callback'
         ? t(lang, { es: '¿De qué clínica quieres que te llamen?', en: 'Which clinic should call you?' })
-        : t(lang, { es: '¿Cuál te queda mejor?', en: 'Which one is better for you?' }),
+        : intent === 'domino'
+          ? t(lang, { es: '¿En cuál quieres jugar?', en: 'Which one do you want to play at?' })
+          : t(lang, { es: '¿Cuál te queda mejor?', en: 'Which one is better for you?' }),
       '',
       ...placeKeys.map((k) => `📍 *${PLACES[k].title[lang]}*: ${PLACES[k].address}`),
     ].join('\n'),
@@ -208,6 +285,47 @@ const COPY = {
     en: 'I’m passing you to a person on the team; they’ll write here as soon as they can. To go back to the buttons, type MENU.',
   },
   busSent: { es: '🚌 (indicaciones de guagua enviadas)', en: '🚌 (bus directions sent)' },
+  dom: (lang: Lang, s: LeadState) => {
+    const ev = s.event!
+    return [
+      t(lang, { es: '🎲 *Torneo de dominó en La Capital*', en: '🎲 *Domino tournament at La Capital*' }),
+      `📅 ${dominoWhen(ev, lang)}`,
+      ...dominoWhere(lang, s),
+      t(lang, { es: 'Abierto a todos; no hace falta ser paciente.', en: 'Open to everyone; you don’t need to be a patient.' }),
+      '',
+      t(lang, { es: '¿Te apunto?', en: 'Shall I sign you up?' }),
+    ].join('\n')
+  },
+  party: { es: '¿Cuántos vienen a jugar?', en: 'How many are coming to play?' },
+  rsvp: (lang: Lang, s: LeadState) => {
+    const where = isPlace(s.dominoPlace) ? PLACES[s.dominoPlace].title[lang] : null
+    return [`📝 ${[t(lang, B.dom), where, people(lang, s.dominoParty)].filter(Boolean).join(' · ')}`, '', dominoConsentQuestion(lang)].join('\n')
+  },
+  rsvpDone: (lang: Lang, s: LeadState) =>
+    [
+      t(lang, { es: '¡Listo, te apuntamos! ✅', en: 'Done, you’re signed up! ✅' }),
+      `🎲 ${t(lang, B.dom)} · ${people(lang, s.dominoParty)}`,
+      ...(s.event ? [`📅 ${dominoWhen(s.event, lang)}`] : []),
+      ...dominoWhere(lang, s),
+      '',
+      t(lang, {
+        es: 'Este WhatsApp contesta a cualquier hora; si hace falta confirmar algo, la clínica te llama en su horario. Para cancelar, escribe CANCELAR.',
+        en: 'This WhatsApp answers any time; if anything needs confirming, the clinic calls you during its hours. To cancel, type CANCEL.',
+      }),
+      '',
+      t(lang, {
+        es: 'Aparte del torneo, ¿quieres también una visita a la clínica o que te llamen? Es opcional.',
+        en: 'Separate from the tournament, would you also like a visit to the clinic or a call back? It’s optional.',
+      }),
+    ].join('\n'),
+  rsvpDeclined: {
+    es: 'Está bien, no te apuntamos ni le pasamos nada a nadie. Si cambias de idea, escribe DOMINÓ.',
+    en: 'OK, we didn’t sign you up or pass anything on. If you change your mind, type DOMINO.',
+  },
+  rsvpCancelled: {
+    es: 'Listo, te sacamos del torneo y le avisamos a la clínica. Si quieres empezar de nuevo, escribe MENÚ.',
+    en: 'Done, you’re off the tournament list and we’ll let the clinic know. To start again, type MENU.',
+  },
   tapHint: { es: 'Toca uno de los botones 👇 (o responde con el número)', en: 'Tap one of the buttons 👇 (or reply with the number)' },
   tripTo: (lang: Lang, place: string) => (lang === 'en' ? `🚌 To get to ${place}:` : `🚌 Para llegar a ${place}:`),
   tripLink: { es: 'La ruta en el mapa, con las guaguas en vivo:', en: 'The route on the map, with live buses:' },
@@ -224,6 +342,25 @@ export function consentQuestion(lang: Lang): string {
     : `¿Le pasamos tu nombre y este número a ${CLINIC.name} para que te llamen o te escriban y confirmen? Solo para esto.`
 }
 
+/** The exact question the domino RSVP tap answers: the tournament only. Saved with the lead. */
+export function dominoConsentQuestion(lang: Lang): string {
+  return lang === 'en'
+    ? `Can we pass your name and this number to ${CLINIC.name} to sign you up for the domino tournament? Only for the tournament: they may text you to confirm or tell you about a change.`
+    : `¿Le pasamos tu nombre y este número a ${CLINIC.name} para apuntarte al torneo de dominó? Solo para el torneo: te pueden escribir para confirmar o avisarte de un cambio.`
+}
+
+const people = (lang: Lang, n: number | null | undefined) =>
+  n === 2 ? t(lang, { es: '2 personas', en: '2 people' }) : t(lang, { es: '1 persona', en: '1 person' })
+
+/** Where the tournament is: the fixed place, the one they picked, or both. */
+function dominoWhere(lang: Lang, s: LeadState): string[] {
+  const key = s.event && s.event.place !== 'any' ? s.event.place : isPlace(s.dominoPlace) ? s.dominoPlace : null
+  const keys = key ? [key] : placeKeys
+  return keys.map((k) => `📍 ${PLACES[k].name[lang]}: ${PLACES[k].address}`)
+}
+
+const dominoOn = (s: LeadState) => Boolean(s.event?.active)
+
 /* --------------------------------------------------------------- screens */
 
 const btn = (id: string, title: Both, lang: Lang): Button => ({ id: `lc:${id}`, title: title[lang] })
@@ -233,10 +370,15 @@ export function screen(step: Step, s: LeadState): Out | null {
   const L = s.lang
   switch (step) {
     case 'menu':
-      return {
-        text: `${COPY.hello(L, s.whatsappName, s.status !== 'new')}\n\n${t(L, COPY.menuFoot)}`,
-        buttons: [btn('visit', B.visit, L), btn('call', B.call, L), btn('dir', B.dir, L)],
-      }
+      return dominoOn(s)
+        ? {
+            text: `${COPY.hello(L, s.whatsappName, s.status !== 'new')}\n\n${t(L, COPY.menuDir)}\n${t(L, COPY.menuFoot)}`,
+            buttons: [btn('dom', B.dom, L), btn('visit', B.visit, L), btn('call', B.call, L)],
+          }
+        : {
+            text: `${COPY.hello(L, s.whatsappName, s.status !== 'new')}\n\n${t(L, COPY.menuFoot)}`,
+            buttons: [btn('visit', B.visit, L), btn('call', B.call, L), btn('dir', B.dir, L)],
+          }
     case 'place':
       return {
         text: COPY.place(L, s.intent),
@@ -245,6 +387,14 @@ export function screen(step: Step, s: LeadState): Out | null {
           ...(s.intent === 'callback' ? [btn('p:any', B.any, L)] : []),
         ],
       }
+    case 'dom':
+      return s.event ? { text: COPY.dom(L, s), buttons: [btn('dyes', B.signUp, L), btn('skip', B.skip, L)] } : null
+    case 'party':
+      return { text: t(L, COPY.party), buttons: [btn('n:1', B.one, L), btn('n:2', B.two, L)] }
+    case 'rsvp':
+      return { text: COPY.rsvp(L, s), buttons: [btn('dok', B.rsvpYes, L), btn('no', B.no, L)] }
+    case 'rsvpDone':
+      return { text: COPY.rsvpDone(L, s), buttons: [btn('visit', B.visit, L), btn('call', B.call, L), btn('dir', B.dir, L)] }
     case 'when':
       return { text: t(L, COPY.when), buttons: [btn('w:this', B.thisWeek, L), btn('w:next', B.nextWeek, L), btn('w:anyday', B.anyDay, L)] }
     case 'tod':
@@ -297,6 +447,11 @@ const WORDS: Record<string, RegExp> = {
   'lc:yes': /^(si|sip|yes|ok|okay|dale|claro|de acuerdo|perfecto|si por favor|yes please|sure)\b/,
   'lc:no': /^(no|nope|no gracias|no thanks)\b/,
   'lc:done': /\b(listo|gracias|thanks|thank you|nada mas|that'?s all|eso es todo)\b/,
+  'lc:dom': /\b(domino\w*|torneo|tournament)\b/,
+  'lc:dyes': /^(si|sip|yes|ok|okay|dale|claro|apunta\w*|anota\w*|sign me up|sure)\b/,
+  'lc:n:1': /\b(solo yo|yo sol[oa]|just me|only me|uno|one)\b/,
+  'lc:n:2': /\b(somos 2|somos dos|dos|two|pareja|couple|con (mi|un|una)\b)/,
+  'lc:dok': /^(si|sip|yes|ok|okay|dale|claro|de acuerdo|perfecto|apunta\w*|sure)\b/,
 }
 
 /**
@@ -389,6 +544,8 @@ export type TurnContext = {
   now: Date
   /** A button Jev read from free text, when the deterministic reading found none. */
   jevPick?: string | null
+  /** Their link asked for the domino tournament (a ref with «dominó» in it). */
+  domino?: boolean
 }
 
 /** Move to a step: its screen, and a clean miss count. */
@@ -413,6 +570,20 @@ function start(s: LeadState, intent: Intent): Turn {
   return go(s, 'place', { intent, status: s.status === 'new' ? 'asking' : s.status, place: null, when: null, timeOfDay: null, travel: null })
 }
 
+/** The tournament's first screen, or the menu once it's over or not set. */
+function startDomino(s: LeadState): Turn {
+  if (!dominoOn(s)) return go(s, 'menu')
+  const place = s.event!.place
+  return go(s, 'dom', { intent: 'domino', status: s.status === 'new' ? 'asking' : s.status, dominoPlace: place === 'any' ? null : place })
+}
+
+/** Directions to the tournament's place when it's known, otherwise the usual place question. */
+function domDirections(s: LeadState): Turn {
+  const key = s.event && s.event.place !== 'any' ? s.event.place : isPlace(s.dominoPlace) ? s.dominoPlace : null
+  if (!key) return start(s, 'directions')
+  return go(s, 'pin', { intent: 'directions', place: key })
+}
+
 /** One step forward from a picked button. */
 function onPick(s: LeadState, id: string, now: Date): Turn {
   const L = s.lang
@@ -423,9 +594,29 @@ function onPick(s: LeadState, id: string, now: Date): Turn {
       if (v === 'visit') return start(s, 'visit')
       if (v === 'call') return start(s, 'callback')
       if (v === 'dir') return start(s, 'directions')
+      if (v === 'dom') return startDomino(s)
       return { set: { step: 'done', misses: 0 }, outs: [{ text: t(L, COPY.bye) }] }
     case 'place':
+      if (s.intent === 'domino') return go(s, 'party', { dominoPlace: v.slice(2) })
       return afterPlace(s, { place: v.slice(2) })
+    case 'dom':
+      if (v !== 'dyes') return go(s, 'after')
+      return s.event?.place === 'any' ? go(s, 'place') : go(s, 'party')
+    case 'party':
+      return go(s, 'rsvp', { dominoParty: v === 'n:2' ? 2 : 1 })
+    case 'rsvp':
+      if (v === 'dok' && s.event) {
+        const set = { dominoAt: now.toISOString(), dominoConsentText: dominoConsentQuestion(L), dominoEvent: s.event.key }
+        return { ...go(s, 'rsvpDone', set), alert: 'domino' }
+      }
+      return {
+        set: { step: 'done', misses: 0, ...(s.status === 'new' || s.status === 'asking' ? { status: 'closed' as const } : {}) },
+        outs: [{ text: t(L, COPY.rsvpDeclined) }],
+      }
+    case 'rsvpDone':
+      if (v === 'visit') return start(s, 'visit')
+      if (v === 'call') return start(s, 'callback')
+      return domDirections(s)
     case 'when':
       return go(s, 'tod', { when: v.slice(2) })
     case 'tod': {
@@ -480,9 +671,24 @@ export function turn(s: LeadState, input: Input, ctx: TurnContext): Turn {
   if (cmd === 'menu') return go(s, 'menu', { status: s.status === 'handoff' ? 'asking' : s.status })
   if (cmd === 'person') return { set: { step: 'handoff', status: s.status === 'ready' ? 'ready' : 'handoff', misses: 0 }, outs: [{ text: t(L, COPY.handoff) }], alert: 'person' }
   if (cmd === 'cancel') {
-    if (s.status === 'ready') return { set: { step: 'done', status: 'closed', misses: 0 }, outs: [{ text: t(L, COPY.cancelled) }], alert: 'cancel' }
+    const rsvp = Boolean(s.dominoAt)
+    if (s.status === 'ready' || rsvp) {
+      return {
+        set: {
+          step: 'done',
+          misses: 0,
+          ...(s.status === 'ready' ? { status: 'closed' as const } : {}),
+          ...(rsvp ? { dominoAt: null, dominoParty: null, dominoPlace: null, dominoEvent: null } : {}),
+        },
+        outs: [{ text: t(L, s.status === 'ready' ? COPY.cancelled : COPY.rsvpCancelled) }],
+        alert: 'cancel',
+      }
+    }
     return go(s, 'menu')
   }
+
+  // DOMINÓ typed on any screen, while there's a tournament to sign up for.
+  if (!input.button && dominoOn(s) && /^(domino|torneo|torneo de domino|domino tournament)$/.test(norm(input.text))) return startDomino(s)
 
   if (input.location) return onLocation(s, input.location, ctx.now)
 
@@ -490,18 +696,23 @@ export function turn(s: LeadState, input: Input, ctx: TurnContext): Turn {
   // a day with no answer, the buttons come back below).
   if (s.step === 'handoff' && !ctx.fresh) return { set: {}, outs: [], alert: 'message' }
 
-  // A new conversation, or a greeting after a finished one: the menu.
-  if (ctx.fresh || (s.step === 'done' && greeting(input.text) && !input.button)) {
+  // A new conversation, or a greeting after a finished one: the menu (or the
+  // tournament, when their link asked for it).
+  if (ctx.fresh || ((s.step === 'done' || s.step === 'rsvpDone') && greeting(input.text) && !input.button)) {
+    if (ctx.fresh && ctx.domino && dominoOn(s)) return startDomino(s)
     const set = { status: s.status } as Turn['set']
     return go(s, 'menu', set)
   }
+
+  // «Cómo llegar» left the menu for the tournament: the words still get there.
+  if (!input.button && s.step === 'menu' && dominoOn(s) && WORDS['lc:dir'].test(norm(input.text))) return start(s, 'directions')
 
   const out = screen(s.step, s)
   const id = pick(out, input) ?? (ctx.jevPick && out?.buttons?.some((b) => b.id === ctx.jevPick) ? ctx.jevPick : null)
   if (id) return onPick(s, id, ctx.now)
 
   // A tap on a button from an earlier screen still means what it says.
-  if (input.button && /^lc:(visit|call|dir)$/.test(input.button)) return onPick({ ...s, step: 'menu' }, input.button, ctx.now)
+  if (input.button && /^lc:(visit|call|dir|dom)$/.test(input.button)) return onPick({ ...s, step: 'menu' }, input.button, ctx.now)
 
   if (s.step === 'done') return { set: {}, outs: [{ text: t(L, COPY.received) }], alert: 'message' }
 
@@ -525,5 +736,15 @@ export const isFresh = (lastInboundAt: string | null | undefined, now: Date) =>
  */
 export function laCapitalLink(sender: string, source: string, lang: Lang): string {
   const hello = lang === 'en' ? `Hi, I'd like information about ${CLINIC.name}` : `Hola, quiero información de ${CLINIC.name}`
+  return `https://wa.me/${sender.replace(/\D/g, '')}?text=${encodeURIComponent(`${hello} (ref #${FLOW} ${source} ${lang})`)}`
+}
+
+/**
+ * The wa.me link that opens straight on the domino sign-up while a tournament
+ * is set: «Quiero apuntarme al torneo de dominó de La Capital (ref #la-capital ig-reel-domino es)».
+ * With none set, the same link opens the usual menu.
+ */
+export function laCapitalDominoLink(sender: string, source: string, lang: Lang): string {
+  const hello = lang === 'en' ? 'I want to sign up for the La Capital domino tournament' : 'Quiero apuntarme al torneo de dominó de La Capital'
   return `https://wa.me/${sender.replace(/\D/g, '')}?text=${encodeURIComponent(`${hello} (ref #${FLOW} ${source} ${lang})`)}`
 }
