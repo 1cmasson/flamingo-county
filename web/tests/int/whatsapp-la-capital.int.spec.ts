@@ -9,6 +9,8 @@ import {
   FLOW,
   PLACES,
   busAnswer,
+  dominoEvent,
+  laCapitalDominoLink,
   laCapitalLink,
   pick,
   screen,
@@ -19,7 +21,7 @@ import {
 } from '@/lib/laCapital'
 import { twilioSignature } from '@/lib/promoWhatsapp'
 import { asText, deliver, inboundUrl, resetTemplateCache, templateVariables, validOut, type Out } from '@/lib/whatsapp'
-import { answerInbound, isEmergency, isUnsubscribe, resetInboundLimits, type Incoming } from '@/lib/whatsappInbound'
+import { answerInbound, isEmergency, isUnsubscribe, resetInboundLimits, wantsDomino, type Incoming } from '@/lib/whatsappInbound'
 import { REPLY_HINT, leadFromText, parseLeadStatusCallback, sendToLead } from '@/lib/whatsappLeads'
 import { readLocation } from '@/lib/whatsappParams'
 
@@ -358,5 +360,171 @@ describe('the webhook and the leads (database)', () => {
     const res = await POST(req(twilioSignature(TOKEN, inboundUrl(), params)))
     expect(res.status).toBe(200)
     expect(await res.text()).toMatch(/<Message>Hola 👋 Este es el WhatsApp de Flamingo County/)
+  })
+})
+
+/* ------------------------------------------------------ domino tournament */
+
+describe('the domino tournament (pure)', () => {
+  const EV = dominoEvent('2026-12-04T10:00|calle8', NOW)!
+  const ANY = dominoEvent('2026-12-04T10:00|any', NOW)!
+  const PAST = dominoEvent('2026-11-01T10:00|calle8', NOW)!
+  const on: LeadState = { ...base, event: EV }
+
+  const run = (inputs: Partial<Input>[], from: LeadState, first: { domino?: boolean } = {}) => {
+    let s = { ...from }
+    const turns = inputs.map((i, k) => {
+      const t = turn(s, { ...noInput, ...i }, { fresh: k === 0, now: NOW, ...(k === 0 ? first : {}) })
+      s = { ...s, ...t.set } as LeadState
+      return t
+    })
+    return { s, turns }
+  }
+
+  it('reads LA_CAPITAL_DOMINO: Miami time, a place or any; anything else is off', () => {
+    expect(EV).toMatchObject({ key: '2026-12-04T10:00', place: 'calle8', active: true })
+    expect(EV.at.toISOString()).toBe('2026-12-04T15:00:00.000Z') // 10 AM EST
+    expect(ANY.place).toBe('any')
+    expect(PAST.active).toBe(false)
+    for (const bad of [undefined, '', '2026-12-04 10:00|calle8', '2026-13-40T10:00|calle8', '2026-12-04T25:00|calle8', '2026-12-04T10:00|doral', '2026-12-04T10:00'])
+      expect(dominoEvent(bad, NOW), String(bad)).toBeNull()
+  })
+
+  it('shows the button only while a tournament is set and still ahead', () => {
+    const ids = (s: LeadState) => screen('menu', s)!.buttons!.map((b) => b.id)
+    expect(ids(base)).toEqual(['lc:visit', 'lc:call', 'lc:dir'])
+    expect(ids({ ...base, event: PAST })).toEqual(['lc:visit', 'lc:call', 'lc:dir'])
+    expect(ids(on)).toEqual(['lc:dom', 'lc:visit', 'lc:call'])
+    expect(screen('menu', on)!.text).toContain('escribe GUAGUA')
+    // Typed DOMINÓ does nothing without one.
+    const off = run([{ text: 'hola' }, { text: 'DOMINÓ' }], { ...base, event: PAST })
+    expect(off.turns[1].set.step).not.toBe('dom')
+  })
+
+  it('fits WhatsApp and never mentions prizes, food, rides, health or insurance', () => {
+    const words = /seguro|insurance|medicare|medicaid|gratis|free|premio|prize|comida|food|meal|almuerzo|lunch|transporte|ride|\$|s[ií]ntoma|symptom|24\/7|24 horas/i
+    for (const lang of ['es', 'en'] as const)
+      for (const event of [EV, ANY])
+        for (const step of ['menu', 'dom', 'party', 'rsvp', 'rsvpDone'] as Step[]) {
+          const out = screen(step, { ...base, lang, event, intent: 'domino', dominoParty: 2, dominoPlace: 'hialeah' })!
+          expect(validOut(out), `${lang} ${step}`).toBeNull()
+          const text = step === 'menu' ? out.text.split('\n').filter((l) => !/clínica, en persona|team, in person/.test(l)).join('\n') : out.text
+          expect(asText({ ...out, text }), `${lang} ${step}`).not.toMatch(words)
+        }
+  })
+
+  it('signs up from the link without the clinic consent: dom → how many → RSVP yes', () => {
+    const { s, turns } = run(
+      [{ text: 'Quiero apuntarme al torneo de dominó de La Capital (ref #la-capital ig-reel-domino es)' }, { button: 'lc:dyes' }, { text: 'somos dos' }, { button: 'lc:dok' }],
+      on,
+      { domino: true },
+    )
+    expect(turns[0].outs[0].text).toContain('Torneo de dominó en La Capital')
+    expect(turns[0].outs[0].text).toContain('5351 SW 8th St')
+    expect(turns[0].outs[0].buttons?.map((b) => b.id)).toEqual(['lc:dyes', 'lc:skip'])
+    expect(turns[1].outs[0].buttons?.map((b) => b.id)).toEqual(['lc:n:1', 'lc:n:2']) // the place is fixed: no place question
+    expect(turns[2].outs[0].text).toContain('Torneo de dominó · Calle 8 · Miami · 2 personas')
+    expect(turns[3].alert).toBe('domino')
+    expect(turns[3].set).toMatchObject({ dominoEvent: '2026-12-04T10:00' })
+    expect(turns[3].set.dominoConsentText).toMatch(/apuntarte al torneo de dominó\? Solo para el torneo/)
+    expect(turns[3].set.consentAt).toBeUndefined()
+    expect(turns[3].outs[0].text).toMatch(/^¡Listo, te apuntamos! ✅/)
+    expect(turns[3].outs[0].text).toContain('contesta a cualquier hora')
+    expect(turns[3].outs[0].buttons?.map((b) => b.id)).toEqual(['lc:visit', 'lc:call', 'lc:dir'])
+    expect(s).toMatchObject({ step: 'rsvpDone', intent: 'domino', dominoParty: 2, dominoPlace: 'calle8', status: 'asking' })
+    expect(s.dominoAt).toBeTruthy()
+  })
+
+  it('a visit after signing up asks its own consent; saying no leaves the sign-up alone', () => {
+    const signedUp: LeadState = { ...on, step: 'rsvpDone', status: 'asking', intent: 'domino', dominoParty: 1, dominoPlace: 'calle8', dominoAt: NOW.toISOString() }
+    const yes = run([{ text: '' }, { button: 'lc:visit' }, { button: 'lc:p:hialeah' }, { button: 'lc:w:this' }, { button: 'lc:t:am' }, { button: 'lc:tr:car' }, { button: 'lc:yes' }], signedUp)
+    // (the first turn is fresh → menu; tap "visit" from there)
+    expect(yes.turns[6].outs[0].text).toMatch(/Listo ✅ Se lo pasamos/)
+    expect(yes.turns[5].outs[0].text).toContain('Le pasamos tu nombre y este número a La Capital Medical Center para que te llamen')
+    expect(yes.turns[6].alert).toBe('ready')
+    expect(yes.s).toMatchObject({ status: 'ready', intent: 'visit', dominoParty: 1 })
+
+    const fromDone = turn(signedUp, { ...noInput, button: 'lc:call' }, { fresh: false, now: NOW })
+    expect(fromDone.set.intent).toBe('callback')
+    const no = run([{ text: '' }, { button: 'lc:call' }, { button: 'lc:p:any' }, { button: 'lc:t:pm' }, { button: 'lc:no' }], signedUp)
+    expect(no.turns.some((t) => t.alert === 'ready')).toBe(false)
+    expect(no.s.dominoAt).toBe(signedUp.dominoAt)
+  })
+
+  it('asks the place only when the tournament says any; directions go to where they play', () => {
+    const { s, turns } = run([{ text: 'x' }, { button: 'lc:dyes' }, { button: 'lc:p:hialeah' }, { button: 'lc:n:1' }, { text: 'sí' }, { button: 'lc:dir' }], { ...base, event: ANY }, { domino: true })
+    expect(turns[1].outs[0].buttons?.map((b) => b.id)).toEqual(['lc:p:calle8', 'lc:p:hialeah'])
+    expect(turns[1].outs[0].text).toMatch(/En cuál quieres jugar/)
+    expect(turns[4].outs[0].text).toContain('1550 W 84th St')
+    expect(turns[5].set).toMatchObject({ step: 'pin', intent: 'directions', place: 'hialeah' })
+    expect(s.dominoPlace).toBe('hialeah')
+  })
+
+  it('declines, cancels, and the old links: nothing goes anywhere it shouldn’t', () => {
+    const declined = run([{ text: 'x' }, { button: 'lc:dyes' }, { button: 'lc:n:1' }, { button: 'lc:no' }], on, { domino: true })
+    expect(declined.turns.some((t) => t.alert)).toBe(false)
+    expect(declined.turns[3].outs[0].text).toMatch(/no te apuntamos/)
+    expect(declined.s.dominoAt).toBeUndefined()
+
+    const signedUp: LeadState = { ...on, step: 'rsvpDone', status: 'asking', dominoParty: 2, dominoAt: NOW.toISOString() }
+    const cancel = turn(signedUp, { ...noInput, text: 'CANCELAR' }, { fresh: false, now: NOW })
+    expect(cancel.alert).toBe('cancel')
+    expect(cancel.set).toMatchObject({ dominoAt: null, dominoParty: null, dominoEvent: null })
+    expect(cancel.outs[0].text).toMatch(/te sacamos del torneo/)
+
+    // The tournament's link after it's over: the usual menu.
+    const over = run([{ text: 'Quiero apuntarme al torneo de dominó (ref #la-capital ig-reel-domino es)' }], { ...base, event: PAST }, { domino: true })
+    expect(over.turns[0].outs[0].buttons?.map((b) => b.id)).toEqual(['lc:visit', 'lc:call', 'lc:dir'])
+
+    // With it on, DOMINÓ typed anywhere starts it, and GUAGUA still finds the bus.
+    expect(turn({ ...on, step: 'when', intent: 'visit' }, { ...noInput, text: 'Dominó' }, { fresh: false, now: NOW }).set.step).toBe('dom')
+    expect(turn(on, { ...noInput, text: 'guagua' }, { fresh: false, now: NOW }).set).toMatchObject({ step: 'place', intent: 'directions' })
+  })
+
+  it('builds the link that opens on the sign-up', () => {
+    const url = laCapitalDominoLink(SENDER, 'ig-reel-domino', 'es')
+    expect(decodeURIComponent(url)).toBe('https://wa.me/17864604851?text=Quiero apuntarme al torneo de dominó de La Capital (ref #la-capital ig-reel-domino es)')
+    expect(wantsDomino(decodeURIComponent(laCapitalDominoLink(SENDER, 'tt', 'en')))).toBe(true)
+  })
+})
+
+describe('the domino tournament (database)', () => {
+  let payload: Payload
+  const phone = `+1786555${String(Date.now()).slice(-4)}`
+  const msg = (m: Partial<Incoming>): Incoming => ({ phone, name: 'Rosa Díaz', body: '', button: null, location: null, ...m })
+
+  beforeAll(async () => {
+    payload = await getPayload({ config: await config })
+  })
+  beforeEach(() => resetInboundLimits())
+  afterEach(() => {
+    delete process.env.LA_CAPITAL_DOMINO
+  })
+  afterAll(async () => {
+    await payload.delete({ collection: 'hq-leads', where: { phone: { equals: phone } }, overrideAccess: true })
+  })
+
+  it('the reel’s link goes straight to the sign-up, keeps its source, and saves the RSVP apart from the clinic consent', async () => {
+    process.env.LA_CAPITAL_DOMINO = '2026-12-04T10:00|calle8'
+    const body = decodeURIComponent(laCapitalDominoLink(SENDER, 'ig-reel-domino', 'es').split('text=')[1])
+    let outs = await answerInbound(payload, msg({ body }), NOW)
+    expect(outs[0].buttons?.map((b) => b.id)).toEqual(['lc:dyes', 'lc:skip'])
+    await answerInbound(payload, msg({ button: 'lc:dyes' }), NOW)
+    await answerInbound(payload, msg({ button: 'lc:n:2' }), NOW)
+    outs = await answerInbound(payload, msg({ button: 'lc:dok' }), NOW)
+    expect(outs[0].text).toMatch(/te apuntamos/)
+
+    const l = (await payload.find({ collection: 'hq-leads', where: { phone: { equals: phone } }, overrideAccess: true })).docs[0]
+    expect(l).toMatchObject({ source: 'ig-reel-domino', intent: 'domino', dominoParty: 2, dominoEvent: '2026-12-04T10:00', dominoPlace: 'calle8', step: 'rsvpDone' })
+    expect(l.dominoAt).toBeTruthy()
+    expect(l.dominoConsentText).toMatch(/Solo para el torneo/)
+    expect(l.consentAt ?? null).toBeNull()
+    expect(l.status).not.toBe('ready')
+  })
+
+  it('without a tournament set, the same link opens the usual menu', async () => {
+    await payload.delete({ collection: 'hq-leads', where: { phone: { equals: phone } }, overrideAccess: true })
+    const outs = await answerInbound(payload, msg({ body: 'Quiero apuntarme al torneo de dominó de La Capital (ref #la-capital ig-reel-domino es)' }), NOW)
+    expect(outs[0].buttons?.map((b) => b.id)).toEqual(['lc:visit', 'lc:call', 'lc:dir'])
   })
 })

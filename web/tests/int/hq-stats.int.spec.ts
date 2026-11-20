@@ -26,6 +26,7 @@ const sample: HqStats = {
   optins: { active: 1, newThisWeek: 1 },
   leads: { total: 3, newThisWeek: 2, waiting: 1, byStatus: { ready: 1, called: 1, visited: 1 }, bySource: { 'ig-reel-abuela': 2 } },
   coupons: { takenThisWeek: 0, usedThisWeek: 0 },
+  domino: { event: '2026-12-04T10:00', rsvps: 3, people: 5, alsoAsked: 1 },
 }
 
 describe('the words', () => {
@@ -37,6 +38,8 @@ describe('the words', () => {
     expect(tg).toContain('2 nuevos · 1 esperando · 3 en total · ig-reel-abuela 2')
     expect(tg).toContain('llamados 1 · vinieron 1 · no vinieron 0')
     expect(tg).toContain('0 sacados · 0 usados')
+    expect(tg).toContain('🎲 Torneo de dominó (12/04): 3 apuntados · 5 personas · 1 también pidió visita o llamada')
+    expect(statsText({ ...sample, domino: { event: null, rsvps: 0, people: 0, alsoAsked: 0 } }, true)).not.toContain('dominó')
     const wa = statsText(sample, false)
     expect(wa).toContain('*📊 Últimos 7 días*')
     expect(wa).not.toMatch(/<\/?b>/)
@@ -69,6 +72,17 @@ describe('the owner asking on WhatsApp (database)', () => {
     const base = { flow: tag, lang: 'es' as const, status: 'ready' as const }
     await payload.create({ collection: 'hq-leads', data: { ...base, phone: '+13055550111', source: 'ig-reel-abuela' }, overrideAccess: true })
     await payload.create({ collection: 'hq-leads', data: { ...base, phone: '+13055550112', test: true }, overrideAccess: true })
+    const at = new Date().toISOString()
+    await payload.create({
+      collection: 'hq-leads',
+      data: { ...base, phone: '+13055550114', intent: 'domino', dominoAt: at, dominoEvent: '2026-12-04T10:00', dominoParty: 2, consentAt: at },
+      overrideAccess: true,
+    })
+    await payload.create({
+      collection: 'hq-leads',
+      data: { ...base, phone: '+13055550115', test: true, dominoAt: at, dominoEvent: '2026-12-04T10:00', dominoParty: 2 },
+      overrideAccess: true,
+    })
     await payload.create({
       collection: 'vote-whatsapp-optins',
       data: { phone: '+13055550113', lang: 'es', status: 'active', consentText: tag, consentAt: new Date().toISOString() },
@@ -94,6 +108,28 @@ describe('the owner asking on WhatsApp (database)', () => {
     expect(s.leads.total).toBe(real.totalDocs)
     expect(s.leads.bySource['ig-reel-abuela']).toBeGreaterThanOrEqual(1)
     expect(s.optins.active).toBeGreaterThanOrEqual(1)
+  })
+
+  it('counts the tournament sign-ups set now, their people, and who also asked the clinic', async () => {
+    const prev = process.env.LA_CAPITAL_DOMINO
+    process.env.LA_CAPITAL_DOMINO = '2026-12-04T10:00|calle8'
+    try {
+      const real = await payload.count({
+        collection: 'hq-leads',
+        where: { and: [{ test: { not_equals: true } }, { dominoEvent: { equals: '2026-12-04T10:00' } }, { dominoAt: { exists: true } }] },
+        overrideAccess: true,
+      })
+      const s = await hqStats(payload, new Date('2026-11-20T12:00:00Z'))
+      expect(s.domino.event).toBe('2026-12-04T10:00')
+      expect(s.domino.rsvps).toBe(real.totalDocs)
+      expect(s.domino.people).toBeGreaterThanOrEqual(2)
+      expect(s.domino.alsoAsked).toBeGreaterThanOrEqual(1)
+      process.env.LA_CAPITAL_DOMINO = '2027-01-08T10:00|calle8'
+      expect((await hqStats(payload, new Date('2026-11-20T12:00:00Z'))).domino.rsvps).toBe(0)
+    } finally {
+      if (prev === undefined) delete process.env.LA_CAPITAL_DOMINO
+      else process.env.LA_CAPITAL_DOMINO = prev
+    }
   })
 
   it('answers the owner with the numbers and three buttons; a stranger gets the usual reply', async () => {

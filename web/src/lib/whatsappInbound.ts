@@ -132,6 +132,9 @@ const keptBody = (msg: Incoming) => (msg.location ? `📍 (ubicación compartida
 
 /* ------------------------------------------------------------ La Capital */
 
+/** A link's text that asks for the domino tournament: «Quiero apuntarme al dominó (ref #la-capital ig-reel-domino es)». */
+export const wantsDomino = (body: string) => /domin[oó]/i.test(body)
+
 async function laCapitalTurn(payload: Payload, msg: Incoming, ask: ReturnType<typeof parseAsk>, now: Date): Promise<Out[]> {
   let lead = await findLead(payload, laCapital.FLOW, msg.phone)
   const fresh = laCapital.isFresh(lead?.lastInboundAt, now)
@@ -170,10 +173,15 @@ async function laCapitalTurn(payload: Payload, msg: Incoming, ask: ReturnType<ty
     travel: lead.travel ?? null,
     misses: lead.misses ?? 0,
     whatsappName: lead.whatsappName ?? msg.name ?? null,
+    dominoParty: lead.dominoParty ?? null,
+    dominoPlace: lead.dominoPlace ?? null,
+    dominoAt: lead.dominoAt ?? null,
+    event: laCapital.dominoEvent(undefined, now),
   }
-  // A ref written again (they tapped a link again) starts from the menu.
+  // A ref written again (they tapped a link again) starts from the menu, or
+  // from the tournament when the link's text asks for it.
   const input: laCapital.Input = { button: msg.button, text: ask ? '' : msg.body, location: msg.location }
-  const ctx: laCapital.TurnContext = { fresh: fresh || Boolean(ask), now }
+  const ctx: laCapital.TurnContext = { fresh: fresh || Boolean(ask), now, domino: Boolean(ask) && wantsDomino(msg.body) }
 
   // Only when a short reply matched no button by number or words: ask Jev which one they meant.
   // Never on the location screen (a typed reply there is likely an address) and never a long message.

@@ -2114,9 +2114,9 @@ export interface HqLead {
    */
   step?: string | null;
   /**
-   * What they came for.
+   * What they came for (the last thing they asked).
    */
-  intent?: ('visit' | 'callback' | 'directions') | null;
+  intent?: ('visit' | 'callback' | 'directions' | 'domino') | null;
   /**
    * Which location (the flow’s place key).
    */
@@ -2141,6 +2141,26 @@ export interface HqLead {
    * The exact question they said yes to.
    */
   consentText?: string | null;
+  /**
+   * Domino tournament: when they signed up (said yes to their name and number going to the clinic for the tournament only). Empty = not signed up, or cancelled.
+   */
+  dominoAt?: string | null;
+  /**
+   * Which tournament: its Miami start, as in LA_CAPITAL_DOMINO (2026-12-04T10:00).
+   */
+  dominoEvent?: string | null;
+  /**
+   * How many are coming to the tournament (1 or 2).
+   */
+  dominoParty?: number | null;
+  /**
+   * Where they play (the flow’s place key).
+   */
+  dominoPlace?: string | null;
+  /**
+   * The exact tournament question they said yes to.
+   */
+  dominoConsentText?: string | null;
   /**
    * They wrote BAJA/STOP. Never message them first.
    */
@@ -4240,6 +4260,11 @@ export interface HqLeadsSelect<T extends boolean = true> {
   travel?: T;
   consentAt?: T;
   consentText?: T;
+  dominoAt?: T;
+  dominoEvent?: T;
+  dominoParty?: T;
+  dominoPlace?: T;
+  dominoConsentText?: T;
   optedOut?: T;
   misses?: T;
   lastInboundAt?: T;
