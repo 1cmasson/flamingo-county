@@ -45,3 +45,14 @@ export function counts(rows: VotePrecinct[]): { precincts: number; places: numbe
 export function findArea(data: Pick<VoteData, 'areas'>, slug: string): VoteArea | null {
   return data.areas.find((a) => a.slug === slug) ?? null
 }
+
+/**
+ * The vote pages whose town has a page in the directory, by area slug: the
+ * link from a page Google already ranks to the town's businesses, events and
+ * stories. The City of Miami's is Little Havana, the directory's Miami.
+ */
+const DIRECTORY_CITY: Record<string, string> = { hialeah: 'hialeah', 'miami-lakes': 'lakes', miami: 'havana' }
+
+export function directoryCityFor(areaSlug: string): string | null {
+  return DIRECTORY_CITY[areaSlug] ?? null
+}

@@ -18,6 +18,7 @@ import type { Event, User } from '@/payload-types'
 
 const day = (d: string) => `${d}T12:00:00.000Z`
 const halloween = SEASONS.halloween as Season
+const navidad = SEASONS.navidad as Season
 
 describe('the season window', () => {
   it('is open from Oct 1 to Nov 2 in Miami, and names that year', () => {
@@ -39,11 +40,28 @@ describe('the season window', () => {
   })
 
   it('keeps prices out of every word the guide says', () => {
-    const copy = JSON.stringify({
-      ...halloween,
-      t: [halloween.title('es', 2026), halloween.metaTitle('es', 2026), halloween.description('es', 2026), halloween.description('en', 2026)],
-    })
-    expect(copy).not.toMatch(/\$|\bfree\b|gratis|precio|price/i)
+    for (const season of [halloween, navidad]) {
+      const copy = JSON.stringify({
+        ...season,
+        t: (['es', 'en'] as const).flatMap((l) => [season.title(l, 2026), season.metaTitle(l, 2026), season.description(l, 2026)]),
+      })
+      expect(copy).not.toMatch(/\$|\bfree\b|gratis|precio|price/i)
+    }
+  })
+
+  it('runs Navidad from the week before Thanksgiving to Three Kings, named for the year it starts', () => {
+    expect(isSeasonOpen(navidad, '2026-11-19')).toBe(false)
+    expect(isSeasonOpen(navidad, '2026-11-26')).toBe(true)
+    expect(isSeasonOpen(navidad, '2027-01-06')).toBe(true)
+    expect(isSeasonOpen(navidad, '2027-01-07')).toBe(false)
+    expect(seasonWindow(navidad, '2027-01-02').year).toBe(2026)
+    expect(navidad.title('es', 2026)).toBe('Navidad en Hialeah y Miami Lakes 2026')
+    expect(navidad.path).toBe('navidad')
+    // Search engines cut a title near 60 characters.
+    for (const l of ['es', 'en'] as const) expect(navidad.metaTitle(l, 2026).length).toBeLessThanOrEqual(60)
+    // Thanksgiving falls inside the window, so the snippet names it for the people searching for it.
+    expect(navidad.description('en', 2026)).toMatch(/Thanksgiving/)
+    expect(navidad.description('es', 2026)).toMatch(/Acción de Gracias/)
   })
 })
 
