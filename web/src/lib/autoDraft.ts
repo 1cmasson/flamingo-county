@@ -17,9 +17,11 @@ import { unshout } from './week'
  * A social draft for a page the moment it goes live.
  *
  * When a story moves from draft to published (the owner's Publish tap in
- * Telegram, or Publish in the admin), HQ writes one pending `hq-social-drafts`
- * entry for it. That draft then goes through the normal Approve / Reject
- * preview: nothing is posted or scheduled from here.
+ * Telegram, or Publish in the admin), HQ used to write one pending
+ * `hq-social-drafts` entry for it. That is off (`STORY_AUTO_DRAFTS`): a story
+ * reaches the feed through its own reels, never as a post about the article.
+ * Any draft made here goes through the normal Approve / Reject preview:
+ * nothing is posted or scheduled from here.
  *
  * Events no longer get a feed post each (`EVENT_AUTO_DRAFTS`): they go out
  * together in a carousel. Each event gets an Instagram story instead
@@ -37,9 +39,17 @@ type Lang = 'es' | 'en'
  * Whether publishing an event drafts a feed post of its own. Off since the
  * owner asked for the week's events together instead of a post per event per
  * day (lib/weeklyRoundup.ts); while it is off, an event gets an Instagram
- * story instead (lib/eventStory.tsx). Stories (the pages) are unaffected.
+ * story instead (lib/eventStory.tsx).
  */
 export const EVENT_AUTO_DRAFTS: boolean = false
+
+/**
+ * Whether publishing a story page drafts a feed post about it. Off since the
+ * owner said no posts about articles, ever (2026-10-23, and again 2026-11-03):
+ * the story's reels are its posts, and a third post on the same story only
+ * crowds the feed and can spoil the reel's payoff.
+ */
+export const STORY_AUTO_DRAFTS: boolean = false
 
 /** TikTok's limit, the tightest of the three platforms. */
 export const CAPTION_MAX = 2000
@@ -69,6 +79,7 @@ export function autoDraftHook(collection: AutoDraftSource): CollectionAfterChang
     const was = (previousDoc as { _status?: string } | undefined)?._status
     const now = (doc as { _status?: string })._status
     if (operation !== 'update' || was !== 'draft' || now !== 'published') return doc
+    if (collection === 'stories' && !STORY_AUTO_DRAFTS) return doc
     try {
       // `req` is not passed on: the draft writes carry HQ's own context, which
       // would otherwise be merged into this publish request's.
