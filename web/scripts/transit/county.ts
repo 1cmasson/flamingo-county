@@ -28,6 +28,7 @@ import {
   cleanHeadsign,
   cleanStopName,
   eachStopTime,
+  editionFrom,
   headwayIn,
   iso,
   meters,
@@ -214,9 +215,9 @@ async function main() {
     return [Number(s.stop_lat), Number(s.stop_lon)]
   }
 
-  // One date of each kind, from today: the services that run on it are that
-  // kind of day's schedule.
-  const today = new Date()
+  // One date of each kind, from today (or from the day this edition starts, when
+  // it's published ahead): the services that run on it are that kind of day's schedule.
+  const today = editionFrom(new Date(), calendar)
   const days: Record<DayKind, Set<string>> = {
     weekday: servicesOn(nextDow(today, 3), calendar, exceptions),
     saturday: servicesOn(nextDow(today, 6), calendar, exceptions),

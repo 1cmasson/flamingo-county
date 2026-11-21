@@ -33,6 +33,7 @@ import {
   cleanHeadsign,
   cleanStopName,
   eachStopTime,
+  editionFrom,
   feedHash,
   headwayIn,
   iso,
@@ -79,7 +80,8 @@ async function main() {
   const calendar = readCsv(dir, 'calendar.txt')
   const exceptions = readCsv(dir, 'calendar_dates.txt')
 
-  const today = new Date()
+  // From the day this edition starts when it's published ahead (gtfs.editionFrom).
+  const today = editionFrom(new Date(), calendar)
   const days: Record<DayKind, Set<string>> = {
     weekday: servicesOn(nextDow(today, 3), calendar, exceptions),
     saturday: servicesOn(nextDow(today, 6), calendar, exceptions),
