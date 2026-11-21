@@ -84,7 +84,8 @@ jobs:
             tests/int/trip-plan.int.spec.ts \
             tests/int/trip-link.int.spec.ts \
             tests/int/bus-network.int.spec.ts \
-            tests/int/popular-trips.int.spec.ts
+            tests/int/popular-trips.int.spec.ts \
+            tests/int/transit-edition.int.spec.ts
 
       # Straight to main (no PR: this repo doesn't let Actions open pull requests). The
       # commit only touches src/data/transit, and the tests above passed on it.

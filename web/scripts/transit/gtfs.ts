@@ -209,6 +209,25 @@ export type DayKind = 'weekday' | 'saturday' | 'sunday'
 export const iso = (d: string) => `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6, 8)}`
 export const ymd = (d: Date) => d.toISOString().slice(0, 10).replace(/-/g, '')
 
+/**
+ * Where to start reading the feed's days from: today, or the day its edition
+ * starts when that's later. The county publishes a new edition a few days
+ * before it takes over, and the feed then carries only the new one: sampling
+ * "next Sunday" from today lands before it starts, finds no service at all,
+ * and every route comes out with no Sunday buses (the refresh's
+ * "never puts a Sunday trip on Hialeah's free lines" test, Nov 18 to 21, 2026).
+ */
+export function editionFrom(today: Date, calendar: Row[]): Date {
+  const now = ymd(today)
+  // The earliest start among the weekly schedules still running today or later.
+  const first = calendar
+    .filter((c) => c.end_date >= now)
+    .map((c) => c.start_date)
+    .sort()[0]
+  if (!first || first <= now) return today
+  return new Date(Date.UTC(Number(first.slice(0, 4)), Number(first.slice(4, 6)) - 1, Number(first.slice(6, 8))))
+}
+
 /** YYYYMMDD of the next date on or after `from` with this day of the week. */
 export function nextDow(from: Date, dow: number): string {
   const d = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate()))
